@@ -51,6 +51,7 @@ object OpenWaitOverlay {
 
     @JvmStatic
     fun show(service: AccessibilityService, app: String): Boolean {
+        ShieldMoments.mark(service)
         if (view != null) hide(service)
         val manager = service.getSystemService(WindowManager::class.java) ?: return false
         val label = runCatching {

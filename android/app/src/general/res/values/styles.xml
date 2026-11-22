@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="WidgetDay">
+        <item name="android:fontFamily">@font/unrot_display_semibold</item>
+        <item name="android:textSize">32sp</item>
+    </style>
+</resources>

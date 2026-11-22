@@ -29,9 +29,9 @@ if [ "$("$ADB" -s "$SERIAL" shell getprop ro.kernel.qemu 2>/dev/null | tr -d '\r
     echo "Real phone $SERIAL: testing the separate copy $PACKAGE; the installed Hisn is not touched."
 fi
 
-./gradlew "${GRADLE[@]}" assembleDebug assembleDebugAndroidTest
-"$ADB" -s "$SERIAL" install -r app/build/outputs/apk/debug/app-debug.apk >/dev/null
-"$ADB" -s "$SERIAL" install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk >/dev/null
+./gradlew "${GRADLE[@]}" assembleHisnDebug assembleHisnDebugAndroidTest
+"$ADB" -s "$SERIAL" install -r app/build/outputs/apk/hisn/debug/app-hisn-debug.apk >/dev/null
+"$ADB" -s "$SERIAL" install -r -t app/build/outputs/apk/androidTest/hisn/debug/app-hisn-debug-androidTest.apk >/dev/null
 # A fresh state for the package under test, so "nothing is running" and "no rules" hold.
 "$ADB" -s "$SERIAL" shell pm clear "$PACKAGE" >/dev/null
 OUTPUT="$("$ADB" -s "$SERIAL" shell am instrument -w -e package app.hisn.android.nativeshell \

@@ -5,7 +5,18 @@ import { nearMiss, centreCrop, strongBlock, padSquare, agrees } from './region.j
 const query = new URL(location.href).searchParams;
 const requested = query.get('backend');
 const person = ['all', 'female', 'male'].includes(query.get('person')) ? query.get('person') : 'off';
-const preferences = { inspectVisual: true, personBlur: person };
+// adult=off: the native TFLite runtime judges adult content and this page only looks for faces,
+// so the NSFWJS model is never loaded and each frame runs the face models alone.
+const facesOnly = query.get('adult') === 'off' && person !== 'off';
+// appearance=faceres picks Human's FaceRes for the women/men estimate; eval=1 (accuracy runs only)
+// also returns each face's raw estimates from both models. Neither changes the adult check.
+const appearance = query.get('appearance') === 'faceres' ? 'faceres' : 'oarriaga';
+const evaluate = query.get('eval') === '1';
+// boxes=1 (with adult=off and person=all): return each detected face's normalized box so the
+// native FaceRes runtime can estimate women/men; this page then decides nothing about faces.
+const boxes = facesOnly && person === 'all' && query.get('boxes') === '1';
+const preferences = { inspectVisual: !facesOnly, personBlur: person, appearance, evaluateAppearance: evaluate };
+const facePreferences = { ...preferences, inspectVisual: false };
 // The centred near-miss second look is an adult check only; do not run the face models twice.
 const closerPreferences = { inspectVisual: true, personBlur: 'off' };
 // 'auto' walks WebGL -> WASM -> CPU. An explicit name is tried first and still
@@ -26,6 +37,14 @@ async function shaped(id, width, height, rgba) {
 window.hisnInspect = async (id, width, height, rgba) => {
   try {
     const result = await engine.inspect(id, { id, width, height, rgba }, preferences);
+    if (facesOnly) {
+      // No adult verdict here; "allow" only says the face check completed.
+      const done = result?.state === 'ready' && result.persons && result.persons.state !== 'not-inspected';
+      HisnResult.result(id, done ? JSON.stringify({ v: 'allow', p: result.persons.blur === true, s: false,
+        ...(evaluate ? { e: result.persons.evaluation ?? [] } : {}),
+        ...(boxes ? { b: (result.persons.regions ?? []).map(r => [r.x, r.y, r.width, r.height]) } : {}) }) : 'unknown');
+      return;
+    }
     let verdict = result?.state === 'ready' && result.adult?.inspected === true
       ? result.adult.block === true ? 'block' : 'allow' : 'unknown';
     let strong = false;
@@ -51,8 +70,21 @@ window.hisnInspect = async (id, width, height, rgba) => {
         }
       }
     }
-    const personBlur = result?.persons?.blur === true;
-    HisnResult.result(id, JSON.stringify({ v: verdict, p: personBlur, s: strong }));
+    let persons = result?.persons;
+    if (verdict === 'allow' && person !== 'off' && (!persons || persons.state === 'not-inspected')) {
+      // The shared engine can skip faces on an initial adult verdict. If the shape check
+      // cleared it, finish checking faces before this frame can be shown.
+      const faceId = id + '-f';
+      const faceResult = await engine.inspect(faceId, { id: faceId, width, height, rgba }, facePreferences);
+      persons = faceResult?.persons;
+      if (faceResult?.state !== 'ready' || !persons || persons.state === 'not-inspected') {
+        HisnResult.result(id, 'unknown');
+        return;
+      }
+    }
+    const personBlur = persons?.blur === true;
+    HisnResult.result(id, JSON.stringify({ v: verdict, p: personBlur, s: strong,
+      ...(evaluate ? { e: persons?.evaluation ?? [] } : {}) }));
   } catch { HisnResult.result(id, 'unknown'); }
   finally { rgba = null; }
 };

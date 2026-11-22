@@ -15,10 +15,46 @@ const OPPOSITE_CONFIDENCE = 0.70;
 // 2x into the 64x64 appearance model and its estimate is too weak to justify
 // hiding it when the estimate leans the other way (avatars, thumbnails, crowds).
 export const SMALL_FACE_PIXELS = 32;
+// FaceRes estimates: a face is shown only when it leans the other way at least this strongly.
+// Asymmetric on purpose. On the 2026-11-19 Commons set (docs/ANDROID_VISUAL_ACCURACY_2026-11-19.md)
+// FaceRes never rated a man more likely a woman, while it reads many veiled women as men, so the
+// women setting needs a high bar before showing a face and the men setting can show earlier.
+// No small-face exception: FaceRes still separates faces under 32 px (AUC 0.85 there).
+export const FACERES_OPPOSITE = Object.freeze({ female: 0.80, male: 0.60 });
+
+// Which model estimates appearance for the women/men settings. 'oarriaga' is the 64x64
+// greyscale classifier; 'faceres' is Human's HSE FaceRes description model run on Human's
+// own face crop. evaluateAppearance (debug and accuracy runs only) runs both and reports
+// each face's raw estimates beside the decision; it never changes the decision.
+export const APPEARANCE_MODELS = Object.freeze(['oarriaga', 'faceres']);
 
 export function visualPreferences(state = {}) {
   return { inspectVisual: state.inspectVisual === true,
-    personBlur: PERSON_MODES.includes(state.personBlur) ? state.personBlur : 'off' };
+    personBlur: PERSON_MODES.includes(state.personBlur) ? state.personBlur : 'off',
+    appearance: APPEARANCE_MODELS.includes(state.appearance) ? state.appearance : 'oarriaga',
+    evaluateAppearance: state.evaluateAppearance === true };
+}
+
+/** True when the women/men settings need Human's FaceRes description model loaded. */
+export function needsFaceres(prefs) {
+  return ['female', 'male'].includes(prefs.personBlur)
+    && (prefs.appearance === 'faceres' || prefs.evaluateAppearance === true);
+}
+
+/** True when the women/men settings need the 64x64 Oarriaga classifier loaded. */
+export function needsOarriaga(prefs) {
+  return ['female', 'male'].includes(prefs.personBlur)
+    && (prefs.appearance === 'oarriaga' || prefs.evaluateAppearance === true);
+}
+
+/** Human's FaceRes output as {gender, genderScore} with genderScore the probability of the
+ * named class (0.5..1), the scale personDecision uses. Human reports a confidence
+ * 2|p - 0.5| truncated to two decimals and capped at 0.99. Null when there is no estimate. */
+export function faceresPrediction(description) {
+  if (!description || !['female', 'male'].includes(description.gender)) return null;
+  const confidence = description.score;
+  if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) return null;
+  return { gender: description.gender, genderScore: 0.5 + confidence / 2, appearanceModel: 'faceres' };
 }
 
 export function enabled(state) {
@@ -63,7 +99,13 @@ export function faceDetections(result) {
   for (const face of result.face) {
     const score = face?.boxScore ?? face?.score;
     if (!Number.isFinite(score) || score < 0 || score > 1 || !validBox(face?.box)) return null;
-    faces.push({ faceScore: score, box: face.box });
+    const entry = { faceScore: score, box: face.box };
+    // Present only when Human ran its FaceRes description model on this face.
+    if (['female', 'male'].includes(face.gender) && Number.isFinite(face.genderScore)) {
+      entry.description = { gender: face.gender, score: face.genderScore,
+        age: Number.isFinite(face.age) ? face.age : null };
+    }
+    faces.push(entry);
   }
   return faces;
 }
@@ -121,10 +163,12 @@ export function personDecision(faces, bodies, mode, width, height) {
     // A small face leaning the other way is also shown: the estimate is noise at that
     // size. This policy can still hide unintended faces, as disclosed beside the
     // opt-in controls. It is not a full-body/identity guarantee.
+    const faceres = face.appearanceModel === 'faceres';
+    const opposite = faceres ? FACERES_OPPOSITE[mode] : OPPOSITE_CONFIDENCE;
     if (mode !== 'all' && (!['female', 'male'].includes(face.gender) || !Number.isFinite(face.genderScore)
         || face.genderScore < 0.50 || face.genderScore > 1
-        || (face.gender !== mode && ((face.genderScore >= OPPOSITE_CONFIDENCE && face.appearanceUncertain !== true)
-          || Math.min(face.box?.[2], face.box?.[3]) < SMALL_FACE_PIXELS)))) continue;
+        || (face.gender !== mode && ((face.genderScore >= opposite && face.appearanceUncertain !== true)
+          || (!faceres && Math.min(face.box?.[2], face.box?.[3]) < SMALL_FACE_PIXELS))))) continue;
     const region = normalizedRegion(face.box, width, height);
     if (region) regions.push(region);
   }

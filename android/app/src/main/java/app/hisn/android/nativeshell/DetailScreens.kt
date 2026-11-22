@@ -1,5 +1,6 @@
 package app.hisn.android.nativeshell
 
+import app.hisn.android.Edition
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -33,6 +35,7 @@ import androidx.compose.material.icons.rounded.Accessibility
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
@@ -42,8 +45,10 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.TextFields
+import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
@@ -88,6 +93,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.semantics.contentDescription
 import app.hisn.android.DnsVpnService
 import app.hisn.android.R
 import androidx.compose.ui.platform.LocalFocusManager
@@ -104,13 +112,17 @@ import kotlinx.coroutines.withContext
 internal fun DetailScaffold(
     title: String,
     onBack: () -> Unit,
+    actions: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        modifier = if (unrotEdition) Modifier.unrotBackdrop() else Modifier,
+        containerColor = if (unrotEdition) Color.Transparent else MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             TopAppBar(
-                title = { Text(title) },
+                // Unrot titles every page in its serif, like the tabs; Hisn keeps Material's.
+                title = { Text(title, style = if (unrotEdition) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -119,8 +131,9 @@ internal fun DetailScaffold(
                         )
                     }
                 },
+                actions = actions,
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = if (unrotEdition) Color.Transparent else MaterialTheme.colorScheme.background
                 )
             )
         }
@@ -129,19 +142,23 @@ internal fun DetailScaffold(
     }
 }
 
+/** Sites people often add to stop scrolling; none is on the adult list. */
+private val UnrotSiteSuggestions = listOf("reddit.com", "x.com", "9gag.com", "twitch.tv", "kick.com", "tiktok.com")
+
 @Composable
 fun DomainsScreen(
     state: HisnState,
     onBack: () -> Unit
 ) {
+    var query by rememberSaveable { mutableStateOf("") }
     var input by rememberSaveable { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     val snackbar = LocalHisnSnackbar.current
     val haptics = rememberHisnHaptics()
     val focusManager = LocalFocusManager.current
 
-    val removeDomain: (String) -> Unit = { domain ->
-        state.removeDomain(domain)
+    val removeDomain: (String) -> Unit = remove@{ domain ->
+        if (!state.removeDomain(domain)) return@remove
         haptics.tick()
         snackbar(
             HisnMessage(
@@ -152,7 +169,7 @@ fun DomainsScreen(
         )
     }
 
-    DetailScaffold(tr("Blocked domains"), onBack) { innerPadding ->
+    DetailScaffold(if (unrotEdition) stringResource(R.string.unrot_title_sites) else tr("Blocked domains"), onBack) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
@@ -161,19 +178,19 @@ fun DomainsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                val submit: () -> Unit = {
-                    val domain = input.trim().lowercase()
+                val submit: () -> Unit = submit@{
+                    val domain = runCatching { app.hisn.core.SiteCheckInput.ruleHost(input) }.getOrNull()
                     val problem = when {
-                        domain.isBlank() -> tr("Enter a domain first")
-                        !domain.contains(".") -> tr("That does not look like a domain")
+                        input.isBlank() -> tr("Enter a domain first")
+                        domain == null -> tr("That does not look like a domain")
                         state.domains.contains(domain) -> String.format(tr("%1\$s is already blocked"), domain)
                         else -> null
                     }
                     if (problem != null) {
                         error = problem
                         haptics.reject()
-                    } else {
-                        state.addDomain(domain)
+                    } else if (domain != null) {
+                        if (!state.addDomain(domain)) return@submit
                         focusManager.clearFocus()
                         input = ""
                         error = null
@@ -193,42 +210,109 @@ fun DomainsScreen(
                         input = it
                         if (error != null) error = null
                     },
-                    label = { Text(tr("Add a domain")) },
+                    label = if (unrotEdition) null else ({ Text(tr("Add a domain")) }),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Uri,
+                        autoCorrectEnabled = false,
                         imeAction = androidx.compose.ui.text.input.ImeAction.Done
                     ),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { submit() }),
-                    placeholder = { Text("example.com") },
+                    placeholder = { Text(if (unrotEdition) tr("Add a domain") else "example.com") },
                     singleLine = true,
                     isError = error != null,
                     supportingText = error?.let {
                         { Text(it) }
                     },
+                    // Unrot: one pill with the add button inside it, like a search field.
+                    shape = if (unrotEdition) RoundedCornerShape(28.dp) else OutlinedTextFieldDefaults.shape,
+                    colors = if (unrotEdition) OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = LocalHisnStatusColors.current.card,
+                        focusedContainerColor = LocalHisnStatusColors.current.card,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+                    ) else OutlinedTextFieldDefaults.colors(),
+                    trailingIcon = if (unrotEdition) {
+                        {
+                            Button(onClick = submit, enabled = input.isNotBlank(),
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                modifier = Modifier.padding(end = 6.dp).height(44.dp)
+                                    .semantics { contentDescription = tr("Add domain") }) {
+                                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(stringResource(R.string.add_short))
+                            }
+                        }
+                    } else null,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(Modifier.height(8.dp))
-                Button(
-                    onClick = submit,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(tr("Add domain"))
+                if (!unrotEdition) {
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = submit,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(tr("Add domain"))
+                    }
                 }
             }
 
-            item {
+            // Unrot: the time-sink sites people add most, one tap each, only those not yet listed.
+            if (unrotEdition) {
+                val suggestions = UnrotSiteSuggestions.filter { it !in state.domains }
+                if (suggestions.isNotEmpty()) {
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(stringResource(R.string.domains_suggested), style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            androidx.compose.foundation.layout.FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                suggestions.forEach { site ->
+                                    androidx.compose.material3.AssistChip(
+                                        onClick = {
+                                            if (state.addDomain(site)) {
+                                                haptics.confirm()
+                                                snackbar(HisnMessage(
+                                                    text = String.format(tr("Added %1\$s"), site),
+                                                    actionLabel = tr("Undo"),
+                                                    onAction = { state.removeDomain(site) }
+                                                ))
+                                            }
+                                        },
+                                        label = { Text(site) },
+                                        leadingIcon = { Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (state.domains.size > 8) {
+                item {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                        label = { Text(stringResource(R.string.domains_search, state.domains.size)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            // Unrot's empty card already says "nothing yet"; one message is enough.
+            if (!(unrotEdition && state.domains.isEmpty())) item {
                 SectionHeader(
                     title = when (state.domains.size) {
                         0 -> tr("No domains yet")
                         1 -> tr("1 blocked domain")
                         else -> String.format(tr("%1\$d blocked domains"), state.domains.size)
                     },
-                    supporting = if (state.domains.isEmpty()) {
-                        tr("Domains are matched on this phone. Settings and dialers are excluded.")
-                    } else {
-                        tr("Swipe a row to remove it. Domains are matched on this phone; settings and dialers are excluded.")
-                    }
+                    supporting = stringResource(R.string.domain_rule_scope)
                 )
             }
 
@@ -241,6 +325,8 @@ fun DomainsScreen(
                             expandFrom = Alignment.Top
                         )
                     ) {
+                        Column {
+                        if (unrotEdition) Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) { EmptyArt(Icons.Rounded.Security, TileBlush) }
                         HisnCard {
                             ListItem(
                                 headlineContent = { Text(tr("Nothing blocked yet"), style = MaterialTheme.typography.titleMedium) },
@@ -251,14 +337,15 @@ fun DomainsScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 },
-                                leadingContent = { Icon(Icons.Rounded.Language, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                leadingContent = if (unrotEdition) null else ({ Icon(Icons.Rounded.Language, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }),
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                             )
+                        }
                         }
                     }
                 }
             } else {
-                items(state.domains.toList(), key = { it }) { domain ->
+                items(state.domains.toList().filter { query.isBlank() || it.contains(query.trim(), ignoreCase = true) }, key = { it }) { domain ->
                     SwipeToDelete(
                         modifier = Modifier.animateItem(),
                         onDelete = { removeDomain(domain) }
@@ -307,8 +394,8 @@ fun WordsScreen(
     val haptics = rememberHisnHaptics()
     val focusManager = LocalFocusManager.current
 
-    val removeWord: (String) -> Unit = { word ->
-        state.removeWord(word)
+    val removeWord: (String) -> Unit = remove@{ word ->
+        if (!state.removeWord(word)) return@remove
         haptics.tick()
         snackbar(
             HisnMessage(
@@ -319,7 +406,7 @@ fun WordsScreen(
         )
     }
 
-    DetailScaffold(tr("Blocked words"), onBack) { innerPadding ->
+    DetailScaffold(if (unrotEdition) stringResource(R.string.unrot_title_words) else tr("Blocked words"), onBack) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
@@ -328,19 +415,21 @@ fun WordsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                val submit: () -> Unit = {
-                    val word = input.trim()
+                val submit: () -> Unit = submit@{
+                    val raw = input.trim()
+                    val word = runCatching { app.hisn.core.WordMatcher.canonicalRule(raw) }.getOrNull()
                     val problem = when {
-                        word.isBlank() -> tr("Enter a word first")
-                        word.length > 128 -> tr("Keep each rule under 128 characters")
+                        raw.isBlank() -> tr("Enter a word first")
+                        raw.codePointCount(0, raw.length) > 128 -> tr("Keep each rule under 128 characters")
+                        word == null -> tr("Enter a word first")
                         state.words.contains(word) -> tr("Already saved")
                         else -> null
                     }
                     if (problem != null) {
                         error = problem
                         haptics.reject()
-                    } else {
-                        state.addWord(word)
+                    } else if (word != null) {
+                        if (!state.addWord(word)) return@submit
                         focusManager.clearFocus()
                         input = ""
                         error = null
@@ -360,31 +449,53 @@ fun WordsScreen(
                         input = it
                         if (error != null) error = null
                     },
-                    label = { Text(tr("Add a word or phrase")) },
+                    label = if (unrotEdition) null else ({ Text(tr("Add a word or phrase")) }),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         imeAction = androidx.compose.ui.text.input.ImeAction.Done
                     ),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { submit() }),
-                    placeholder = { Text(tr("literal match")) },
+                    placeholder = { Text(if (unrotEdition) tr("Add a word or phrase") else tr("literal match")) },
                     singleLine = true,
                     isError = error != null,
                     supportingText = error?.let {
                         { Text(it) }
                     },
+                    // Unrot: one pill with the add button inside it, like a search field.
+                    shape = if (unrotEdition) RoundedCornerShape(28.dp) else OutlinedTextFieldDefaults.shape,
+                    colors = if (unrotEdition) OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = LocalHisnStatusColors.current.card,
+                        focusedContainerColor = LocalHisnStatusColors.current.card,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+                    ) else OutlinedTextFieldDefaults.colors(),
+                    trailingIcon = if (unrotEdition) {
+                        {
+                            Button(onClick = submit, enabled = input.isNotBlank(),
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                modifier = Modifier.padding(end = 6.dp).height(44.dp)
+                                    .semantics { contentDescription = tr("Add word rule") }) {
+                                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(stringResource(R.string.add_short))
+                            }
+                        }
+                    } else null,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(Modifier.height(8.dp))
-                Button(
-                    onClick = submit,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(tr("Add word rule"))
+                if (!unrotEdition) {
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = submit,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(tr("Add word rule"))
+                    }
                 }
             }
 
-            item {
+            // Unrot's empty card already says "nothing yet"; one message is enough.
+            if (!(unrotEdition && state.words.isEmpty())) item {
                 SectionHeader(
                     title = when (state.words.size) {
                         0 -> tr("No word rules yet")
@@ -400,18 +511,19 @@ fun WordsScreen(
             }
 
             if (state.words.isEmpty()) {
+                item { if (unrotEdition) Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) { EmptyArt(Icons.Rounded.TextFields, TileBlush) } }
                 item {
                     HisnCard {
                         ListItem(
                             headlineContent = { Text(tr("No word rules"), style = MaterialTheme.typography.titleMedium) },
                             supportingContent = {
                                 Text(
-                                    tr("Try the word tester from Settings to see how a rule behaves."),
+                                    if (unrotEdition) stringResource(R.string.unrot_words_try) else tr("Try the word tester from Settings to see how a rule behaves."),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
-                            leadingContent = { Icon(Icons.Rounded.TextFields, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            leadingContent = if (unrotEdition) null else ({ Icon(Icons.Rounded.TextFields, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }),
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                         )
                     }
@@ -500,7 +612,7 @@ private fun SwipeToDelete(
 
 /** Placeholder rows while PackageManager is read; no spinner, the list keeps its final shape. */
 @Composable
-private fun AppListSkeleton() {
+internal fun AppListSkeleton() {
     HisnCard {
         repeat(6) { index ->
             Row(
@@ -752,7 +864,7 @@ private fun InstalledAppRow(
             )
         },
         leadingContent = { AppIcon(app.packageName, 40.dp) },
-        trailingContent = { Switch(checked = blocked, onCheckedChange = null) },
+        trailingContent = { HisnSwitch(blocked) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.toggleable(
             value = blocked,
@@ -763,92 +875,6 @@ private fun InstalledAppRow(
             }
         )
     )
-}
-
-@Composable
-fun ScheduleScreen(
-    state: HisnState,
-    onBack: () -> Unit
-) {
-    val labels = listOf("M", "T", "W", "T", "F", "S", "S")
-    val haptics = rememberHisnHaptics()
-    val snackbar = LocalHisnSnackbar.current
-
-    DetailScaffold("Schedule", onBack) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item { PageIntro("Close selected apps during a daily window. Overnight windows belong to the day they start on.") }
-            item {
-                HisnCard {
-                    SwitchRow(
-                        icon = Icons.Rounded.Schedule,
-                        title = "Use a schedule",
-                        supporting = "Applies on the days you choose",
-                        checked = state.schedule.on,
-                        onCheckedChange = state.schedule::set
-                    )
-                }
-            }
-            item { SectionHeader("Days") }
-            item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(labels.size) { index ->
-                        FilterChip(
-                            selected = state.scheduleDays.contains(index),
-                            onClick = {
-                                haptics.tick()
-                                val days = state.scheduleDays
-                                state.updateScheduleDays(
-                                    if (days.contains(index)) days - index else days + index
-                                )
-                            },
-                            label = { Text(labels[index]) }
-                        )
-                    }
-                }
-            }
-            item {
-                HisnCard {
-                    SettingRow(
-                        icon = Icons.Rounded.Schedule,
-                        title = "Start time",
-                        supporting = "22:00",
-                        onClick = { snackbar(HisnMessage("Time picker comes with the port")) }
-                    )
-                    InsetDivider()
-                    SettingRow(
-                        icon = Icons.Rounded.Schedule,
-                        title = "End time",
-                        supporting = "06:00",
-                        onClick = { snackbar(HisnMessage("Time picker comes with the port")) }
-                    )
-                }
-            }
-            item {
-                Button(
-                    onClick = {
-                        haptics.confirm()
-                        val days = state.scheduleDays.size
-                        snackbar(
-                            HisnMessage(
-                                "Schedule saved for $days ${if (days == 1) "day" else "days"}"
-                            )
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Rounded.CheckCircle, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Save schedule")
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -872,9 +898,13 @@ fun LimitScreen(
             appLabel = appLabel(context, packageName),
             initial = state.appLimit(packageName) ?: HisnState.DEFAULT_MINUTES,
             onDismiss = { editing = null },
-            onConfirm = { minutes ->
+            onConfirm = confirm@{ minutes ->
                 val previous = state.appLimit(packageName)
-                state.setAppLimit(packageName, minutes)
+                if (previous == minutes) {
+                    editing = null
+                    return@confirm
+                }
+                if (!state.setAppLimit(packageName, minutes)) return@confirm
                 editing = null
                 haptics.confirm()
                 snackbar(
@@ -894,7 +924,7 @@ fun LimitScreen(
         )
     }
 
-    DetailScaffold("Daily limit", onBack) { innerPadding ->
+    DetailScaffold(if (unrotEdition) stringResource(R.string.shield_row_limits) else "Daily limit", onBack) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
@@ -903,11 +933,11 @@ fun LimitScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                PageIntro(
-                    "Give each app its own daily limit. Hisn reads Android's own screen-time record for " +
-                        "today — nothing leaves the phone. Closing an app at its limit is the production " +
-                        "accessibility layer's job; this screen saves the limit."
-                )
+                PageIntro(stringResource(R.string.limit_intro))
+            }
+            // Unrot's first visit: limits drawn from today's real screen time, one tap to add.
+            if (unrotEdition && limited.isEmpty() && usageAccess) {
+                item { UnrotLimitSuggestions(state) }
             }
             item {
                 HisnCard {
@@ -931,6 +961,9 @@ fun LimitScreen(
                     supporting = "Each limit counts from local midnight and is set per app."
                 )
             }
+            if (unrotEdition && limited.isEmpty() && !usageAccess) {
+                item { if (unrotEdition) Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) { EmptyArt(Icons.Rounded.Timer, TileSage) } }
+            }
             item {
                 HisnCard {
                     if (limited.isEmpty()) {
@@ -943,7 +976,7 @@ fun LimitScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
-                            leadingContent = { Icon(Icons.Rounded.Timer, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            leadingContent = { RowLead(Icons.Rounded.Timer) },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                         )
                     } else {
@@ -961,9 +994,17 @@ fun LimitScreen(
                                     haptics.tick()
                                     editing = packageName
                                 },
-                                onRemove = {
+                                // + gives more minutes, which loosens the rule, so a protection lock
+                                // disables it; − only tightens and always works.
+                                canLower = minutes > LimitStep,
+                                canRaise = state.lockRemainingMillis <= 0L,
+                                onStep = { delta ->
+                                    val next = (minutes + delta).coerceIn(LimitStep, 24 * 60)
+                                    if (state.setAppLimit(packageName, next)) haptics.tick()
+                                },
+                                onRemove = remove@{
                                     val previous = state.appLimit(packageName) ?: HisnState.DEFAULT_MINUTES
-                                    state.removeAppLimit(packageName)
+                                    if (!state.removeAppLimit(packageName)) return@remove
                                     haptics.tick()
                                     snackbar(
                                         HisnMessage(
@@ -1016,12 +1057,15 @@ fun LimitScreen(
             item {
                 ReassuranceRow(
                     icon = Icons.Rounded.Lock,
-                    text = "Limits stay on this phone. Hisn keeps no list of what you opened."
+                    text = "Limits stay on this phone. ${Edition.NAME} keeps no list of what you opened."
                 )
             }
         }
     }
 }
+
+/** Minutes one − or + moves a daily limit. */
+private const val LimitStep = 5
 
 @Composable
 private fun LimitRow(
@@ -1029,6 +1073,9 @@ private fun LimitRow(
     minutes: Int,
     usedMs: Long?,
     onClick: () -> Unit,
+    canLower: Boolean = false,
+    canRaise: Boolean = true,
+    onStep: ((Int) -> Unit)? = null,
     onRemove: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1074,11 +1121,21 @@ private fun LimitRow(
         },
         leadingContent = { AppIcon(packageName, 40.dp) },
         trailingContent = {
-            IconButton(onClick = onRemove) {
-                Icon(
-                    Icons.Rounded.Delete,
-                    contentDescription = "Remove the limit for $label"
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onStep != null) {
+                    IconButton(onClick = { onStep(-LimitStep) }, enabled = canLower) {
+                        Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.limit_less, label))
+                    }
+                    IconButton(onClick = { onStep(LimitStep) }, enabled = canRaise) {
+                        Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.limit_more, label))
+                    }
+                }
+                IconButton(onClick = onRemove) {
+                    Icon(
+                        Icons.Rounded.Delete,
+                        contentDescription = "Remove the limit for $label"
+                    )
+                }
             }
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -1112,6 +1169,7 @@ fun LimitAppsScreen(
         apps
             .sortedWith(
                 compareByDescending<InstalledApp> { limited.contains(it.packageName) }
+                    .thenByDescending { isUsualPick(it.packageName) }
                     .thenBy { it.label.lowercase() }
             )
             .filter {
@@ -1222,11 +1280,10 @@ fun LimitAppsScreen(
                                 modifier = Modifier.toggleable(
                                     value = minutes != null,
                                     role = Role.Checkbox,
-                                    onValueChange = { include ->
-                                        haptics.toggle(include)
+                                    onValueChange = change@{ include ->
                                         if (include) {
-                                            state.setAppLimit(app.packageName, HisnState.DEFAULT_MINUTES)
-                                            if (!state.limit.on) state.limit.set(true)
+                                            if (!state.setAppLimit(app.packageName, HisnState.DEFAULT_MINUTES)) return@change
+                                            haptics.toggle(true)
                                             snackbar(
                                                 HisnMessage(
                                                     text = "${app.label} · ${HisnState.DEFAULT_MINUTES} min a day",
@@ -1236,7 +1293,8 @@ fun LimitAppsScreen(
                                             )
                                         } else {
                                             val previous = state.appLimit(app.packageName)
-                                            state.removeAppLimit(app.packageName)
+                                            if (!state.removeAppLimit(app.packageName)) return@change
+                                            haptics.toggle(false)
                                             snackbar(
                                                 HisnMessage(
                                                     text = "${app.label} removed from the limit",
@@ -1319,18 +1377,12 @@ private fun MinutesDialog(
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(15, 30, 60, 120).forEach { preset ->
-                        FilterChip(
-                            selected = minutes == preset,
-                            onClick = {
-                                haptics.tick()
-                                minutes = preset
-                            },
-                            label = { Text("$preset") }
-                        )
-                    }
-                }
+                ConnectedChoice(
+                    options = listOf(15, 30, 60, 120),
+                    selected = minutes,
+                    label = { "$it" },
+                    onSelect = { minutes = it }
+                )
             }
         },
         confirmButton = {
@@ -1386,33 +1438,16 @@ fun LockScreen(state: HisnState, onBack: () -> Unit) {
             }
             item { PageIntro(stringResource(R.string.commitment_choose_period)) }
             item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(listOf(1, 7, 30, 90)) { option ->
-                        FilterChip(
-                            selected = days == option,
-                            onClick = {
-                                haptics.tick()
-                                days = option
-                            },
-                            label = { Text(context.resources.getQuantityString(R.plurals.days, option, option)) }
-                        )
-                    }
-                }
+                ConnectedChoice(
+                    options = listOf(1, 7, 30, 90),
+                    selected = days,
+                    label = { context.resources.getQuantityString(R.plurals.days, it, it) },
+                    onSelect = { days = it }
+                )
             }
             if (!state.hasRestrictions) {
                 item {
-                    HisnCard(containerColor = MaterialTheme.colorScheme.errorContainer) {
-                        ListItem(
-                            headlineContent = {
-                                Text(
-                                    stringResource(R.string.commitment_needs_rules),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            },
-                            leadingContent = { Icon(Icons.Rounded.Warning, null, tint = MaterialTheme.colorScheme.error) },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                        )
-                    }
+                    AttentionCard(stringResource(R.string.commitment_needs_rules))
                 }
             }
             item {
@@ -1438,19 +1473,20 @@ fun LockScreen(state: HisnState, onBack: () -> Unit) {
     }
 }
 
-private data class PermissionItem(val key: String, val icon: ImageVector, val title: Int, val body: Int)
+internal data class PermissionItem(val key: String, val icon: ImageVector, val title: Int, val body: Int)
 
-private val PermissionItems = listOf(
+internal val PermissionItems = listOf(
     PermissionItem("accessibility", Icons.Rounded.Accessibility, R.string.perm_access_title, R.string.perm_access_body),
     PermissionItem("dns", Icons.Rounded.Language, R.string.perm_dns_title, R.string.perm_dns_body),
     PermissionItem("usage", Icons.Rounded.Timer, R.string.perm_usage_title, R.string.perm_usage_body),
     PermissionItem("overlay", Icons.Rounded.Apps, R.string.perm_overlay_title, R.string.perm_overlay_body),
     PermissionItem("notifications", Icons.Rounded.Notifications, R.string.perm_notify_title, R.string.perm_notify_body),
-    PermissionItem("battery", Icons.Rounded.Schedule, R.string.perm_battery_title, R.string.perm_battery_body)
+    PermissionItem("battery", Icons.Rounded.Bolt, R.string.perm_battery_title, R.string.perm_battery_body)
 )
 
 @Composable
 fun PermissionsScreen(state: HisnState, onBack: () -> Unit, onOpen: (String) -> Unit = {}) {
+    if (unrotEdition) { UnrotPermissionsScreen(state, onBack, onOpen); return }
     val status = LocalHisnStatusColors.current
     DetailScaffold(stringResource(R.string.settings_permissions), onBack) { innerPadding ->
         LazyColumn(
@@ -1579,7 +1615,7 @@ fun DiagnosticsScreen(state: HisnState, onBack: () -> Unit) {
                 TextButton(
                     onClick = {
                         val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
-                        clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Hisn", summary))
+                        clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("${Edition.NAME}", summary))
                         haptics.confirm()
                         snackbar(HisnMessage(resources.getString(R.string.diagnostics_copied)))
                     }
@@ -1703,8 +1739,9 @@ fun WordTesterScreen(state: HisnState, onBack: () -> Unit) {
 }
 
 /** Explains why a hostname would or would not be blocked, and offers to add it as a rule. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun SiteCheckScreen(state: HisnState, onBack: () -> Unit) {
+fun SiteCheckScreen(state: HisnState, onBack: () -> Unit, onEditRules: () -> Unit = {}) {
     var input by rememberSaveable { mutableStateOf("") }
     var checking by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<SiteCheck?>(null) }
@@ -1735,10 +1772,7 @@ fun SiteCheckScreen(state: HisnState, onBack: () -> Unit) {
             confirmButton = {
                 TextButton(onClick = {
                     confirmAdd = null
-                    val before = state.domains.size
-                    state.addDomain(host)
-                    // A protection lock or an invalid rule refuses the write and says why itself.
-                    if (state.domains.size > before) {
+                    if (state.addDomain(host)) {
                         snackbar(HisnMessage(resources.getString(R.string.check_site_added)))
                         result = null
                         input = ""
@@ -1796,19 +1830,80 @@ fun SiteCheckScreen(state: HisnState, onBack: () -> Unit) {
                     )
                 }
             }
+            if (unrotEdition && result == null && !checking) {
+                item { SectionHeader(stringResource(R.string.site_try)) }
+                item {
+                    val examples = (listOf("youtube.com", "old.reddit.com") + state.domains.take(1)).distinct()
+                    androidx.compose.foundation.layout.FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        examples.forEach { example ->
+                            androidx.compose.material3.SuggestionChip(
+                                onClick = { input = example; run() },
+                                label = { Text(example) }
+                            )
+                        }
+                    }
+                }
+                item {
+                    ReassuranceRow(icon = Icons.Rounded.Lock, text = stringResource(R.string.site_local_note))
+                }
+            }
             result?.let { shown ->
                 item {
                     HisnCard {
-                        Text(
-                            text = shown.message,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .semantics { liveRegion = LiveRegionMode.Polite }
-                        )
+                        Column(
+                            Modifier.padding(16.dp).semantics(mergeDescendants = true) {
+                                liveRegion = LiveRegionMode.Polite
+                            },
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            // The verdict first, then each fact that decided it, numbered.
+                            shown.blocked?.let { blocked ->
+                                val status = LocalHisnStatusColors.current
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    androidx.compose.foundation.layout.Box(
+                                        Modifier.size(12.dp).background(
+                                            if (blocked) status.success else MaterialTheme.colorScheme.outline,
+                                            androidx.compose.foundation.shape.CircleShape
+                                        )
+                                    )
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        stringResource(if (blocked) R.string.check_site_verdict_blocked else R.string.check_site_verdict_open),
+                                        style = MaterialTheme.typography.headlineSmall
+                                    )
+                                }
+                            }
+                            val lines = shown.message.lines().filter { it.isNotBlank() }
+                            if (shown.blocked == null || lines.size == 1) {
+                                Text(shown.message, style = MaterialTheme.typography.bodyLarge)
+                            } else {
+                                lines.forEachIndexed { index, line ->
+                                    Row {
+                                        Text("${index + 1}", style = MaterialTheme.typography.titleSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.width(24.dp))
+                                        Text(line, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                shown.host?.let { host ->
+                if (unrotEdition) item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = { onEditRules() },
+                            modifier = Modifier.weight(1f)
+                        ) { Text(stringResource(R.string.site_edit_rule)) }
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = { result = null; input = "" },
+                            modifier = Modifier.weight(1f)
+                        ) { Text(stringResource(R.string.site_check_another)) }
+                    }
+                }
+                shown.host?.takeIf { !unrotEdition || shown.blocked != true }?.let { host ->
                     item {
                         TextButton(
                             onClick = { confirmAdd = host },
@@ -2110,7 +2205,7 @@ fun InfoScreen(key: String, onBack: () -> Unit) {
             Spacer(Modifier.height(24.dp))
             ReassuranceRow(
                 icon = Icons.Rounded.Lock,
-                text = "Hisn keeps matching on this phone."
+                text = "${Edition.NAME} keeps matching on this phone."
             )
         }
     }
@@ -2118,25 +2213,25 @@ fun InfoScreen(key: String, onBack: () -> Unit) {
 
 private fun infoFor(key: String): Pair<String, String> = when (key) {
     "uninstall" -> "Uninstall protection" to
-        "On the direct build, Hisn can close the uninstall and disable screens while a protection lock is active. The Play build omits that guard. Android settings and a data wipe remain outside Hisn's control unless the phone is managed separately."
+        "On the direct build, ${Edition.NAME} can close the uninstall and disable screens while a protection lock is active. The Play build omits that guard. Android settings and a data wipe remain outside ${Edition.NAME}'s control unless the phone is managed separately."
     "keep" -> "Keep protection running" to
-        "Android may pause background services. The watchdog checks every 15 minutes and warns when a layer stops, but it cannot restart the layer by itself. Open Hisn after a reboot or a permission change."
+        "Android may pause background services. The watchdog checks every 15 minutes and warns when a layer stops, but it cannot restart the layer by itself. Open ${Edition.NAME} after a reboot or a permission change."
     "guardian" -> "Guardian pairing" to
-        "Pairing with a guardian laptop lets a signed policy add restrictions. It cannot remove the lock early, and Hisn does not need an account for it."
-    "how" -> "How Hisn works" to
-        "Hisn combines a DNS filter, whole-app restrictions and on-device text, tag and image checks. Matching happens on the phone. There is no account and no browsing log. The platform lock (Screen Time, Device Owner, MDM) is separate from Hisn's own rules."
-    "bypass" -> "What can bypass Hisn" to
-        "DNS filtering covers supported domain lookups, not direct IP connections, cached answers, or apps that run their own encrypted DNS. Text, tag and image checks only cover the apps you select and may act after content appears. Android can stop services or revoke permissions. The protection lock freezes rules inside Hisn, not Android settings or uninstall."
+        "Pairing with a guardian laptop lets a signed policy add restrictions. It cannot remove the lock early, and ${Edition.NAME} does not need an account for it."
+    "how" -> "How ${Edition.NAME} works" to
+        "${Edition.NAME} combines a DNS filter, whole-app restrictions and on-device text, tag and image checks. Matching happens on the phone. There is no account and no browsing log. The platform lock (Screen Time, Device Owner, MDM) is separate from ${Edition.NAME}'s own rules."
+    "bypass" -> "What can bypass ${Edition.NAME}" to
+        "DNS filtering covers supported domain lookups, not direct IP connections, cached answers, or apps that run their own encrypted DNS. Text, tag and image checks only cover the apps you select and may act after content appears. Android can stop services or revoke permissions. The protection lock freezes rules inside ${Edition.NAME}, not Android settings or uninstall."
     "privacy" -> "Privacy" to
-        "Matching happens on-device. Prompts, frames and page text are not uploaded. Hisn keeps no browsing history. The list updater receives the signed list only. A DNS tunnel still sends allowed lookups to the configured resolver, as the DNS screen explains."
+        "Matching happens on-device. Prompts, frames and page text are not uploaded. ${Edition.NAME} keeps no browsing history. The list updater receives the signed list only. A DNS tunnel still sends allowed lookups to the configured resolver, as the DNS screen explains."
     "language" -> "Language" to
-        "Hisn follows the language of this phone. English and Arabic are included; on Android 13 and later you can also pick a language for Hisn alone under Settings › Apps › Hisn › Language."
+        "${Edition.NAME} follows the language of this phone. English and Arabic are included; on Android 13 and later you can also pick a language for ${Edition.NAME} alone under Settings › Apps › ${Edition.NAME} › Language."
     "gap" -> "Background check" to
         "The watchdog found a layer that stopped. Turn the layer back on from Protection, then run the DNS route check under Settings › Session diagnostics to confirm the route."
-    "about" -> "About Hisn" to
-        "Hisn ${app.hisn.android.BuildConfig.VERSION_NAME} · local-first adult-content protection for Android. A DNS filter, app restrictions and on-device text and image checks run on this phone. No account, no cloud, no browsing log."
-    else -> "About Hisn" to
-        "Hisn keeps matching on this phone. No account, no cloud, no browsing log."
+    "about" -> "About ${Edition.NAME}" to
+        "${Edition.NAME} ${app.hisn.android.BuildConfig.VERSION_NAME} · local-first adult-content protection for Android. A DNS filter, app restrictions and on-device text and image checks run on this phone. No account, no cloud, no browsing log."
+    else -> "About ${Edition.NAME}" to
+        "${Edition.NAME} keeps matching on this phone. No account, no cloud, no browsing log."
 }
 
 @Composable
@@ -2147,6 +2242,20 @@ fun DetailHost(
     onNavigate: (String) -> Unit
 ) {
     when {
+        // Unrot's second-pass pages; the Islamic edition keeps the ones below.
+        unrotEdition && detail == "apps" -> UnrotYourAppsScreen(state, onBack, onNavigate)
+        unrotEdition && detail == "lock" -> UnrotLockScreen(state, onBack)
+        unrotEdition && detail == "personal" -> UnrotAboutYouScreen(state, onBack)
+        unrotEdition && detail == "diagnostics" -> UnrotHealthScreen(state, onBack, onNavigate)
+        unrotEdition && detail == "info:how" -> UnrotHowScreen(onBack, onNavigate)
+        unrotEdition && detail == "info:why" -> UnrotWhyScreen(state, onBack, onNavigate)
+        detail == "lists" -> UnrotListsScreen(state, onBack, onNavigate)
+        unrotEdition && detail == "notes" -> UnrotNotesScreen(onBack)
+        // Unrot has no "Check a site"; an old link opens the lists instead.
+        unrotEdition && detail == "sitecheck" -> UnrotListsScreen(state, onBack, onNavigate)
+        // Unrot: "Your lists" has the list update and the export/import, so the two old pages open it.
+        unrotEdition && (detail == "listupdate" || detail == "rulesfile") -> UnrotListsScreen(state, onBack, onNavigate)
+        detail == "diagnostics:full" -> DiagnosticsScreen(state, onBack)
         detail == "domains" -> DomainsScreen(state, onBack)
         detail == "words" -> WordsScreen(state, onBack)
         detail == "apps" -> AppsScreen(state, onBack)
@@ -2162,7 +2271,15 @@ fun DetailHost(
         detail == "permissions" -> PermissionsScreen(state, onBack, onNavigate)
         detail == "diagnostics" -> DiagnosticsScreen(state, onBack)
         detail == "personal" -> PersonalScreen(state, onBack)
-        detail == "sitecheck" -> SiteCheckScreen(state, onBack)
+        detail == "progress" -> ProgressScreen(state, onBack, onNavigate)
+        detail.startsWith("progress:day:") -> UnrotDayScreen(state, detail.removePrefix("progress:day:").toLongOrNull() ?: java.time.LocalDate.now().toEpochDay(), onBack)
+        detail == "rules" -> DetailScaffold(title = stringResource(R.string.rules_all), onBack = onBack) { padding ->
+            androidx.compose.foundation.layout.Box(Modifier.padding(padding)) { RulesScreen(state, onNavigate) }
+        }
+        detail == "more" -> DetailScaffold(title = stringResource(R.string.you_more_title), onBack = onBack) { padding ->
+            SettingsScreen(state, onNavigate, part = YouPart.More, padding = padding)
+        }
+        detail == "sitecheck" -> SiteCheckScreen(state, onBack, onEditRules = { onNavigate("domains") })
         detail == "listupdate" -> ListUpdateScreen(state, onBack)
         detail == "rulesfile" -> RulesFileScreen(state, onBack)
         detail == "wordtester" -> WordTesterScreen(state, onBack)

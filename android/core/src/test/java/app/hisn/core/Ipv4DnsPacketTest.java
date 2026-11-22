@@ -22,6 +22,18 @@ public final class Ipv4DnsPacketTest {
         Ipv4DnsPacket parsed = Ipv4DnsPacket.parse(request, SERVER);
         if (parsed == null || !java.util.Arrays.equals(parsed.dns, query)) throw new AssertionError("UDP payload extraction");
         byte[] response = parsed.response(query);
+        byte[] scratch = java.util.Arrays.copyOf(request, 1501);
+        java.util.Arrays.fill(scratch, request.length, scratch.length, (byte) -1);
+        Ipv4DnsPacket buffered = Ipv4DnsPacket.parse(scratch, request.length, SERVER);
+        if (buffered == null || Ipv4DnsPacket.parse(scratch, request.length - 1, SERVER) != null
+                || Ipv4DnsPacket.parse(scratch, request.length + 1, SERVER) != null) {
+            throw new AssertionError("IPv4 UDP did not respect the read length");
+        }
+        java.util.Arrays.fill(scratch, (byte) 0);
+        if (!java.util.Arrays.equals(buffered.dns, query)
+                || !java.util.Arrays.equals(buffered.response(query), response)) {
+            throw new AssertionError("IPv4 UDP retained the scratch buffer");
+        }
         if (response[12] != 10 || response[15] != 2 || response[19] != 1
                 || Ipv4DnsPacket.checksum(response, 0, 20, 0) != 0) throw new AssertionError("Reply address or IP checksum");
         int pseudo = 17 + response.length - 20;

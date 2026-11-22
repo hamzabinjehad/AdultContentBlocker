@@ -30,6 +30,16 @@
       "bytes": 201808,
       "sha256": "c4fc03f3f6dd2d5aecb23b0e17259741718ad891f35ac6a75338f52f8305d05d"
     },
+    "models/faceres.json": {
+      "url": "https://raw.githubusercontent.com/vladmandic/human-models/bc66dc53bac03c96d35a7e6daaf717e72f3985f5/models/faceres.json",
+      "bytes": 71432,
+      "sha256": "5b83d49c0385d2e68a05122441b94226313677cae9fcc40b9587ad50079eb4df"
+    },
+    "models/faceres.bin": {
+      "url": "https://raw.githubusercontent.com/vladmandic/human-models/bc66dc53bac03c96d35a7e6daaf717e72f3985f5/models/faceres.bin",
+      "bytes": 6978814,
+      "sha256": "2c7d2d62b76c97528b736527aa09d310ea71743c9e3e79fb6c62d4b2d73af79b"
+    },
     "notices/human-models-MIT.txt": {
       "url": "https://raw.githubusercontent.com/vladmandic/human-models/bc66dc53bac03c96d35a7e6daaf717e72f3985f5/LICENSE",
       "bytes": 1072,
@@ -39,6 +49,11 @@
       "url": "https://raw.githubusercontent.com/oarriaga/face_classification/master/LICENSE",
       "bytes": 1064,
       "sha256": "032cdce3f236ea4b7d23a63a00ee9f476d01947fba2443d885599c1ad4e5dece"
+    },
+    "notices/hse-facerec-Apache-2.0.txt": {
+      "url": "https://raw.githubusercontent.com/HSE-asavchenko/HSE_FaceRec_tf/master/LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
     },
     "notices/mediapipe-Apache-2.0.txt": {
       "url": "https://raw.githubusercontent.com/google-ai-edge/mediapipe/v0.10.21/LICENSE",
@@ -81,8 +96,8 @@
       "source": "@tensorflow/tfjs-backend-wasm@4.22.0 tfjs-backend-wasm-threaded-simd.wasm"
     },
     "engine.bundle.js": {
-      "bytes": 5518414,
-      "sha256": "f2a021ac159195e5bf5205c99ffc5af597b531d95a83e41a626dd8622924f1af",
+      "bytes": 5520486,
+      "sha256": "0fe2318a139573f1a63ee4a0af02d11315047c34e47924031686ac501728063f",
       "source": "engine.js; pinned pnpm-lock.yaml; NSFWJS MobileNetV2 weights embedded from nsfwjs@4.4.0; TFJS WASM backend kernels"
     },
     "engine.bundle.js.LEGAL.txt": {

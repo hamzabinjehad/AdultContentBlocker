@@ -23,6 +23,7 @@ import app.hisn.core.VisualHealth;
 import app.hisn.core.VisualHealth.State;
 import app.hisn.core.VisualVerdictCache;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -54,8 +55,9 @@ final class VisualGuard implements AutoCloseable {
     static final int FRAME_EDGE = 224;
     /** Face mode keeps more pixels so a small face is not lost before the 128 px detector. */
     static final int PERSON_FRAME_EDGE = 384;
-    /** The native presence pre-check only needs enough pixels to find a frontal face. */
-    static final int FAST_FRAME_EDGE = 256;
+    /** Women/men estimates: native FaceRes beside the faces-only WebView (HybridRuntime); the
+     * all-WebView fallback uses the WebView's 64x64 classifier (decisions.js APPEARANCE_MODELS). */
+    static final String APPEARANCE = "native", WEBVIEW_APPEARANCE = "oarriaga";
     static volatile int lastFrameEdge = FRAME_EDGE;
     static volatile String backend = "none";
     static volatile long lastCaptureMillis, lastInferenceMillis, lastSampleMillis;
@@ -77,7 +79,6 @@ final class VisualGuard implements AutoCloseable {
     private final PowerManager power;
     private final Set<String> excluded;
     private final VisualOverlay overlay;
-    private final PersonFastPresence fastPresence = new PersonFastPresence();
     private VisualRuntime classifier;
     /** The selected people cover mode; changing it reloads the runtime. */
     private String personMode;
@@ -87,17 +88,14 @@ final class VisualGuard implements AutoCloseable {
     private boolean nativeUnavailable;
     private boolean loaded, busy, closed, listening;
     private long retryAfter, nextPoll, captureBackoffUntil, lastCaptureRequestAt, lastPersonBackAt;
-    /** A cover-before-checking is shown once per window, never once per sample. */
-    private boolean provisionalCover;
     private int captureFailureStreak;
     /** A window whose last frame looked explicit (or showed a matching face in Back mode) and is
      * covered until a second capture decides. -1 when none; ends at the matching deadline. */
     private int adultConfirmWindow = -1, personConfirmWindow = -1;
     private long adultConfirmUntil, personConfirmUntil;
     private int lastWindow = -1;
-    /** The private window the cover is up for, or -1. A clean frame from another window of the
-     * same app (an ad, a second screen) must not lift a cover that window still needs. */
-    private int protectedWindow = -1;
+    /** The selected window responsible for the currently displayed cover. */
+    private GuardWindows.Window covered;
     private VisualFrameGate.Frame pendingFrame;
     private long pendingStarted;
     private long pendingInferenceStart;
@@ -105,10 +103,8 @@ final class VisualGuard implements AutoCloseable {
     private long pendingPolicy = -1;
     private int pendingSession;
     private int loadGeneration;
-    /** Discards a native pre-check whose window or guard instance has changed. */
-    private int fastGeneration;
     private static final long CAPTURE_TIMEOUT_MILLIS = 5000;
-    private final Runnable captureTimeout = this::fail;
+    private final Runnable captureTimeout = this::captureTimedOut;
     private final Runnable tick = this::poll;
     /** The screen coming on brings the next poll forward; while it is off, polls are slow and never sample. */
     private final BroadcastReceiver screenOn = new BroadcastReceiver() {
@@ -143,8 +139,7 @@ final class VisualGuard implements AutoCloseable {
         // A failure belongs to the old window; a new one is attempted at once.
         captureFailureStreak = 0;
         captureBackoffUntil = 0;
-        provisionalCover = false;
-        fastGeneration++;
+        clearConfirmations();
         cadence.windowChanged(SystemClock.uptimeMillis());
         soon();
     }
@@ -152,8 +147,7 @@ final class VisualGuard implements AutoCloseable {
     /** A selected window scrolled or changed: sample sooner, never sooner than the cadence allows. */
     void activity() {
         if (closed) return;
-        // Scrolling or changed content is not a still frame: do not reuse its old verdict.
-        verdicts.clear();
+        // The verdict cache checks the actual input pixels even when accessibility reports activity.
         cadence.activity(SystemClock.uptimeMillis());
         soon();
     }
@@ -183,6 +177,7 @@ final class VisualGuard implements AutoCloseable {
      * A window with a focused editable or password field is skipped, including when it is the only one. */
     private List<GuardWindows.Window> eligibleWindows() {
         List<GuardWindows.Window> eligible = new ArrayList<>();
+        if (GuardPause.paused(service)) { eligibility = "PAUSED"; return eligible; }
         PolicyStore.Snapshot rules = PolicyStore.get(service).snapshot();
         if (!rules.visualEnabled) { eligibility = "OFF"; return eligible; }
         List<GuardWindows.Window> windows = TextGuardService.selectedWindows(service, excluded,
@@ -223,13 +218,16 @@ final class VisualGuard implements AutoCloseable {
         if (!confirmed) {
             adultConfirmWindow = target.id;
             adultConfirmUntil = now + CONFIRM_MILLIS;
-            overlay.showConfirming();
+            if (mayCover(target)) {
+                covered = target;
+                overlay.showConfirming();
+            }
             confirmSoon(now);
             return;
         }
         adultConfirmWindow = -1;
         adultConfirmUntil = 0;
-        overlay.hide();
+        hideCoverFor(target);
         gate.invalidate();
         if (block.run(target)) interventions++;
     }
@@ -266,7 +264,10 @@ final class VisualGuard implements AutoCloseable {
     private void poll() {
         if (closed) return;
         boolean interactive = interactive();
-        if (!interactive) overlay.hide();
+        if (!interactive) {
+            hideCover();
+            clearConfirmations();
+        }
         long now = SystemClock.uptimeMillis();
         cadence.polled(now);
         schedule(cadence.interval(interactive, now));
@@ -282,17 +283,19 @@ final class VisualGuard implements AutoCloseable {
                 personMode = wantedPeople;
                 resetEngine();
             }
-            if (busy) return;
-            health.report(State.WAITING);
+            if (busy && covered == null) return;
+            if (!busy) health.report(State.WAITING);
             // Nothing is sampled while the screen is off; while it is on the model stays warm.
-            GuardWindows.Window target = interactive ? nextTarget(eligibleWindows(), now) : null;
-            if (target == null) { protectedWindow = -1; overlay.hide(); }
-            // A person who chose the full-cover response should not see the screen while
-            // the first sample is still running. Shown once per window, cleared by the result.
-            if (target != null && PersonBlur.on(personMode)
-                    && PersonBlur.COVER.equals(PersonBlur.response(service)) && !provisionalCover) {
+            List<GuardWindows.Window> eligible = interactive ? eligibleWindows() : Collections.emptyList();
+            GuardWindows.Window target = nextTarget(eligible, now);
+            if (covered != null && GuardWindows.find(eligible, covered.id, covered.app) == null) hideCover();
+            if (target == null) clearConfirmations();
+            if (busy) return;
+            // Cover-mode users can keep the initial screen hidden while the engine loads.
+            if (!loaded && target != null && covered == null && PersonBlur.on(personMode)
+                    && PersonBlur.COVER.equals(PersonBlur.response(service))) {
+                covered = target;
                 overlay.showChecking();
-                provisionalCover = true;
             }
             if (now < retryAfter) { health.report(State.ERROR); return; }
             switch (duty.next(interactive, target != null, classifier != null, SystemClock.elapsedRealtime())) {
@@ -306,13 +309,6 @@ final class VisualGuard implements AutoCloseable {
                 default: break;
             }
             if (classifier == null || !loaded) {
-                // Do not make the first face wait for a three-second WebView/model load.
-                // The native detector can cover from the first capture; the full engine
-                // still starts immediately after and makes the final decision.
-                if (PersonBlur.on(personMode) && target != null) {
-                    startFastPresence(target);
-                    return;
-                }
                 startLoading(target != null);
                 return;
             }
@@ -341,7 +337,7 @@ final class VisualGuard implements AutoCloseable {
                         captureFailureStreak = 0;
                         captureBackoffUntil = 0;
                         lastCaptureMillis = SystemClock.uptimeMillis() - pendingStarted;
-                        if (!current(frame, target)) {
+                        if (currentWindow(frame, target) == null) {
                             discarded++; pendingFrame = null; busy = false; clearPendingPersonFrame();
                             health.report(State.WAITING);
                             sampleEnded();
@@ -349,62 +345,52 @@ final class VisualGuard implements AutoCloseable {
                         }
                         Bitmap hardware = Bitmap.wrapHardwareBuffer(buffer, screenshot.getColorSpace());
                         if (hardware == null) { unreadableFrame(); return; }
-                        Bitmap copy = null, scaled = null, picture = null;
+                        Bitmap copy = null, scaled = null, context = null, crop = null;
                         try {
                             if ((long) hardware.getWidth() * hardware.getHeight() > 16777216) {
                                 unreadableFrame(); return;
                             }
                             copy = hardware.copy(Bitmap.Config.ARGB_8888, false);
-                            int edge = PersonBlur.on(personMode) ? PERSON_FRAME_EDGE : FRAME_EDGE;
+                            boolean people = PersonBlur.on(personMode);
+                            int edge = people ? PERSON_FRAME_EDGE : FRAME_EDGE;
                             lastFrameEdge = edge;
-                            // A photo or video on a plain background reaches the model as the
-                            // picture itself, not as a thin strip of a tall screen. The people
-                            // cover keeps the whole frame: it draws over the whole screen.
-                            Bitmap source = copy;
-                            if (!PersonBlur.on(personMode)) {
-                                picture = picture(copy);
-                                if (picture != null) source = picture;
-                            }
-                            double scale = Math.min(1.0, edge / (double) Math.max(source.getWidth(), source.getHeight()));
-                            scaled = Bitmap.createScaledBitmap(source, Math.max(1, (int) (source.getWidth() * scale)),
-                                    Math.max(1, (int) (source.getHeight() * scale)), true);
-                            if (PersonBlur.on(personMode)) {
-                                try {
-                                    pendingPersonFrame = scaled.copy(Bitmap.Config.ARGB_8888, false);
-                                } catch (RuntimeException | OutOfMemoryError noCopy) {
-                                    pendingPersonFrame = null;
-                                }
-                            }
+                            scaled = scaleFrame(copy, edge);
+                            boolean nativeAdult = classifier instanceof TfliteClassifier || classifier instanceof HybridRuntime;
+                            if (nativeAdult) crop = adultPictureFrame(copy);
+                            if (classifier instanceof HybridRuntime) context = scaleFrame(copy, FRAME_EDGE);
+                            else context = scaled;
+                            if (people) pendingPersonFrame = VisualOverlay.blur(scaled);
                             long signature = signature(scaled);
-                            // The cache key covers every pixel; the coarse signature only paces sampling.
-                            long key = fingerprint(scaled);
-                            String cached = PersonBlur.on(personMode)
-                                    ? null : verdicts.get(target.id, key, SystemClock.uptimeMillis());
+                            // The cache key covers the pixels of both inputs when a picture was isolated.
+                            long key = people ? 0 : fingerprint(scaled, crop);
+                            String cached = people ? null : verdicts.get(target.id, key, SystemClock.uptimeMillis());
                             if (cached != null) {
                                 cached(frame, target, signature, cached);
                                 return;
                             }
-                            if (PersonBlur.ALL.equals(personMode)) {
-                                fastPresence.check(scaled, found -> {
-                                    if (found && !closed && pendingFrame == frame) overlay.showChecking();
-                                });
-                            }
                             lastInferenceMillis = 0;
                             pendingInferenceStart = SystemClock.uptimeMillis();
-                            classifier.inspect(scaled, result -> decided(frame, target, signature, key, result));
+                            java.util.function.Consumer<VisualResult> callback =
+                                    result -> decided(frame, target, signature, key, result);
+                            if (classifier instanceof HybridRuntime) {
+                                ((HybridRuntime) classifier).inspect(crop == null ? context : crop,
+                                        crop == null ? null : context, scaled, callback);
+                            } else if (classifier instanceof TfliteClassifier) {
+                                ((TfliteClassifier) classifier).inspect(crop == null ? scaled : crop,
+                                        crop == null ? null : scaled, callback);
+                            } else {
+                                classifier.inspect(scaled, callback);
+                            }
                         } finally {
-                            if (scaled != null && scaled != copy && scaled != picture) scaled.recycle();
-                            if (picture != null && picture != copy) picture.recycle();
+                            if (crop != null && crop != copy && crop != scaled && crop != context) crop.recycle();
+                            if (context != null && context != copy && context != scaled) context.recycle();
+                            if (scaled != null && scaled != copy) scaled.recycle();
                             if (copy != null) copy.recycle();
                             hardware.recycle();
                         }
                     } catch (RuntimeException | OutOfMemoryError unavailable) { busy = false; fail(); }
                 }
                 @Override public void onFailure(int error) {
-                    if (!closed && pendingFrame == frame
-                            && error == AccessibilityService.ERROR_TAKE_SCREENSHOT_SECURE_WINDOW) {
-                        protectedWindow = target.id;
-                    }
                     if (!closed && pendingFrame == frame) {
                         handler.removeCallbacks(captureTimeout);
                         pendingFrame = null;
@@ -423,12 +409,18 @@ final class VisualGuard implements AutoCloseable {
                             return;
                         }
                         if (error == AccessibilityService.ERROR_TAKE_SCREENSHOT_SECURE_WINDOW
+                                && currentWindow(frame, target) == null) {
+                            discarded++;
+                            health.report(State.WAITING);
+                            sampleEnded();
+                            return;
+                        }
+                        if (error == AccessibilityService.ERROR_TAKE_SCREENSHOT_SECURE_WINDOW
                                 && !SecureWindowApps.covered(service, target.app,
                                         PolicyStore.get(service).snapshot().scannedApps.contains(target.app))) {
                             // A bank, TAN app or password manager read only because every app is,
                             // or a private app the owner marked safe: leave it usable.
-                            protectedWindow = -1;
-                            overlay.hide();
+                            hideCoverFor(target);
                             long wait = Math.max(VisualCadence.POLL_FLOOR_MILLIS, 2000);
                             captureBackoffUntil = SystemClock.uptimeMillis() + wait;
                             schedule(wait);
@@ -441,11 +433,11 @@ final class VisualGuard implements AutoCloseable {
                             // will stay protected until it is left or closed.
                             captureFailures++;
                             lastCaptureError = error;
+                            covered = target;
                             overlay.showProtected(() -> {
                                 long left = SecureWindowApps.allow(service, target.app);
                                 if (left > 0) return left;
-                                protectedWindow = -1;
-                                overlay.hide();
+                                hideCoverFor(target);
                                 return 0;
                             });
                             health.report(State.PROTECTED);
@@ -459,14 +451,48 @@ final class VisualGuard implements AutoCloseable {
                         // A protected or unreadable window will stay unreadable. Retry with a
                         // bounded backoff instead of asking Android for a screenshot four times
                         // a second; a window change clears it.
-                        captureFailureStreak = Math.min(captureFailureStreak + 1, 4);
-                        captureBackoffUntil = SystemClock.uptimeMillis() + Math.min(4000, 500L << captureFailureStreak);
-                        health.report(State.UNREADABLE);
-                        sampleEnded();
+                        captureUnavailable();
                     }
                 }
             });
         } catch (RuntimeException unavailable) { busy = false; fail(); }
+    }
+
+    /** Android can stall a screenshot independently of the model. Keep the loaded runtime
+     * warm, discard the late callback, and retry capture after the same bounded backoff. */
+    private void captureTimedOut() {
+        if (closed || pendingFrame == null) return;
+        pendingFrame = null;
+        busy = false;
+        clearPendingPersonFrame();
+        captureFailures++;
+        captureUnavailable();
+    }
+
+    private void captureUnavailable() {
+        captureFailureStreak = Math.min(captureFailureStreak + 1, 4);
+        captureBackoffUntil = SystemClock.uptimeMillis() + Math.min(4000, 500L << captureFailureStreak);
+        health.report(State.UNREADABLE);
+        sampleEnded();
+    }
+
+    /** The optional picture view. The adult check also receives the whole screen for context. */
+    static Bitmap adultPictureFrame(Bitmap copy) {
+        Bitmap picture = picture(copy);
+        if (picture == null) return null;
+        Bitmap scaled = null;
+        try {
+            scaled = scaleFrame(picture, FRAME_EDGE);
+            return scaled;
+        } finally {
+            if (picture != scaled && picture != copy) picture.recycle();
+        }
+    }
+
+    static Bitmap scaleFrame(Bitmap source, int edge) {
+        double scale = Math.min(1.0, edge / (double) Math.max(source.getWidth(), source.getHeight()));
+        return Bitmap.createScaledBitmap(source, Math.max(1, (int) (source.getWidth() * scale)),
+                Math.max(1, (int) (source.getHeight() * scale)), true);
     }
 
     /** The picture inside the frame when it sits on a plain background (core ContentBox), or null. */
@@ -517,6 +543,11 @@ final class VisualGuard implements AutoCloseable {
         }
     }
 
+    private static long fingerprint(Bitmap screen, Bitmap crop) {
+        long whole = fingerprint(screen);
+        return crop == null ? whole : (whole * 0x100000001B3L) ^ fingerprint(crop);
+    }
+
     /** A capture Android returned but that cannot be read: end this sample cleanly so the next
      * poll is not left waiting on a frame that will never decide. */
     private void unreadableFrame() {
@@ -527,11 +558,12 @@ final class VisualGuard implements AutoCloseable {
         sampleEnded();
     }
 
-    private boolean current(VisualFrameGate.Frame frame, GuardWindows.Window target) {
+    private GuardWindows.Window currentWindow(VisualFrameGate.Frame frame, GuardWindows.Window target) {
         // A sample finishing after the screen went off, or after its window closed, changed app,
         // focused an input or stopped being selected, is discarded, never acted on.
-        if (!interactive() || GuardWindows.find(eligibleWindows(), target.id, target.app) == null) return false;
-        return gate.accepts(frame, target.app, target.id, true, SystemClock.uptimeMillis());
+        if (!interactive() || !gate.accepts(frame, target.app, target.id, true, SystemClock.uptimeMillis())
+                || !personMode.equals(PersonBlur.mode(service))) return null;
+        return GuardWindows.find(eligibleWindows(), target.id, target.app);
     }
 
     /** Applies the cached verdict for an unchanged window without running the model again. */
@@ -556,7 +588,7 @@ final class VisualGuard implements AutoCloseable {
                 health.report(State.WAITING);
                 return;
             }
-            if (!current(frame, target)) { discarded++; hideUnlessProtecting(target); health.report(State.WAITING); return; }
+            if (currentWindow(frame, target) == null) { discarded++; health.report(State.WAITING); return; }
             String actual = verdict;
             verdict = VisualTestHooks.verdict(service.getPackageName(), target.app, verdict, now);
             if (!"block".equals(verdict) && !"allow".equals(verdict)) { fail(); return; }
@@ -567,7 +599,7 @@ final class VisualGuard implements AutoCloseable {
                     target.id, PolicyReceipt.Kind.VISUAL_SAMPLE, PolicyReceipt.Result.PASSED, completedAt));
             // The same pixels again: a pending first hit on this window is confirmed by a still screen.
             if ("block".equals(verdict)) adultHit(target, !verdict.equals(actual), now);
-            else { adultClear(target); hideUnlessProtecting(target); }
+            else { adultClear(target); hideCoverFor(target); }
         } catch (RuntimeException unavailable) { fail(); }
         finally { sampleEnded(); }
     }
@@ -596,17 +628,19 @@ final class VisualGuard implements AutoCloseable {
                 health.report(State.WAITING);
                 return;
             }
-            if (!current(frame, target)) {
-                discarded++; hideUnlessProtecting(target); health.report(State.WAITING); return;
+            GuardWindows.Window live = currentWindow(frame, target);
+            if (live == null) {
+                discarded++; health.report(State.WAITING); return;
             }
             String verdict = result.verdict;
             verdict = VisualTestHooks.verdict(service.getPackageName(), target.app, verdict, now);
             // The fixture's one-shot synthetic verdict cannot repeat, so it acts like a strong score.
             boolean strong = result.strong || !verdict.equals(result.verdict);
             if (!"block".equals(verdict) && !"allow".equals(verdict)) {
-                // Fail closed in people mode: a frame the face runtime could not answer must not
-                // reveal a screen that was already covered or may contain a matching face.
-                if (PersonBlur.on(personMode)) overlay.show(personFrame);
+                // Keep an existing cover. Cover mode also hides an unresolved first sample.
+                if (PersonBlur.on(personMode) && PersonBlur.COVER.equals(PersonBlur.response(service))) {
+                    showPeople(live, personFrame);
+                }
                 fail();
                 return;
             }
@@ -618,44 +652,19 @@ final class VisualGuard implements AutoCloseable {
             health.report(State.SAMPLED, completedAt, new PolicyReceipt(pendingPolicy, pendingSession,
                     target.id, PolicyReceipt.Kind.VISUAL_SAMPLE, PolicyReceipt.Result.PASSED, completedAt));
             if ("block".equals(verdict)) {
-                adultHit(target, strong, now);
+                adultHit(live, strong, now);
                 return;
             }
             adultClear(target);
             if (result.personBlur) {
-                if (PersonBlur.BACK.equals(PersonBlur.response(service))) {
-                    if (personConfirmWindow != target.id || now >= personConfirmUntil) {
-                        // Cover at once, but leave the page only if the next capture still shows
-                        // a matching face: one misjudged frame must not navigate away.
-                        personConfirmWindow = target.id;
-                        personConfirmUntil = now + CONFIRM_MILLIS;
-                        overlay.show(personFrame);
-                        confirmSoon(now);
-                        return;
-                    }
-                    personConfirmWindow = -1;
-                    personConfirmUntil = 0;
-                    overlay.hide();
-                    // One Back per page transition; a second matching page is handled on its
-                    // next sample, so a slow browser is not sent back several times at once.
-                    if (now - lastPersonBackAt >= 1200) {
-                        lastPersonBackAt = now;
-                        if (service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)) {
-                            personBacks++;
-                        } else {
-                            overlay.show(personFrame);
-                        }
-                    }
-                } else {
-                    overlay.show(personFrame);
-                }
+                personHit(live, personFrame, now);
             } else {
                 if (personConfirmWindow == target.id) {
                     personConfirmWindow = -1;
                     personConfirmUntil = 0;
                     personUnconfirmed++;
                 }
-                hideUnlessProtecting(target);
+                hideCoverFor(target);
             }
         } catch (RuntimeException unavailable) { fail(); }
         finally {
@@ -664,16 +673,53 @@ final class VisualGuard implements AutoCloseable {
         }
     }
 
-    /** Lifts the cover unless it is up for another private window that is still on screen. A
-     * readable frame from the private window itself means it is no longer private. */
-    private void hideUnlessProtecting(GuardWindows.Window cleared) {
-        if (protectedWindow != -1 && protectedWindow != cleared.id) {
-            for (GuardWindows.Window window : eligibleWindows()) {
-                if (window.id == protectedWindow) return;
+    private void personHit(GuardWindows.Window target, Bitmap personFrame, long now) {
+        showPeople(target, personFrame);
+        // Android Back is global. Only the application window receiving navigation can be sent back.
+        if (!target.active || !target.focused || target.pip
+                || !PersonBlur.BACK.equals(PersonBlur.response(service))) {
+            if (personConfirmWindow == target.id) {
+                personConfirmWindow = -1;
+                personConfirmUntil = 0;
             }
+            return;
         }
-        protectedWindow = -1;
+        if (personConfirmWindow != target.id || now >= personConfirmUntil) {
+            personConfirmWindow = target.id;
+            personConfirmUntil = now + CONFIRM_MILLIS;
+            confirmSoon(now);
+            return;
+        }
+        if (now - lastPersonBackAt < 1200) return;
+        lastPersonBackAt = now;
+        personConfirmWindow = -1;
+        personConfirmUntil = 0;
+        if (service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)) personBacks++;
+    }
+
+    private boolean mayCover(GuardWindows.Window target) {
+        return covered == null || (covered.id == target.id && covered.app.equals(target.app));
+    }
+
+    private void showPeople(GuardWindows.Window target, Bitmap snapshot) {
+        if (!mayCover(target)) return;
+        covered = target;
+        overlay.show(snapshot);
+    }
+
+    /** A clean frame can only release the cover for its own window. */
+    private void hideCoverFor(GuardWindows.Window cleared) {
+        if (covered != null && covered.id == cleared.id && covered.app.equals(cleared.app)) hideCover();
+    }
+
+    private void hideCover() {
+        covered = null;
         overlay.hide();
+    }
+
+    private void clearConfirmations() {
+        adultConfirmWindow = personConfirmWindow = -1;
+        adultConfirmUntil = personConfirmUntil = 0;
     }
 
     private void clearPendingPersonFrame() {
@@ -683,71 +729,6 @@ final class VisualGuard implements AutoCloseable {
         }
     }
 
-    /**
-     * One native capture before the WebView exists. The detector is a presence gate, not the
-     * final decision: it can only show the cover earlier. The full engine is started when the
-     * capture finishes, so a miss changes nothing and a hit is re-checked normally.
-     */
-    private void startFastPresence(GuardWindows.Window target) {
-        final int generation = ++fastGeneration;
-        if (Build.VERSION.SDK_INT < 34) {
-            finishFastPresence(generation);
-            return;
-        }
-        busy = true;
-        handler.postDelayed(captureTimeout, CAPTURE_TIMEOUT_MILLIS);
-        service.takeScreenshotOfWindow(target.id, service.getMainExecutor(),
-                new AccessibilityService.TakeScreenshotCallback() {
-            @Override public void onSuccess(AccessibilityService.ScreenshotResult screenshot) {
-                Bitmap hardware = null, copy = null, scaled = null;
-                try (HardwareBuffer buffer = screenshot.getHardwareBuffer()) {
-                    if (closed || generation != fastGeneration) return;
-                    handler.removeCallbacks(captureTimeout);
-                    if (!interactive()
-                            || GuardWindows.find(eligibleWindows(), target.id, target.app) == null) {
-                        finishFastPresence(generation);
-                        return;
-                    }
-                    hardware = Bitmap.wrapHardwareBuffer(buffer, screenshot.getColorSpace());
-                    if (hardware == null) { finishFastPresence(generation); return; }
-                    if ((long) hardware.getWidth() * hardware.getHeight() > 16777216) {
-                        finishFastPresence(generation);
-                        return;
-                    }
-                    copy = hardware.copy(Bitmap.Config.ARGB_8888, false);
-                    double scale = Math.min(1.0, FAST_FRAME_EDGE
-                            / (double) Math.max(copy.getWidth(), copy.getHeight()));
-                    scaled = Bitmap.createScaledBitmap(copy,
-                            Math.max(1, (int) (copy.getWidth() * scale)),
-                            Math.max(1, (int) (copy.getHeight() * scale)), true);
-                    fastPresence.check(scaled, found -> {
-                        // In Women/Men mode this only buys time: the face is hidden while the
-                        // gender model decides, and a non-matching face is revealed again.
-                        if (found && !closed && generation == fastGeneration) overlay.showChecking();
-                        finishFastPresence(generation);
-                    });
-                } catch (RuntimeException | OutOfMemoryError unavailable) {
-                    finishFastPresence(generation);
-                } finally {
-                    if (scaled != null && scaled != copy) scaled.recycle();
-                    if (copy != null) copy.recycle();
-                    if (hardware != null) hardware.recycle();
-                }
-            }
-
-            @Override public void onFailure(int error) {
-                if (!closed && generation == fastGeneration) finishFastPresence(generation);
-            }
-        });
-    }
-
-    private void finishFastPresence(int generation) {
-        if (closed || generation != fastGeneration) return;
-        handler.removeCallbacks(captureTimeout);
-        busy = false;
-        startLoading(true);
-    }
-
     /** Starts one WebView/model load. A generation token makes a reply from a runtime that was
      * replaced (screen off, window change, failure) unable to mark this one ready. */
     private void startLoading(boolean showLoading) {
@@ -755,7 +736,7 @@ final class VisualGuard implements AutoCloseable {
         busy = true;
         health.report(showLoading ? State.LOADING : State.WAITING);
         final boolean faces = PersonBlur.on(personMode);
-        final boolean[] nativeAttempt = {!faces && !nativeUnavailable};
+        final boolean[] nativeAttempt = {!nativeUnavailable};
         java.util.function.Consumer<String> onLoaded = verdict -> {
             if (closed || generation != loadGeneration) return;
             loaded = "ready".equals(verdict);
@@ -772,13 +753,25 @@ final class VisualGuard implements AutoCloseable {
         };
         VisualRuntime runtime = null;
         if (faces) {
-            try { runtime = new VisualClassifier(service, "wasm", personMode, onLoaded); }
-            catch (RuntimeException | LinkageError unavailable) { runtime = null; }
-        } else if (!nativeUnavailable) {
-            try { runtime = new TfliteClassifier(service, onLoaded); }
-            catch (RuntimeException | LinkageError unavailable) { nativeUnavailable = true; }
+            // Native adult check plus a faces-only WebView. A failed native or hybrid load sets
+            // nativeUnavailable, so the next attempt uses the all-WebView path.
+            if (!nativeUnavailable) {
+                // FaceRes estimates women/men: far fewer wrong covers than the 64x64 classifier
+                // (docs/ANDROID_VISUAL_ACCURACY_2026-11-19.md).
+                try { runtime = new HybridRuntime(service, personMode, APPEARANCE, false, onLoaded); }
+                catch (RuntimeException | LinkageError unavailable) { nativeUnavailable = true; nativeAttempt[0] = false; }
+            }
+            if (runtime == null) {
+                try { runtime = new VisualClassifier(service, "wasm", personMode, false, WEBVIEW_APPEARANCE, false, onLoaded); }
+                catch (RuntimeException | LinkageError unavailable) { runtime = null; }
+            }
+        } else {
+            if (!nativeUnavailable) {
+                try { runtime = new TfliteClassifier(service, onLoaded); }
+                catch (RuntimeException | LinkageError unavailable) { nativeUnavailable = true; nativeAttempt[0] = false; }
+            }
+            if (runtime == null) runtime = new VisualClassifier(service, onLoaded);
         }
-        if (runtime == null && !faces) runtime = new VisualClassifier(service, onLoaded);
         if (runtime == null) { fail(); return; }
         classifier = runtime;
     }
@@ -796,16 +789,13 @@ final class VisualGuard implements AutoCloseable {
         handler.removeCallbacks(captureTimeout);
         pendingFrame = null;
         clearPendingPersonFrame();
-        if (!keepOverlay) overlay.hide();
+        if (!keepOverlay) hideCover();
         captureFailureStreak = 0;
         captureBackoffUntil = 0;
         pendingStarted = 0;
         pendingInferenceStart = 0;
         pendingPolicy = -1;
-        adultConfirmWindow = personConfirmWindow = -1;
-        if (!keepOverlay) protectedWindow = -1;
-        adultConfirmUntil = personConfirmUntil = 0;
-        fastGeneration++;
+        clearConfirmations();
         loadGeneration++;
         gate.invalidate();
         verdicts.clear();
@@ -825,8 +815,6 @@ final class VisualGuard implements AutoCloseable {
             listening = false;
         }
         resetEngine();
-        fastGeneration++;
-        fastPresence.close();
         overlay.close();
         health.report(State.OFF);
     }

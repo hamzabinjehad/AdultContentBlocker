@@ -21,6 +21,7 @@ import app.hisn.android.nativeshell.OpenWaitSettings
 import app.hisn.android.nativeshell.SystemBars
 import app.hisn.android.nativeshell.Usage
 import app.hisn.android.nativeshell.installedApps
+import app.hisn.android.nativeshell.isUsualPick
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -42,7 +43,10 @@ class OpenWaitSettingsActivity : ComponentActivity() {
             var chosen by remember { mutableStateOf(OpenWaitStore.apps(this)) }
             var seconds by remember { mutableIntStateOf(OpenWaitStore.seconds(this)) }
             var grows by remember { mutableStateOf(OpenWaitStore.grows(this)) }
-            val guardOn = remember(resumed) { Permissions.accessibility(this) }
+            var pauseChanged by remember { mutableIntStateOf(0) }
+            val guardOn = remember(resumed, pauseChanged) {
+                Permissions.accessibility(this) && !GuardPause.paused(this)
+            }
             var showAll by remember { mutableStateOf(false) }
             val apps by produceState(initialValue = emptyList<InstalledApp>(), showAll) {
                 value = withContext(Dispatchers.IO) {
@@ -51,9 +55,10 @@ class OpenWaitSettingsActivity : ComponentActivity() {
                     val saved = OpenWaitStore.apps(context)
                     // Only apps the guard watches: never Settings, launchers or Hisn itself.
                     val skipped = runCatching { ChosenApps.excluded(context) }.getOrDefault(emptySet())
-                    // Chosen apps first, then today's most used, then by name.
+                    // Chosen apps first, then feed and social apps, then today's most used, then by name.
                     installedApps(context, showAll).filter { it.packageName !in skipped }.sortedWith(
                         compareByDescending<InstalledApp> { it.packageName in saved }
+                            .thenByDescending { isUsualPick(it.packageName) }
                             .thenByDescending { used[it.packageName] ?: 0L }
                             .thenBy { it.label.lowercase() }
                     )
@@ -79,7 +84,11 @@ class OpenWaitSettingsActivity : ComponentActivity() {
                         }
                     },
                     onFixGuard = {
-                        runCatching {
+                        // Turned off inside Hisn: turn it back on here, no trip to the phone's settings.
+                        if (Permissions.accessibility(this) && GuardPause.paused(this)) {
+                            GuardPause.set(this, false)
+                            pauseChanged++
+                        } else runCatching {
                             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                             Toast.makeText(this, R.string.perm_access_hint, Toast.LENGTH_LONG).show()
                         }

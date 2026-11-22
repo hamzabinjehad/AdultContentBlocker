@@ -128,7 +128,7 @@ public final class TelegramSearch {
         if (sample == null) return false;
         for (String part : new String[] {sample.query, sample.header, sample.results}) {
             if (part.isEmpty() || part.length() > MAX_CHARS) continue;
-            if (words != null && !words.matches(part).isEmpty()) return true;
+            if (words != null && words.hasMatch(part)) return true;
         }
         if (adult == null) return false;
         if (!sample.query.isEmpty() && sample.query.length() <= MAX_CHARS

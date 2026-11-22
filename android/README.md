@@ -1055,13 +1055,15 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   error posts a similar notification but keeps the choice, so the next boot
   tries again. Notifications need Android's notification permission. Starting
   the service can replace another active VPN.
-- A foreground service routes only `10.111.0.2/32` into the local TUN interface
-  and advertises that address as the DNS server. Normal internet traffic and
-  IPv6 traffic use the underlying network. This is not a full traffic tunnel.
-- IPv4 UDP and TCP DNS packets are checked for sizes, checksums, destination,
+- A foreground service advertises `10.111.0.2` and `fd00:111::2` as the virtual
+  DNS servers and routes those addresses into the local TUN interface. Normal
+  internet traffic uses the underlying network.
+- Supported IPv4 and IPv6 UDP and TCP DNS packets are checked for sizes, checksums, destination,
   fragmentation and supported header/options structure. TCP terminates only on
-  the virtual DNS address's port 53. Four workers and a shared bounded 64-request
-  queue limit resolver concurrency.
+  the virtual DNS address's port 53. Local blocks and SafeSearch rewrites are
+  answered before the resolver queue. Four workers and a shared 64-request
+  queue bound upstream lookups. A queued lookup checks the current rules again
+  before contacting the resolver.
   No screen content or browsing log is stored.
 - Domain matches return local NXDOMAIN without contacting the upstream server.
   Allowed queries go to Cloudflare Families at `1.1.1.3:853` with authenticated
@@ -1238,17 +1240,16 @@ Apps' independent encrypted DNS, direct-IP connections, cached DNS, alternative 
 browser DNS, other profiles and mixed-content websites can bypass this layer.
 Blocking known provider hostnames narrows, but does not close, the encrypted-DNS
 gap. Strict Private DNS can route system DNS around Hisn; it is warned about, not changed.
-The virtual DNS server handles IPv4 UDP and bounded TCP port 53 only; client TLS
-port 853 is refused with a reset, and TCP to other destinations is not served. Fragmented IP, compressed
+The virtual DNS server handles IPv4 and IPv6 UDP and bounded TCP on port 53.
+It resets client TLS connections to its own port 853. Fragmented IP, IPv6 extension headers, compressed
 questions and malformed multi-label names are unsupported; replies above the
 4,096-byte cap, unsupported queries and resolver outages may cause page loads to fail. The
 service reports errors rather than claiming those requests were filtered.
 
-Always-on support is explicitly disabled. Do not enable lockdown for this
-DNS-only route: it would prevent normal internet traffic from using the
-underlying network. After boot it resumes only if left on and VPN approval
-remains; it does not restart after process death or permission loss. Android
-VPN settings can disconnect it.
+Android can keep Hisn connected with Always-on VPN. Leave Android's “Block
+connections without VPN” setting off for this DNS-only route so normal internet
+traffic can use the underlying network. After boot it resumes if left on and
+VPN approval remains. Android VPN settings can disconnect it.
 
 The local tester accepts one literal rule per line with bounded rule and text
 sizes. Tester inputs/results are not saved; rules entered in the separate saved
@@ -1268,7 +1269,7 @@ Gradle 9.3.1. Set `JAVA_HOME` and `ANDROID_HOME`, then run:
 
 ```sh
 sh test-core.sh
-./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug assembleRelease
+./gradlew --no-daemon assembleDebug assembleHisnDebugAndroidTest lintHisnDebug lintGeneralDebug assembleRelease
 ```
 
 UI and UX tests for the native shell and onboarding run on an emulator or a real
@@ -1329,7 +1330,11 @@ the core device tests, and the direct build's post-reboot boot shield; API 36
 repeated the device tests and route check. Details and limits:
 [the Android 6.0 note](../docs/ANDROID_OLDER_VERSIONS_2026-11-11.md).
 
-The debug APK is `app/build/outputs/apk/debug/app-debug.apk`. The app supports
+The app builds in two editions from one engine: `hisn` (the Islamic edition and UI)
+and `general` (the non-religious edition and the normal UI); see the `edition` flavors in
+`app/build.gradle` and `Edition.kt`. The Hisn debug APK is
+`app/build/outputs/apk/hisn/debug/app-hisn-debug.apk`; the general one is
+`app/build/outputs/apk/general/debug/app-general-debug.apk`. The app supports
 Android 6.0 (API 23) and later. A debug build is signed with a development key,
 not a production release certificate. On Android 6 the result is the DNS, text
 and app layers only; image checks are not available, and managed always-on DNS
@@ -1394,10 +1399,12 @@ instrumentation, accessibility or route checks is not complete protection.
 
 See the [0.4.0 verification record](../docs/ANDROID_0.4.0.md) for the installed
 APK identity, socket-ordering correction and connected-network result.
-See [0.4.2](../docs/ANDROID_0.4.2.md) for the current APK, TCP evidence and remaining
-coverage limits. `test-live-tcp-local.py --serial SERIAL` performs only two
-synthetic local blocks on the already-approved running VPN; it does not test
-public resolver access or grant permissions.
+See [0.4.2](../docs/ANDROID_0.4.2.md) for the original TCP evidence and coverage
+limits. On a test device with an approved, running debug VPN,
+`test-live-tcp-local.py --serial SERIAL --family both` checks two synthetic local
+blocks per address family. Add `--backlog` to verify IPv4 and IPv6 UDP and TCP
+local replies while all upstream resolver workers and queue slots are occupied
+by temporary test jobs. These fixtures use synthetic local names.
 
 References: [Android VPN](https://developer.android.com/develop/connectivity/vpn),
 [VPN routes and address families](https://developer.android.com/reference/android/net/VpnService.Builder),

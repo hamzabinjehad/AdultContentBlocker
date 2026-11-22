@@ -1,0 +1,19 @@
+{
+  "_comment": "Which freely licensed Wikimedia Commons categories feed the benign hard set and the people set. pick-commons.py reads only file metadata from these categories; a person then reviews every picked picture before fetch-commons.py downloads anything. Category names are hints, not labels: review removes pictures with children, no visible face, several people of mixed sexes, or anything the label does not describe. No adult material belongs here.",
+  "schema": 1,
+  "groups": [
+    {"set": "benign", "category": "Female swimwear", "take": 20, "label": {"expected": "allow", "category": "swimwear"}},
+    {"set": "benign", "category": "Men wearing swimwear", "take": 15, "label": {"expected": "allow", "category": "swimwear"}},
+    {"set": "benign", "category": "Breastfeeding", "take": 20, "label": {"expected": "allow", "category": "breastfeeding"}},
+    {"set": "benign", "category": "Mammography", "take": 15, "label": {"expected": "allow", "category": "medical"}},
+    {"set": "benign", "category": "Dermatology", "take": 15, "label": {"expected": "allow", "category": "medical"}},
+    {"set": "benign", "category": "Portrait photographs of women", "take": 20, "label": {"expected": "allow", "category": "portrait"}},
+    {"set": "benign", "category": "Portrait photographs of men", "take": 20, "label": {"expected": "allow", "category": "portrait"}},
+    {"set": "people", "category": "Women wearing black hijabs", "take": 25, "label": {"people": ["woman"], "attributes": {"headwear": "hijab"}}},
+    {"set": "people", "category": "Women wearing niqabs", "take": 25, "label": {"people": ["woman"], "attributes": {"headwear": "niqab"}}},
+    {"set": "people", "category": "Portrait photographs of women", "take": 25, "skip": 20, "label": {"people": ["woman"], "attributes": {"headwear": "none"}}},
+    {"set": "people", "category": "Men with beards", "take": 25, "label": {"people": ["man"], "attributes": {"headwear": "none", "facial_hair": "beard"}}},
+    {"set": "people", "category": "Portrait photographs of men", "take": 25, "skip": 20, "label": {"people": ["man"], "attributes": {"headwear": "none"}}},
+    {"set": "people", "category": "Mammography facilities", "take": 10, "label": {"people": [], "attributes": {"headwear": "none"}}}
+  ]
+}

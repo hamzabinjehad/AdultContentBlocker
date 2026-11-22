@@ -39,6 +39,14 @@ public final class SiteCheckInputTest {
         bad("bad..example");
         bad("exa mple.com");
         bad("example.com:notaport");
+        if (!"example.com".equals(SiteCheckInput.ruleHost("Example.COM.:8443/path/@tag?to=https://sample.example")))
+            throw new AssertionError("Pasted address should normalize to the domain only");
+        if (!"xn--bcher-kva.example".equals(SiteCheckInput.ruleHost("bücher.example/seite")))
+            throw new AssertionError("Pasted Unicode domain should match the saved ASCII rule");
+        if (!"example.com".equals(SiteCheckInput.ruleHost("//example.com/?to=https://sample.example")))
+            throw new AssertionError("A link in the query should not affect the rule's hostname");
+        try { SiteCheckInput.ruleHost("ftp://example.com/a"); throw new AssertionError("FTP rule accepted"); }
+        catch (SiteCheckInput.Invalid expected) { }
         System.out.println("SiteCheckInput tests passed (hostname and HTTP(S) boundaries)");
     }
 }

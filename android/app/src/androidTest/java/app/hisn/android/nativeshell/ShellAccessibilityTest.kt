@@ -24,7 +24,8 @@ import org.junit.runner.RunWith
 class ShellAccessibilityTest {
     @get:Rule val rule = createComposeRule()
 
-    private val tabs = listOf("Protection", "Rules", "Settings")
+    private val tabs = if (unrotEdition) listOf("Today", "Shield", "Progress", "You")
+        else listOf("Protection", "Rules", "Settings")
     private val density = InstrumentationRegistry.getInstrumentation().targetContext
         .resources.displayMetrics.density
 

@@ -225,7 +225,7 @@ public final class OemSupport {
             return manager.getApplicationLabel(
                     manager.getApplicationInfo(context.getPackageName(), 0)).toString();
         } catch (RuntimeException | android.content.pm.PackageManager.NameNotFoundException unavailable) {
-            return "Hisn";
+            return Edition.NAME;
         }
     }
 

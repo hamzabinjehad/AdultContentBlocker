@@ -71,6 +71,14 @@ public final class HostDecisionTest {
                 "enforcement block");
         check(policy.evaluate("safe.example").enforcement() == DomainPolicy.Decision.ALLOW,
                 "enforcement allow");
+        for (String name : new String[]{null, "localhost", "1.2.3.4", "BAD.XXX",
+                "xn--mgbh0fb.example", "مثال.xxx", "CDN.LISTED.EXAMPLE.", "safe.example",
+                "new.xxx", "AdultWord.example", "PERSONAL.example", "sub.Personal.Example"}) {
+            for (HostDecision.Policy rules : new HostDecision.Policy[]{policy, unavailable}) {
+                DomainPolicy.Decision expected = rules.evaluate(name).enforcement();
+                check(rules.enforce(name) == expected && rules.enforce(name) == expected, "DNS verdict: " + name);
+            }
+        }
         try { new HostDecision.Policy(null, published, true, 0, null); throw new AssertionError("missing rules accepted"); }
         catch (IllegalArgumentException expected) { }
         try { new HostDecision.Policy(new DomainPolicy(Collections.emptyList(), Collections.emptyList()),

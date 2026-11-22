@@ -3,6 +3,7 @@ package app.hisn.core;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 
 public final class DnsReplyGuardTest {
@@ -38,9 +39,24 @@ public final class DnsReplyGuardTest {
         catch (IOException expected) { }
     }
 
+    static byte[] addressAnswer(byte[] question) {
+        byte[] record = {(byte) 0xc0, 12, 0, 1, 0, 1, 0, 0, 0, 30, 0, 4, (byte) 192, 0, 2, 1};
+        byte[] answer = Arrays.copyOf(question, question.length + record.length);
+        answer[2] = (byte) 0x81;
+        answer[3] = (byte) 0x80;
+        answer[7] = 1;
+        System.arraycopy(record, 0, answer, question.length, record.length);
+        return answer;
+    }
+
     public static void main(String[] args) throws Exception {
         DnsPolicy policy = new DnsPolicy(new DomainPolicy(Collections.singleton("blocked.example"), Collections.emptySet()));
         byte[] query = DnsPolicyTest.query("safe.example", 1);
+        byte[] address = addressAnswer(query);
+        if (policy.blocksReply(address)) throw new AssertionError("Ordinary address reply blocked");
+        byte[] malformedAddress = Arrays.copyOf(address, address.length - 1);
+        malformedAddress[query.length + 11] = 3;
+        invalid(policy, malformedAddress);
         byte[] cname = alias(query, null, "blocked.example", 5);
         if (!policy.blocksReply(cname)) throw new AssertionError("CNAME escape");
         if (!policy.blocksReply(alias(query, null, "blocked.example", 65))) throw new AssertionError("HTTPS alias escape");

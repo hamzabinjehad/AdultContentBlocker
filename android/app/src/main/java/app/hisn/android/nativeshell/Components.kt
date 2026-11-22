@@ -80,6 +80,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun SectionHeader(
@@ -87,9 +88,14 @@ fun SectionHeader(
     supporting: String? = null
 ) {
     Column(Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp)) {
+        // Unrot labels sections like a notebook's printed tabs: small bold label, wide tracking.
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
+            style = if (unrotEdition) {
+                MaterialTheme.typography.labelLarge.copy(letterSpacing = 0.6.sp)
+            } else {
+                MaterialTheme.typography.titleSmall
+            },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.semantics { heading() }
         )
@@ -120,9 +126,12 @@ fun HisnCard(
     containerColor: Color = LocalHisnStatusColors.current.card,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val shape = MaterialTheme.shapes.large
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
+        modifier = modifier
+            .fillMaxWidth()
+            .unrotFrame(shape),
+        shape = shape,
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Column(content = content)
@@ -172,7 +181,7 @@ fun SettingRow(
     val haptics = rememberHisnHaptics()
     val rowModifier = if (onClick != null) {
         Modifier.clickable(role = Role.Button) {
-            haptics.tick()
+            haptics.tap()
             onClick()
         }
     } else {
@@ -191,14 +200,7 @@ fun SettingRow(
                 )
             }
         },
-        leadingContent = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
-            )
-        },
+        leadingContent = { RowLead(icon) },
         trailingContent = trailing,
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = rowModifier
@@ -251,16 +253,9 @@ fun SwitchRow(
                 }
             }
         },
-        leadingContent = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
-            )
-        },
+        leadingContent = { RowLead(icon) },
         trailingContent = {
-            Switch(checked = checked, onCheckedChange = null)
+            HisnSwitch(checked)
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier
@@ -289,14 +284,7 @@ fun RuleRow(
         headlineContent = {
             Text(title, style = MaterialTheme.typography.titleMedium)
         },
-        leadingContent = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
-            )
-        },
+        leadingContent = { RowLead(icon) },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (LocalReduceMotion.current) {
@@ -337,7 +325,7 @@ fun RuleRow(
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(role = Role.Button) {
-            haptics.tick()
+            haptics.tap()
             onClick()
         }
     )
@@ -397,9 +385,12 @@ fun StatusHero(
     }
     val interaction = remember { MutableInteractionSource() }
 
+    val heroShape = RoundedCornerShape(28.dp)
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .unrotFrame(heroShape, hero = true),
+        shape = heroShape,
         colors = CardDefaults.cardColors(containerColor = containerAnimated)
     ) {
         Column(Modifier.padding(20.dp)) {
@@ -805,7 +796,7 @@ fun RuleTile(
                 .fillMaxWidth()
                 .fillMaxHeight()
                 .clickable(role = Role.Button) {
-                    haptics.tick()
+                    haptics.tap()
                     onClick()
                 }
                 .padding(16.dp)
@@ -843,7 +834,7 @@ fun RuleTile(
                 // The chip is the fix: one tap turns the missing layer on.
                 AssistChip(
                     onClick = {
-                        haptics.tick()
+                        haptics.tap()
                         (onIssue ?: onClick)()
                     },
                     label = { Text(issue, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -918,7 +909,7 @@ fun StatStrip(stats: List<Stat>) {
                         .fillMaxHeight()
                         .defaultMinSize(minHeight = 72.dp)
                         .clickable(role = Role.Button) {
-                            haptics.tick()
+                            haptics.tap()
                             stat.onClick()
                         }
                         .padding(horizontal = 8.dp, vertical = 12.dp),
@@ -940,5 +931,24 @@ fun StatStrip(stats: List<Stat>) {
                 }
             }
         }
+    }
+}
+
+/**
+ * A row's leading picture. Unrot shows its gold 3D object when one matches the icon, and a gold
+ * glyph in the same 40dp slot otherwise, so rows line up whichever they get; Hisn keeps its plain
+ * muted icon.
+ */
+@Composable
+internal fun RowLead(icon: ImageVector) {
+    if (!unrotEdition) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
+        return
+    }
+    val art = art3D(icon)
+    if (art != null) Float3D(art, 40.dp)
+    else Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp),
+            tint = if (LocalDarkTheme.current) Color(0xFFF2C94F) else Color(0xFF9A6E12))
     }
 }

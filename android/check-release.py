@@ -9,14 +9,14 @@ split enforceable: a Play artifact must not carry the `-direct` suffix, and a
 direct artifact must. Uses aapt2 and dexdump from the Android SDK build-tools;
 nothing is installed or changed.
 
-    ./gradlew --no-daemon assembleRelease
-    python3 check-release.py --expect-distribution play app/build/outputs/apk/release/app-release-unsigned.apk
+    ./gradlew --no-daemon assembleHisnRelease
+    python3 check-release.py --expect-distribution play app/build/outputs/apk/hisn/release/app-hisn-release-unsigned.apk
 
-    ./gradlew --no-daemon assembleRelease -PhisnDistribution=direct
-    python3 check-release.py --expect-distribution direct app/build/outputs/apk/release/app-release-unsigned.apk
+    ./gradlew --no-daemon assembleHisnRelease -PhisnDistribution=direct
+    python3 check-release.py --expect-distribution direct app/build/outputs/apk/hisn/release/app-hisn-release-unsigned.apk
 
-Without an argument it checks app-release.apk if present, else
-app-release-unsigned.apk. Tools come from --build-tools DIR, else the newest
+Without an argument it checks the Hisn edition's app-hisn-release.apk if present,
+else app-hisn-release-unsigned.apk. Tools come from --build-tools DIR, else the newest
 build-tools under ANDROID_HOME or ANDROID_SDK_ROOT, else PATH.
 """
 import argparse
@@ -123,10 +123,10 @@ def main():
     if arguments.apk:
         apk = pathlib.Path(arguments.apk)
     else:
-        release = ROOT / "app/build/outputs/apk/release"
-        apk = next((p for p in (release / "app-release.apk", release / "app-release-unsigned.apk") if p.is_file()), None)
+        release = ROOT / "app/build/outputs/apk/hisn/release"
+        apk = next((p for p in (release / "app-hisn-release.apk", release / "app-hisn-release-unsigned.apk") if p.is_file()), None)
         if apk is None:
-            sys.exit("check-release: no release APK; run ./gradlew assembleRelease or pass a path")
+            sys.exit("check-release: no release APK; run ./gradlew assembleHisnRelease or pass a path")
     if not apk.is_file():
         sys.exit(f"check-release: {apk} not found")
     aapt2, dexdump = tool("aapt2", arguments.build_tools), tool("dexdump", arguments.build_tools)

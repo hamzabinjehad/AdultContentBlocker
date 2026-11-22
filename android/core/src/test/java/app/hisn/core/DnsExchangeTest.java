@@ -42,6 +42,29 @@ public final class DnsExchangeTest {
         byte[] result = normal.resolve(request);
         check(result[0] == original[0] && result[1] == original[1], "client ID restored");
         check(java.util.Arrays.equals(request, original), "caller request unchanged");
+        java.util.concurrent.atomic.AtomicBoolean ruleEnabled = new java.util.concurrent.atomic.AtomicBoolean();
+        DnsExchange queued = new DnsExchange(
+                new DnsPolicy(host -> ruleEnabled.get() ? DomainPolicy.Decision.BLOCK : DomainPolicy.Decision.ALLOW),
+                query -> { throw new AssertionError("A newly blocked queued name reached upstream"); });
+        DnsExchange.PreparedQuery waiting = queued.prepare(request);
+        check(waiting.localAnswer() == null, "an allowed query requires a resolver slot");
+        request[0] ^= 1;
+        ruleEnabled.set(true);
+        DnsExchange.Resolution newBlock = queued.resolvePrepared(waiting);
+        check(newBlock.blocked && newBlock.answer[0] == original[0], "queued query owns its wire and uses fresh rules");
+        check(queued.prepare(request).localAnswer().blocked, "a fresh block has an inline local answer");
+        check((waiting.failureAnswer()[3] & 15) == 2, "prepared failure retains its original question");
+        request = original.clone();
+        ruleEnabled.set(false);
+        DnsExchange inFlight = new DnsExchange(
+                new DnsPolicy(host -> ruleEnabled.get() ? DomainPolicy.Decision.BLOCK : DomainPolicy.Decision.ALLOW),
+                query -> {
+                    ruleEnabled.set(true);
+                    return DnsReplyGuardTest.addressAnswer(query);
+                });
+        DnsExchange.Resolution changedDuringLookup = inFlight.resolveDetailed(request);
+        check(changedDuringLookup.blocked && (changedDuringLookup.answer[3] & 15) == 3,
+                "an ordinary address reply still checks rules changed during lookup");
         expectFailure(new DnsExchange(policy, query -> { byte[] r = reply(query); r[0] ^= 1; return r; }), request);
         expectFailure(new DnsExchange(policy, query -> { byte[] r = reply(query); r[13] ^= 1; return r; }), request);
         expectFailure(new DnsExchange(policy, query -> { byte[] r = reply(query); r[2] |= 2; return r; }), request);

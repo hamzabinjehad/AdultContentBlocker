@@ -27,4 +27,5 @@
     <color name="accent_border">#C7D0DA</color>
     <color name="ic_launcher_background">#F4F1EA</color>
     <color name="splash_background">#1F3A5F</color>
+    <color name="widget_mark">#1F3A5F</color>
 </resources>

@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Unrot's block screen can start a ten-minute timer in the clock app ("instead"). -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
     <!-- Opt-in daily time limits read Android's own foreground-time record. The
          owner grants this special access in Android Settings; it is not a
          runtime prompt and no usage event leaves the phone. -->
@@ -32,6 +34,7 @@
         <intent><action android:name="android.intent.action.VIEW" /><data android:mimeType="video/*" /></intent>
         <intent><action android:name="android.service.autofill.AutofillService" /></intent>
         <intent><action android:name="android.service.credentials.CredentialProviderService" /></intent>
+        <intent><action android:name="android.intent.action.SET_TIMER" /></intent>
     </queries>
     <!-- The signature-verified seed holds more than 236,000 domains. Android 6 device
          heaps are often 48-192 MB, so the list does not fit the default growth limit;
@@ -59,7 +62,16 @@
             </intent-filter>
         </activity>
         <activity android:name=".RestrictionActivity" android:exported="false" android:excludeFromRecents="true" />
-        <activity android:name=".WelcomeActivity" android:exported="false" android:excludeFromRecents="true" />
+        <activity android:name=".BreatheActivity" android:exported="false" android:excludeFromRecents="true" />
+        <activity android:name=".BlockActivity" android:exported="false" android:excludeFromRecents="true" />
+        <receiver android:name=".DayWidget" android:exported="false" android:label="@string/today_day_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_day_info" />
+        </receiver>
+        <activity android:name=".WelcomeActivity" android:exported="false" android:excludeFromRecents="true"
+            android:windowSoftInputMode="adjustResize" />
         <!-- Wait before opening: its own task, so Close and Open never bring up Hisn's other screens. -->
         <activity android:name=".OpenWaitActivity" android:exported="false" android:excludeFromRecents="true"
             android:taskAffinity="app.hisn.android.wait" android:launchMode="singleTask" android:noHistory="true" />
@@ -95,6 +107,14 @@
                 android:value="Owner-enabled boot cover until the app's accessibility guard is running" />
         </service>
         <!-- Resumes DNS filtering after reboot or an app update only if left on and VPN approval remains. -->
+        <!-- Shares the milestone card picture (day count only) from the app's cache. -->
+        <provider android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.share" android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/share_paths" />
+        </provider>
+        <receiver android:name=".HardHoursNudge" android:exported="false" />
+        <receiver android:name=".WeeklyReport" android:exported="false" />
         <receiver android:name=".VpnBootReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -103,6 +123,14 @@
         </receiver>
         <!-- Periodic local check that notices a stopped DNS VPN or accessibility
              guard while the app is closed. It never restarts a service. -->
+        <!-- An action tile: opens the voluntary breathing pause. Ignored before Android 7.0. -->
+        <service android:name=".PauseTileService" android:exported="true"
+            android:label="@string/pause_voluntary_action"
+            android:icon="@drawable/ic_breath"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
+            <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE" android:value="false" />
+        </service>
         <service android:name=".LayerWatchdogJobService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />

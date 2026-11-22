@@ -38,6 +38,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Tune
@@ -75,8 +77,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.InsertChart
+import androidx.compose.material.icons.filled.InsertChart
+import androidx.compose.material.icons.outlined.Today
+import androidx.compose.material.icons.filled.Today
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -95,9 +106,9 @@ private data class NavItem(
 )
 
 @Composable
-fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0) {
+fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0, initialDetail: String? = null) {
     var selectedTab by rememberSaveable { mutableIntStateOf(initialTab) }
-    var detail by rememberSaveable { mutableStateOf<String?>(null) }
+    var detail by rememberSaveable { mutableStateOf(initialDetail) }
     // A shortcut or notification that reaches the running activity asks for a tab; honour it.
     var appliedRequest by rememberSaveable { mutableIntStateOf(tabRequest) }
     if (appliedRequest != tabRequest) {
@@ -115,7 +126,6 @@ fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0) {
         "light" -> false
         else -> isSystemInDarkTheme()
     }
-    val attention = state.needsAttention()
     val reduceMotion = systemReduceMotion(context)
     // Poll only while the screen is visible; a backgrounded shell does no work.
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -222,6 +232,11 @@ fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0) {
     ) {
         HisnTheme(darkTheme = dark, dynamicColor = state.systemColors.on) {
             SystemBars(dark)
+            // "Focus now", from Today's button or the launcher shortcut: only over Today itself,
+            // never over another page, and wherever Today's list is scrolled.
+            if (unrotEdition && FocusRequest.open.value && selectedTab == 0 && detail == null) {
+                UnrotFocusSheet(state) { FocusRequest.open.value = false }
+            }
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
@@ -253,7 +268,6 @@ fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0) {
                 ) {
                     HisnScaffold(
                         selectedTab = selectedTab,
-                        attention = attention,
                         onSelect = {
                             if (it != selectedTab) haptics.nav()
                             selectedTab = it
@@ -263,6 +277,9 @@ fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0) {
                         onOpen = navigateDetail
                     )
                 }
+
+                // The first-visit tour of Today: three stops, once.
+                if (unrotEdition && detail == null && selectedTab == 0) UnrotTour()
 
                 if (detail != null) {
                     Box(
@@ -329,20 +346,45 @@ fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0) {
 @Composable
 private fun HisnScaffold(
     selectedTab: Int,
-    attention: Boolean,
     onSelect: (Int) -> Unit,
     copy: ProtectionCopy,
     state: HisnState,
     onOpen: (String) -> Unit
 ) {
-    val titles = listOf(copy.appName, copy.navRules, copy.navSettings)
-    val tagline = copy.tagline
-    val navItems = listOf(
-        NavItem(copy.navProtection, Icons.Filled.Shield, Icons.Outlined.Shield),
-        NavItem(copy.navRules, Icons.Filled.Tune, Icons.Outlined.Tune),
-        NavItem(copy.navSettings, Icons.Filled.Settings, Icons.Outlined.Settings)
-    )
+    // Unrot: four equal destinations with labels (Android's navigation bar is for three to five;
+    // CleanPath's unlabelled icons are what to avoid). Hisn keeps its three tabs.
+    val unrotTabs = unrotEdition
+    val titles = if (unrotTabs) {
+        listOf(
+            androidx.compose.ui.res.stringResource(app.hisn.android.R.string.tab_today),
+            androidx.compose.ui.res.stringResource(app.hisn.android.R.string.tab_shield),
+            androidx.compose.ui.res.stringResource(app.hisn.android.R.string.tab_progress),
+            androidx.compose.ui.res.stringResource(app.hisn.android.R.string.tab_you)
+        )
+    } else {
+        listOf(copy.appName, copy.navRules, copy.navSettings)
+    }
+    val tagline = if (unrotTabs) todayLine() else copy.tagline
+    val navItems = if (unrotTabs) {
+        listOf(
+            NavItem(titles[0], Icons.Filled.Today, Icons.Outlined.Today),
+            NavItem(titles[1], Icons.Filled.Shield, Icons.Outlined.Shield),
+            NavItem(titles[2], Icons.Filled.InsertChart, Icons.Outlined.InsertChart),
+            NavItem(titles[3], Icons.Filled.Person, Icons.Outlined.Person)
+        )
+    } else {
+        listOf(
+            NavItem(copy.navProtection, Icons.Filled.Shield, Icons.Outlined.Shield),
+            NavItem(copy.navRules, Icons.Filled.Tune, Icons.Outlined.Tune),
+            NavItem(copy.navSettings, Icons.Filled.Settings, Icons.Outlined.Settings)
+        )
+    }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    // Unrot's Shield tab: "+ Add" opens one sheet for every kind of rule.
+    var addSheet by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    if (addSheet) UnrotAddSheet(onDismiss = { addSheet = false }, onOpen = onOpen)
+    var helpSheet by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    if (helpSheet) ProgressExplainerSheet(onDismiss = { helpSheet = false })
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 600.dp
@@ -396,45 +438,60 @@ private fun HisnScaffold(
                             titles = titles,
                             tagline = tagline,
                             showLogo = false,
-                            scrollBehavior = scrollBehavior
+                            scrollBehavior = scrollBehavior,
+                            shieldChip = if (unrotTabs && selectedTab == 0) ({ onSelect(1) }) else null,
+                        onAdd = if (unrotTabs && selectedTab == 1) ({ addSheet = true }) else null,
+                        onHelp = if (unrotTabs && selectedTab == 2) ({ helpSheet = true }) else null,
+                            state = state
                         )
                         HisnContent(
                             innerPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                             selectedTab = selectedTab,
-                            attention = attention,
                             copy = copy,
                             state = state,
                             onOpen = onOpen,
-                            scrollBehavior = scrollBehavior
+                            scrollBehavior = scrollBehavior,
+                            onSelectTab = onSelect
                         )
                     }
                 }
             }
         } else {
             Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = MaterialTheme.colorScheme.background,
+                // Unrot paints its own backdrop (a soft gold glow from the top) behind a clear scaffold.
+                modifier = Modifier.fillMaxSize().then(if (unrotEdition) Modifier.unrotBackdrop() else Modifier),
+                containerColor = if (unrotEdition) Color.Transparent else MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground,
                 topBar = {
                     HisnTopBar(
                         selectedTab = selectedTab,
                         titles = titles,
                         tagline = tagline,
-                        showLogo = true,
-                        scrollBehavior = scrollBehavior
+                        showLogo = !unrotTabs,
+                        scrollBehavior = scrollBehavior,
+                        shieldChip = if (unrotTabs && selectedTab == 0) ({ onSelect(1) }) else null,
+                        onAdd = if (unrotTabs && selectedTab == 1) ({ addSheet = true }) else null,
+                        onHelp = if (unrotTabs && selectedTab == 2) ({ helpSheet = true }) else null,
+                        state = state
                     )
                 },
                 bottomBar = {
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        tonalElevation = 0.dp
-                    ) {
+                    val items: @Composable androidx.compose.foundation.layout.RowScope.(Boolean) -> Unit = { floating ->
+                        val dark = LocalDarkTheme.current
                         navItems.forEachIndexed { index, item ->
                             NavigationBarItem(
                                 selected = selectedTab == index,
                                 onClick = { onSelect(index) },
                                 icon = { NavIcon(selectedTab == index, item) },
                                 label = { Text(item.label) },
-                                colors = NavigationBarItemDefaults.colors(
+                                colors = if (floating) NavigationBarItemDefaults.colors(
+                                    // Premium bar: black in Ivory, warm charcoal at night; gold marks the tab.
+                                    selectedIconColor = UnrotInk,
+                                    selectedTextColor = if (dark) Color(0xFFF2C94F) else Color(0xFFF7F1E4),
+                                    indicatorColor = Color(0xFFF2C94F),
+                                    unselectedIconColor = Color(0xFFF7F1E4).copy(alpha = 0.62f),
+                                    unselectedTextColor = Color(0xFFF7F1E4).copy(alpha = 0.62f)
+                                ) else NavigationBarItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                     selectedTextColor = MaterialTheme.colorScheme.onSurface,
                                     indicatorColor = MaterialTheme.colorScheme.primaryContainer,
@@ -444,16 +501,39 @@ private fun HisnScaffold(
                             )
                         }
                     }
+                    if (unrotEdition) {
+                        // Unrot: a floating rounded bar over the page.
+                        val barShape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp)
+                        androidx.compose.foundation.layout.Box(
+                            Modifier
+                                .navigationBarsPadding()
+                                .padding(start = 14.dp, end = 14.dp, bottom = 10.dp)
+                        ) {
+                            NavigationBar(
+                                modifier = Modifier
+                                    .unrotFrame(barShape, hero = true)
+                                    .clip(barShape),
+                                containerColor = if (LocalDarkTheme.current) Color(0xFF1E1C17) else Color(0xFF1B1A16),
+                                tonalElevation = 0.dp,
+                                windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
+                            ) { items(true) }
+                        }
+                    } else {
+                        NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            tonalElevation = 0.dp
+                        ) { items(false) }
+                    }
                 }
             ) { innerPadding ->
                 HisnContent(
                     innerPadding = innerPadding,
                     selectedTab = selectedTab,
-                    attention = attention,
                     copy = copy,
                     state = state,
                     onOpen = onOpen,
-                    scrollBehavior = scrollBehavior
+                    scrollBehavior = scrollBehavior,
+                    onSelectTab = onSelect
                 )
             }
         }
@@ -484,9 +564,36 @@ private fun HisnTopBar(
     titles: List<String>,
     tagline: String,
     showLogo: Boolean,
-    scrollBehavior: TopAppBarScrollBehavior
+    scrollBehavior: TopAppBarScrollBehavior,
+    shieldChip: (() -> Unit)? = null,
+    state: HisnState? = null,
+    onAdd: (() -> Unit)? = null,
+    onHelp: (() -> Unit)? = null
 ) {
     TopAppBar(
+        actions = {
+            if (shieldChip != null && state != null) {
+                Box(Modifier.tourTarget("shield")) { ShieldChip(state, shieldChip) }
+            }
+            if (onHelp != null) {
+                androidx.compose.material3.IconButton(onClick = onHelp) {
+                    Icon(Icons.AutoMirrored.Rounded.HelpOutline,
+                        contentDescription = androidx.compose.ui.res.stringResource(app.hisn.android.R.string.explain_progress_title))
+                }
+            }
+            if (onAdd != null) {
+                androidx.compose.material3.FilledTonalButton(
+                    onClick = onAdd,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 12.dp, end = 16.dp),
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = null,
+                        modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(androidx.compose.ui.res.stringResource(app.hisn.android.R.string.shield_add))
+                }
+            }
+        },
         title = {
             Row(
                 modifier = Modifier
@@ -522,7 +629,11 @@ private fun HisnTopBar(
                     ) { tab ->
                         Text(
                             text = titles[tab],
-                            style = MaterialTheme.typography.titleLarge
+                            style = if (unrotEdition) {
+                                MaterialTheme.typography.headlineMedium
+                            } else {
+                                MaterialTheme.typography.titleLarge
+                            }
                         )
                     }
                     AnimatedVisibility(
@@ -541,8 +652,8 @@ private fun HisnTopBar(
         },
         scrollBehavior = scrollBehavior,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = if (unrotEdition) Color.Transparent else MaterialTheme.colorScheme.background,
+            scrolledContainerColor = if (unrotEdition) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surfaceContainer
         )
     )
 }
@@ -552,11 +663,11 @@ private fun HisnTopBar(
 private fun HisnContent(
     innerPadding: androidx.compose.foundation.layout.PaddingValues,
     selectedTab: Int,
-    attention: Boolean,
     copy: ProtectionCopy,
     state: HisnState,
     onOpen: (String) -> Unit,
-    scrollBehavior: TopAppBarScrollBehavior
+    scrollBehavior: TopAppBarScrollBehavior,
+    onSelectTab: (Int) -> Unit = {}
 ) {
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Box(
@@ -583,9 +694,16 @@ private fun HisnContent(
             modifier = Modifier.fillMaxSize(),
             label = "tab content"
         ) { tab ->
-            when (tab) {
+            if (unrotEdition) {
+                when (tab) {
+                    0 -> ProtectionScreen(state = state, copy = copy, onOpen = onOpen,
+                        mode = HomeMode.Today, onShowShield = { onSelectTab(1) })
+                    1 -> ProtectionScreen(state = state, copy = copy, onOpen = onOpen, mode = HomeMode.Shield)
+                    2 -> ProgressContent(state = state, onOpen = onOpen)
+                    else -> SettingsScreen(state = state, onOpen = onOpen)
+                }
+            } else when (tab) {
                 0 -> ProtectionScreen(
-                    attention = attention,
                     state = state,
                     copy = copy,
                     onOpen = onOpen

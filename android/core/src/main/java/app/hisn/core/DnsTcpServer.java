@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Bounded, DNS-only TCP endpoint for the VPN's virtual IPv4 DNS address.
+ * Bounded, DNS-only TCP endpoint for the VPN's virtual DNS addresses.
  *
  * This is deliberately not a general TCP stack: no IP fragments, out-of-order
  * buffering, TCP Fast Open, window scaling, timestamps or SACK are negotiated.
@@ -69,13 +69,13 @@ public final class DnsTcpServer {
             firstSent = lastSent = now;
         }
         int length() {
-            return payload.length + ((flags & Ipv4TcpPacket.SYN) != 0 ? 1 : 0)
-                    + ((flags & Ipv4TcpPacket.FIN) != 0 ? 1 : 0);
+            return payload.length + ((flags & TcpDnsPacket.SYN) != 0 ? 1 : 0)
+                    + ((flags & TcpDnsPacket.FIN) != 0 ? 1 : 0);
         }
     }
 
     private static final class Flow {
-        final Ipv4TcpPacket template;
+        final TcpDnsPacket template;
         final long clientSyn;
         final long serverSyn;
         final long created;
@@ -98,7 +98,7 @@ public final class DnsTcpServer {
         Pending pending;
         byte[] response;
         int responseOffset;
-        Flow(Ipv4TcpPacket packet, long initial, long now) {
+        Flow(TcpDnsPacket packet, long initial, long now) {
             template = packet;
             clientSyn = packet.sequence;
             serverSyn = initial;
@@ -106,7 +106,7 @@ public final class DnsTcpServer {
             sendUnacknowledged = initial;
             sendNext = add(initial, 1);
             created = lastProgress = now;
-            mss = Math.max(1, Math.min(1200, packet.mss));
+            mss = Math.max(1, Math.min(TcpDnsPacket.MAX_RESPONSE_PAYLOAD, packet.mss));
             peerWindow = packet.window;
         }
         int advertisedWindow() {
@@ -115,7 +115,7 @@ public final class DnsTcpServer {
     }
 
     private final java.util.function.LongSupplier sequenceSource;
-    private final Map<Long, Flow> flows = new LinkedHashMap<>();
+    private final Map<TcpDnsPacket.Endpoint, Flow> flows = new LinkedHashMap<>();
     private boolean closed;
 
     public DnsTcpServer() {
@@ -132,46 +132,46 @@ public final class DnsTcpServer {
 
     /** RFC 9293 reset for a connection this endpoint never accepts, such as port 853.
      * Returns null for an incoming RST, which must never be answered. */
-    public static byte[] refuse(Ipv4TcpPacket packet) {
-        if (packet == null || (packet.flags & Ipv4TcpPacket.RST) != 0) return null;
+    public static byte[] refuse(TcpDnsPacket packet) {
+        if (packet == null || (packet.flags & TcpDnsPacket.RST) != 0) return null;
         Output output = new Output();
         resetUnknown(packet, output);
         return output.packets.get(0);
     }
 
-    public synchronized Result receive(Ipv4TcpPacket packet, long nowMillis) {
+    public synchronized Result receive(TcpDnsPacket packet, long nowMillis) {
         Output output = new Output();
         if (closed || packet == null) return output.result();
-        Flow flow = flows.get(packet.flowId);
+        Flow flow = flows.get(packet.endpoint);
         if (flow == null) {
-            if ((packet.flags & Ipv4TcpPacket.RST) != 0) return output.result();
-            if ((packet.flags & ~0xc0) != Ipv4TcpPacket.SYN || packet.payload.length != 0
+            if ((packet.flags & TcpDnsPacket.RST) != 0) return output.result();
+            if ((packet.flags & ~0xc0) != TcpDnsPacket.SYN || packet.payload.length != 0
                     || flows.size() >= MAX_FLOWS) {
                 resetUnknown(packet, output);
                 return output.result();
             }
             flow = new Flow(packet, sequenceSource.getAsLong() & MASK, nowMillis);
-            flows.put(packet.flowId, flow);
-            flow.pending = new Pending(flow.serverSyn, Ipv4TcpPacket.SYN | Ipv4TcpPacket.ACK,
+            flows.put(packet.endpoint, flow);
+            flow.pending = new Pending(flow.serverSyn, TcpDnsPacket.SYN | TcpDnsPacket.ACK,
                     new byte[0], nowMillis);
             transmit(flow, flow.pending, output);
             return output.result();
         }
 
         // An old duplicate SYN must not replace an established connection.
-        if ((packet.flags & ~0xc0) == Ipv4TcpPacket.SYN && packet.sequence == flow.clientSyn
+        if ((packet.flags & ~0xc0) == TcpDnsPacket.SYN && packet.sequence == flow.clientSyn
                 && packet.payload.length == 0) {
             if (!flow.established) transmit(flow, flow.pending, output);
             else acknowledge(flow, output);
             return output.result();
         }
-        if ((packet.flags & Ipv4TcpPacket.RST) != 0) {
+        if ((packet.flags & TcpDnsPacket.RST) != 0) {
             // Only an exact in-window sequence can tear down this small endpoint.
-            if (packet.sequence == flow.receiveNext) flows.remove(packet.flowId);
+            if (packet.sequence == flow.receiveNext) flows.remove(packet.endpoint);
             else acknowledge(flow, output);
             return output.result();
         }
-        if ((packet.flags & Ipv4TcpPacket.SYN) != 0 || (packet.flags & Ipv4TcpPacket.ACK) == 0) {
+        if ((packet.flags & TcpDnsPacket.SYN) != 0 || (packet.flags & TcpDnsPacket.ACK) == 0) {
             acknowledge(flow, output);
             return output.result();
         }
@@ -196,14 +196,14 @@ public final class DnsTcpServer {
         if (packet.sequence == flow.receiveNext) flow.peerWindow = packet.window;
         acceptAcknowledgement(flow, packet.acknowledgement, nowMillis);
         if (flow.sentFin && flow.pending == null) {
-            flows.remove(packet.flowId);
+            flows.remove(packet.endpoint);
             return output.result();
         }
 
         long overlap = -difference(packet.sequence, flow.receiveNext);
         int skip = (int) Math.min(overlap, packet.payload.length);
         int fresh = packet.payload.length - skip;
-        boolean needsAck = packet.payload.length != 0 || (packet.flags & Ipv4TcpPacket.FIN) != 0;
+        boolean needsAck = packet.payload.length != 0 || (packet.flags & TcpDnsPacket.FIN) != 0;
         if (fresh != 0) {
             if (flow.receivedFin || fresh > flow.advertisedWindow()
                     || fresh > RECEIVE_CAPACITY - flow.used) {
@@ -220,7 +220,7 @@ public final class DnsTcpServer {
                 return output.result();
             }
         }
-        if ((packet.flags & Ipv4TcpPacket.FIN) != 0) {
+        if ((packet.flags & TcpDnsPacket.FIN) != 0) {
             long finSequence = add(packet.sequence, packet.payload.length);
             if (!flow.receivedFin && finSequence == flow.receiveNext) {
                 if (flow.used != 0) {
@@ -278,7 +278,7 @@ public final class DnsTcpServer {
                     || elapsed(nowMillis, flow.lastProgress) >= IDLE_MS
                     || (pending != null && elapsed(nowMillis, pending.firstSent) >= TRANSMIT_MS)) {
                 output.packets.add(flow.template.response(flow.sendNext, flow.receiveNext,
-                        Ipv4TcpPacket.RST | Ipv4TcpPacket.ACK, 0, new byte[0]));
+                        TcpDnsPacket.RST | TcpDnsPacket.ACK, 0, new byte[0]));
                 iterator.remove();
                 continue;
             }
@@ -286,7 +286,7 @@ public final class DnsTcpServer {
                     >= (1000L << Math.min(3, pending.retries))) {
                 if (pending.retries >= MAX_RETRIES) {
                     output.packets.add(flow.template.response(flow.sendNext, flow.receiveNext,
-                            Ipv4TcpPacket.RST | Ipv4TcpPacket.ACK, 0, new byte[0]));
+                            TcpDnsPacket.RST | TcpDnsPacket.ACK, 0, new byte[0]));
                     iterator.remove();
                     continue;
                 }
@@ -302,10 +302,10 @@ public final class DnsTcpServer {
         return output.result();
     }
 
-    /** Drop flow generations on network changes without terminating the endpoint. */
     /** True when no TCP flow needs a timer, so the reader may sleep longer between polls. */
     public synchronized boolean idle() { return flows.isEmpty(); }
 
+    /** Drop flow generations on network changes without terminating the endpoint. */
     public synchronized void invalidate() { flows.clear(); }
 
     public synchronized void close() {
@@ -315,7 +315,7 @@ public final class DnsTcpServer {
 
     private Flow current(Request request) {
         if (closed || request == null) return null;
-        Flow flow = flows.get(request.owner.template.flowId);
+        Flow flow = flows.get(request.owner.template.endpoint);
         return flow == request.owner && flow.active == request ? flow : null;
     }
 
@@ -364,8 +364,8 @@ public final class DnsTcpServer {
                 byte[] part = Arrays.copyOfRange(flow.response, flow.responseOffset,
                         flow.responseOffset + size);
                 flow.responseOffset += size;
-                int flags = Ipv4TcpPacket.ACK;
-                if (flow.responseOffset == flow.response.length) flags |= Ipv4TcpPacket.PSH;
+                int flags = TcpDnsPacket.ACK;
+                if (flow.responseOffset == flow.response.length) flags |= TcpDnsPacket.PSH;
                 send(flow, flags, part, now, output);
                 return;
             }
@@ -378,7 +378,7 @@ public final class DnsTcpServer {
         if (flow.receivedFin && flow.active == null && flow.queued.isEmpty()
                 && flow.response == null && !flow.sentFin && flow.peerWindow > 0) {
             flow.sentFin = true;
-            send(flow, Ipv4TcpPacket.FIN | Ipv4TcpPacket.ACK, new byte[0], now, output);
+            send(flow, TcpDnsPacket.FIN | TcpDnsPacket.ACK, new byte[0], now, output);
         }
     }
 
@@ -396,7 +396,7 @@ public final class DnsTcpServer {
         if (payload.length != 0 && payload.length > flow.peerWindow) {
             if (flow.peerWindow == 0) return;
             payload = Arrays.copyOf(payload, flow.peerWindow);
-            flags &= ~(Ipv4TcpPacket.FIN | Ipv4TcpPacket.PSH);
+            flags &= ~(TcpDnsPacket.FIN | TcpDnsPacket.PSH);
         }
         output.packets.add(flow.template.response(pending.sequence, flow.receiveNext,
                 flags, flow.advertisedWindow(), payload));
@@ -411,7 +411,7 @@ public final class DnsTcpServer {
         int accepted = (int) difference(acknowledgement, pending.sequence);
         if (accepted >= pending.length()) {
             flow.pending = null;
-        } else if (accepted > 0 && (pending.flags & Ipv4TcpPacket.SYN) == 0) {
+        } else if (accepted > 0 && (pending.flags & TcpDnsPacket.SYN) == 0) {
             int dataAccepted = Math.min(accepted, pending.payload.length);
             pending.payload = Arrays.copyOfRange(pending.payload, dataAccepted, pending.payload.length);
             pending.sequence = acknowledgement;
@@ -421,24 +421,24 @@ public final class DnsTcpServer {
 
     private void acknowledge(Flow flow, Output output) {
         output.packets.add(flow.template.response(flow.sendNext, flow.receiveNext,
-                Ipv4TcpPacket.ACK, flow.advertisedWindow(), new byte[0]));
+                TcpDnsPacket.ACK, flow.advertisedWindow(), new byte[0]));
     }
 
     private void reset(Flow flow, Output output) {
-        flows.remove(flow.template.flowId);
+        flows.remove(flow.template.endpoint);
         output.requests.removeIf(request -> request.owner == flow);
         output.packets.add(flow.template.response(flow.sendNext, flow.receiveNext,
-                Ipv4TcpPacket.RST | Ipv4TcpPacket.ACK, 0, new byte[0]));
+                TcpDnsPacket.RST | TcpDnsPacket.ACK, 0, new byte[0]));
     }
 
-    private static void resetUnknown(Ipv4TcpPacket packet, Output output) {
-        boolean ack = (packet.flags & Ipv4TcpPacket.ACK) != 0;
+    private static void resetUnknown(TcpDnsPacket packet, Output output) {
+        boolean ack = (packet.flags & TcpDnsPacket.ACK) != 0;
         long sequence = ack ? packet.acknowledgement : 0;
         long acknowledgement = ack ? 0 : add(packet.sequence, packet.payload.length
-                + ((packet.flags & Ipv4TcpPacket.SYN) != 0 ? 1 : 0)
-                + ((packet.flags & Ipv4TcpPacket.FIN) != 0 ? 1 : 0));
+                + ((packet.flags & TcpDnsPacket.SYN) != 0 ? 1 : 0)
+                + ((packet.flags & TcpDnsPacket.FIN) != 0 ? 1 : 0));
         output.packets.add(packet.response(sequence, acknowledgement,
-                Ipv4TcpPacket.RST | (ack ? 0 : Ipv4TcpPacket.ACK), 0, new byte[0]));
+                TcpDnsPacket.RST | (ack ? 0 : TcpDnsPacket.ACK), 0, new byte[0]));
     }
 
     private static long add(long value, long count) { return (value + count) & MASK; }

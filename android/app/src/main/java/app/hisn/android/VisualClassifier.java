@@ -20,6 +20,7 @@ import app.hisn.core.VisualExecutionPolicy;
 final class VisualClassifier implements VisualRuntime {
     /** A frame that has not answered in this long is treated as a failed runtime, not left pending. */
     private static final long FRAME_TIMEOUT_MILLIS = 5000;
+    private static final int MAX_FRAME_EDGE = 384;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private WebView web;
     private Consumer<VisualResult> pending;
@@ -31,6 +32,14 @@ final class VisualClassifier implements VisualRuntime {
     private final Context context;
     private final VisualExecutionPolicy execution;
     private final String personMode;
+    /** True when the native runtime judges adult content and this WebView only looks for faces. */
+    private final boolean facesOnly;
+    /** "faceres" or "oarriaga": which model estimates women/men in the WebView engine; "native":
+     * the WebView only finds faces and returns their boxes for the native FaceRes runtime. */
+    private final String appearance;
+    private final boolean boxes;
+    /** Debug accuracy runs only: return each face's raw estimates in VisualResult.detail. */
+    private final boolean evaluate;
     private static boolean skipGpuAfterFailure;
     private final Runnable timeout = this::failed;
 
@@ -44,11 +53,27 @@ final class VisualClassifier implements VisualRuntime {
         this(context, backend, PersonBlur.OFF, loaded);
     }
 
-    @android.annotation.SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
     VisualClassifier(Context context, String backend, String personMode, Consumer<String> loaded) {
+        this(context, backend, personMode, false, loaded);
+    }
+
+    /** facesOnly: skip the adult model in the WebView (HybridRuntime runs it natively instead). */
+    @android.annotation.SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
+    VisualClassifier(Context context, String backend, String personMode, boolean facesOnly, Consumer<String> loaded) {
+        this(context, backend, personMode, facesOnly, "oarriaga", false, loaded);
+    }
+
+    @android.annotation.SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
+    VisualClassifier(Context context, String backend, String personMode, boolean facesOnly, String appearance,
+            boolean evaluate, Consumer<String> loaded) {
+        this.boxes = "native".equals(appearance) && facesOnly && PersonBlur.on(personMode);
+        this.appearance = "faceres".equals(appearance) ? "faceres" : "oarriaga";
+        this.evaluate = evaluate;
         execution = new VisualExecutionPolicy(backend, skipGpuAfterFailure);
         this.context = context;
-        this.personMode = PersonBlur.on(personMode) ? personMode : PersonBlur.OFF;
+        // Native women/men: the page looks for every face ("all") and the app judges each one.
+        this.personMode = boxes ? PersonBlur.ALL : PersonBlur.on(personMode) ? personMode : PersonBlur.OFF;
+        this.facesOnly = facesOnly && PersonBlur.on(personMode);
         pendingLoad = loaded;
         request = "load";
         try { openRuntime(); }
@@ -75,7 +100,7 @@ final class VisualClassifier implements VisualRuntime {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 String path = request.getUrl().getPath();
                 boolean wasm = path.matches("/visual/wasm/tfjs-backend-wasm(-simd|-threaded-simd)?\\.wasm");
-                boolean model = path.matches("/visual/models/(blazeface|gender)\\.(json|bin)");
+                boolean model = path.matches("/visual/models/(blazeface|gender|faceres)\\.(json|bin)");
                 if ("https".equals(request.getUrl().getScheme()) && "hisn.invalid".equals(request.getUrl().getHost())
                         && ("/visual/android.html".equals(path) || "/visual/android.js".equals(path)
                         || "/visual/region.js".equals(path)
@@ -102,7 +127,9 @@ final class VisualClassifier implements VisualRuntime {
         web.addJavascriptInterface(new ResultBridge(token), "HisnResult");
         handler.postDelayed(timeout, 60000);
         web.loadUrl("https://hisn.invalid/visual/android.html?backend=" + execution.backend()
-                + "&person=" + personMode);
+                + "&person=" + personMode + (facesOnly ? "&adult=off" : "")
+                + ("faceres".equals(appearance) ? "&appearance=faceres" : "") + (evaluate ? "&eval=1" : "")
+                + (boxes ? "&boxes=1" : ""));
     }
 
     @Override public String actualBackend() { return actualBackend; }
@@ -127,37 +154,77 @@ final class VisualClassifier implements VisualRuntime {
                     boolean person = value.optBoolean("p", false);
                     boolean strong = value.optBoolean("s", false);
                     if ("allow".equals(verdict) || "block".equals(verdict)) {
-                        finishFrame(new VisualResult(verdict, person, strong));
+                        // Scores leave the WebView only for a debug accuracy run that asked for them.
+                        org.json.JSONArray faces = evaluate ? value.optJSONArray("e") : null;
+                        float[] found = boxes ? boxes(value.optJSONArray("b")) : null;
+                        if (boxes && found == null) { failed(); return; }
+                        finishFrame(new VisualResult(verdict, person, strong, faces == null ? null : faces.toString(), found));
                     } else failed();
                 } catch (org.json.JSONException malformed) { failed(); }
             });
         }
     }
 
+    /** At most 10 boxes of four finite numbers in 0..1, or null when the answer is malformed. */
+    private static float[] boxes(org.json.JSONArray list) {
+        if (list == null || list.length() > 10) return null;
+        float[] out = new float[list.length() * 4];
+        for (int i = 0; i < list.length(); i++) {
+            org.json.JSONArray box = list.optJSONArray(i);
+            if (box == null || box.length() != 4) return null;
+            for (int j = 0; j < 4; j++) {
+                double value = box.optDouble(j, Double.NaN);
+                if (!(value >= 0 && value <= 1)) return null;
+                out[i * 4 + j] = (float) value;
+            }
+        }
+        return out;
+    }
+
     @Override public void inspect(Bitmap frame, Consumer<VisualResult> result) {
-        if (!ready || web == null || pending != null || frame.getWidth() > 384 || frame.getHeight() > 384) {
+        int width = frame.getWidth(), height = frame.getHeight();
+        if (!canInspect(width, height)) {
             result.accept(new VisualResult("unknown", false));
             return;
         }
-        int width = frame.getWidth(), height = frame.getHeight();
         int[] pixels = new int[width * height];
-        byte[] rgba = new byte[pixels.length * 4];
         try {
             frame.getPixels(pixels, 0, width, 0, 0, width, height);
+            inspect(pixels, width, height, result);
+        } finally {
+            Arrays.fill(pixels, 0);
+        }
+    }
+
+    private boolean canInspect(int width, int height) {
+        return ready && web != null && pending == null
+                && width > 0 && width <= MAX_FRAME_EDGE && height > 0 && height <= MAX_FRAME_EDGE;
+    }
+
+    /** Borrow the caller's pixels while encoding the frame. The caller owns and clears them. */
+    void inspect(int[] pixels, int width, int height, Consumer<VisualResult> result) {
+        if (!canInspect(width, height) || pixels.length != width * height) {
+            result.accept(new VisualResult("unknown", false));
+            return;
+        }
+        byte[] rgba = new byte[pixels.length * 4];
+        try {
             for (int i = 0; i < pixels.length; i++) {
                 rgba[i * 4] = (byte) (pixels[i] >> 16);
                 rgba[i * 4 + 1] = (byte) (pixels[i] >> 8);
                 rgba[i * 4 + 2] = (byte) pixels[i];
                 rgba[i * 4 + 3] = (byte) 255;
             }
-            pending = result;
-            request = "frame_" + ++sequence;
-            handler.postDelayed(timeout, FRAME_TIMEOUT_MILLIS);
             // id is generated locally; Base64 contains no JavaScript delimiters.
-            web.evaluateJavascript("window.hisnInspect('" + request + "'," + width + "," + height + ",'"
-                    + Base64.encodeToString(rgba, Base64.NO_WRAP) + "')", null);
+            String id = "frame_" + ++sequence;
+            String script = "window.hisnInspect('" + id + "'," + width + "," + height + ",'"
+                    + Base64.encodeToString(rgba, Base64.NO_WRAP) + "')";
+            pending = result;
+            request = id;
+            handler.postDelayed(timeout, FRAME_TIMEOUT_MILLIS);
+            try { web.evaluateJavascript(script, null); }
+            catch (RuntimeException | OutOfMemoryError unavailable) { failed(); }
         } finally {
-            Arrays.fill(pixels, 0);
             Arrays.fill(rgba, (byte) 0);
         }
     }

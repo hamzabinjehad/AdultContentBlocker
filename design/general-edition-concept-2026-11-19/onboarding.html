@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onboarding v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..800,100&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F5EFE3; --paper2:#EDE4D3; --ink:#1F2A23; --ink2:#46534A; --muted:#7A8277;
+  --butter:#F4C34E; --tomato:#E5553A; --sage:#9EC39A; --sky:#9CC8E0; --blush:#F2A08F; --white:#FFFDF8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#D9D2C3;font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);padding:30px 16px 40px}
+.head{max-width:1460px;margin:0 auto 26px;display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap}
+.head h1{font:700 34px/1.05 Fraunces,'Iowan Old Style','Palatino',Georgia,serif;letter-spacing:-.5px}
+.head p{color:var(--ink2);font-size:14px;max-width:620px}
+.row{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+.cap{font-size:13px;color:var(--ink2);text-align:center;margin-top:12px;max-width:330px;line-height:1.45}
+.cap b{color:var(--ink)}
+.phone{width:340px;height:736px;border-radius:46px;background:var(--paper);position:relative;overflow:hidden;
+  box-shadow:0 0 0 9px #1F2A23,0 26px 50px -18px rgba(31,42,35,.55)}
+/* paper grain */
+.phone:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:radial-gradient(rgba(31,42,35,.07) 1px,transparent 1.2px);background-size:5px 5px}
+.status{display:flex;justify-content:space-between;padding:15px 28px 0;font:700 12px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;position:relative}
+.scr{padding:10px 18px 0;position:relative}
+.top{display:flex;justify-content:space-between;align-items:center}
+.logo{font:800 25px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;letter-spacing:-.8px}
+.logo i{font-style:normal;color:var(--tomato)}
+.tag{font:700 11px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;padding:6px 11px;border-radius:999px;border:2px solid var(--ink);background:var(--white)}
+.tag.ok{background:var(--sage)}
+.card{background:var(--white);border:2px solid var(--ink);border-radius:22px;box-shadow:3px 4px 0 var(--ink)}
+h2{font:700 27px/1.08 Fraunces,'Iowan Old Style','Palatino',Georgia,serif;letter-spacing:-.4px}
+.serif{font-family:Fraunces,'Iowan Old Style','Palatino',Georgia,serif}
+/* today */
+.hello{margin-top:12px;display:flex;gap:10px;align-items:flex-end}
+.bubble{position:relative;flex:1;padding:12px 14px;font-size:14px;line-height:1.35}
+.bubble:after{content:"";position:absolute;left:-9px;bottom:16px;width:14px;height:14px;background:var(--white);border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg)}
+.bubble b{font:700 17px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;display:block;margin-bottom:2px}
+.garden{margin-top:14px;padding:14px 16px 12px;background:var(--butter)}
+.garden .k{font:700 11px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;letter-spacing:1px;text-transform:uppercase}
+.days{font:800 58px/0.95 Fraunces,'Iowan Old Style','Palatino',Georgia,serif;letter-spacing:-2px;margin-top:4px}
+.days span{font-size:20px;letter-spacing:0;font-weight:600}
+.track{margin-top:10px;position:relative;height:30px}
+.track .line{position:absolute;left:4px;right:4px;top:14px;height:3px;background:var(--ink);border-radius:3px;opacity:.25}
+.track .fill{position:absolute;left:4px;top:14px;height:3px;background:var(--ink);border-radius:3px}
+.track .st{position:absolute;top:5px;width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);background:var(--butter);font:700 9px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center}
+.track .st.d{background:var(--ink);color:var(--butter)}
+.track .st.n{background:var(--white)}
+.garden .s{font-size:12.5px;margin-top:2px;color:var(--ink2)}
+.minis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.mini{padding:12px 13px}
+.mini .k{font-size:11.5px;color:var(--muted);font-weight:600}
+.mini .v{font:700 26px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;margin-top:2px}
+.mini .v small{font:500 12px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:var(--muted)}
+.squig{display:block;margin-top:6px}
+.pause{position:absolute;left:18px;right:18px;bottom:96px;height:64px;border-radius:20px;background:var(--tomato);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);
+  display:flex;align-items:center;gap:12px;padding:0 10px 0 8px;color:var(--white)}
+.pause .ic{width:46px;height:46px;border-radius:14px;background:var(--white);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center}
+.pause b{font:700 17px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;display:block}
+.pause span{font-size:11.5px;opacity:.9}
+.nav{position:absolute;left:14px;right:14px;bottom:18px;height:62px;border-radius:22px;background:var(--white);border:2px solid var(--ink);display:flex;justify-content:space-around;align-items:center}
+.nav div{font:700 11px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:var(--muted);padding:8px 12px;border-radius:14px}
+.nav div.a{background:var(--ink);color:var(--paper)}
+/* breathe */
+.breathe{background:var(--sky)}
+.breathe .scr{text-align:center}
+.pipbig{margin:42px auto 0;width:230px;height:230px;position:relative}
+.pipbig .halo{position:absolute;inset:-6px;border-radius:50%;border:2px dashed var(--ink);opacity:.35}
+.pipbig .noodle{display:block}
+@keyframes breathe{0%,100%{transform:scale(.86)}45%,55%{transform:scale(1.04)}}
+@media (prefers-reduced-motion:reduce){.pipbig svg{animation:none}}
+.bt{font:700 40px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;margin-top:22px;letter-spacing:-.6px}
+.bs{font-size:14px;color:var(--ink2);margin-top:4px}
+.counts{display:flex;justify-content:center;gap:8px;margin-top:16px}
+.counts i{width:12px;height:12px;border-radius:50%;border:2px solid var(--ink)}.counts i.f{background:var(--ink)}
+.reason{margin:22px 4px 0;padding:13px 15px;text-align:left;background:var(--white)}
+.reason .k{font:700 10.5px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.reason .q{font:600 18px/1.25 Fraunces,'Iowan Old Style','Palatino',Georgia,serif;margin-top:4px}
+.leave{position:absolute;left:18px;right:18px;bottom:26px;height:54px;border-radius:18px;border:2px solid var(--ink);background:transparent;display:flex;align-items:center;justify-content:center;font:700 14px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif}
+/* shield */
+.shieldhead{margin-top:14px;padding:16px;background:var(--sage);display:flex;gap:12px;align-items:center}
+.shieldhead .t{font:700 21px/1.1 Fraunces,'Iowan Old Style','Palatino',Georgia,serif}
+.shieldhead .s{font-size:12px;color:var(--ink2);margin-top:4px}
+.rows{margin-top:14px;overflow:hidden}
+.r{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:2px solid var(--paper2)}
+.r:last-child{border-bottom:none}
+.r .ico{width:38px;height:38px;border-radius:12px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center}
+.r .tx{flex:1}.r .tx b{display:block;font-size:14.5px}.r .tx span{font-size:11.5px;color:var(--muted)}
+.sw{width:46px;height:28px;border-radius:99px;border:2px solid var(--ink);background:var(--ink);position:relative}
+.sw:after{content:"";position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:var(--butter)}
+.sw.off{background:var(--paper2)}.sw.off:after{left:2px;right:auto;background:var(--white);border:2px solid var(--ink);top:2px;width:16px;height:16px}
+.addrow{margin-top:12px;display:flex;gap:10px}
+.addrow div{flex:1;padding:12px;text-align:center;font:700 13px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif}
+/* progress */
+.week{margin-top:14px;padding:14px}
+.week .k{font-size:11.5px;color:var(--muted);font-weight:600}
+.week .v{font:700 28px Fraunces,'Iowan Old Style','Palatino',Georgia,serif}.week .v small{font:600 12px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:#2F7A3A}
+.bars{display:flex;gap:8px;align-items:flex-end;height:110px;margin-top:10px}
+.bars div{flex:1;text-align:center;font:700 10px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:var(--muted)}
+.bars i{display:block;border:2px solid var(--ink);border-radius:9px 9px 4px 4px;background:var(--paper2);margin-bottom:5px}
+.bars i.t{background:var(--tomato)}
+.stickers{display:flex;gap:9px;margin-top:14px}
+.st2{flex:1;height:96px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;font:700 15px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;position:relative}
+.st2 span{font:600 9.5px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:var(--muted)}
+.st2.lock{background:var(--paper2);box-shadow:none;border-style:dashed}
+.st2.lock .lk{font:800 26px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;color:var(--muted);position:absolute;top:16px}
+.hard{margin-top:14px;padding:13px 14px;background:var(--blush)}
+.hard b{font:700 16px Fraunces,'Iowan Old Style','Palatino',Georgia,serif}.hard p{font-size:12px;color:var(--ink2);margin-top:3px}
+.hrs{display:flex;gap:2px;align-items:flex-end;height:30px;margin-top:8px}
+.hrs i{flex:1;background:var(--ink);opacity:.22;border-radius:2px}.hrs i.p{opacity:1}
+.btnsm{display:inline-block;margin-top:9px;font:700 12px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;padding:7px 12px;border-radius:12px;border:2px solid var(--ink);background:var(--white)}
+.sheet{max-width:1460px;margin:34px auto 0;display:grid;grid-template-columns:1.2fr 1fr;gap:22px}
+.panel{background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:20px 22px;box-shadow:4px 5px 0 var(--ink)}
+.panel h3{font:700 22px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;margin-bottom:10px}
+.moods{display:flex;gap:16px;flex-wrap:wrap}
+.mood{text-align:center;font:600 12px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:var(--ink2)}
+.mood svg{width:96px;height:96px;display:block;margin-bottom:4px}
+.panel li{font-size:13.5px;line-height:1.55;margin-left:18px;color:var(--ink2)}
+.panel li b{color:var(--ink)}
+.sw8{display:flex;gap:8px;margin-top:12px}.sw8 div{flex:1;height:44px;border-radius:12px;border:2px solid var(--ink);font:700 9.5px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;display:flex;align-items:flex-end;padding:4px 6px}
+@media (max-width:900px){.sheet{grid-template-columns:1fr}}
+
+.noodle{display:inline-block;vertical-align:bottom}
+.noodle svg{width:100%;height:100%;overflow:visible}
+.n-all{transform-box:fill-box;transform-origin:50% 100%;animation:n-bob 2.6s ease-in-out infinite}
+@keyframes n-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3.5px)}}
+.n-eyes{transform-box:fill-box;transform-origin:50% 50%;animation:n-blink 4.2s infinite}
+@keyframes n-blink{0%,93%,100%{transform:scaleY(1)}95.5%{transform:scaleY(.08)}}
+.n-mouth-talk{transform-box:fill-box;transform-origin:50% 30%;animation:n-talk .32s ease-in-out infinite alternate}
+@keyframes n-talk{from{transform:scaleY(.35)}to{transform:scaleY(1.05)}}
+.walking .n-legL{transform-box:fill-box;transform-origin:50% 0;animation:n-step .5s ease-in-out infinite alternate}
+.walking .n-legR{transform-box:fill-box;transform-origin:50% 0;animation:n-step .5s ease-in-out infinite alternate-reverse}
+@keyframes n-step{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}
+.walking .n-all{animation:n-bob .5s ease-in-out infinite}
+.n-wave{transform-box:fill-box;transform-origin:0% 100%;animation:n-wave 1.1s ease-in-out infinite alternate}
+@keyframes n-wave{from{transform:rotate(-18deg)}to{transform:rotate(16deg)}}
+.n-point{transform-box:fill-box;transform-origin:0% 50%;animation:n-point 1.4s ease-in-out infinite alternate}
+@keyframes n-point{from{transform:rotate(-4deg)}to{transform:rotate(6deg)}}
+.breathing .n-all{animation:n-breathe 8s ease-in-out infinite;transform-origin:50% 85%}
+@keyframes n-breathe{0%,100%{transform:scale(.86)}45%,55%{transform:scale(1.05)}}
+.n-spark{animation:n-spark 1.2s ease-in-out infinite alternate}
+@keyframes n-spark{from{opacity:.25}to{opacity:1}}
+.n-swirl{transform-box:fill-box;transform-origin:50% 50%;animation:n-spin 1.6s linear infinite}
+@keyframes n-spin{to{transform:rotate(360deg)}}
+.typed{display:inline;border-right:2px solid var(--ink);animation:caret .8s steps(1) infinite}
+@keyframes caret{50%{border-color:transparent}}
+@media (prefers-reduced-motion:reduce){.noodle *{animation:none!important}}
+
+.mood{width:120px}.mood .noodle{display:block;margin:0 auto 6px}
+.explain{display:flex;gap:6px;align-items:flex-end;margin-top:14px}
+.bubble2{flex:1;padding:11px 13px;font-size:12.5px;line-height:1.4;position:relative;background:var(--butter)}
+.bubble2 b{display:block;font:700 14px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;margin-bottom:3px}
+.bubble2:after{content:"";position:absolute;left:-9px;bottom:14px;width:14px;height:14px;background:var(--butter);border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg)}
+.bubble span,.bubble2 span{min-height:2.8em;display:block}
+.sec{max-width:1460px;margin:46px auto 18px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.sec h2{font:800 30px Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-.5px}
+.sec p{font-size:14px;color:var(--ink2);max-width:700px}
+.num{font:800 13px 'DM Sans',-apple-system,sans-serif;background:var(--ink);color:var(--paper);border-radius:99px;padding:4px 10px}
+/* onboarding */
+.ob{display:flex;flex-direction:column;align-items:center;text-align:center}
+.ob h3{font:800 31px/1.05 Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-.6px;margin-top:8px}
+.ob p{font-size:14px;color:var(--ink2);margin-top:8px;padding:0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+.chipx{padding:10px 14px;border:2px solid var(--ink);border-radius:16px;background:var(--white);font:700 13.5px 'DM Sans',-apple-system,sans-serif;display:flex;gap:7px;align-items:center}
+.chipx.on{background:var(--ink);color:var(--paper)}
+.chipx .ck{width:16px;height:16px;border-radius:5px;border:2px solid currentColor;display:inline-block}
+.chipx.on .ck{background:var(--butter);border-color:var(--butter)}
+.stepdots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.stepdots i{width:22px;height:6px;border-radius:6px;background:var(--paper2);border:1.5px solid var(--ink)}.stepdots i.f{background:var(--ink)}
+.primary{position:absolute;left:18px;right:18px;bottom:28px;height:58px;border-radius:18px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font:700 16px 'DM Sans',-apple-system,sans-serif;box-shadow:3px 4px 0 var(--tomato)}
+.skip{position:absolute;left:0;right:0;bottom:96px;text-align:center;font:600 13px 'DM Sans',-apple-system,sans-serif;color:var(--muted)}
+/* block moment */
+.feedbg{position:absolute;inset:0;background:#111;}
+.feedbg:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,#222 0 160px,#1a1a1a 160px 320px);opacity:.9}
+.blocksheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-top:2px solid var(--ink);border-radius:30px 30px 0 0;padding:16px 20px 26px}
+.grab{width:42px;height:5px;border-radius:5px;background:var(--ink);opacity:.25;margin:0 auto 8px}
+.blocksheet h3{font:800 26px/1.08 Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-.4px}
+.blocksheet p{font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.45}
+.still{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.still span{font:700 11.5px 'DM Sans',-apple-system,sans-serif;padding:6px 10px;border-radius:99px;background:var(--sage);border:2px solid var(--ink)}
+.btn2{display:flex;gap:10px;margin-top:16px}
+.btn2 div{flex:1;height:52px;border-radius:16px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:700 14px 'DM Sans',-apple-system,sans-serif;text-align:center;padding:0 6px}
+.btn2 .p{background:var(--ink);color:var(--paper)}
+.fine{font-size:11.5px;color:var(--muted);margin-top:12px;text-align:center}
+/* attention */
+.alert{margin-top:14px;padding:15px;background:var(--blush)}
+.alert .t{font:700 20px/1.12 Fraunces,'Iowan Old Style',Georgia,serif}
+.alert .s{font-size:12.5px;color:var(--ink2);margin-top:5px;line-height:1.4}
+.fixbtn{margin-top:12px;height:48px;border-radius:14px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font:700 14px 'DM Sans',-apple-system,sans-serif}
+.steps{margin-top:12px;padding:6px 0}
+.steps .r{padding:11px 14px}
+.dotst{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);flex:none}
+.dotst.ok{background:var(--sage)}.dotst.bad{background:var(--tomato)}
+/* milestone */
+.confetti{position:absolute;inset:0;pointer-events:none}
+.confetti i{position:absolute;width:10px;height:16px;border:2px solid var(--ink);border-radius:3px;animation:fall 3.5s linear infinite}
+@keyframes fall{from{transform:translateY(-40px) rotate(0)}to{transform:translateY(760px) rotate(540deg)}}
+@media (prefers-reduced-motion:reduce){.confetti i{animation:none}}
+.ms-sheet{position:absolute;left:14px;right:14px;top:150px;padding:20px 18px 18px;text-align:center;background:var(--butter)}
+.ms-sheet .big{font:800 72px/1 Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-3px}
+.ms-sheet h3{font:800 24px Fraunces,'Iowan Old Style',Georgia,serif;margin-top:4px}
+.ms-sheet p{font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.45}
+.dim{position:absolute;inset:0;background:rgba(31,42,35,.45)}
+/* paywall */
+.plan{margin-top:12px;padding:14px;display:flex;gap:12px;align-items:center}
+.plan .rb{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);flex:none}
+.plan.sel{background:var(--butter)}.plan.sel .rb{background:var(--ink);box-shadow:inset 0 0 0 4px var(--butter)}
+.plan .pt{flex:1}.plan .pt b{display:block;font:700 16px Fraunces,'Iowan Old Style',Georgia,serif}.plan .pt span{font-size:12px;color:var(--ink2)}
+.plan .pp{font:800 18px Fraunces,'Iowan Old Style',Georgia,serif;text-align:right}.plan .pp small{display:block;font:600 10.5px 'DM Sans',-apple-system,sans-serif;color:var(--muted)}
+.cmp{margin-top:12px;overflow:hidden}
+.cmp .cr{display:flex;padding:9px 12px;border-bottom:2px solid var(--paper2);font-size:12.5px;align-items:center}
+.cmp .cr:last-child{border:none}
+.cmp .cr span{flex:1}.cmp .cr b{width:46px;text-align:center;font:700 11px 'DM Sans',-apple-system,sans-serif}
+.cmp .hd{background:var(--paper2);font-weight:700}
+.yes{color:#2F7A3A}.no{color:var(--muted)}
+.trial{margin-top:10px;font-size:11.5px;color:var(--ink2);text-align:center;line-height:1.45}
+/* explain overlay */
+.dimx{position:absolute;inset:0;background:rgba(31,42,35,.55)}
+.spot{position:absolute;left:18px;right:18px;top:262px;height:64px;border-radius:18px;background:var(--white);border:2px solid var(--ink);display:flex;align-items:center;gap:12px;padding:0 14px;box-shadow:0 0 0 6px rgba(244,195,78,.9)}
+.xbubble{position:absolute;left:18px;right:18px;top:352px;padding:13px 15px;background:var(--white);font-size:13.5px;line-height:1.45}
+.xbubble b{display:block;font:700 17px Fraunces,'Iowan Old Style',Georgia,serif;margin-bottom:4px}
+.xbubble .acts{display:flex;gap:8px;margin-top:10px}
+.xbubble .acts span{font:700 12px 'DM Sans',-apple-system,sans-serif;padding:7px 11px;border-radius:12px;border:2px solid var(--ink)}
+.xbubble .acts span.p{background:var(--ink);color:var(--paper)}
+/* rtl + dark */
+.rtl{direction:rtl;font-family:'IBM Plex Sans Arabic','Geeza Pro','DM Sans',sans-serif}
+.rtl .bubble:after{left:auto;right:-9px;transform:rotate(-135deg)}
+.rtl .days,.rtl h2,.rtl .bubble b{font-family:'IBM Plex Sans Arabic','Geeza Pro',sans-serif;font-weight:700}
+.dark{--paper:#16130E;--paper2:#2A251D;--white:#221E17;--ink:#F3ECDF;--ink2:#C9C0B0;--muted:#968D7E;background:var(--paper);box-shadow:0 0 0 9px #0B0A07,0 26px 50px -18px rgba(0,0,0,.6)}
+.dark .card{box-shadow:3px 4px 0 #000}
+.dark .garden{background:#5A4A1C;border-color:#F4C34E}
+.dark .pause{border-color:#000;box-shadow:3px 4px 0 #000}
+.dark .nav div.a{background:var(--ink);color:#16130E}
+/* rules */
+.flow{max-width:1460px;margin:0 auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.fbox{background:var(--paper);border:2px solid var(--ink);border-radius:16px;padding:10px 14px;font:700 13px 'DM Sans',-apple-system,sans-serif;box-shadow:3px 3px 0 var(--ink)}
+.fbox small{display:block;font-weight:500;color:var(--ink2);font-size:11.5px}
+.arrow{font:700 20px 'DM Sans',sans-serif;color:var(--ink2)}
+.rules{max-width:1460px;margin:22px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.rule{background:var(--paper);border:2px solid var(--ink);border-radius:20px;padding:16px 18px}
+.rule h4{font:700 18px Fraunces,'Iowan Old Style',Georgia,serif;margin-bottom:6px}
+.rule p{font-size:13px;line-height:1.55;color:var(--ink2)}
+.map{max-width:1460px;margin:30px auto 0;background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:18px 22px;box-shadow:4px 5px 0 var(--ink)}
+.map h3{font:700 22px Fraunces,'Iowan Old Style',Georgia,serif;margin-bottom:10px}
+.map table{width:100%;border-collapse:collapse;font-size:13px}
+.map th{text-align:left;font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:2px solid var(--ink)}
+.map td{padding:8px;border-bottom:1.5px solid var(--paper2);vertical-align:top;color:var(--ink2)}
+.map td:first-child{color:var(--ink);font-weight:600;width:48%}
+.dark{color:var(--ink)}
+.tight .r{padding:9px 14px}.tight .r .tx b{font-size:13.5px}
+.dark .tag.ok{color:#1F2A23}
+.dark .garden .days,.dark .garden .k{color:#F7E7B5}
+/* v5 */
+.lbl2{font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;color:var(--muted);margin:12px 4px 6px;text-transform:uppercase}
+.check{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-bottom:2px solid var(--paper2)}
+.check:last-child{border:none}
+.cbox{width:26px;height:26px;border-radius:9px;border:2px solid var(--ink);flex:none;display:flex;align-items:center;justify-content:center;font:800 13px 'DM Sans',sans-serif}
+.cbox.done{background:var(--sage)}.cbox.now{background:var(--butter)}
+.check b{display:block;font-size:14px}.check span{font-size:12px;color:var(--ink2);line-height:1.35}
+.why{font-size:11.5px;color:var(--muted);margin-top:4px}
+.bigtime{font:800 64px/1 Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-2px}
+.moon{background:#24304A;color:#F3ECDF}
+.moon .card{background:#2F3C59;border-color:#F3ECDF;box-shadow:3px 4px 0 #0E1424;color:#F3ECDF}
+.moon .tag{background:#2F3C59;color:#F3ECDF;border-color:#F3ECDF}
+.moon .muted{color:#B9C2D6}
+.stars{position:absolute;inset:0;background-image:radial-gradient(#F3ECDF 1px,transparent 1.4px),radial-gradient(#F3ECDF 1px,transparent 1.4px);background-size:70px 90px,110px 130px;background-position:10px 20px,45px 60px;opacity:.35}
+.locked .sw{opacity:.45}
+.lockbar{margin-top:12px;padding:12px 14px;background:var(--sky);display:flex;gap:10px;align-items:center}
+.lockbar b{font:700 16px Fraunces,Georgia,serif;display:block}.lockbar span{font-size:12px;color:var(--ink2)}
+.lk{width:34px;height:34px;border-radius:11px;border:2px solid var(--ink);background:var(--white);display:flex;align-items:center;justify-content:center;flex:none}
+/* android surfaces */
+.shade{background:#1C1B19;color:#EEE}
+.qs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 14px 0}
+.qt{height:62px;border-radius:22px;background:#33312D;display:flex;align-items:center;gap:10px;padding:0 12px;font:600 12.5px 'DM Sans',sans-serif}
+.qt i{width:28px;height:28px;border-radius:50%;background:#4A4740;flex:none}
+.qt.on{background:#F4C34E;color:#1F2A23}.qt.on i{background:#1F2A23}
+.qt small{display:block;font-weight:500;opacity:.75;font-size:11px}
+.notif{margin:10px 14px 0;background:#2A2926;border-radius:24px;padding:12px 14px}
+.notif .h{display:flex;gap:8px;align-items:center;font:600 11px 'DM Sans',sans-serif;opacity:.75}
+.notif .h i{width:18px;height:18px;border-radius:50%;background:#F6A9BC}
+.notif b{display:block;font-size:14px;margin-top:6px}
+.notif p{font-size:12.5px;opacity:.85;margin-top:2px}
+.notif .acts{display:flex;gap:8px;margin-top:10px}
+.notif .acts span{font:700 12px 'DM Sans',sans-serif;padding:7px 12px;border-radius:99px;background:#3B3934}
+.notif .acts span.p{background:#F4C34E;color:#1F2A23}
+.wall{background:linear-gradient(160deg,#C9D8C4,#E9D9B8)}
+.widget{position:absolute;left:16px;right:16px;top:70px;border-radius:28px;background:var(--paper);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);padding:14px;display:flex;gap:12px;align-items:center}
+.widget .d{font:800 44px/1 Fraunces,Georgia,serif}
+.widget .d span{display:block;font:600 11px 'DM Sans',sans-serif;color:var(--muted)}
+.widget .b{margin-left:auto;height:52px;padding:0 14px;border-radius:16px;background:var(--tomato);border:2px solid var(--ink);color:#fff;display:flex;align-items:center;font:700 13px 'DM Sans',sans-serif}
+.wsmall{position:absolute;top:230px;width:140px;height:140px;border-radius:28px;background:var(--butter);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);padding:12px}
+.apps{position:absolute;left:24px;right:24px;bottom:110px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.apps i{display:block;width:54px;height:54px;border-radius:18px;background:rgba(255,255,255,.65);margin:0 auto}
+.sheetx{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-top:2px solid var(--ink);border-radius:30px 30px 0 0;padding:14px 18px 22px}
+.seg{display:flex;border:2px solid var(--ink);border-radius:14px;overflow:hidden;margin-top:12px}
+.seg div{flex:1;text-align:center;padding:9px 0;font:700 13px 'DM Sans',sans-serif;border-right:2px solid var(--ink)}
+.seg div:last-child{border:none}.seg div.a{background:var(--ink);color:var(--paper)}
+.field{margin-top:12px;height:52px;border-radius:14px;border:2px solid var(--ink);background:var(--white);display:flex;align-items:center;padding:0 14px;font-size:15px}
+.field .cur{width:2px;height:22px;background:var(--ink);margin-left:2px;animation:caret 1s steps(1) infinite}
+.sugg{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.sugg span{font:600 12px 'DM Sans',sans-serif;padding:6px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--white)}
+.howlong{margin-top:12px;display:flex;gap:6px}
+.howlong span{flex:1;text-align:center;padding:9px 0;border-radius:12px;border:2px solid var(--ink);font:700 12px 'DM Sans',sans-serif;background:var(--white)}
+.howlong span.a{background:var(--butter)}
+/* design system */
+.ds{max-width:1460px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px}
+.dsb{background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:16px 18px;box-shadow:4px 5px 0 var(--ink)}
+.dsb h4{font:700 19px Fraunces,Georgia,serif;margin-bottom:10px}
+.tok{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1.5px solid var(--paper2);color:var(--ink2)}
+.tok b{color:var(--ink);font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.typ div{margin:6px 0}
+.cmpr{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.bx{height:48px;padding:0 16px;border-radius:16px;border:2px solid var(--ink);display:inline-flex;align-items:center;font:700 14px 'DM Sans',sans-serif}
+.bx.p{background:var(--ink);color:var(--paper);box-shadow:3px 4px 0 var(--tomato)}
+.bx.t{background:var(--butter)}.bx.g{background:transparent}
+.bx.d{background:var(--white);color:#B23A23}
+/* v6 */
+.goals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;text-align:left}
+.goal{padding:12px;border-radius:20px;border:2px solid var(--ink);background:var(--white);position:relative;min-height:112px}
+.goal.on{background:var(--butter);box-shadow:3px 4px 0 var(--ink)}
+.goal .gi{width:34px;height:34px;border-radius:11px;border:2px solid var(--ink);background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:16px}
+.goal b{display:block;font:700 15px Fraunces,Georgia,serif;margin-top:8px}
+.goal span{font-size:11.5px;color:var(--ink2);line-height:1.3;display:block;margin-top:2px}
+.goal .tick{position:absolute;right:10px;top:10px;width:20px;height:20px;border-radius:50%;border:2px solid var(--ink);background:var(--white)}
+.goal.on .tick{background:var(--ink)}
+.goal.on .tick:after{content:"";position:absolute;left:5px;top:2px;width:5px;height:9px;border:solid var(--butter);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.week7{display:flex;justify-content:space-between;margin-top:12px}
+.week7 div{display:flex;flex-direction:column;align-items:center;gap:4px;font:700 10px 'DM Sans',sans-serif;color:var(--ink2)}
+.week7 i{width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);background:var(--white);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px}
+.week7 i.g{background:var(--sage)}.week7 i.o{background:var(--blush)}.week7 i.t{background:var(--butter);box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--ink)}.week7 i.f{border-style:dashed;opacity:.55}
+.toast{position:absolute;left:18px;right:18px;top:46px;z-index:5;padding:10px 12px;border-radius:18px;background:var(--ink);color:var(--paper);display:flex;gap:10px;align-items:center;font-size:12.5px;box-shadow:0 10px 20px -8px rgba(0,0,0,.4)}
+.toast b{display:block;font-size:13.5px}
+.toast .pb{height:5px;border-radius:5px;background:rgba(245,239,227,.25);margin-top:5px;overflow:hidden}.toast .pb i{display:block;height:100%;width:62%;background:var(--butter)}
+.start-num{font:800 46px/1 Fraunces,Georgia,serif;letter-spacing:-1.5px}
+.start-num small{font:600 15px 'DM Sans',sans-serif;letter-spacing:0}
+.appbar{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}
+.appbar span{width:76px;color:var(--ink2);font-weight:600}
+.appbar div{flex:1;height:14px;border-radius:7px;border:2px solid var(--ink);background:var(--paper2);overflow:hidden}
+.appbar div i{display:block;height:100%;background:var(--tomato)}
+.appbar b{width:46px;text-align:right;font-size:12px}
+.src{font-size:10.5px;color:var(--muted);margin-top:8px}
+.coach{position:absolute;inset:0;background:rgba(31,42,35,.62)}
+.coach-hole{position:absolute;border-radius:22px;box-shadow:0 0 0 3px var(--butter),0 0 0 2000px rgba(31,42,35,.62)}
+.coach-tip{position:absolute;left:24px;right:24px;padding:13px 14px;background:var(--white);border:2px solid var(--ink);border-radius:18px;font-size:13px;line-height:1.4;box-shadow:3px 4px 0 var(--ink)}
+.coach-tip b{display:block;font:700 17px Fraunces,Georgia,serif;margin-bottom:3px}
+.coach-tip .ft{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font:700 12px 'DM Sans',sans-serif}
+.coach-tip .ft span.p{background:var(--ink);color:var(--paper);padding:7px 12px;border-radius:12px}
+.mini-phone{margin:12px auto 0;width:210px;border:2px solid var(--ink);border-radius:22px;background:#fff;padding:10px;font-size:11.5px;color:#222}
+.mini-phone .h{font:700 12.5px 'DM Sans',sans-serif;margin-bottom:6px}
+.mini-phone .it{display:flex;justify-content:space-between;align-items:center;padding:7px 8px;border-radius:10px;margin-top:4px;background:#F2F2F2}
+.mini-phone .it.hl{background:#FFF3C4;box-shadow:0 0 0 2.5px var(--tomato)}
+.msw{width:28px;height:16px;border-radius:9px;background:#BBB;position:relative}.msw:after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff}
+.stepper{display:flex;gap:6px;justify-content:center;margin-top:12px}.stepper i{width:8px;height:8px;border-radius:50%;background:var(--paper2);border:1.5px solid var(--ink)}.stepper i.f{background:var(--ink)}
+.lens{display:flex;gap:8px;margin-top:14px}
+.lens span{flex:1;padding:10px 0;text-align:center;border-radius:14px;border:2px solid var(--ink);background:var(--white);font:700 13px 'DM Sans',sans-serif}
+.lens span small{display:block;font:500 10.5px 'DM Sans',sans-serif;color:var(--muted)}
+.lens span.a{background:var(--ink);color:var(--paper)}.lens span.a small{color:#C9C0B0}
+.alts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.alt{padding:11px;border-radius:18px;border:2px solid var(--ink);background:var(--white);font-size:11.5px;color:var(--ink2)}
+.alt b{display:block;font:700 14.5px Fraunces,Georgia,serif;color:var(--ink);margin:4px 0 2px}
+.alt .go{display:inline-block;margin-top:8px;font:700 11.5px 'DM Sans',sans-serif;padding:5px 10px;border-radius:10px;border:2px solid var(--ink);background:var(--paper)}
+.empty-arrow{display:block;margin:6px auto 0}
+.vs{max-width:1460px;margin:24px auto 0;background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:18px 22px;box-shadow:4px 5px 0 var(--ink)}
+.vs h3{font:700 22px Fraunces,Georgia,serif;margin-bottom:8px}
+.vs table{width:100%;border-collapse:collapse;font-size:13px}
+.vs th{text-align:left;font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:2px solid var(--ink)}
+.vs td{padding:8px;border-bottom:1.5px solid var(--paper2);vertical-align:top;color:var(--ink2)}
+.vs td:first-child{width:24%;color:var(--ink);font-weight:600}
+.pbar{display:flex;align-items:center;gap:10px;margin-top:6px}
+.pbar .bk{width:34px;height:34px;border-radius:12px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:800}
+.pbar .tr{flex:1;height:10px;border-radius:10px;border:2px solid var(--ink);background:var(--white);overflow:hidden}
+.pbar .tr i{display:block;height:100%;background:var(--ink)}
+.pbar b{font:800 12px 'DM Sans',sans-serif;width:34px;text-align:right}
+.act{font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:16px}
+.q{font:800 26px/1.12 Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-.4px;margin-top:6px}
+.qs2{font-size:13px;color:var(--ink2);margin-top:6px}
+.ans{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+.an{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:18px;border:2px solid var(--ink);background:var(--white);font:600 14.5px 'DM Sans',sans-serif}
+.an .k{width:26px;height:26px;border-radius:9px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:800 12px 'DM Sans',sans-serif;background:var(--paper);flex:none}
+.an.on{background:var(--butter);box-shadow:3px 4px 0 var(--ink)}.an.on .k{background:var(--ink);color:var(--butter)}
+.an small{display:block;font:500 11.5px 'DM Sans',sans-serif;color:var(--ink2)}
+.private{position:absolute;left:0;right:0;bottom:26px;text-align:center;font:600 12px 'DM Sans',sans-serif;color:var(--muted)}
+.planrow{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-bottom:2px solid var(--paper2)}
+.planrow:last-child{border:none}
+.planrow .n{width:28px;height:28px;border-radius:50%;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:800 12px 'DM Sans',sans-serif;flex:none;background:var(--paper)}
+.planrow b{display:block;font-size:14px}.planrow span{font-size:12px;color:var(--ink2);line-height:1.35}
+.planrow em{font-style:normal;font:700 10.5px "DM Sans",sans-serif;background:var(--sage);border:1.5px solid var(--ink);border-radius:99px;padding:1px 7px;display:table;margin:4px 0 3px}
+.nstack{position:relative;height:236px;margin-top:20px}
+.nmock{position:absolute;left:8px;right:8px;background:var(--white);border:2px solid var(--ink);border-radius:20px;padding:10px 12px;font-size:12px;box-shadow:3px 4px 0 var(--ink)}
+.nmock .h{display:flex;justify-content:space-between;font:700 10.5px 'DM Sans',sans-serif;color:var(--muted)}
+.nmock b{display:block;font-size:13.5px;margin-top:3px}
+.ring2{width:180px;height:180px;margin:20px auto 0;border-radius:50%;border:2px dashed var(--ink);display:flex;align-items:center;justify-content:center;position:relative}
+.holdbtn{position:absolute;left:18px;right:18px;bottom:64px;height:64px;border-radius:20px;border:2px solid var(--ink);background:var(--white);overflow:hidden;display:flex;align-items:center;justify-content:center;font:800 16px 'DM Sans',sans-serif;box-shadow:3px 4px 0 var(--ink)}
+.holdbtn i{position:absolute;left:0;top:0;bottom:0;width:58%;background:var(--butter);border-right:2px solid var(--ink)}
+.holdbtn span{position:relative}
+.notnow{position:absolute;left:0;right:0;bottom:30px;text-align:center;font:600 13px 'DM Sans',sans-serif;color:var(--muted)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.cal div{height:40px;border-radius:12px;border:2px solid var(--ink);background:var(--white);font:700 11px 'DM Sans',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cal div small{font-size:8.5px;color:var(--muted);font-weight:600}
+.cal div.t{background:var(--butter)}.cal div.m{background:var(--sage)}
+.flowcmp{max-width:1460px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:14px}
+.lane{background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:14px 16px;box-shadow:4px 5px 0 var(--ink)}
+.lane h4{font:700 18px Fraunces,Georgia,serif;margin-bottom:8px}
+.pills{display:flex;flex-wrap:wrap;gap:5px}
+.pills span{font:600 11px 'DM Sans',sans-serif;padding:4px 8px;border-radius:9px;border:1.5px solid var(--ink);background:var(--white)}
+.pills span.l{background:var(--paper2);color:var(--muted);border-style:dashed}
+.pills span.s{background:var(--sage)}
+.pills span.a1{background:#FFE7A8}.pills span.a2{background:#CFE6F2}.pills span.a3{background:#FAD0C6}
+.pills b{font:800 11px 'DM Sans',sans-serif;align-self:center;margin:0 4px}
+/* onboarding v2 */
+.bleed{background:var(--tomato);color:var(--white)}
+.bleed.sage{background:#7FB27A;color:var(--ink)}
+.bleed .status{color:inherit}
+.bleed .primary{background:var(--white);color:var(--ink);box-shadow:3px 4px 0 var(--ink)}
+.bleed p,.bleed .qs2{color:inherit;opacity:.9}
+.chatlog{display:flex;flex-direction:column;gap:7px;margin-top:14px}
+.bub{max-width:78%;padding:9px 13px;border-radius:18px 18px 18px 6px;border:2px solid var(--ink);background:var(--white);font-size:13.5px;line-height:1.35;align-self:flex-start}
+.bub.me{align-self:flex-end;border-radius:18px 18px 6px 18px;background:var(--ink);color:var(--paper)}
+.bub.typing{font-weight:800;letter-spacing:3px}
+.who{display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:2px solid var(--paper2)}
+.who b{font-size:14px;display:block}.who span{font-size:11px;color:#2F7A3A;font-weight:700}
+.replies{position:absolute;left:18px;right:18px;bottom:26px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.replies .hint{font:600 11px 'DM Sans',sans-serif;color:var(--muted)}
+.replies span.r{padding:10px 14px;border-radius:16px;border:2px solid var(--ink);background:var(--butter);font:700 13.5px 'DM Sans',sans-serif;box-shadow:2px 3px 0 var(--ink)}
+.namefield{display:flex;gap:8px;align-items:center;margin-top:4px}
+.namefield .field{flex:1;margin:0}
+.math{margin-top:16px;padding:16px;text-align:center;background:var(--white)}
+.math .n{font:800 48px/1 Fraunces,Georgia,serif;color:var(--tomato)}
+.math .u{font:700 12.5px 'DM Sans',sans-serif;margin-top:2px}
+.math .ar{font:800 20px 'DM Sans',sans-serif;margin:6px 0;color:var(--tomato)}
+.dots365{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin-top:12px}
+.dots365 i{aspect-ratio:1;border-radius:50%;background:var(--paper2)}
+.dots365 i.s{background:var(--tomato)}
+.ways{display:flex;border:2px solid var(--ink);border-radius:16px;overflow:hidden;margin-top:14px;background:var(--white)}
+.ways div{flex:1;text-align:center;padding:10px 0;font:800 13px 'DM Sans',sans-serif}
+.ways div.a{background:var(--ink);color:var(--paper)}
+.waylist{margin-top:12px;display:flex;flex-direction:column;gap:9px}
+.wl{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.35}
+.wl i{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:12px;background:var(--white)}
+.wl.bad i{background:var(--blush)}.wl.good i{background:var(--sage)}
+.weekcards{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.wk{display:flex;gap:10px;padding:11px 12px;border-radius:18px;border:2px solid var(--ink);background:var(--white)}
+.wk .wn{flex:none;width:46px;text-align:center;font:800 11px 'DM Sans',sans-serif;color:var(--muted)}
+.wk .wn b{display:block;font:800 22px Fraunces,Georgia,serif;color:var(--ink)}
+.wk b.t{display:block;font:700 15px Fraunces,Georgia,serif}
+.wk span{font-size:12px;color:var(--ink2);line-height:1.35}
+.wk.hard{background:#FBE3DC}
+.holdring{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);width:112px;height:112px}
+.holdring svg{position:absolute;inset:0}
+.holdring .core{position:absolute;inset:14px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;color:var(--butter);font:800 30px 'DM Sans',sans-serif;box-shadow:3px 4px 0 var(--tomato)}
+.holdhint{position:absolute;left:0;right:0;bottom:192px;text-align:center;font:600 12px 'DM Sans',sans-serif;color:var(--muted)}
+.brainshot{margin-top:6px}
+.brainshot .bars{display:flex;gap:5px;align-items:flex-end;height:84px;margin-top:8px}
+.brainshot .bars i{flex:1;border:2px solid var(--ink);border-radius:6px 6px 3px 3px;background:var(--paper2)}
+.brainshot .bars i.h{background:var(--butter)}
+.facts{margin-top:10px}
+.facts .check{padding:9px 12px}
+</style>
+</head>
+<body>
+<div class="head">
+ <div><h1>Onboarding v2 · general edition</h1></div>
+ <p>Picture only, nothing built. v2 takes what the real Unrot onboarding does well (full-colour emotional moments, a chat with the character, quick maths in big numbers, "two paths", a week-by-week plan, a big hold button) and does it honestly. Our app today has up to <b>39 pages</b>; this is <b>up to 17 screens, about 4 minutes, protected at screen 11</b>. The brain character is placeholder art until the real one is made in Blender.</p>
+</div>
+
+<div class="sec"><span class="num">1</span><h2>The flow</h2><p>Colours = acts. Dashed = only shown when the answers call for it.</p></div>
+<div class="flowcmp">
+ <div class="lane"><h4>Up to 17 screens in 3 acts</h4><div class="pills">
+  <span class="a1">1 Welcome</span><span class="a1">2 Chat + name</span><span class="a1">3 Less of?</span><span class="a1">4 Hours a day</span><span class="a1">5 Quick maths</span><span class="a1">6 Brain: feeds</span><span class="a1" style="border-style:dashed">7 Brain: adult</span><span class="a1">8 When hardest</span><span class="a1">9 Your reason</span><b>→</b>
+  <span class="a2">10 Your plan</span><span class="a2">11 Turn on</span><span class="a2" style="border-style:dashed">12 Heads-ups</span><b>→</b>
+  <span class="a3">13 Two evenings</span><span class="a3">14 Next 4 weeks</span><span class="a3">15 Hold to promise</span><span class="a3" style="border-style:dashed">16 Keep it in place</span><span class="a3">17 Day 1</span></div>
+  <div class="why" style="margin-top:8px">Moved out, still in the app: loop, willpower, five "show" pages, FAQ, "why not a filter" → a 3-minute "Why this works" read on Today and in Help.</div></div>
+</div>
+
+<div class="sec"><span class="num">2</span><h2>Act 1 · About you</h2><p>Fast, friendly, and every answer is used. The chat and the maths are Unrot's best beats; we keep them, and the maths uses your own number, not an invented one.</p></div>
+<div class="row">
+
+<div><div class="phone bleed">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr ob" style="padding-top:70px">
+  <span class="noodle" data-mood="happy" style="width:170px;height:160px"></span>
+  <h3 style="font-size:40px;line-height:1;margin-top:18px">Get your<br>attention back.</h3>
+  <p style="font-size:15px">Close the feeds that eat your day. Get help in the moments they pull at you.</p>
+  <div class="still" style="justify-content:center;margin-top:18px"><span style="background:var(--white)">No account</span><span style="background:var(--white)">Stays on your phone</span><span style="background:var(--white)">4 minutes</span></div>
+ </div>
+ <div class="primary">Let's start</div>
+</div><div class="cap"><b>1 · Welcome.</b> A full-colour first screen sets the mood, as Unrot does, but with no "4.8 · 300K" badges we can't back up.</div></div>
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:6%"></i></div><b>6%</b></div>
+  <div class="who" style="margin-top:12px"><span class="noodle" data-mood="talk" style="width:40px;height:40px"></span><div><b>Your helper</b><span>● here for you</span></div></div>
+  <div class="chatlog">
+   <div class="bub">Hey 👋 Before we set anything up, a few quick questions.</div>
+   <div class="bub">Nothing you say leaves this phone.</div>
+   <div class="bub">What should I call you?</div>
+   <div class="bub me">Sam</div>
+   <div class="bub">Nice to meet you, Sam. Does this sound familiar: you open TikTok for a minute and look up an hour later?</div>
+  </div>
+ </div>
+ <div class="replies"><span class="hint">Tap a reply</span><span class="r">Every single day</span><span class="r">Sometimes</span><span class="r">Not really</span></div>
+</div><div class="cap"><b>2 · Chat + name.</b> Unrot's chat makes it personal in seconds. Ours asks the name inside the chat and the replies are taps, so it stays fast.</div></div>
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:12%"></i></div><b>12%</b></div>
+  <div class="act">About you</div>
+  <div class="q">What do you want less of, Sam?</div>
+  <div class="qs2">Pick all that fit.</div>
+  <div class="ans">
+   <div class="an on"><span class="k">1</span><div>Short videos<small>Shorts, Reels, TikTok</small></div></div>
+   <div class="an on"><span class="k">2</span><div>Endless feeds<small>Scrolling that never ends</small></div></div>
+   <div class="an"><span class="k">3</span><div>Phone time in general<small>Limits for any app</small></div></div>
+   <div class="an"><span class="k">4</span><div>Adult content<small>Sites, apps and images</small></div></div>
+  </div>
+ </div>
+ <div class="primary" style="bottom:58px">Continue · 2 picked</div>
+ <div class="private">🔒 Your answers stay on this phone</div>
+</div><div class="cap"><b>3 · Less of?</b> Numbered cards, % bar, privacy line. Every pick changes the plan.</div></div>
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:18%"></i></div><b>18%</b></div>
+  <div class="act">About you</div>
+  <div class="q">About how long are you on your phone each day?</div>
+  <div class="qs2">A guess is fine. Later I'll show you Android's real number.</div>
+  <div class="ans">
+   <div class="an"><span class="k">1</span>Under 2 hours</div>
+   <div class="an"><span class="k">2</span>2 to 4 hours</div>
+   <div class="an on"><span class="k">3</span>4 to 6 hours</div>
+   <div class="an"><span class="k">4</span>More than 6 hours</div>
+  </div>
+ </div>
+ <div class="private">🔒 Your answers stay on this phone</div>
+</div><div class="cap"><b>4 · Hours a day.</b> One tap moves on. Honest about being a guess.</div></div>
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:24%"></i></div><b>24%</b></div>
+  <div class="q" style="text-align:center;margin-top:18px">Some quick maths, Sam</div>
+  <div class="card math">
+   <div class="n">5</div><div class="u">hours a day</div><div class="ar">↓</div>
+   <div class="n">150</div><div class="u">hours a month</div><div class="ar">↓</div>
+   <div class="n">76</div><div class="u">full days a year</div>
+  </div>
+  <div class="qs2" style="text-align:center">From your answer: 5 h × 365 days ÷ 24.</div>
+ </div>
+ <div class="primary">Continue</div>
+</div><div class="cap"><b>5 · Quick maths.</b> Unrot's big red numbers, but every step is shown, so nobody feels tricked.</div></div>
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:30%"></i></div><b>30%</b></div>
+  <div class="act">Why it's hard</div>
+  <div class="card brainshot" style="padding:12px 14px"><div class="bars"><i style="height:22%"></i><i class="h" style="height:88%"></i><i style="height:18%"></i><i style="height:34%"></i><i style="height:14%"></i><i class="h" style="height:66%"></i><i style="height:26%"></i><i class="h" style="height:100%"></i></div><div class="why" style="text-align:center">Big rewards come at random</div></div>
+  <div class="q" style="font-size:23px;margin-top:12px">What endless feeds do in your brain</div>
+  <div class="qs2">Dopamine rises when your brain expects something good. Feeds pay out at random, the same pattern that makes a slot machine hard to leave.</div>
+  <div class="card facts"><div class="check"><span class="cbox">1</span><div><b>Random rewards hold on longest</b></div></div><div class="check"><span class="cbox">2</span><div><b>Constant novelty trains your attention</b></div></div><div class="check"><span class="cbox">3</span><div><b>Learned, so it can be unlearned</b></div></div></div>
+ </div>
+ <div class="primary">Continue</div>
+</div><div class="cap"><b>6 · Brain: feeds</b> (already in the app). Tightened: chart, one short paragraph, three headline facts. Tap a fact to read more.</div></div>
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:47%"></i></div><b>47%</b></div>
+  <div class="act">About you</div>
+  <div class="q">What are you doing this for?</div>
+  <div class="qs2">You'll see it when a feed is closed. Only you.</div>
+  <div class="ans">
+   <div class="an"><span class="k">1</span>My focus and time</div>
+   <div class="an on"><span class="k">2</span>My family</div>
+   <div class="an"><span class="k">3</span>Better sleep</div>
+   <div class="an"><span class="k">4</span>In my own words…</div>
+  </div>
+  <div class="card" style="margin-top:12px;padding:10px 12px;font:600 15px Fraunces,Georgia,serif">“Evenings with my family, not my feed.”</div>
+ </div>
+ <div class="primary" style="bottom:58px">Continue</div>
+ <div class="private">🔒 Your answers stay on this phone</div>
+</div><div class="cap"><b>9 · Your reason.</b> Shown back exactly as it will appear on the block screen. (7 and 8, adult brain page and "when hardest", follow the same patterns.)</div></div>
+</div>
+
+<div class="sec"><span class="num">3</span><h2>Act 2 · Set it up</h2><p>Protection is on by screen 11, so anyone who stops later is still protected.</p></div>
+<div class="row">
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:53%"></i></div><b>53%</b></div>
+  <div class="act">Your plan</div>
+  <div class="q">Here's what I'll do, Sam.</div>
+  <div class="card" style="margin-top:12px;overflow:hidden">
+   <div class="planrow"><span class="n">1</span><div><b>Close Shorts and Reels <em>you said: short videos</em></b><span>YouTube and Instagram keep working.</span></div></div>
+   <div class="planrow"><span class="n">2</span><div><b>Lights-out 22:00–07:00 <em>late at night</em></b><span>Calls, messages and alarms still work.</span></div></div>
+   <div class="planrow"><span class="n">3</span><div><b>Wait before TikTok opens <em>when bored</em></b><span>10 s, +5 s each open that day.</span></div></div>
+   <div class="planrow"><span class="n">4</span><div><b>Breathing pause, anywhere</b><span>On Today and in Quick Settings.</span></div></div>
+  </div>
+ </div>
+ <div class="primary">Turn this on</div>
+</div><div class="cap"><b>10 · Your plan.</b> Every line names the answer it came from.</div></div>
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:59%"></i></div><b>59%</b></div>
+  <div class="act">Turn on · 1 of 2</div>
+  <div class="q">Let it see which app is open</div>
+  <div class="qs2">Needed to close Shorts and Reels. It reads app names and feed screens only, on the phone.</div>
+  <div class="mini-phone" style="margin-top:14px">
+   <div class="h">‹ Installed apps</div>
+   <div class="it"><span>Bixby</span><i class="msw"></i></div>
+   <div class="it hl"><span><b>Unrot</b></span><i class="msw"></i></div>
+   <div class="it"><span>TalkBack</span><i class="msw"></i></div>
+  </div>
+  <div style="font-size:12px;color:var(--ink2);text-align:center;margin-top:10px">Samsung: Accessibility › Installed apps</div>
+ </div>
+ <div class="primary">Open Android settings</div>
+</div><div class="cap"><b>11 · Turn on.</b> A picture of the exact switch for this phone maker.</div></div>
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:65%"></i></div><b>65%</b></div>
+  <div class="act">Heads-ups</div>
+  <div class="q">The only notifications you'll get.</div>
+  <div class="nstack">
+   <div class="nmock" style="top:0;transform:scale(.92);opacity:.75"><div class="h"><span>Unrot</span><span>21:30</span></div><b>Lights-out in 30 minutes</b>Start winding down?</div>
+   <div class="nmock" style="top:66px;transform:scale(.96)"><div class="h"><span>Unrot</span><span>yesterday</span></div><b>Website filter stopped</b>Tap to turn it back on.</div>
+   <div class="nmock" style="top:136px"><div class="h"><span>Unrot</span><span>now</span></div><b>5 minutes left on TikTok</b>It closes at 21:45.</div>
+  </div>
+  <div style="font-size:12.5px;color:var(--ink2);margin-top:6px">No streak nagging, no "we miss you", no ads.</div>
+ </div>
+ <div class="primary" style="bottom:58px">Allow notifications</div>
+ <div class="private">Not now</div>
+</div><div class="cap"><b>12 · Heads-ups.</b> Real previews before Android asks. Skipped if already allowed.</div></div>
+</div>
+
+<div class="sec"><span class="num">4</span><h2>Act 3 · Commit</h2><p>Unrot builds to the commitment with "two paths", a 4-week plan and a big held button. We do the same, built from your own answers, including the hard week.</p></div>
+<div class="row">
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:71%"></i></div><b>71%</b></div>
+  <div class="q" style="text-align:center;margin-top:10px">Your evenings, two ways</div>
+  <div class="ways"><div>Without a plan</div><div class="a">With your plan</div></div>
+  <div class="card" style="margin-top:12px;padding:14px;background:#E3F0DF">
+   <div class="waylist">
+    <div class="wl good"><i>✓</i>Shorts closed. You watch one thing you chose, then stop.</div>
+    <div class="wl good"><i>✓</i>Lights-out at 22:00. Phone charges outside the bed.</div>
+    <div class="wl good"><i>✓</i>A bored moment gets a 10-second wait, and often passes.</div>
+    <div class="wl good"><i>✓</i>Evenings with your family, not your feed.</div>
+   </div>
+  </div>
+  <div class="qs2" style="text-align:center;margin-top:10px">← Toggle to compare. Built from your answers.</div>
+ </div>
+ <div class="primary">Continue</div>
+</div><div class="cap"><b>13 · Two evenings.</b> Unrot's red/blue "two paths" toggle, made personal: both sides use your own apps, hours and reason, not generic claims.</div></div>
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:77%"></i></div><b>77%</b></div>
+  <div class="q">Your next 4 weeks</div>
+  <div class="qs2">What usually happens. Not a promise, and nothing resets if a day goes badly.</div>
+  <div class="weekcards">
+   <div class="wk hard"><div class="wn">Week<b>1</b></div><div><b class="t">The itch</b><span>You reach for the closed apps out of habit. That's normal, and the strongest it will be.</span></div></div>
+   <div class="wk"><div class="wn">Week<b>2</b></div><div><b class="t">Fewer reaches</b><span>The urge comes later and leaves sooner. Evenings feel longer.</span></div></div>
+   <div class="wk"><div class="wn">Week<b>3</b></div><div><b class="t">Slower things feel OK</b><span>A book or a long video holds you again.</span></div></div>
+   <div class="wk"><div class="wn">Week<b>4</b></div><div><b class="t">Your new normal</b><span>Decide which limits to keep, loosen or tighten.</span></div></div>
+  </div>
+ </div>
+ <div class="primary">Continue</div>
+</div><div class="cap"><b>14 · Next 4 weeks.</b> Unrot's week cards promise "you won't recognise yourself". Ours sets real expectations, including that week 1 is the hardest.</div></div>
+
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr ob" style="padding-top:22px">
+  <div class="pbar" style="width:100%"><span class="bk">‹</span><div class="tr"><i style="width:84%"></i></div><b>84%</b></div>
+  <span class="noodle" data-mood="happy" style="width:110px;height:100px;margin-top:22px"></span>
+  <h3 style="font-size:27px">“I'll take a breath before I scroll, for my family.”</h3>
+  <p>A promise to yourself. It doesn't lock anything.</p>
+ </div>
+ <div class="holdhint">Hold the button for 2 seconds</div>
+ <div class="holdring"><svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="52" fill="none" stroke="#1F2A23" stroke-opacity=".15" stroke-width="6"/><circle cx="56" cy="56" r="52" fill="none" stroke="#E5553A" stroke-width="6" stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="130" transform="rotate(-90 56 56)"/></svg><div class="core">✓</div></div>
+ <div class="notnow">Not now</div>
+</div><div class="cap"><b>15 · Hold to promise.</b> Unrot's big round hold button: a ring fills as you hold, with haptic ticks and a final thump. One promise, in your words. "Not now" always works.</div></div>
+
+<div><div class="phone bleed sage">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr ob" style="padding-top:40px">
+  <span class="noodle" data-mood="proud" style="width:160px;height:150px"></span>
+  <h3 style="font-size:36px;line-height:1.02">Day 1 starts now, Sam.</h3>
+  <div class="card" style="margin-top:16px;overflow:hidden;width:100%;text-align:left">
+   <div class="planrow"><span class="n">✓</span><div><b>Shorts and Reels closed</b><span>Running now</span></div></div>
+   <div class="planrow"><span class="n">☾</span><div><b>Lights-out tonight at 22:00</b><span>In 12 hours</span></div></div>
+   <div class="planrow"><span class="n">7</span><div><b>First sticker next Thursday</b><span>The day count never resets</span></div></div>
+  </div>
+ </div>
+ <div class="primary">Go to Today</div>
+</div><div class="cap"><b>17 · Day 1.</b> Unrot's full-colour "You're about to Unrot" beat, used for the real start: what is running now, what happens tonight, and when the first milestone comes.</div></div>
+</div>
+
+<div class="sec"><span class="num">5</span><h2>What we took from Unrot, and what we didn't</h2></div>
+<div class="vs" style="margin-top:0"><table>
+<tr><th>Pattern</th><th>Unrot</th><th>Ours</th></tr>
+<tr><td>First screen</td><td>Full-colour hero with "4.8 · 300K"</td><td>Full-colour hero, three true facts</td></tr>
+<tr><td>Chat with the character</td><td>Long scripted chat, slang, guilt lines ("you. can't. stop.")</td><td>Five short bubbles, name asked inside, tap replies, no guilt</td></tr>
+<tr><td>Quick maths</td><td>Big red numbers + year of dots</td><td>Same big numbers from your own guess, with the formula shown</td></tr>
+<tr><td>Two paths</td><td>Red "brainrot" vs blue "unrot" with generic claims</td><td>Your evenings two ways, built from your apps, hours and reason</td></tr>
+<tr><td>Weekly plan</td><td>Week 1–4 "you won't recognise yourself"</td><td>Week 1–4 what usually happens, week 1 marked as the hard one</td></tr>
+<tr><td>Commitment</td><td>Fingerprint hold button</td><td>Round hold button with a filling ring; locks nothing</td></tr>
+<tr><td>Not taken</td><td>Ratings and user counts, rating request, "the more people use it the smarter it gets", countdown discount, fake reviews, coins to unlock apps</td><td>None of these. Plus is offered on day 3, never with a timer.</td></tr>
+</table></div>
+
+<script>
+(function(){
+const INK='#1F2A23',PINK='#F6A9BC',SHADE='#E07E98',FOLD='#C9637E',LIGHT='#FFE0E7',CHEEK='#E5553A',WHITE='#FFFDF8';
+let uid=0;
+const mirror=d=>d.replace(/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g,(m,x,y)=>`${+(140-x).toFixed(1)} ${y}`);
+const S=(d,c,w,o)=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${o?` opacity="${o}"`:''}/>`;
+// Outline: two hemispheres with a notch on top, bumpy lobes, flatter bottom.
+const OUT="M70 17 C74 11 82 8 90 10 C97 8 105 12 108 19 C116 19 123 25 124 33 C131 37 134 46 131 54 C136 61 136 71 130 77 C133 85 130 95 122 99 C120 107 112 112 104 111 C97 116 86 116 79 111 C75 113 65 113 61 111 C54 116 43 116 36 111 C28 112 20 107 18 99 C10 95 7 85 10 77 C4 71 4 61 9 54 C6 46 9 37 16 33 C17 25 24 19 32 19 C35 12 43 8 50 10 C58 8 66 11 70 17Z";
+const leftFolds=[
+ "M24 40 C30 33 39 35 38 42 C37 48 45 51 51 46",
+ "M40 22 C47 18 55 22 53 28 C52 33 58 36 63 32",
+ "M14 58 C20 52 28 55 27 61 C26 66 32 69 37 65",
+ "M33 50 C37 46 43 48 43 53",
+ "M56 40 C60 37 64 40 63 45",
+ "M14 80 C20 76 27 80 25 86 C24 90 28 94 33 92",
+ "M26 101 C31 97 38 100 37 105",
+ "M46 104 C50 100 56 103 55 108"
+];
+const folds=leftFolds.map(d=>S(d,FOLD,3.1)+S(mirror(d),FOLD,3.1)).join('')+
+ S("M70 18 C66 27 74 34 69 43 C66 49 71 53 70 57",FOLD,3.6);
+const shine=S("M22 34 C27 27 35 23 43 23",LIGHT,4.5)+S("M83 17 C89 14 97 15 102 19",LIGHT,4)+S("M118 44 C122 48 124 53 124 58",LIGHT,3,.8);
+const cerebellum=`<g><path d="M96 104 C100 98 112 98 117 104 C121 110 116 118 106 118 C98 118 93 111 96 104Z" fill="${SHADE}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>${S("M99 107 C104 105 110 105 115 107",FOLD,2.2)}${S("M99 112 C104 110 110 110 115 112",FOLD,2.2)}</g>`;
+const shoe=(x,flip)=>{const f=flip?-1:1;return `<g transform="translate(${x} 0) scale(${f} 1)">
+ <path d="M-9 129 C-9 122 -2 120 5 122 C11 123 14 128 12 132 L-8 132 C-9 132 -9 130 -9 129Z" fill="${WHITE}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+ <path d="M-9 131 L12 131 L12 135 C12 136 11 137 10 137 L-7 137 C-9 137 -9 135 -9 134Z" fill="${CHEEK}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>
+ ${S("M-2 124 L2 127 M1 123 L5 126",INK,1.8)}
+ <path d="M6 124 C10 125 12 128 12 130" fill="none" stroke="${INK}" stroke-width="1.6" opacity=".5"/></g>`};
+const legs=`<g class="n-legL">${S("M56 110 L54 126",INK,4.6)}${shoe(54,true)}</g><g class="n-legR">${S("M84 110 L86 126",INK,4.6)}${shoe(86,false)}</g>`;
+const hand=(x,y)=>`<circle cx="${x}" cy="${y}" r="5.6" fill="${WHITE}" stroke="${INK}" stroke-width="2.6"/>${S(`M${x-2} ${y-4} L${x-2} ${y-1}`,INK,1.5,.6)}`;
+const armL=S("M13 78 C6 84 5 92 8 97",INK,4)+hand(8,99);
+const armR=S("M127 78 C134 84 135 92 132 97",INK,4)+hand(132,99);
+const cheeks=`<ellipse cx="44" cy="84" rx="7.5" ry="4.4" fill="${CHEEK}" opacity=".4"/><ellipse cx="96" cy="84" rx="7.5" ry="4.4" fill="${CHEEK}" opacity=".4"/>`;
+const eye=(x)=>`<ellipse cx="${x}" cy="72" rx="6" ry="7" fill="${INK}"/><ellipse cx="${x+0.6}" cy="73.5" rx="3.4" ry="4" fill="#3C5A48"/><circle cx="${x+2.2}" cy="69.4" r="2.2" fill="#fff"/><circle cx="${x-1.8}" cy="75.6" r="1" fill="#fff" opacity=".8"/>`;
+const eyesOpen=`<g class="n-eyes">${eye(57)}${eye(83)}</g>`;
+const brows=S("M49 60 Q56 56 63 59",INK,2.6)+S("M77 59 Q84 56 91 60",INK,2.6);
+const faces={
+ happy:{f:eyesOpen+brows+S("M60 86 Q70 96 80 86",INK,3.2)+S("M66 91 Q70 93 74 91",CHEEK,2.2,.8),
+  a:armL+`<g class="n-wave">${S("M128 82 C140 76 146 66 145 55",INK,4)}${hand(145,51)}</g>`},
+ talk:{f:eyesOpen+brows+`<g class="n-mouth-talk"><path d="M62 85 Q70 83 78 85 Q77 96 70 96 Q63 96 62 85Z" fill="${INK}"/><path d="M65 92 Q70 89 75 92" fill="none" stroke="${CHEEK}" stroke-width="2.6" stroke-linecap="round"/></g>`,
+  a:armL+`<g class="n-point">${S("M127 78 C136 76 143 72 149 66",INK,4)}${hand(150,64)}${S("M150 59 L153 52",INK,3)}</g>`},
+ calm:{f:S("M50 73 Q57 78 64 73",INK,3.2)+S("M76 73 Q83 78 90 73",INK,3.2)+`<ellipse cx="70" cy="89" rx="4.6" ry="4" fill="${INK}"/>`,a:armL+armR},
+ proud:{f:S("M50 74 Q57 65 64 74",INK,3.2)+S("M76 74 Q83 65 90 74",INK,3.2)+`<path d="M59 84 Q70 101 81 84Z" fill="${INK}" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>`+S("M64 92 Q70 96 76 92",CHEEK,2.6),
+  a:S("M12 82 C0 74 -5 62 -3 51",INK,4)+hand(-3,47)+S("M128 82 C140 74 145 62 143 51",INK,4)+hand(143,47)+
+  `<g class="n-spark"><path d="M-2 30 l3 -7 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3z" fill="#F4C34E" stroke="${INK}" stroke-width="2"/><path d="M142 26 l2 -5 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2z" fill="#F4C34E" stroke="${INK}" stroke-width="2"/></g>`},
+ worried:{f:`<g class="n-eyes">${eye(57)}${eye(83)}</g>`+S("M49 58 Q56 61 63 57",INK,2.6)+S("M77 57 Q84 61 91 58",INK,2.6)+S("M62 91 Q66 87 70 90 Q74 93 78 89",INK,3)+`<path d="M104 52 C101 58 103 62 106 62 C109 62 110 58 104 52Z" fill="#9CC8E0" stroke="${INK}" stroke-width="2"/>`,a:S("M13 78 C10 86 18 92 26 90",INK,4)+hand(28,90)+S("M127 78 C130 86 122 92 114 90",INK,4)+hand(112,90)},
+ dizzy:{f:`<g class="n-swirl">${S("M57 72 m-6 0 a6 6 0 1 1 6 6 a3.5 3.5 0 1 1 -3.5 -3.5",INK,2.6)}</g><g class="n-swirl">${S("M83 72 m-6 0 a6 6 0 1 1 6 6 a3.5 3.5 0 1 1 -3.5 -3.5",INK,2.6)}</g>`+S("M60 90 Q65 86 70 90 Q75 94 80 90",INK,3),a:armL+armR},
+};
+function draw(mood){
+ const m=faces[mood]||faces.happy, id='nb'+(uid++);
+ return `<svg viewBox="-8 2 156 140" role="img" aria-label="Noodle the brain, ${mood}"><defs><clipPath id="${id}"><path d="${OUT}"/></clipPath></defs>
+ <ellipse cx="70" cy="138" rx="34" ry="3.5" fill="${INK}" opacity=".12"/>
+ <g class="n-all">${legs}${cerebellum}${m.a}
+  <path d="${OUT}" fill="${PINK}"/>
+  <g clip-path="url(#${id})"><path d="M0 86 C26 112 114 112 140 86 L140 140 L0 140Z" fill="${SHADE}" opacity=".55"/><ellipse cx="44" cy="30" rx="26" ry="14" fill="${LIGHT}" opacity=".45"/></g>
+  ${folds}${shine}
+  <path d="${OUT}" fill="none" stroke="${INK}" stroke-width="3.6" stroke-linejoin="round"/>
+  <ellipse cx="70" cy="80" rx="27" ry="20" fill="${PINK}" opacity=".92"/>
+  ${cheeks}${m.f}</g></svg>`;
+}
+document.querySelectorAll('.noodle').forEach(el=>{el.innerHTML=draw(el.dataset.mood)});
+document.querySelectorAll('[data-say]').forEach(el=>{
+ const text=el.dataset.say;let i=0;el.textContent='';
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=text;return}
+ (function tick(){el.textContent=text.slice(0,++i);if(i<text.length)setTimeout(tick,32);else setTimeout(()=>{i=0;tick()},4200)})();
+});
+})();
+</script>
+
+</body>
+</html>

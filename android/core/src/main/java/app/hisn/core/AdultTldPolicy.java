@@ -25,16 +25,25 @@ import java.util.Set;
  * artifact, so it works when the seed list cannot be loaded.
  */
 public final class AdultTldPolicy {
+    private static final String[] GUARDED = {"adult", "porn", "sex", "xxx"};
     public static final Set<String> TLDS = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList("adult", "porn", "sex", "xxx")));
+            new HashSet<>(Arrays.asList(GUARDED)));
 
     /** True when the host's final label is one of {@link #TLDS}. */
     public boolean matches(String hostname) {
         String host = HostTermPolicy.canonicalHost(hostname);
         if (host.isEmpty()) return false;
+        return matchesCanonical(host);
+    }
+
+    boolean matchesCanonical(String host) {
         int dot = host.lastIndexOf('.');
-        String tld = dot < 0 ? host : host.substring(dot + 1);
-        return TLDS.contains(tld);
+        int start = dot + 1;
+        int length = host.length() - start;
+        for (String tld : GUARDED) {
+            if (tld.length() == length && host.startsWith(tld, start)) return true;
+        }
+        return false;
     }
 
     /** The guard is a suffix rule; exposing it keeps the predicate obvious in tests. */

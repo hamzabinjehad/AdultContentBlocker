@@ -35,7 +35,7 @@ async function obtain(name, url) {
   artifacts[name] = { url, bytes: data.length, sha256: createHash('sha256').update(data).digest('hex') };
   return data;
 }
-for (const model of ['blazeface', 'gender']) {
+for (const model of ['blazeface', 'gender', 'faceres']) {
   const json = await obtain(`models/${model}.json`, `${base}models/${model}.json`);
   for (const shard of JSON.parse(json).weightsManifest.flatMap(group => group.paths)) {
     if (!/^[a-zA-Z0-9_.-]+\.bin$/.test(shard)) throw new Error('Unsafe weight path');
@@ -44,6 +44,8 @@ for (const model of ['blazeface', 'gender']) {
 }
 await obtain('notices/human-models-MIT.txt', `${base}LICENSE`);
 await obtain('notices/face-classification-MIT.txt', 'https://raw.githubusercontent.com/oarriaga/face_classification/master/LICENSE');
+// FaceRes (Human's face description model) is converted from HSE-asavchenko/HSE_FaceRec_tf.
+await obtain('notices/hse-facerec-Apache-2.0.txt', 'https://raw.githubusercontent.com/HSE-asavchenko/HSE_FaceRec_tf/master/LICENSE');
 await obtain('notices/mediapipe-Apache-2.0.txt', 'https://raw.githubusercontent.com/google-ai-edge/mediapipe/v0.10.21/LICENSE');
 await obtain('notices/tensorflowjs-Apache-2.0.txt', 'https://raw.githubusercontent.com/tensorflow/tfjs/tfjs-v4.22.0/LICENSE');
 for (const [pkg, file] of [['nsfwjs', 'LICENSE'], ['@vladmandic/human', 'LICENSE'], ['buffer', 'LICENSE']]) {

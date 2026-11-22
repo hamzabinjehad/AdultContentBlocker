@@ -109,6 +109,14 @@ public final class HostTermPolicy {
 
     private boolean decide(String hostname) { return decide(hostname, true); }
 
+    /** Lowercase ASCII from {@link Hostname#normalize}; only an ACE label needs conversion. */
+    boolean matchesCanonical(String host) {
+        if (host.startsWith("xn--") || host.contains(".xn--")) return decide(host);
+        if (isExempt(host)) return false;
+        int quick = decideAscii(host);
+        return quick == MATCH || (quick == UNDECIDED && decideReference(host));
+    }
+
     /** The uncached verdict by the reference path alone; tests compare it with {@link #matches}. */
     boolean matchesReference(String hostname) { return decide(hostname, false); }
 

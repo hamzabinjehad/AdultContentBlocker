@@ -4,7 +4,7 @@ import { load as loadNSFW } from 'nsfwjs/core';
 import { MobileNetV2Model } from 'nsfwjs/models/mobilenet_v2';
 import Human from '@vladmandic/human';
 import { adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections, personDecision, squareFrame, unpadFaces,
-  visualPreferences, PERSON_MODES, validateCapture } from './decisions.js';
+  visualPreferences, PERSON_MODES, validateCapture, needsFaceres, needsOarriaga, faceresPrediction } from './decisions.js';
 import { LocalInferenceQueue } from './queue.js';
 
 // WebGL is the fastest browser backend when the platform exposes a usable
@@ -20,6 +20,8 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
   let adult = null;
   let human = null;
   let gender = null;
+  // Whether the loaded Human instance also runs the FaceRes description model.
+  let humanDescription = false;
   let backendReady = null;
   let loading = null;
   let currentState = 'loading';
@@ -49,8 +51,9 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
     if (!selected.inspectVisual && selected.personBlur === 'off') return;
     if (loading) { await loading; return prepare(preferences, expectedEpoch); }
     const needAdult = selected.inspectVisual && !adult;
-    const needHuman = selected.personBlur !== 'off' && !human;
-    const needGender = ['female', 'male'].includes(selected.personBlur) && !gender;
+    const wantDescription = needsFaceres(selected);
+    const needHuman = selected.personBlur !== 'off' && (!human || (wantDescription && !humanDescription));
+    const needGender = needsOarriaga(selected) && !gender;
     if (!needAdult && !needHuman && !needGender) { currentState = 'ready'; return; }
     currentState = 'loading';
     failure = null;
@@ -68,10 +71,17 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
           async: false, warmup: 'none', skipAllowed: false, cacheSensitivity: 0,
           filter: { enabled: false, return: false }, gesture: { enabled: false },
           face: { enabled: true,
-            detector: { modelPath: 'blazeface.json', maxDetected: 10, minConfidence: 0.60, iouThreshold: 0.30,
+            // Evaluation runs see faces down to 0.30 so detection thresholds can be compared offline;
+            // personDecision still ignores faces under 0.60, so the decision is unchanged.
+            detector: { modelPath: 'blazeface.json', maxDetected: 10,
+              minConfidence: selected.evaluateAppearance ? 0.30 : 0.60, iouThreshold: 0.30,
               square: false, rotation: false, return: false, skipFrames: 0, skipTime: 0 },
             mesh: { enabled: false }, attention: { enabled: false }, iris: { enabled: false },
-            description: { enabled: false }, emotion: { enabled: false },
+            // FaceRes runs on Human's own aligned face crop, which is what it was trained on.
+            description: wantDescription
+              ? { enabled: true, modelPath: 'faceres.json', minConfidence: 0, skipFrames: 0, skipTime: 0 }
+              : { enabled: false },
+            emotion: { enabled: false },
             antispoof: { enabled: false }, liveness: { enabled: false }, gear: { enabled: false } },
           body: { enabled: false }, hand: { enabled: false }, object: { enabled: false },
           segmentation: { enabled: false } });
@@ -80,7 +90,12 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
         // advertise a constructed object as a successfully loaded detector.
         const detector = candidate.models.stats().modelStats.find(model => model.name === 'blazeface');
         if (!detector?.loaded || !(detector.sizeLoadedWeights > 0)) throw new Error('face-model-load-failed');
+        if (wantDescription) {
+          const description = candidate.models.stats().modelStats.find(model => model.name === 'faceres');
+          if (!description?.loaded || !(description.sizeLoadedWeights > 0)) throw new Error('face-model-load-failed');
+        }
         human = candidate;
+        humanDescription = wantDescription;
       }
       if (expectedEpoch !== epoch) return;
       if (needGender) gender = await tf.loadGraphModel(`${baseURL}models/gender.json`);
@@ -119,7 +134,7 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
           persons: { ...persons, state: 'not-inspected' } };
       }
       if (prefs.personBlur !== 'off') {
-        if (!human || (['female', 'male'].includes(prefs.personBlur) && !gender)) {
+        if (!human || (needsOarriaga(prefs) && !gender) || (needsFaceres(prefs) && !humanDescription)) {
           return { state: 'unknown', reason: 'model-load-failed', adult: adultResult };
         }
         const frame = squareFrame(capture.width, capture.height);
@@ -132,15 +147,33 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
         // face identity models are loaded. This is not a full-body guarantee.
         const faces = faceDetections(result);
         if (!faces) return { state: 'unknown', reason: 'invalid-face-output' };
-        if (gender && ['female', 'male'].includes(prefs.personBlur)) {
+        const evaluation = prefs.evaluateAppearance ? [] : null;
+        if (['female', 'male'].includes(prefs.personBlur)) {
           for (const face of faces) {
-            const prediction = await predictGender(faceTensor, face.box, frame.edge, frame.edge, gender, prefs.personBlur);
-            if (!prediction) return { state: 'unknown', reason: 'invalid-appearance-output', adult: adultResult };
-            Object.assign(face, prediction);
+            if (evaluation) {
+              // Raw estimates from both models, for accuracy runs; the decision below is unchanged.
+              const raw = await rawOarriaga(faceTensor, face.box, frame.edge, frame.edge, gender);
+              if (!raw) return { state: 'unknown', reason: 'invalid-appearance-output', adult: adultResult };
+              const faceres = faceresPrediction(face.description);
+              evaluation.push({ w: face.box[2], h: face.box[3], faceScore: face.faceScore,
+                oarriaga: raw.primary, mirrored: raw.mirrored,
+                faceresMale: faceres ? (faceres.gender === 'male' ? faceres.genderScore : 1 - faceres.genderScore) : null,
+                age: face.description?.age ?? null });
+            }
+            if (prefs.appearance === 'faceres') {
+              // No estimate is not evidence either way; personDecision covers such a face.
+              const prediction = faceresPrediction(face.description);
+              if (prediction) Object.assign(face, prediction);
+            } else {
+              const prediction = await predictGender(faceTensor, face.box, frame.edge, frame.edge, gender, prefs.personBlur);
+              if (!prediction) return { state: 'unknown', reason: 'invalid-appearance-output', adult: adultResult };
+              Object.assign(face, prediction);
+            }
           }
         }
         persons = personDecision(unpadFaces(faces, frame, capture.width, capture.height), [],
           prefs.personBlur, capture.width, capture.height);
+        if (evaluation) persons.evaluation = evaluation;
       }
       return { state: 'ready', adult: adultResult, persons };
     } finally {
@@ -159,7 +192,7 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
     status: (expected = selected) => {
       const required = visualPreferences(expected);
       const missing = (required.inspectVisual && !adult) || (required.personBlur !== 'off' && !human)
-        || (['female', 'male'].includes(required.personBlur) && !gender);
+        || (needsOarriaga(required) && !gender) || (needsFaceres(required) && !humanDescription);
       return { state: !required.inspectVisual && required.personBlur === 'off' ? 'disabled'
         : missing ? failure ? 'failed' : loading ? 'loading' : 'waiting' : 'ready',
       available: true, reason: failure || undefined,
@@ -167,6 +200,27 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
       backend: backendReady ? tf.getBackend() : null, localOnly: true };
     },
   };
+}
+
+// Both Oarriaga outputs (original and mirrored crop), unrounded, for accuracy runs only.
+async function rawOarriaga(image, box, width, height, model) {
+  if (!Array.isArray(box) || box.length !== 4 || !box.every(Number.isFinite)) return null;
+  const x1 = Math.max(0, Math.min(1, box[0] / width));
+  const y1 = Math.max(0, Math.min(1, box[1] / height));
+  const x2 = Math.max(x1, Math.min(1, (box[0] + box[2]) / width));
+  const y2 = Math.max(y1, Math.min(1, (box[1] + box[3]) / height));
+  let input, output, mirrored, second;
+  try {
+    input = tf.tidy(() => {
+      const crop = tf.image.cropAndResize(image.toFloat().expandDims(0), [[y1, x1, y2, x2]], [0], [64, 64]);
+      const gray = crop.mul(tf.tensor1d([0.2989, 0.5870, 0.1140])).sum(3, true);
+      return gray.div(127.5).sub(1);
+    });
+    output = model.execute(input);
+    mirrored = tf.reverse(input, [2]);
+    second = model.execute(mirrored);
+    return { primary: Array.from(await output.data()), mirrored: Array.from(await second.data()) };
+  } finally { input?.dispose(); output?.dispose(); mirrored?.dispose(); second?.dispose(); }
 }
 
 async function predictGender(image, box, width, height, model, mode) {

@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Measures the Android core matcher on the shipped seed: DNS decisions and screen-text
@@ -24,18 +25,42 @@ public final class CoreBench {
     }
     interface Body { void run(int i); }
     static double time(String name, int n, int rounds, Body b) {
+        return time(name, n, rounds, () -> b);
+    }
+    static double time(String name, int n, int rounds, Supplier<Body> setup) {
         com.sun.management.ThreadMXBean mx = (com.sun.management.ThreadMXBean) java.lang.management.ManagementFactory.getThreadMXBean();
         long id = Thread.currentThread().getId();
-        double[] all = new double[rounds]; long alloc = 0;
+        double[] all = new double[rounds];
+        long[] allocated = new long[rounds];
         for (int r = 0; r < rounds; r++) {
+            Body body = setup.get();
             long a0 = mx.getThreadAllocatedBytes(id), t = mx.getCurrentThreadCpuTime();
-            for (int i = 0; i < n; i++) b.run(i);
+            for (int i = 0; i < n; i++) body.run(i);
             all[r] = (mx.getCurrentThreadCpuTime() - t) / (double) n;
-            alloc = (mx.getThreadAllocatedBytes(id) - a0) / n;
+            allocated[r] = (mx.getThreadAllocatedBytes(id) - a0) / n;
         }
         Arrays.sort(all);
-        System.out.printf("%-40s %9.0f ns cpu/op  %9d B alloc/op%n", name, all[0], alloc);
-        return all[0];
+        Arrays.sort(allocated);
+        System.out.printf("%-40s %9.0f ns cpu/op  %9d B alloc/op%n",
+                name, all[rounds / 2], allocated[rounds / 2]);
+        return all[rounds / 2];
+    }
+
+    private static void dns(String name, byte[][] queries, Supplier<DnsPolicy> factory) {
+        time(name, queries.length, 5, () -> {
+            DnsPolicy policy = factory.get();
+            return i -> sink += policy.evaluate(queries[i]).action.ordinal();
+        });
+    }
+
+    private static boolean scanScreen(AdultTextPolicy policy, String[] labels) {
+        VisibleTextSample sample = new VisibleTextSample(true);
+        AdultTextPolicy.ScreenScan scan = policy.screen();
+        for (int at = 0; at < labels.length; at++) {
+            sample.append(labels[at]);
+            if ((at + 1) % LabelScan.CHECK_INTERVAL == 0 && scan.blocksDecisiveLine(sample)) break;
+        }
+        return scan.blocksAnyLine(sample);
     }
     public static void main(String[] a) throws Exception {
         String seedPath = a[0], digest = a[1]; int count = Integer.parseInt(a[2]);
@@ -43,13 +68,12 @@ public final class CoreBench {
         double[] loads = new double[7]; DomainSeed seed = null;
         for (int i = 0; i < 7; i++) { long t = System.nanoTime(); seed = DomainSeed.load(new ByteArrayInputStream(seedBytes), digest, count); loads[i] = (System.nanoTime() - t) / 1e6; }
         Arrays.sort(loads);
-        System.out.printf("%-46s %10.1f ms%n", "seed load (236k domains)", loads[3]);
+        System.out.printf("%-46s %10.1f ms%n", "seed load (" + seed.domainCount + " domains)", loads[3]);
         List<String> tokens = new ArrayList<>(), subs = new ArrayList<>(), never = new ArrayList<>(), exempt = new ArrayList<>();
         for (String line : Files.readAllLines(Paths.get(a[3]), StandardCharsets.UTF_8)) {
             if (line.isEmpty()) continue; String[] p = line.split("\t", 3);
             switch (p[0]) { case "token": tokens.add(p[1]); break; case "substring": subs.add(p[1]); break; case "never": never.add(p[1]); break; default: exempt.add(p[1]); }
         }
-        final List<String> ft = tokens, fs = subs, fn = never, fe = exempt;
         final DomainSeed fseed = seed;
         List<AdultTextPolicy.Rule> rules = new ArrayList<>();
         for (String line : Files.readAllLines(Paths.get(a[4]), StandardCharsets.UTF_8)) {
@@ -76,38 +100,26 @@ public final class CoreBench {
         final String[] idn = new String[2000]; final byte[][] idnQ = new byte[2000][];
         for (int i = 0; i < idn.length; i++) { idn[i] = "xn--mgbh0fb" + ".site" + i + ".com"; idnQ[i] = query(idn[i]); }
 
-        final DomainPolicy personal = new DomainPolicy(Collections.<String>emptyList(), Collections.<String>emptySet());
+        Supplier<DnsPolicy> buildDns = () -> {
+            DomainPolicy personal = new DomainPolicy(Collections.emptyList(), Collections.emptySet());
+            HostTermPolicy terms = new HostTermPolicy(tokens, subs, never, exempt);
+            HostDecision.Policy policy = new HostDecision.Policy(personal,
+                    DomainPolicy.fromCanonical(fseed.policy.blockedRules()), true, 1, terms);
+            return new DnsPolicy(policy::enforce);
+        };
+        List<String> literalRules = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) literalRules.add("fixture rule" + i);
+        WordMatcher literal = new WordMatcher(literalRules);
         for (int warm = 0; warm < 2; warm++) {
             System.out.println(warm == 0 ? "--- warm-up" : "--- measured");
-            // Each round rebuilds policies so decision caches start empty: this is the uncached cost.
-            time("dns: fresh allowed host (uncached)", N, 5, new Body() {
-                DnsPolicy p; public void run(int i) {
-                    if (i == 0) { HostTermPolicy terms = new HostTermPolicy(ft, fs, fn, fe);
-                        final HostDecision.Policy hp = new HostDecision.Policy(new DomainPolicy(Collections.<String>emptyList(), Collections.<String>emptySet()), DomainPolicy.fromCanonical(fseed.policy.blockedRules()), true, 1, terms);
-                        p = new DnsPolicy(h -> hp.evaluate(h).enforcement()); }
-                    sink += p.evaluate(freshQ[i]).action.ordinal(); } });
-            time("dns: listed host (uncached)", listedQ.length, 5, new Body() {
-                DnsPolicy p; public void run(int i) {
-                    if (i == 0) { HostTermPolicy terms = new HostTermPolicy(ft, fs, fn, fe);
-                        final HostDecision.Policy hp = new HostDecision.Policy(new DomainPolicy(Collections.<String>emptyList(), Collections.<String>emptySet()), DomainPolicy.fromCanonical(fseed.policy.blockedRules()), true, 1, terms);
-                        p = new DnsPolicy(h -> hp.evaluate(h).enforcement()); }
-                    sink += p.evaluate(listedQ[i]).action.ordinal(); } });
-            time("dns: subdomain of listed (uncached)", subQ.length, 5, new Body() {
-                DnsPolicy p; public void run(int i) {
-                    if (i == 0) { HostTermPolicy terms = new HostTermPolicy(ft, fs, fn, fe);
-                        final HostDecision.Policy hp = new HostDecision.Policy(new DomainPolicy(Collections.<String>emptyList(), Collections.<String>emptySet()), DomainPolicy.fromCanonical(fseed.policy.blockedRules()), true, 1, terms);
-                        p = new DnsPolicy(h -> hp.evaluate(h).enforcement()); }
-                    sink += p.evaluate(subQ[i]).action.ordinal(); } });
-            time("dns: punycode host (uncached)", idnQ.length, 5, new Body() {
-                DnsPolicy p; public void run(int i) {
-                    if (i == 0) { HostTermPolicy terms = new HostTermPolicy(ft, fs, fn, fe);
-                        final HostDecision.Policy hp = new HostDecision.Policy(new DomainPolicy(Collections.<String>emptyList(), Collections.<String>emptySet()), DomainPolicy.fromCanonical(fseed.policy.blockedRules()), true, 1, terms);
-                        p = new DnsPolicy(h -> hp.evaluate(h).enforcement()); }
-                    sink += p.evaluate(idnQ[i]).action.ordinal(); } });
-            final HostTermPolicy terms = new HostTermPolicy(ft, fs, fn, fe);
-            final HostDecision.Policy hp = new HostDecision.Policy(personal, fseed.policy, true, 1, terms);
-            final DnsPolicy cachedP = new DnsPolicy(h -> hp.evaluate(h).enforcement());
-            time("dns: repeated host (cached)", N, 5, i -> sink += cachedP.evaluate(freshQ[i & 255]).action.ordinal());
+            dns("dns: fresh allowed host (uncached)", freshQ, buildDns);
+            dns("dns: listed host (uncached)", listedQ, buildDns);
+            dns("dns: subdomain of listed (uncached)", subQ, buildDns);
+            dns("dns: punycode host (uncached)", idnQ, buildDns);
+            DnsPolicy cachedP = buildDns.get();
+            for (int i = 0; i < 256; i++) cachedP.evaluate(freshQ[i]);
+            time("dns: repeated host (cached)", N, 5,
+                    i -> sink += cachedP.evaluate(freshQ[i & 255]).action.ordinal());
             final String[] labels = {"Settings", "Search or type URL", "Watch later", "Download free music and videos now",
                 "Home", "Subscriptions", "تحميل التطبيق مجانا", "شاهد الحلقة الجديدة الآن", "Free shipping on orders over $50 — shop the new collection today",
                 "Sign in to continue", "Watch free porn videos", "Trending", "12 new messages", "Stream the match live tonight for free"};
@@ -116,6 +128,11 @@ public final class CoreBench {
             for (int i = 0; i < 120; i++) sb.append(labels[i % 10]).append(' ').append(i).append('\n');
             final String screen = sb.toString();
             time("text: 120-line screen blocksAnyLine", 300, 5, i -> sink += text.blocksAnyLine(screen) ? 1 : 0);
+            final String[] screenLabels = screen.split("\n");
+            time("text: 120-line guard checkpoint", 300, 5, i -> sink += scanScreen(text, screenLabels) ? 1 : 0);
+            final String earlyHit = "Fixture rule999\n" + screen;
+            time("words: 1000 rules, first label match", 300, 5, i -> sink += literal.hasMatch(earlyHit) ? 1 : 0);
+            time("words: 1000 rules, benign screen", 300, 5, i -> sink += literal.hasMatch(screen) ? 1 : 0);
         }
     }
 }

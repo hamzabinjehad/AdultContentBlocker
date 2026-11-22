@@ -1,5 +1,7 @@
 package app.hisn.android.nativeshell
 
+import app.hisn.android.Edition
+
 /**
  * Protection-screen copy for the two languages Hisn ships, chosen from the app locale by
  * [protectionCopy]. Moving it into string resources is still open.
@@ -73,8 +75,8 @@ data class ProtectionCopy(
 }
 
 val EnglishProtectionCopy = ProtectionCopy(
-    appName = "Hisn",
-    tagline = "Adult content blocker",
+    appName = "${Edition.NAME}",
+    tagline = "Brainrot and adult content blocker",
     navProtection = "Protection",
     navRules = "Rules",
     navSettings = "Settings",
@@ -97,7 +99,7 @@ val EnglishProtectionCopy = ProtectionCopy(
     dnsStoppedTitle = "DNS filtering stopped",
     dnsStoppedBody = "Turn it back on to filter domains again.",
     guardOffTitle = "App protection is off",
-    guardOffBody = "Turn on Hisn in Android's accessibility settings.",
+    guardOffBody = "Turn on ${Edition.NAME} in Android's accessibility settings.",
     guardWaitTitle = "App protection is not connected",
     guardWaitBody = "Android has not started the service yet. Open accessibility settings to check it.",
     gapTitle = "Background check found a gap",
@@ -120,7 +122,7 @@ val EnglishProtectionCopy = ProtectionCopy(
     yourRules = "Your rules",
     domains = "Blocked domains",
     appsBlocked = "Apps to block",
-    bypass = "What can bypass Hisn",
+    bypass = "What can bypass ${Edition.NAME}",
     reassurance = "Nothing leaves this phone. Rules and checks stay on-device.",
     checkPassed = "{n} of {t} layers are running.",
     allArmed = "All four layers re-armed.",
@@ -128,8 +130,8 @@ val EnglishProtectionCopy = ProtectionCopy(
 )
 
 val ArabicProtectionCopy = ProtectionCopy(
-    appName = "حصن",
-    tagline = "حماية من المحتوى الإباحي",
+    appName = "${Edition.NAME_AR}",
+    tagline = "حاجب لتعفّن الدماغ والمحتوى الإباحي",
     navProtection = "الحماية",
     navRules = "القواعد",
     navSettings = "الإعدادات",
@@ -152,7 +154,7 @@ val ArabicProtectionCopy = ProtectionCopy(
     dnsStoppedTitle = "توقفت فلترة DNS",
     dnsStoppedBody = "أعد تشغيلها لفلترة النطاقات مجددًا.",
     guardOffTitle = "حماية التطبيقات متوقفة",
-    guardOffBody = "فعّل حصن من إعدادات تسهيلات الاستخدام في أندرويد.",
+    guardOffBody = "فعّل ${Edition.NAME_AR} من إعدادات تسهيلات الاستخدام في أندرويد.",
     guardWaitTitle = "حماية التطبيقات غير متصلة",
     guardWaitBody = "لم يشغّل أندرويد الخدمة بعد. افتح إعدادات تسهيلات الاستخدام للتحقق.",
     gapTitle = "وجد الفحص الخلفي ثغرة",
@@ -175,7 +177,7 @@ val ArabicProtectionCopy = ProtectionCopy(
     yourRules = "قواعدك",
     domains = "النطاقات المحظورة",
     appsBlocked = "التطبيقات المحظورة",
-    bypass = "ما يمكن أن يتجاوز حصن",
+    bypass = "ما يمكن أن يتجاوز ${Edition.NAME_AR}",
     reassurance = "لا شيء يغادر هذا الهاتف. القواعد والفحوص تبقى على الجهاز.",
     checkPassed = "{n} من {t} طبقات تعمل.",
     allArmed = "أُعيد تفعيل الطبقات الأربع.",

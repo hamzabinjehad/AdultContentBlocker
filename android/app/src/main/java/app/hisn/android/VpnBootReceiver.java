@@ -20,6 +20,9 @@ public final class VpnBootReceiver extends BroadcastReceiver {
         catch (RuntimeException ignored) { /* The shell repairs on next open. */ }
         // Fallback when the direct-boot start was missed; a running shield ignores it.
         BootShieldService.startIfNeeded(context);
+        // Alarms do not survive a reboot or an update; the hard-hours nudge re-arms itself.
+        try { HardHoursNudge.schedule(context); } catch (RuntimeException ignored) { }
+        try { WeeklyReport.Companion.schedule(context); } catch (RuntimeException ignored) { }
         // Re-arm the periodic loss check for the keep switch and any DNS session.
         try { LayerWatchdog.syncSchedule(context); }
         catch (RuntimeException ignored) { /* The next app open retries. */ }

@@ -38,4 +38,10 @@
         <item name="android:letterSpacing">0</item>
         <item name="android:minHeight">48dp</item>
     </style>
+    <!-- The widget's day count: system serif here; the general edition uses its bundled serif. -->
+    <style name="WidgetDay">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
 </resources>

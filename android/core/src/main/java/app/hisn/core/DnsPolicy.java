@@ -8,6 +8,7 @@ public final class DnsPolicy {
     /** Returns a CNAME target, or null to forward normally. */
     public interface Rewriter { String target(String hostname); }
     public enum Action { BLOCK, FORWARD, REWRITE, UNSUPPORTED }
+    private static final Result UNSUPPORTED = new Result(Action.UNSUPPORTED, null, 0);
 
     public static final class Result {
         public final Action action;
@@ -30,6 +31,21 @@ public final class DnsPolicy {
     private final Rules domains;
     private final Rewriter rewriter;
 
+    /** A structurally validated question; its wire buffer belongs to the caller. */
+    static final class Question {
+        final byte[] wire;
+        final String name;
+        final int type;
+        final int end;
+
+        Question(byte[] wire, String name, int type, int end) {
+            this.wire = wire;
+            this.name = name;
+            this.type = type;
+            this.end = end;
+        }
+    }
+
     public DnsPolicy(DomainPolicy domains) {
         this(domains == null ? null : domains::evaluate);
     }
@@ -47,50 +63,61 @@ public final class DnsPolicy {
     /** Handles one uncompressed, standard, single-question IN query with an optional EDNS(0) OPT.
      * Anything else is explicitly unsupported, not treated as safe or blocked. */
     public Result evaluate(byte[] query) {
-        if (query == null || query.length < 17 || query.length > 4096) return unsupported();
+        return evaluateQuestion(parse(query));
+    }
+
+    static Question parse(byte[] query) {
+        if (query == null || query.length < 17 || query.length > 4096) return null;
         int flags = read16(query, 2);
         int additional = read16(query, 10);
         if ((flags & ~0x0130) != 0 || read16(query, 4) != 1 || read16(query, 6) != 0
-                || read16(query, 8) != 0 || additional > 1) return unsupported();
+                || read16(query, 8) != 0 || additional > 1) return null;
         int offset = 12;
-        StringBuilder name = new StringBuilder();
+        StringBuilder name = new StringBuilder(Math.min(query.length - 17, 64));
         int wireLength = 1;
         while (true) {
-            if (offset >= query.length) return unsupported();
+            if (offset >= query.length) return null;
             int size = query[offset++] & 0xff;
             if (size == 0) break;
-            if (size > 63 || offset + size > query.length) return unsupported();
+            if (size > 63 || offset + size > query.length) return null;
             wireLength += size + 1;
-            if (wireLength > 255) return unsupported();
+            if (wireLength > 255) return null;
             if (name.length() > 0) name.append('.');
             for (int i = 0; i < size; i++) {
                 int b = query[offset++] & 0xff;
-                if (b < 33 || b > 126 || b == '.') return unsupported();
+                if (b < 33 || b > 126 || b == '.') return null;
                 name.append((char) b);
             }
         }
-        if (offset + 4 > query.length || read16(query, offset + 2) != 1) return unsupported();
+        if (offset + 4 > query.length || read16(query, offset + 2) != 1) return null;
         int queryType = read16(query, offset);
         int questionEnd = offset + 4;
         if (additional == 0) {
-            if (questionEnd != query.length || query.length > 512) return unsupported();
+            if (questionEnd != query.length || query.length > 512) return null;
         } else if (!validOpt(query, questionEnd)) {
-            return unsupported();
+            return null;
         }
-        DomainPolicy.Decision decision = decide(name.toString());
-        if (decision == DomainPolicy.Decision.INVALID) return unsupported();
+        return new Question(query, name.toString(), queryType, questionEnd);
+    }
+
+    Result evaluateQuestion(Question question) {
+        if (question == null) return UNSUPPORTED;
+        DomainPolicy.Decision decision = decide(question.name);
+        if (decision == DomainPolicy.Decision.INVALID) return UNSUPPORTED;
         if (decision == DomainPolicy.Decision.ALLOW) {
-            String rewrite = rewriter == null ? null : rewriter.target(name.toString());
             // HTTPS/SVCB can carry endpoint IP hints used before A/AAAA answers.
             // Return the same restricted CNAME so those hints cannot bypass SafeSearch.
-            if (rewrite != null && (queryType == 1 || queryType == 28
-                    || queryType == 64 || queryType == 65)) {
-                return new Result(Action.REWRITE, cnameResponse(query, questionEnd, rewrite),
-                        questionEnd, rewrite);
+            if (rewriter != null && (question.type == 1 || question.type == 28
+                    || question.type == 64 || question.type == 65)) {
+                String rewrite = rewriter.target(question.name);
+                if (rewrite != null) {
+                    return new Result(Action.REWRITE, cnameResponse(question.wire, question.end, rewrite),
+                            question.end, rewrite);
+                }
             }
-            return new Result(Action.FORWARD, null, questionEnd);
+            return new Result(Action.FORWARD, null, question.end);
         }
-        return new Result(Action.BLOCK, response(query, questionEnd, 3), questionEnd);
+        return new Result(Action.BLOCK, response(question.wire, question.end, 3), question.end);
     }
 
     /** A supported query whose resolver failed receives SERVFAIL, never an unfiltered fallback. */
@@ -108,7 +135,11 @@ public final class DnsPolicy {
     public byte[] truncatedResponse(byte[] query) {
         Result parsed = evaluate(query);
         if (parsed.action == Action.UNSUPPORTED) return null;
-        byte[] truncated = response(query, parsed.questionEnd, 0);
+        return truncated(query, parsed.questionEnd);
+    }
+
+    static byte[] truncated(byte[] query, int questionEnd) {
+        byte[] truncated = response(query, questionEnd, 0);
         truncated[2] |= 2;
         return truncated;
     }
@@ -192,7 +223,7 @@ public final class DnsPolicy {
         return java.util.Arrays.copyOf(out, at);
     }
 
-    private static byte[] response(byte[] query, int questionEnd, int code) {
+    static byte[] response(byte[] query, int questionEnd, int code) {
         int additional = read16(query, 10);
         int flags = read16(query, 2);
         // Do not echo client cookies, padding, or other request-only OPT options.
@@ -232,5 +263,4 @@ public final class DnsPolicy {
         return ((bytes[offset] & 0xff) << 8) | (bytes[offset + 1] & 0xff);
     }
 
-    private static Result unsupported() { return new Result(Action.UNSUPPORTED, null, 0); }
 }

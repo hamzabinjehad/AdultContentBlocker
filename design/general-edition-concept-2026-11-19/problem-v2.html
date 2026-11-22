@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Problem and Answer v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600..800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F5EFE3;--paper2:#EDE4D3;--ink:#1F2A23;--ink2:#46534A;--muted:#7A8277;--butter:#F4C34E;--tomato:#E5553A;--sage:#9EC39A;--sagedk:#3F6B45;--sky:#9CC8E0;--blush:#F2A08F;--lilac:#C9C3EA;--white:#FFFDF8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#D9D2C3;font-family:'DM Sans',sans-serif;color:var(--ink);padding:28px 16px 40px}
+.head{max-width:1500px;margin:0 auto 24px}.head h1{font:700 32px Fraunces,Georgia,serif}.head p{color:var(--ink2);font-size:14px;max-width:980px;margin-top:8px;line-height:1.5}
+.row{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;align-items:center}
+.cap{font-size:13px;color:var(--ink2);text-align:center;margin-top:12px;max-width:330px;line-height:1.45}.cap b{color:var(--ink)}
+.phone{width:340px;height:736px;border-radius:46px;position:relative;overflow:hidden;box-shadow:0 0 0 9px #1F2A23,0 26px 50px -18px rgba(31,42,35,.55)}
+.status{display:flex;justify-content:space-between;padding:15px 28px 0;font:700 12px 'DM Sans'}
+.top{display:flex;align-items:center;gap:10px;padding:12px 20px 0}.prog{flex:1;height:5px;border-radius:9px;background:#1F2A2322}.prog i{display:block;height:100%;border-radius:9px;background:var(--ink)}
+.pad{padding:10px 18px 0}
+.lbl{font:700 10.5px 'DM Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h2{font:700 23px/1.12 Fraunces,Georgia,serif;margin-top:5px}h2 em{font-style:normal;color:var(--tomato)}
+.card{background:var(--white);border:2px solid var(--ink);border-radius:18px;box-shadow:3px 4px 0 var(--ink)}
+.btn{position:absolute;left:20px;right:20px;bottom:24px;background:var(--ink);color:var(--white);font:700 14.5px 'DM Sans';padding:15px 20px;border-radius:30px;display:flex;justify-content:space-between}
+/* guess vs real */
+.gap{padding:12px 14px;margin-top:10px}
+.gaprow{display:flex;align-items:center;gap:8px;margin-top:7px;font:700 11px 'DM Sans';color:var(--ink2)}
+.gaprow span:first-child{width:58px}.gb{height:20px;border-radius:7px;border:2px solid var(--ink)}
+.gaprow b{font:800 14px Fraunces,Georgia,serif;color:var(--ink);white-space:nowrap}
+.f{display:flex;gap:10px;padding:10px 12px;margin-top:8px;align-items:center}
+.f b{display:block;font:700 13px 'DM Sans'}.f span{font-size:11px;color:var(--ink2);line-height:1.3;display:block;margin-top:1px}
+.viz{width:76px;height:44px;flex:none;border-radius:10px;background:var(--paper2);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.dots{display:grid;grid-template-columns:repeat(9,5px);gap:2px}.dots i{width:5px;height:5px;border-radius:50%;background:var(--tomato)}
+.said{margin-top:9px;padding:9px 12px;border-radius:14px;background:#FBE3DD;border:2px dashed #B83F29;font-size:12px;line-height:1.35}
+/* why */
+.mech{padding:10px 12px;margin-top:8px;display:flex;gap:10px;align-items:center}
+.mech b{font:700 14px Fraunces,Georgia,serif;display:block}.mech p{font-size:11.5px;color:var(--ink2);line-height:1.35;margin-top:2px}
+.pic{width:64px;height:64px;flex:none;border-radius:14px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.feedstrip{display:flex;flex-direction:column;gap:3px;animation:up 2.4s linear infinite}.feedstrip i{width:30px;height:12px;border-radius:3px;background:var(--white);border:1.5px solid var(--ink)}
+@keyframes up{from{transform:translateY(0)}to{transform:translateY(-30px)}}
+.reel{display:flex;gap:3px}.reel i{width:14px;height:24px;border-radius:4px;background:var(--white);border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font:800 10px 'DM Sans';font-style:normal}
+.chip{display:inline-block;margin-top:5px;font:700 10px 'DM Sans';padding:3px 8px;border-radius:99px;background:var(--paper2);border:1px solid #1F2A2333}
+.note{margin-top:10px;padding:10px 12px;border-radius:14px;background:#DCEBD8;font-size:12px;line-height:1.35;border:2px solid var(--ink)}
+/* answer */
+.fix{display:flex;align-items:center;gap:8px;padding:9px 11px;margin-top:7px}
+.pp{font:800 14px Fraunces,Georgia,serif;color:var(--tomato);width:56px;flex:none;line-height:1.1}.pp small{display:block;font:600 9.5px 'DM Sans';color:var(--muted)}
+.fx{flex:1}.fx b{display:block;font:700 12.5px 'DM Sans'}.fx span{font-size:10.5px;color:var(--ink2)}
+.sw{width:38px;height:22px;border-radius:99px;border:2px solid var(--ink);position:relative;flex:none;background:var(--paper2)}.sw:after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--ink)}.sw.on{background:var(--sage)}.sw.on:after{left:18px}
+.ti{width:26px;height:26px;border-radius:8px;border:1.5px solid var(--ink);flex:none;display:flex;align-items:center;justify-content:center;font-size:12px}
+.result{margin-top:10px;padding:12px 14px;background:#24402A;color:#F3ECDF;border-radius:16px}
+.rb{display:flex;gap:6px;align-items:flex-end;height:44px;margin-top:8px}.rb i{flex:1;border-radius:6px 6px 0 0;border:1.5px solid #F3ECDF55}
+.notes{max-width:1500px;margin:34px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.notes .card{padding:16px 18px;font-size:13.5px;line-height:1.5}.notes h3{font:700 17px Fraunces,Georgia,serif;margin-bottom:6px}
+</style></head><body>
+<div class="head"><h1>Your problem, and the answer · v2</h1>
+<p>Sharper: page 1 opens on the gap between what you <b>guessed</b> in setup and what Android <b>measured</b>, which is honest and lands harder than any score. Each finding has a small picture, and your own words from setup ("tired and behind") come back. Page 2 explains why feeds are hard to stop, in pictures with tappable sources. Page 3 lets you switch each fix on or off right there and shows the time you'd get back. In the app, the same pages become <b>Why this works</b>, refreshed each week.</p></div>
+<div class="row">
+ <!-- 1 -->
+ <div class="col"><div class="phone" style="background:linear-gradient(180deg,#FBE3DD,#F5EFE3 38%)">
+  <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+  <div class="top"><span>←</span><div class="prog"><i style="width:40%"></i></div><span style="font:700 12px 'DM Sans'">40%</span></div>
+  <div class="pad">
+   <div class="lbl">What your phone shows</div>
+   <h2>Sam, you guessed 2 hours. <em>It's 3 h 10.</em></h2>
+   <div class="card gap">
+    <div class="lbl">Feed apps a day</div>
+    <div class="gaprow"><span>You guessed</span><div class="gb" style="width:100px;background:var(--paper2)"></div><b>2 h</b></div>
+    <div class="gaprow"><span>Android</span><div class="gb" style="width:158px;background:var(--tomato)"></div><b>3 h 10</b></div>
+   </div>
+   <div class="card f"><div class="viz"><div class="dots">
+    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+   </div></div><div><b>71 opens a day</b><span>About one every 13 waking minutes</span></div></div>
+   <div class="card f"><div class="viz"><svg viewBox="0 0 76 44" width="76" height="44"><rect x="6" y="18" width="64" height="8" rx="4" fill="#fff" stroke="#1F2A23" stroke-width="1.5"/><rect x="6" y="18" width="46" height="8" rx="4" fill="#E5553A"/></svg></div><div><b>4 h in one go, Friday</b><span>Your longest scroll, in Snapchat</span></div></div>
+   <div class="card f"><div class="viz"><svg viewBox="0 0 44 44" width="40" height="40"><circle cx="22" cy="22" r="18" fill="#fff" stroke="#1F2A23" stroke-width="2"/><path d="M22 22 L22 8" stroke="#1F2A23" stroke-width="2.5" stroke-linecap="round"/><path d="M22 22 L26 12" stroke="#E5553A" stroke-width="2.5" stroke-linecap="round"/></svg></div><div><b>Last scroll around 00:40</b><span>Most nights this week</span></div></div>
+   <div class="said">You said scrolling leaves you <b>tired and behind on things</b>. These three are where that comes from.</div>
+  </div>
+  <div class="btn"><span>Why is it so hard?</span><span>→</span></div>
+ </div><div class="cap"><b>1 · Guess vs reality.</b> Setup already asks for a guess, so the gap is honest and personal, with no invented score. Three findings with tiny pictures: opens as dots, the longest scroll as a bar, the late night as a clock. Then their own words come back.</div></div>
+
+ <!-- 2 -->
+ <div class="col"><div class="phone" style="background:linear-gradient(180deg,#FCEFC8,#F5EFE3 38%)">
+  <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+  <div class="top"><span>←</span><div class="prog"><i style="width:45%"></i></div><span style="font:700 12px 'DM Sans'">45%</span></div>
+  <div class="pad">
+   <div class="lbl">Why it's hard</div>
+   <h2>It isn't willpower. <em>Feeds are designed</em> to keep you.</h2>
+   <div class="card mech"><div class="pic" style="background:var(--butter)"><div class="feedstrip"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><div><b>There's no bottom</b><p>Without an end, nothing tells you to stop. That's why one video becomes forty.</p><span class="chip">Stopping cues · design research ›</span></div></div>
+   <div class="card mech"><div class="pic" style="background:var(--blush)"><div class="reel"><i>☆</i><i>·</i><i>★</i></div></div><div><b>The next one might be great</b><p>Most posts are dull, a few are great. Not knowing which is next keeps the thumb moving.</p><span class="chip">Variable rewards ›</span></div></div>
+   <div class="card mech"><div class="pic" style="background:var(--sky);font:800 22px Fraunces,Georgia,serif">10s</div><div><b>A pause breaks the loop</b><p>A short breath before an app opened led to <b>57% fewer opens</b> over six weeks.</p><span class="chip">Grüning et al., PNAS 2023 ›</span></div></div>
+   <div class="note">That's why Unrot changes the <b>feeds and the moment you open them</b>, not you. You don't have to try harder.</div>
+  </div>
+  <div class="btn"><span>See your answer</span><span>→</span></div>
+ </div><div class="cap"><b>2 · Why, in pictures.</b> An endless strip that scrolls, a slot reel, a 10-second pause. Each claim has a source chip that opens a short note with the reference. The last line takes the blame off the person, which is what keeps people going.</div></div>
+
+ <!-- 3 -->
+ <div class="col"><div class="phone" style="background:linear-gradient(180deg,#DCEBD8,#F5EFE3 38%)">
+  <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+  <div class="top"><span>←</span><div class="prog"><i style="width:50%"></i></div><span style="font:700 12px 'DM Sans'">50%</span></div>
+  <div class="pad">
+   <div class="lbl">Your answer</div>
+   <h2>One fix for <em style="color:var(--sagedk)">each problem</em>. Keep the ones you want.</h2>
+   <div class="card fix"><div class="pp">71×<small>opens</small></div><div class="ti" style="background:var(--sky)">❚❚</div><div class="fx"><b>Wait before opening</b><span>Snapchat, TikTok · 10 s breath</span></div><span class="sw on"></span></div>
+   <div class="card fix"><div class="pp">4 h<small>no end</small></div><div class="ti" style="background:var(--butter)">▤</div><div class="fx"><b>Close the feeds</b><span>Shorts, Reels, Spotlight · chats stay</span></div><span class="sw on"></span></div>
+   <div class="card fix"><div class="pp">00:40<small>late</small></div><div class="ti" style="background:var(--lilac)">☾</div><div class="fx"><b>Quiet hours</b><span>Feed apps sleep 23:00–07:00</span></div><span class="sw on"></span></div>
+   <div class="card fix"><div class="pp" style="color:var(--ink)">18+<small>you asked</small></div><div class="ti" style="background:var(--sage)">⛨</div><div class="fx"><b>Adult content blocked</b><span>Every browser · words · images</span></div><span class="sw on"></span></div>
+   <div class="result">
+    <div class="lbl" style="color:#C9D9C5">With these four, if it goes like it does for most</div>
+    <div style="font:700 16px Fraunces,Georgia,serif;margin-top:3px">3 h 10 → about 1 h 35 a day</div>
+    <div class="rb"><i style="height:100%;background:#E5553A"></i><i style="height:50%;background:#9EC39A"></i></div>
+    <div style="display:flex;justify-content:space-between;font:600 10px 'DM Sans';opacity:.75;margin-top:3px"><span>now</span><span>the aim · 4 days a year back</span></div>
+   </div>
+  </div>
+  <div class="btn"><span>Make it live</span><span>→</span></div>
+ </div><div class="cap"><b>3 · The answer, your choice.</b> Each problem sits next to its fix with a switch. Switching one off updates the aim below right away. The result is an aim, worded as one, and Today later shows whether it came true.</div></div>
+
+ <!-- 4 in-app -->
+ <div class="col"><div class="phone" style="background:var(--paper)">
+  <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+  <div class="pad" style="padding-top:14px">
+   <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">←</span><span style="font:700 23px Fraunces,Georgia,serif">Why this works</span></div>
+   <div class="lbl" style="margin-top:14px">Your three problems, this week</div>
+   <div class="card f"><div class="viz" style="background:#DCEBD8"><b style="font:800 15px Fraunces,Georgia,serif;color:var(--sagedk)">−33</b></div><div><b>Opens: 71 → 38 a day</b><span>The wait is working: you walked away 23 times</span></div></div>
+   <div class="card f"><div class="viz" style="background:#DCEBD8"><b style="font:800 15px Fraunces,Georgia,serif;color:var(--sagedk)">−3 h</b></div><div><b>Longest scroll: 4 h → 58 min</b><span>Feeds closed 41 times this week</span></div></div>
+   <div class="card f"><div class="viz" style="background:#FBE3DD"><b style="font:800 15px Fraunces,Georgia,serif;color:var(--tomato)">00:20</b></div><div><b>Late nights: still 00:20</b><span>Quiet hours start at 23:00, but you open Instagram, which isn't in them</span></div></div>
+   <div class="card" style="margin-top:8px;padding:10px 12px;display:flex;gap:10px;align-items:center;background:#FCEFC8"><div style="flex:1;font-size:12.5px"><b>One change would help</b><br>Add Instagram to quiet hours</div><span style="background:var(--ink);color:var(--white);font:700 12px 'DM Sans';padding:8px 12px;border-radius:30px">Add</span></div>
+   <div class="lbl" style="margin-top:14px">Why it works</div>
+   <div class="card" style="margin-top:6px;padding:10px 12px;font-size:12px;line-height:1.4">No bottom to reach · rewards you can't predict · a pause breaks the loop <span style="color:var(--muted)">(3 short reads with sources)</span> ›</div>
+  </div>
+ </div><div class="cap"><b>4 · In the app: Why this works.</b> Under Tools and help, the same three problems are measured again each week. What's working turns green, what isn't stays red, with the one change that would fix it, here a gap in quiet hours.</div></div>
+</div>
+<div class="notes">
+ <div class="card"><h3>Honest by construction</h3>The guess comes from setup and the numbers from Android. Every research claim has a source chip, and a claim without a source is left out. The aim is called an aim. Without usage access, page 1 uses their answers ("late at night, in bed") instead of numbers.</div>
+ <div class="card"><h3>Adult content</h3>If they picked it, it's always one of the fixes on page 3 and stays on by default. Page 2 never uses scare claims about porn, the opposite of CleanPath's "dopamine hijack" cards.</div>
+ <div class="card"><h3>Build</h3>Reuses the starting point, the setup answers, the rules and the wins baseline that already exist. New: three onboarding pages, a weekly "Why this works" page, and the source notes.</div>
+</div>
+</body></html>

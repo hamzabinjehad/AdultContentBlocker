@@ -1,7 +1,6 @@
 package app.hisn.android
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,23 +15,35 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import app.hisn.android.nativeshell.HisnTheme
 import app.hisn.android.nativeshell.Onboarding
 import app.hisn.android.nativeshell.OnboardingActions
+import app.hisn.android.nativeshell.OnboardingProtectionState
+import app.hisn.android.nativeshell.OnboardingProtectionState.NEEDS_ATTENTION
+import app.hisn.android.nativeshell.OnboardingProtectionState.OFF
+import app.hisn.android.nativeshell.OnboardingProtectionState.ON
+import app.hisn.android.nativeshell.OnboardingProtectionState.STARTING
 import app.hisn.android.nativeshell.SystemBars
+import app.hisn.android.nativeshell.UnrotOnboarding
+import app.hisn.android.nativeshell.UnrotSetupActions
+import app.hisn.core.AppTimeLimit
+import app.hisn.core.PersonalProfile
+import app.hisn.core.SetupPlan
+import app.hisn.core.ProtectionLock
+import kotlinx.coroutines.delay
 
 /**
- * First run, in the shell's own look: three one-sentence intros, an optional name and reason,
- * the Android grants (needed versus optional), and on the direct build the uninstall guard.
- *
- * The page grants nothing by itself. Each row opens the exact Android screen or starts the one
- * service it names, after the same disclosure the shell shows; returning here re-reads the
- * platform state. Skipping is always available.
+ * Owns the system hand-offs and reads live protection for the first-run flow.
  */
-class WelcomeActivity : ComponentActivity(), OnboardingActions {
+class WelcomeActivity : ComponentActivity(), UnrotSetupActions {
+    private data class ProtectionReading(val state: OnboardingProtectionState, val issue: Int? = null)
+
     private var refresh by mutableIntStateOf(0)
     private var settings: PolicyStore? = null
 
@@ -58,6 +69,20 @@ class WelcomeActivity : ComponentActivity(), OnboardingActions {
         val theme = getSharedPreferences("hisn-native", Context.MODE_PRIVATE)
             .getString("ui.theme", "system")
         setContent {
+            LaunchedEffect(Unit) {
+                lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                    var previous = readAppProtection() to readDnsProtection()
+                    refresh++
+                    while (true) {
+                        delay(500)
+                        val current = readAppProtection() to readDnsProtection()
+                        if (current != previous) {
+                            previous = current
+                            refresh++
+                        }
+                    }
+                }
+            }
             val dark = when (theme) {
                 "dark" -> true
                 "light" -> false
@@ -65,21 +90,32 @@ class WelcomeActivity : ComponentActivity(), OnboardingActions {
             }
             HisnTheme(darkTheme = dark) {
                 SystemBars(dark)
-                Onboarding(
-                    actions = this,
-                    directBuild = BuildConfig.SELF_PROTECTION,
-                    initialName = saved.name,
-                    initialPreset = saved.preset,
-                    initialReason = saved.reason,
-                    refresh = refresh
-                )
+                if (Edition.islamic) {
+                    Onboarding(
+                        actions = this,
+                        directBuild = BuildConfig.SELF_PROTECTION,
+                        initialName = saved.name,
+                        initialPreset = saved.preset,
+                        initialReason = saved.reason,
+                        refresh = refresh
+                    )
+                } else {
+                    UnrotOnboarding(
+                        actions = this,
+                        refresh = refresh,
+                        initialReason = if (saved.preset == PersonalProfile.CUSTOM) saved.reason else ""
+                    )
+                }
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        refresh++
+        if (!TextGuardService.connected && Permissions.accessibility(this)) {
+            // As in the shell, ask a live guard instance to rearm after an Android rebind.
+            runCatching { sendBroadcast(Intent(TextGuardService.ACTION_REARM).setPackage(packageName)) }
+        }
     }
 
     // ------------------------------------------------------------------ OnboardingActions
@@ -94,28 +130,80 @@ class WelcomeActivity : ComponentActivity(), OnboardingActions {
         else -> false
     }
 
+    override fun protectionState(key: String): OnboardingProtectionState = protectionReading(key).state
+
+    override fun protectionIssue(key: String): Int? = protectionReading(key).issue
+
+    private fun protectionReading(key: String): ProtectionReading = when (key) {
+        "accessibility" -> readAppProtection()
+        "dns" -> readDnsProtection()
+        else -> ProtectionReading(OFF)
+    }
+
+    private fun readAppProtection(): ProtectionReading = when {
+        !Permissions.accessibility(this) -> ProtectionReading(OFF)
+        GuardPause.paused(this) -> ProtectionReading(OFF)
+        !TextGuardService.connected -> ProtectionReading(NEEDS_ATTENTION, R.string.attention_guard_disconnected)
+        TextGuardService.ready -> ProtectionReading(ON)
+        else -> ProtectionReading(NEEDS_ATTENTION, R.string.welcome_guard_unready)
+    }
+
+    private fun readDnsProtection(): ProtectionReading = when (val state = DnsVpnService.state) {
+        DnsVpnService.State.OFF -> ProtectionReading(OFF)
+        DnsVpnService.State.STARTING -> ProtectionReading(STARTING)
+        DnsVpnService.State.ERROR -> ProtectionReading(NEEDS_ATTENTION, R.string.attention_dns_error)
+        DnsVpnService.State.RUNNING, DnsVpnService.State.DEGRADED -> when {
+            DnsVpnService.privateDnsStrict -> ProtectionReading(NEEDS_ATTENTION, R.string.attention_private_dns)
+            state == DnsVpnService.State.DEGRADED ->
+                ProtectionReading(NEEDS_ATTENTION, R.string.attention_dns_degraded)
+            else -> ProtectionReading(ON)
+        }
+    }
+
     override fun request(key: String) {
         val app = Uri.parse("package:$packageName")
         when (key) {
-            "accessibility" -> openSettings(
-                Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS), R.string.perm_access_hint
-            )
-            "dns" -> requestDns()
+            "accessibility" -> requestAccessibility()
+            "dns" -> when (val issue = protectionIssue(key) ?: 0) {
+                R.string.attention_private_dns, R.string.attention_dns_degraded ->
+                    openNetworkSettings(issue)
+                else -> requestDns()
+            }
             "usage" -> openSettings(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS), 0)
             "overlay" -> if (!tryStart(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, app))) {
                 openSettings(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION), 0)
             }
             "notifications" -> requestNotifications()
-            "battery" -> if (!tryStart(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, app))) {
-                openSettings(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS), 0)
+            "battery" -> if (!OemSupport.openBattery(this)) {
+                toast(R.string.battery_unavailable)
             }
         }
     }
 
     override fun guardOn(): Boolean = try {
-        settings?.uninstallLock() == true
+        settings?.let { it.uninstallLock() || ProtectionLock.locked(it.remainingMillis()) } == true
     } catch (unreadable: RuntimeException) {
         false
+    }
+
+    override fun setGuard() {
+        if (!BuildConfig.SELF_PROTECTION) return
+        if (protectionState("accessibility") != ON) {
+            toast(R.string.welcome_lock_needs_access)
+            refresh++
+            return
+        }
+        val store = settings
+        if (store == null) {
+            toast(R.string.policy_unavailable)
+            return
+        }
+        try {
+            store.updateUninstallLock(true)
+        } catch (refused: RuntimeException) {
+            toast(R.string.policy_unavailable)
+        }
+        refresh++
     }
 
     override fun savePersonal(name: String, preset: String, reason: String) {
@@ -126,17 +214,57 @@ class WelcomeActivity : ComponentActivity(), OnboardingActions {
         }
     }
 
-    override fun finish(enableGuard: Boolean) {
-        if (enableGuard) {
-            var enabled = false
-            try {
-                settings?.updateUninstallLock(true)
-                enabled = settings != null
-            } catch (refused: RuntimeException) {
-                toast(R.string.policy_unavailable)
+    /**
+     * Unrot's setup choices, merged into whatever rules already exist: a second run of setup adds
+     * to the person's rules and never quietly removes one. A running protection lock refuses
+     * the write; the setup then says so instead of pretending.
+     */
+    override fun applyPlan(plan: SetupPlan, note: String): Boolean {
+        val store = settings ?: return false
+        return try {
+            val rules = store.snapshot()
+            if (plan.waitApps().isNotEmpty()) {
+                val apps = OpenWaitStore.apps(this) + plan.waitApps()
+                val seconds = maxOf(OpenWaitStore.seconds(this), SetupPlan.WAIT_SECONDS)
+                OpenWaitStore.save(this, apps, seconds, true)
             }
-            if (enabled && !Permissions.accessibility(this)) toast(R.string.welcome_lock_needs_access)
+            if (plan.limits().isNotEmpty()) {
+                val current = rules.timeLimits.apps().mapNotNull { pkg ->
+                    rules.timeLimits.minutesFor(pkg)?.let { pkg to it }
+                }.toMap()
+                store.updateTimeLimits(AppTimeLimit(plan.limits() + current))
+            }
+            if (plan.shortVideos() && !rules.shortVideoEnabled) store.updateShortVideo(true)
+            if (plan.blockedApps().isNotEmpty()) {
+                store.update(store.domainText(), store.wordText(), rules.blockedApps + plan.blockedApps(),
+                    rules.scannedApps, rules.adultWordsEnabled)
+            }
+            // "No adult content": the word and image checks read the phone's browsers, where adult
+            // pages open. Without at least one chosen app those checks are on but see nothing.
+            if (plan.adult) {
+                val now = store.snapshot()
+                if (app.hisn.core.ScanScope.chosen(now.scannedApps) == 0 && !app.hisn.core.ScanScope.all(now.scannedApps)) {
+                    val browsers = ChosenApps.browsers(this).map { it.packageName }.toSet()
+                    if (browsers.isNotEmpty()) {
+                        store.update(store.domainText(), store.wordText(), now.blockedApps, now.scannedApps + browsers,
+                            now.adultWordsEnabled)
+                    }
+                }
+            }
+            if (plan.quietHours()) store.updateSchedule(plan.schedule())
+            if (note.isNotBlank()) {
+                val profile = PersonalStore(this).profile()
+                PersonalStore(this).save(profile.name, PersonalProfile.CUSTOM, note)
+            }
+            refresh++
+            true
+        } catch (refused: RuntimeException) {
+            refresh++
+            false
         }
+    }
+
+    override fun completeSetup() {
         markSeen(this)
         // The native shell is the app's home.
         startActivity(
@@ -165,8 +293,14 @@ class WelcomeActivity : ComponentActivity(), OnboardingActions {
             return
         }
         when (key) {
-            "tags" -> confirm(R.string.adult_mode_enable, R.string.adult_mode_short, R.string.adult_mode_disclosure, write)
-            "images" -> confirm(R.string.visual_enable, R.string.visual_short, R.string.visual_disclosure, write)
+            "tags" -> confirm(
+                R.string.adult_mode_enable, R.string.adult_mode_short, R.string.adult_mode_disclosure,
+                R.string.save_rules, write
+            )
+            "images" -> confirm(
+                R.string.visual_enable, R.string.visual_short, R.string.visual_disclosure,
+                R.string.save_rules, write
+            )
         }
     }
 
@@ -202,29 +336,42 @@ class WelcomeActivity : ComponentActivity(), OnboardingActions {
         refresh++
     }
 
-    private fun confirm(title: Int, short: Int, disclosure: Int, onAccept: () -> Unit) {
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(getString(short) + "\n\n" + getString(R.string.full_disclosure) + "\n\n" + getString(disclosure))
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.save_rules) { _, _ -> onAccept() }
-            .show()
+    private fun confirm(title: Int, short: Int, disclosure: Int, accept: Int, onAccept: () -> Unit) {
+        Disclosure.show(this, title, short, disclosure, accept, onAccept)
     }
 
     // ------------------------------------------------------------------ system hand-offs
 
+    private fun requestAccessibility() {
+        // Turned off inside Hisn while Android's switch stayed on: turning it on is just this.
+        if (Permissions.accessibility(this) && GuardPause.paused(this)) {
+            GuardPause.set(this, false)
+            refresh++
+            return
+        }
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        val protection = readAppProtection()
+        if (protection.state != OFF) {
+            openSettings(intent, protection.issue ?: R.string.perm_access_hint)
+            return
+        }
+        val disclosure = if (BuildConfig.SELF_PROTECTION) {
+            R.string.accessibility_disclosure_direct
+        } else {
+            R.string.accessibility_disclosure
+        }
+        confirm(
+            R.string.accessibility_title, R.string.accessibility_short, disclosure,
+            R.string.open_accessibility
+        ) { openSettings(intent, R.string.perm_access_hint) }
+    }
+
     /** The same disclosure the shell and the classic page show before Android's VPN prompt. */
     private fun requestDns() {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.dns_consent_title)
-            .setMessage(
-                getString(R.string.dns_consent_short) + "\n\n" +
-                    getString(R.string.full_disclosure) + "\n\n" +
-                    getString(R.string.dns_consent_body)
-            )
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.dns_continue) { _, _ -> continueDns() }
-            .show()
+        confirm(
+            R.string.dns_consent_title, R.string.dns_consent_short, R.string.dns_consent_body,
+            R.string.dns_continue, ::continueDns
+        )
     }
 
     private fun continueDns() {
@@ -244,6 +391,7 @@ class WelcomeActivity : ComponentActivity(), OnboardingActions {
         try {
             Compat.startForegroundService(this, Intent(this, DnsVpnService::class.java))
         } catch (unavailable: RuntimeException) {
+            if (DnsVpnService.state == DnsVpnService.State.OFF) DnsVpnService.state = DnsVpnService.State.ERROR
             toast(R.string.perm_dns_failed)
         }
         refresh++
@@ -272,6 +420,11 @@ class WelcomeActivity : ComponentActivity(), OnboardingActions {
         } else {
             toast(R.string.perm_settings_unavailable)
         }
+    }
+
+    private fun openNetworkSettings(hint: Int) {
+        if (tryStart(Intent(Settings.ACTION_WIRELESS_SETTINGS))) toast(hint)
+        else openSettings(Intent(Settings.ACTION_SETTINGS), hint)
     }
 
     private fun toast(message: Int) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()

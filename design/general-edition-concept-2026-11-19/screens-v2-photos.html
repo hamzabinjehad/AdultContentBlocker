@@ -1,0 +1,368 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unrot screens v2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..800,100&family=DM+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{--paper:#F5EFE3;--paper2:#EDE4D3;--ink:#1F2A23;--ink2:#46534A;--muted:#7A8277;--butter:#F4C34E;--tomato:#E5553A;--sage:#9EC39A;--sky:#9CC8E0;--blush:#F2A08F;--white:#FFFDF8;--green:#2F6B45}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#E6DECF;font-family:'DM Sans',-apple-system,sans-serif;color:var(--ink);padding:28px 24px 60px}
+h1{font:700 34px Fraunces,Georgia,serif}
+.lead{max-width:900px;margin:8px 0 18px;color:var(--ink2);font-size:15px;line-height:1.45}
+.flow{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px;align-items:center;font:600 12px 'DM Sans'}
+.flow span{padding:5px 10px;border-radius:10px;border:2px solid var(--ink);background:var(--white)}
+.flow span.new{background:var(--butter)}.flow span.chg{background:var(--sky)}.flow b{font-weight:700;margin-right:4px}
+.row{display:flex;flex-wrap:wrap;gap:26px;margin-top:22px}
+.item{width:340px}
+.phone{width:340px;height:736px;border-radius:46px;background:var(--paper);border:3px solid var(--ink);box-shadow:5px 7px 0 var(--ink);position:relative;overflow:hidden;padding:52px 20px 0}
+.status{position:absolute;top:16px;left:28px;right:28px;display:flex;justify-content:space-between;font:600 12px 'DM Sans'}
+.bar{display:flex;align-items:center;gap:10px;font:600 12px 'DM Sans';color:var(--muted)}
+.bar .seg{flex:1;display:flex;gap:4px}.bar .seg i{flex:1;height:4px;border-radius:2px;background:var(--paper2)}.bar .seg i.on{background:var(--ink)}
+h2{font:700 27px/1.1 Fraunces,Georgia,serif;margin-top:16px}
+.sub{font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.4}
+.card{background:var(--white);border:2px solid var(--ink);border-radius:20px;box-shadow:3px 4px 0 var(--ink)}
+.cta{position:absolute;left:20px;right:20px;bottom:30px;height:56px;border-radius:18px;background:var(--butter);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;font:700 16px 'DM Sans'}
+.ghost{position:absolute;left:0;right:0;bottom:96px;text-align:center;font:600 13px 'DM Sans';color:var(--ink2)}
+.cap{margin-top:16px;font-size:13px;line-height:1.45;color:var(--ink2)}.cap b{color:var(--ink)}
+.vs{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4}.vs b{color:var(--tomato)}
+/* goals */
+.goals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.goal{padding:12px;min-height:118px;display:flex;flex-direction:column;gap:4px}
+.goal .ic{width:34px;height:34px;border-radius:10px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:16px}
+.goal b{font:700 14.5px 'DM Sans';margin-top:4px}.goal span{font-size:11.5px;color:var(--ink2);line-height:1.3}
+.goal.sel{background:var(--ink);color:var(--paper)}.goal.sel span{color:#D9D2C3}.goal.sel .ic{border-color:var(--paper)}
+.tick{position:absolute;margin-left:118px;margin-top:-4px;width:20px;height:20px;border-radius:10px;background:var(--butter);color:var(--ink);font:800 12px 'DM Sans';display:flex;align-items:center;justify-content:center}
+/* start */
+.big{font:700 46px/1 Fraunces,Georgia,serif}
+.apps .a{display:flex;align-items:center;gap:10px;padding:9px 0}
+.apps .ico{width:30px;height:30px;border-radius:9px;border:2px solid var(--ink)}
+.apps .nm{width:82px;font:600 13px 'DM Sans'}.apps .tr{flex:1;height:12px;border-radius:6px;background:var(--paper2);overflow:hidden}
+.apps .tr i{display:block;height:100%;background:var(--tomato)}.apps .t{width:52px;text-align:right;font:700 12.5px 'DM Sans'}
+.hrs{display:flex;gap:2px;align-items:flex-end;height:44px;margin-top:8px}.hrs i{flex:1;background:var(--ink);opacity:.2;border-radius:2px}.hrs i.p{opacity:1;background:var(--tomato)}
+.note{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;color:var(--ink2);margin-top:10px;line-height:1.35}
+/* dots */
+.dots{display:grid;grid-template-columns:repeat(21,1fr);gap:3px;margin-top:14px}
+.dots i{aspect-ratio:1;border-radius:50%;background:var(--paper2)}.dots i.f{background:var(--tomato)}.dots i.b{background:var(--sage)}
+.legend{display:flex;gap:14px;font-size:11.5px;margin-top:10px;color:var(--ink2)}.legend i{display:inline-block;width:10px;height:10px;border-radius:5px;margin-right:5px;vertical-align:-1px}
+/* notifications */
+.nrow{display:flex;gap:12px;padding:13px 14px;border-bottom:2px solid var(--paper2)}.nrow:last-child{border-bottom:0}
+.nrow .ic{width:36px;height:36px;border-radius:11px;border:2px solid var(--ink);flex:none;display:flex;align-items:center;justify-content:center}
+.nrow b{font:700 14px 'DM Sans'}.nrow p{font-size:12px;color:var(--ink2);margin-top:2px;line-height:1.3}
+.never{margin-top:12px;padding:12px 14px;border-radius:16px;background:var(--paper2);font-size:12px;color:var(--ink2);line-height:1.4}
+/* hold */
+.hold{position:relative;width:190px;height:190px;margin:34px auto 0}
+.hold svg{position:absolute;inset:0}
+.hold .mark{position:absolute;inset:34px;border-radius:50%;background:var(--butter);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;gap:12px}
+.hold .mark i{width:14px;height:52px;border-radius:7px;background:var(--ink)}
+.quote{margin-top:22px;text-align:center;font:600 18px/1.3 Fraunces,Georgia,serif}
+.who{text-align:center;font-size:12px;color:var(--muted);margin-top:6px}
+/* finish */
+.green{background:var(--green);color:#F7F2E8}.green .status{color:#F7F2E8}
+.green h2{color:#F7F2E8}.green .sub{color:#D6E5D9}
+.week{display:flex;gap:6px;margin-top:18px}.week div{flex:1;text-align:center;font:700 11px 'DM Sans';color:#D6E5D9}
+.week i{display:block;height:34px;border-radius:10px;border:2px solid #F7F2E8;margin-bottom:5px}.week i.t{background:var(--butter);border-color:var(--butter)}
+.week i.m{background:#F7F2E8}
+.plan{margin-top:16px;background:#F7F2E8;color:var(--ink);border:0;box-shadow:none}
+.plan .r{display:flex;gap:10px;padding:9px 14px;border-bottom:2px solid var(--paper2);font-size:13px}.plan .r:last-child{border:0}
+.plan .r b{min-width:96px;font:700 12.5px 'DM Sans';color:var(--ink2)}
+.green .cta{background:#F7F2E8;color:var(--green);border-color:#F7F2E8;box-shadow:none}
+.section{font:700 13px 'DM Sans';letter-spacing:1.5px;color:var(--muted);margin-top:34px}
+.table{margin-top:12px;border-collapse:collapse;max-width:1100px;font-size:13px;background:var(--white);border:2px solid var(--ink)}
+.table td,.table th{padding:9px 12px;border-bottom:1px solid var(--paper2);text-align:left;vertical-align:top}
+.table th{background:var(--ink);color:var(--paper);font-weight:700}
+
+/* v2 additions */
+.feed{position:relative;height:178px;margin-top:6px}
+.fc{position:absolute;left:30px;right:30px;height:120px;border:2px solid var(--ink);border-radius:18px}
+.fc:nth-child(1){top:0;transform:rotate(-5deg)}.fc:nth-child(2){top:12px;transform:rotate(3deg)}.fc:nth-child(3){top:24px}
+.fend{position:absolute;left:30px;right:30px;top:36px;height:130px;border:2px solid var(--ink);border-radius:18px;background:var(--white);box-shadow:3px 4px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+.fend b{font:700 14px 'DM Sans'}.fend span{font-size:11.5px;color:var(--ink2)}
+.pm{display:flex;gap:7px;margin-bottom:4px}.pm i{width:9px;height:30px;border-radius:5px;background:var(--tomato)}
+.promise{display:flex;gap:12px;margin-top:12px;font-size:13px;line-height:1.35;color:var(--ink2)}.promise b{flex:none;width:24px;height:24px;border-radius:12px;background:var(--ink);color:var(--paper);font:700 12px 'DM Sans';display:flex;align-items:center;justify-content:center}.promise strong{color:var(--ink)}
+.mini{margin-top:10px;padding:9px 12px;border-radius:12px;background:var(--paper2);font-size:12px;display:flex;align-items:center;gap:6px}
+.sw2,.sw{display:inline-block;width:36px;height:20px;border-radius:10px;background:var(--ink);position:relative;margin-left:auto;flex:none}.sw2:after,.sw:after{content:'';position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:7px;background:var(--butter)}
+.slider{position:relative;height:8px;border-radius:4px;background:var(--paper2);margin-top:14px}.slider i{display:block;height:100%;border-radius:4px;background:var(--tomato)}.slider b{position:absolute;top:-8px;width:24px;height:24px;margin-left:-12px;border-radius:12px;background:var(--white);border:3px solid var(--ink)}
+.ar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:2px solid var(--paper2)}.ar:last-child{border:0}
+.ar .ico{width:32px;height:32px;border-radius:9px;border:2px solid var(--ink);flex:none}.ar .tx{flex:1}.ar .tx b{font:700 13.5px 'DM Sans'}
+.ar .tr{height:6px;border-radius:3px;background:var(--paper2);margin-top:5px;overflow:hidden}.ar .tr i{display:block;height:100%;background:var(--tomato)}
+.ar .t{font:700 12px 'DM Sans';width:44px;text-align:right}.ck{width:22px;height:22px;border-radius:7px;background:var(--ink);color:var(--butter);font:800 12px 'DM Sans';display:flex;align-items:center;justify-content:center}.ck.off{background:transparent;border:2px solid var(--ink)}
+.fr{margin-top:10px;padding:12px 14px}.fh{display:flex;align-items:center;gap:10px}.fh .ico{width:28px;height:28px;border-radius:8px;border:2px solid var(--ink)}.fh b{font:700 14px 'DM Sans'}
+.sug{margin-left:auto;font:700 10px 'DM Sans';background:var(--butter);border:1.5px solid var(--ink);border-radius:8px;padding:2px 6px}
+.seg3{display:flex;margin-top:10px;border:2px solid var(--ink);border-radius:12px;overflow:hidden}.seg3 span{flex:1;text-align:center;padding:7px 0;font:700 12px 'DM Sans'}.seg3 span+span{border-left:2px solid var(--ink)}.seg3 .a{background:var(--ink);color:var(--paper)}
+.fr p{font-size:12px;color:var(--ink2);margin-top:8px;line-height:1.35}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.chips span{white-space:nowrap}.chips span{padding:6px 11px;border-radius:12px;border:2px solid var(--ink);background:var(--white);font:600 12px 'DM Sans'}.chips span.a{background:var(--ink);color:var(--paper)}
+.trycard{margin-top:12px;padding:16px;border-radius:22px;background:var(--ink);color:#F3EEE6;text-align:center;border:2px solid var(--ink);box-shadow:3px 4px 0 #C9BFA9}
+.ring{position:relative;width:112px;height:112px;margin:0 auto}.ring svg{position:absolute;inset:0}.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 40px Fraunces,serif}
+.br{font:600 17px Fraunces,serif;margin-top:8px}.op{font-size:12px;opacity:.8;margin-top:4px}
+.yes{margin-top:12px;padding:13px;border-radius:14px;background:var(--butter);color:var(--ink);font:700 14px 'DM Sans'}.no{margin-top:8px;font:600 12.5px 'DM Sans';opacity:.55}
+.dial{position:relative;width:226px;height:226px;margin:14px auto 0}.dial svg{position:absolute;inset:0}.dc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.dc b{font:700 18px 'DM Sans'}.dc span{font-size:11.5px;color:var(--ink2)}
+.hint{margin-top:8px;text-align:center;font:600 12.5px 'DM Sans';background:var(--sky);border:2px solid var(--ink);border-radius:12px;padding:7px 10px}
+.caret{display:inline-block;width:2px;height:20px;background:var(--ink);vertical-align:-3px;margin-left:2px}
+.swc{display:flex;gap:12px;align-items:flex-start;margin-top:12px;padding:13px 14px}.swc b{font:700 14px 'DM Sans'}.swc p{font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.3}
+.num{width:30px;height:30px;border-radius:15px;border:2px solid var(--ink);flex:none;display:flex;align-items:center;justify-content:center;font:700 13px 'DM Sans'}.num.done{background:var(--sage)}
+.on2{align-self:center;padding:6px 10px;border-radius:10px;background:var(--butter);border:2px solid var(--ink);font:700 11.5px 'DM Sans';flex:none}
+.dlg{margin-top:16px;padding:14px;border-radius:18px;background:#fff;border:2px dashed var(--muted)}.ring2{border:2.5px solid var(--tomato);border-radius:14px;padding:3px 10px}
+.arrow{margin-top:8px;font:600 11px 'DM Sans';color:var(--tomato);text-align:right}
+.testic{display:flex;justify-content:center;margin-top:40px}
+.steps{margin-top:18px;display:flex;flex-direction:column;gap:8px}.steps div{display:flex;gap:10px;align-items:center;font:600 13.5px 'DM Sans';padding:10px 12px;border-radius:14px;background:var(--white);border:2px solid var(--ink)}.steps b{width:22px;height:22px;border-radius:11px;background:var(--ink);color:var(--paper);font:700 11px 'DM Sans';display:flex;align-items:center;justify-content:center}
+.cta2{position:absolute;left:20px;right:20px;bottom:96px;height:56px;border-radius:18px;background:var(--butter);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;font:700 16px 'DM Sans'}
+
+/* CleanPath-informed polish */
+.glow{position:absolute;left:-40px;right:-40px;top:-150px;height:300px;border-radius:50%;filter:blur(42px);opacity:.42;pointer-events:none}
+.phone>*:not(.glow){position:relative}
+.phone>.status,.phone>.cta,.phone>.cta2,.phone>.ghost,.phone>.dots3,.phone>.anon,.phone>.kbd,.phone>.tourcard,.phone>.today,.phone>.callt{position:absolute}
+.eyebrow{font:700 10.5px 'DM Sans';letter-spacing:1.6px;color:var(--muted);margin-top:14px;text-transform:uppercase}
+.eyebrow+h2{margin-top:4px}
+h2 em{font-style:normal;color:var(--tomato)}
+.why{margin-left:6px;width:24px;height:24px;border-radius:12px;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font:800 12px 'DM Sans'}
+.cta,.cta2{justify-content:space-between;padding:0 8px 0 22px;border-radius:30px}
+.cta:after,.cta2:after{content:'→';width:42px;height:42px;border-radius:21px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font:700 18px 'DM Sans'}
+.green .cta:after{background:var(--green);color:#F7F2E8}
+.gauge{position:relative;width:250px;height:136px;margin:10px auto 0}.gauge svg{position:absolute;inset:0}
+.gauge .v{position:absolute;left:0;right:0;bottom:4px;text-align:center}.gauge .v b{display:block;font:700 40px/1 Fraunces,serif}.gauge .v span{font-size:11.5px;color:var(--ink2)}
+.tiles{display:flex;gap:8px;margin-top:10px}.tiles div{flex:1;padding:10px 12px}.tiles b{display:block;font:700 22px Fraunces,serif}.tiles span{font-size:11px;color:var(--ink2)}
+.ann{position:relative}.ann .mk{position:absolute;top:-6px;bottom:0;border-left:2px dashed var(--tomato)}.ann .lb{position:absolute;top:-24px;font:700 10.5px 'DM Sans';color:var(--tomato);white-space:nowrap}
+.planmap{position:relative;height:330px;margin-top:6px}
+.planmap .hub{position:absolute;left:50%;top:50%;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:48px;background:var(--butter);border:3px solid var(--ink);box-shadow:3px 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;gap:9px}
+.planmap .hub i{width:11px;height:38px;border-radius:6px;background:var(--ink)}
+.planmap .n{position:absolute;width:128px;padding:9px 10px;font-size:11px;line-height:1.3}.planmap .n b{display:block;font:700 12.5px 'DM Sans'}
+.planmap svg{position:absolute;inset:0}
+.arch{position:relative;width:280px;height:150px;margin:6px auto 0}.arch svg{position:absolute;inset:0}
+.arch .v{position:absolute;left:0;right:0;top:46px;text-align:center}.arch .v b{font:800 64px/1 Fraunces,serif;color:var(--butter)}.arch .v span{display:block;font:700 11.5px 'DM Sans';letter-spacing:2px;color:#F7F2E8}
+.datepill{display:inline-block;margin-top:6px;padding:7px 14px;border-radius:16px;background:#F7F2E8;color:var(--green);font:700 13px 'DM Sans'}
+
+/* v2.2: about-you questions and live demos */
+.pct{flex:1;height:6px;border-radius:3px;background:var(--paper2);overflow:hidden}.pct i{display:block;height:100%;background:var(--ink);border-radius:3px}
+.demo{position:relative;height:300px;margin-top:8px}
+.legend2{display:flex;flex-direction:column;gap:5px;margin-top:6px}.legend2 div{display:flex;gap:8px;align-items:center;font:600 12px 'DM Sans'}.legend2 b{width:20px;height:20px;border-radius:10px;background:var(--butter);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:800 10.5px 'DM Sans';flex:none}
+.mini-ph{position:absolute;left:66px;top:0;width:166px;height:296px;border-radius:26px;border:3px solid var(--ink);background:#111;overflow:hidden;box-shadow:3px 4px 0 var(--ink)}
+.tt{position:absolute;inset:0;background:linear-gradient(160deg,#2b2b2b,#0c0c0c)}.ttbar{display:flex;justify-content:center;gap:12px;color:#aaa;font:600 10px 'DM Sans';padding-top:14px}.ttbar b{color:#fff}
+.closed{position:absolute;left:10px;right:10px;top:56px;padding:14px 10px;border-radius:18px;background:var(--paper);text-align:center;display:flex;flex-direction:column;gap:5px;align-items:center}
+.closed b{font:700 13px 'DM Sans'}.closed span{font:600 11px/1.3 Fraunces,serif;color:var(--ink2)}.row2{display:flex;gap:6px;margin-top:4px}.row2 .k{font:700 9.5px 'DM Sans';color:var(--ink);background:var(--paper2);padding:4px 7px;border-radius:8px}
+.pm2{display:flex;gap:4px}.pm2 i{width:6px;height:20px;border-radius:3px;background:var(--tomato)}
+.wait{position:absolute;inset:0;background:var(--ink);color:#F3EEE6;display:flex;flex-direction:column;align-items:center;padding-top:26px;gap:6px;text-align:center}
+.ring3{width:84px;height:84px;border-radius:42px;border:7px solid rgba(243,238,230,.15);border-top-color:var(--butter);border-right-color:var(--butter);display:flex;align-items:center;justify-content:center}.ring3 b{font:700 30px Fraunces,serif}
+.wb{font:600 14px Fraunces,serif;margin-top:6px}.ws{font-size:9.5px;opacity:.75}.wy{margin-top:8px;padding:9px 14px;border-radius:12px;background:var(--butter);color:var(--ink);font:700 11px 'DM Sans'}.wn{font:600 10px 'DM Sans';opacity:.5}
+.night{position:absolute;inset:0;background:linear-gradient(180deg,#1E2740,#2E2A4A);color:#EDE7F6;display:flex;flex-direction:column;align-items:center;padding:32px 12px 0;gap:6px;text-align:center}
+.moon{font-size:34px}.night b{font:700 15px 'DM Sans'}.night span{font-size:10.5px;opacity:.85}.nn{margin-top:8px;font:600 12px/1.3 Fraunces,serif}.nk{margin-top:10px;font:600 9.5px 'DM Sans';opacity:.6}
+.call{position:absolute;width:26px;height:26px;border-radius:13px;background:var(--butter);border:2px solid var(--ink);font:800 12px 'DM Sans';display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 0 var(--ink)}
+.call.c1{left:52px;top:10px}.call.c2{right:52px;top:96px}.call.c3{left:52px;top:200px}
+.dots3{display:flex;justify-content:center;gap:6px;position:absolute;left:0;right:0;bottom:100px}.dots3 i{width:8px;height:8px;border-radius:4px;background:var(--paper2)}.dots3 i.on{width:22px;background:var(--ink)}
+.field{margin-top:22px;padding:14px 16px;border-radius:16px;border:2px solid var(--ink);background:var(--white);font:600 22px Fraunces,serif}
+.skip2{margin-top:10px;text-align:right;font:600 12.5px 'DM Sans';color:var(--ink2)}
+.kbd{position:absolute;left:0;right:0;bottom:0;height:226px;background:#D4CDBF;padding:12px 8px;display:flex;flex-direction:column;gap:9px;font:600 15px 'DM Sans';text-align:center;letter-spacing:9px;color:var(--ink)}.kbd div{background:transparent}.kbd .sp{margin:0 60px;padding:7px;border-radius:8px;background:var(--white);letter-spacing:1px;font-size:12px}
+.opts{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:16px;border:2px solid var(--ink);background:var(--white);font:600 13.5px 'DM Sans'}
+.opt .n{width:22px;height:22px;border-radius:11px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:700 10.5px 'DM Sans';flex:none}
+.opt.sel{background:var(--ink);color:var(--paper)}.opt.sel .n{border-color:var(--paper)}.chk{margin-left:auto;color:var(--butter)}
+.used{margin-top:8px;font:600 12px 'DM Sans';color:var(--green)}
+.anon{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:11.5px;color:var(--muted)}
+.opts~.cta{bottom:40px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.acts span{padding:9px 12px;border-radius:14px;border:2px solid var(--ink);background:var(--white);font:600 13px 'DM Sans'}.acts span.sel{background:var(--ink);color:var(--paper)}
+.lock{margin-top:14px;padding:16px 12px 12px;border-radius:22px;background:linear-gradient(170deg,#3B4A63,#22283A);display:flex;flex-direction:column;gap:7px}
+.lt{text-align:center;color:#F3EEE6;font:600 34px 'DM Sans';margin-bottom:4px}
+.nt{padding:9px 11px;border-radius:14px;background:rgba(255,253,248,.88);font-size:11px;line-height:1.3}.nt b{display:block;font:700 10.5px 'DM Sans';color:var(--muted)}
+.phone.dim{background:#2A2F2A}
+.today{position:absolute;left:14px;right:14px;top:44px;bottom:0;background:var(--paper);border-radius:30px 30px 0 0;padding:16px;opacity:.5}
+.tdh{display:flex;justify-content:space-between;align-items:center}.tdh b{font:700 24px Fraunces,serif}.chipok{font:700 11px 'DM Sans';padding:5px 9px;border-radius:10px;background:var(--sage)}
+.tday{margin-top:12px;padding:14px;display:flex;flex-direction:column}.tday span{font-size:11px;color:var(--muted)}.tday b{font:700 34px Fraunces,serif}.tday i{height:6px;border-radius:3px;background:var(--butter);width:20%;margin-top:6px}
+.ttools{display:flex;justify-content:space-around;margin-top:16px;font:600 11px/1.6 'DM Sans';text-align:center}
+.fab{position:absolute;right:14px;bottom:110px;padding:12px 14px;border-radius:18px;background:var(--butter);border:2px solid var(--ink);font:700 12px 'DM Sans'}
+.callt{position:absolute;padding:7px 10px;border-radius:12px;background:var(--butter);border:2px solid var(--ink);font:700 11px 'DM Sans';box-shadow:2px 3px 0 var(--ink)}
+.callt.t1{left:28px;top:238px}.callt.t2{right:18px;top:110px}.callt.t3{right:18px;bottom:180px}
+.today .tday{outline:3px solid var(--butter);outline-offset:4px;opacity:1}
+.tourcard{position:absolute;left:16px;right:16px;bottom:22px;padding:14px 16px;border-radius:22px;background:var(--white);border:2px solid var(--ink)}.tourcard b{display:block;font:700 17px Fraunces,serif}.tourcard span{font-size:12px;color:var(--ink2)}
+.tc{display:flex;justify-content:space-between;align-items:center;margin-top:10px}.tc span{font:600 11px 'DM Sans';color:var(--muted)}.tc .tn{padding:8px 16px;border-radius:14px;background:var(--ink);color:var(--paper)}
+
+.tb{display:flex;align-items:center;gap:10px;margin-top:2px}.tb b{font:700 24px Fraunces,serif;flex:1}.bk{font-size:20px}
+.chipg{font:700 11px 'DM Sans';padding:6px 10px;border-radius:12px;background:var(--sage);border:2px solid var(--ink)}
+.nav2{position:absolute;left:0;right:0;bottom:0;height:62px;border-top:2px solid var(--paper2);background:var(--paper);display:flex;justify-content:space-around;align-items:center;font:700 11px 'DM Sans';color:var(--ink2)}.nav2 .on{background:var(--ink);color:var(--paper);padding:6px 12px;border-radius:14px}
+.daycard{margin-top:12px;padding:14px;background:var(--butter)}.dl{font:600 11px 'DM Sans';color:var(--ink2)}.dbig{font:700 44px/1 Fraunces,serif;margin-top:2px}
+.segs{display:flex;gap:4px;margin-top:8px}.segs i{flex:1;height:6px;border-radius:3px;background:rgba(31,42,35,.18)}.segs i.on{background:var(--ink)}
+.dsm{display:flex;justify-content:space-between;font:600 11.5px 'DM Sans';margin-top:6px}
+.stk{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:2px solid rgba(31,42,35,.15);font:600 12px 'DM Sans'}.stk .st{width:26px;height:26px;border-radius:13px;background:var(--ink);color:var(--butter);display:flex;align-items:center;justify-content:center;font:700 13px Fraunces,serif}.stk u{margin-left:auto}
+.tools{display:flex;justify-content:space-between;margin-top:12px;font:600 11px 'DM Sans';text-align:center}.tools span{display:flex;flex-direction:column;align-items:center;gap:4px;width:70px}.tools i{font-style:normal;width:44px;height:44px;border-radius:22px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;background:var(--white)}
+.nums{display:flex;margin-top:12px;padding:10px 4px}.nums div{flex:1;text-align:center}.nums b{display:block;font:700 20px Fraunces,serif}.nums span{font-size:11px;color:var(--ink2)}
+.quote{margin-top:10px;padding:12px 14px;font:600 15px/1.3 Fraunces,serif}.quote span{display:block;font:600 11px 'DM Sans';color:var(--muted);margin-bottom:4px}.quote em{display:block;font:600 11px 'DM Sans';font-style:normal;color:var(--ink2);margin-top:6px}
+.fab2{position:absolute;right:18px;bottom:78px;padding:12px 14px;border-radius:18px;background:var(--butter);border:2px solid var(--ink);box-shadow:2px 3px 0 var(--ink);font:700 12.5px 'DM Sans'}
+.phone>.nav2,.phone>.fab2{position:absolute}
+.grp{font:700 11px 'DM Sans';letter-spacing:1.2px;color:var(--muted);margin:14px 2px 6px;text-transform:uppercase}
+.rw{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:2px solid var(--paper2)}.rw:last-child{border:0}
+.tl{width:30px;height:30px;border-radius:9px;border:2px solid var(--ink);flex:none}.tx{flex:1;min-width:0}.tx b{display:block;font:700 13px 'DM Sans'}.tx span{font-size:11px;color:var(--ink2)}.tx em{font-style:normal;color:var(--tomato);font-weight:700}
+.rt{font:700 13px 'DM Sans';color:var(--ink2)}
+.sw{display:inline-block;width:34px;height:20px;border-radius:10px;background:var(--ink);position:relative}.sw:after{content:'';position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:7px;background:var(--butter)}.sw.off{background:var(--paper2)}.sw.off:after{left:3px;right:auto;background:var(--white);border:2px solid var(--ink);width:10px;height:10px}
+.search{margin-top:10px;padding:11px 14px;border-radius:16px;border:2px solid var(--ink);background:var(--white);font:600 13px 'DM Sans';color:var(--ink2)}
+.ck{display:inline-flex;width:22px;height:22px;border-radius:7px;border:2px solid var(--ink);align-items:center;justify-content:center;font:800 12px 'DM Sans'}.ck.on{background:var(--ink);color:var(--butter)}
+.hc{display:flex;gap:12px;align-items:center;padding:14px;margin-top:12px;background:var(--sage)}.hcb{width:38px;height:38px;border-radius:19px;background:var(--ink);color:var(--sage);display:flex;align-items:center;justify-content:center;font:800 18px 'DM Sans'}.hc b{display:block;font:700 15px 'DM Sans'}.hc span{font-size:11.5px}
+.card+.card{margin-top:10px}
+.fix{padding:5px 10px;border-radius:10px;background:var(--butter);border:2px solid var(--ink);font:700 11px 'DM Sans';color:var(--ink);white-space:nowrap}
+.two{display:flex;gap:8px;margin-top:12px}.two span{flex:1;text-align:center;padding:10px;border-radius:14px;border:2px solid var(--ink);font:700 12.5px 'DM Sans'}.two .b1{background:var(--ink);color:var(--paper)}.two .b2{background:var(--white)}
+.lockhero{margin-top:14px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}.lockhero .lk{width:64px;height:64px;border-radius:32px;background:var(--blush);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:26px}.lockhero b{font:700 20px Fraunces,serif}.lockhero span{font-size:12.5px;color:var(--ink2);line-height:1.4}
+.seg4{display:flex;margin-top:14px;border:2px solid var(--ink);border-radius:14px;overflow:hidden}.seg4 span{flex:1;text-align:center;padding:9px 0;font:700 12px 'DM Sans'}.seg4 span+span{border-left:2px solid var(--ink)}.seg4 .a{background:var(--ink);color:var(--paper)}
+.ends{margin-top:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}.ends span{font-size:11.5px;color:var(--ink2)}.ends b{font:700 13.5px 'DM Sans'}
+.lb{font:600 11px 'DM Sans';color:var(--muted)}.big2{font:700 22px Fraunces,serif}.qt{font:600 15px/1.3 Fraunces,serif;margin-top:4px}
+.verdict{margin-top:12px;padding:14px}.vb{display:inline-block;padding:5px 12px;border-radius:12px;background:var(--sage);border:2px solid var(--ink);font:700 14px 'DM Sans';margin-bottom:8px}.st2{display:flex;gap:10px;align-items:center;font-size:12.5px;padding:4px 0}.st2 b{width:20px;height:20px;border-radius:10px;background:var(--ink);color:var(--paper);font:700 10px 'DM Sans';display:flex;align-items:center;justify-content:center;flex:none}
+.how{display:flex;gap:12px;margin-top:14px}.hn{width:30px;height:30px;border-radius:15px;background:var(--butter);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:800 13px 'DM Sans';flex:none}.how b{display:block;font:700 14px 'DM Sans'}.how span{font-size:12px;color:var(--ink2);line-height:1.35}
+.blk{padding-top:20px}.appic{width:64px;height:64px;border-radius:18px;border:3px solid var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px}
+.insteadc{margin-top:10px;padding:12px 14px;background:var(--butter);display:flex;flex-direction:column;gap:2px}.insteadc span{font:600 11px 'DM Sans';color:var(--ink2)}.insteadc b{font:700 18px Fraunces,serif}.insteadc u{font:700 12px 'DM Sans'}
+.tally{margin-top:10px;font-size:12px;color:var(--ink2)}
+.tiles2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.tiles2 .card{padding:14px;display:flex;flex-direction:column;gap:8px;margin:0}.tiles2 i{font-style:normal;width:36px;height:36px;border-radius:11px;background:var(--butter);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center}.tiles2 b{font:700 13.5px 'DM Sans'}
+.tiles2 .card+.card{margin-top:0}
+
+h1,.lead,.cap,.vs{display:none!important}body{zoom:.72;padding:10px 12px 1400px!important}
+</style></head><body>
+<h1>Every screen, improved — round 2</h1>
+<p class="lead">Each screen was captured from the app (27 screens), compared with the owner’s Opal, ScreenZen, Unchaind and Unrot captures, and redrawn. These are the screens that most needed it. Nothing here is built yet.</p>
+<div class="row">
+<div class="item"><div class="phone"><div class="glow" style="background:var(--butter)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><b>Today</b><span class="chipg">● Shield on</span></div>
+ <div class="card daycard"><div class="dl">With Unrot · since 9 Nov</div><div class="dbig">Day 12</div>
+  <div class="segs"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+  <div class="dsm"><span>2 days to day 14</span><span>9 pauses</span></div>
+  <div class="stk"><span class="st">7</span><span>Sticker kept · one week</span><u>Share</u></div></div>
+ <div class="tools"><span><i style="background:var(--butter)">Ⅱ</i>Breathe</span><span><i>✎</i>My note</span><span><i>⌕</i>Check a site</span><span><i>🔒</i>Lock</span></div>
+ <div class="card nums"><div><b>24m</b><span>feeds today</span></div><div><b>3</b><span>pauses</span></div><div><b>148</b><span>blocked</span></div></div>
+ <div class="card quote"><span>Tonight</span>“Go to sleep. Tomorrow-you has a big day.”<em>Quiet hours start at 23:00 · in 2 h</em></div>
+ <div class="fab2">Ⅱ Feeling the pull?</div>
+<div class="nav2"><span class="on">Today</span><span class="">Shield</span><span class="">Progress</span><span class="">You</span></div>
+</div>
+<div class="cap"><b>Today.</b> The milestone becomes a sticker row inside the day card instead of a second big card; numbers shrink to one row; the note card says what happens tonight. Bottom padding keeps the floating button off the content.</div><div class="vs">Before: two large cards both shouting a number, and the button covering the totals.</div></div>
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sage)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><span class="bk">←</span><b>All rules</b></div>
+ <div class="sub" style="margin-top:2px">Grouped by what they do. Everything here stays on this phone.</div>
+ <div class="grp">What closes</div>
+ <div class="card"><div class="rw"><div class="tl" style="background:var(--butter)"></div><div class="tx"><b>Endless feeds</b><span>Shorts, Reels, Spotlight, TikTok</span></div><div class="rt"><span class="sw"></span></div></div><div class="rw"><div class="tl" style="background:var(--butter)"></div><div class="tx"><b>Whole apps</b><span>2 apps · Reddit, X</span></div><div class="rt">›</div></div><div class="rw"><div class="tl" style="background:var(--paper2)"></div><div class="tx"><b>Gray screen</b><span>Off</span></div><div class="rt"><span class="sw off"></span></div></div></div>
+ <div class="grp">What waits or runs out</div>
+ <div class="card"><div class="rw"><div class="tl" style="background:var(--sky)"></div><div class="tx"><b>Wait before opening</b><span>3 apps · 10 s, longer each time</span></div><div class="rt">›</div></div><div class="rw"><div class="tl" style="background:var(--sage)"></div><div class="tx"><b>Daily limits</b><span>Instagram 45 min</span></div><div class="rt">›</div></div><div class="rw"><div class="tl" style="background:var(--paper2)"></div><div class="tx"><b>Quiet hours</b><span>23:00–07:00, every day</span></div><div class="rt">›</div></div></div>
+ <div class="grp">Adult content</div>
+ <div class="card"><div class="rw"><div class="tl" style="background:var(--blush)"></div><div class="tx"><b>Sites in every browser</b><span>229k on the list</span></div><div class="rt"><span class="sw"></span></div></div><div class="rw"><div class="tl" style="background:var(--blush)"></div><div class="tx"><b>Words in apps</b><span>Built-in list + 2 of yours</span></div><div class="rt"><span class="sw"></span></div></div><div class="rw"><div class="tl" style="background:var(--paper2)"></div><div class="tx"><b>Images and video</b><span>Needs Android 14</span></div><div class="rt"><span class="sw off"></span></div></div></div>
+
+</div>
+<div class="cap"><b>All rules.</b> The long switch list regrouped by outcome, like the Shield tab: what closes, what waits, adult content. Technical names (“Adult tags”, “Check every app”) become plain ones; browsers, private tabs and your lists sit one row deeper.</div><div class="vs">ScreenZen groups settings into calm cards; ours are grouped by what you want.</div></div>
+<div class="item"><div class="phone"><div class="glow" style="background:var(--butter)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><span class="bk">←</span><b>Block whole apps</b></div>
+ <div class="search">⌕ Search your apps</div>
+ <div class="grp">Suggested from your screen time</div>
+ <div class="card"><div class="rw"><div class="tl" style="background:#FF4500"></div><div class="tx"><b>Reddit</b><span>1h 05m a day</span></div><div class="rt"><span class="ck on">✓</span></div></div><div class="rw"><div class="tl" style="background:#111"></div><div class="tx"><b>X</b><span>38m a day</span></div><div class="rt"><span class="ck on">✓</span></div></div><div class="rw"><div class="tl" style="background:#E62117"></div><div class="tx"><b>YouTube</b><span>1h 29m a day · <em>just close the feed?</em></span></div><div class="rt"><span class="ck"></span></div></div></div>
+ <div class="grp">All apps</div>
+ <div class="card"><div class="rw"><div class="tl" style="background:#4285F4"></div><div class="tx"><b>Calendar</b><span>Used today 2 min</span></div><div class="rt"><span class="ck"></span></div></div><div class="rw"><div class="tl" style="background:#34A853"></div><div class="tx"><b>Chrome</b><span>Used today 41 min</span></div><div class="rt"><span class="ck"></span></div></div></div>
+ <div class="cta">Block 2 apps</div>
+
+</div>
+<div class="cap"><b>Block whole apps.</b> Opal’s idea: suggestions from real usage, pre-ticked, with a count. Real icons and minutes instead of package names, system apps hidden, and a nudge when only the feed needs closing.</div><div class="vs">Before: “com.google.android.calendar · Allowed” rows and a switch per app.</div></div>
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sage)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><span class="bk">←</span><b>Is everything working?</b></div>
+ <div class="card hc"><div class="hcb">✓</div><div><b>Everything is running</b><span>Checked 2 min ago</span></div></div>
+ <div class="card"><div class="rw"><div class="tl" style="background:var(--sage)"></div><div class="tx"><b>Website filter</b><span>Route test passed · 148 blocked</span></div><div class="rt">✓</div></div><div class="rw"><div class="tl" style="background:var(--sage)"></div><div class="tx"><b>App protection</b><span>Connected</span></div><div class="rt">✓</div></div><div class="rw"><div class="tl" style="background:var(--sage)"></div><div class="tx"><b>Feeds in 3 apps</b><span>Closing as they open</span></div><div class="rt">✓</div></div><div class="rw"><div class="tl" style="background:var(--butter)"></div><div class="tx"><b>Battery</b><span>Android may pause Unrot</span></div><div class="rt"><span class="fix">Fix</span></div></div></div>
+ <div class="two"><span class="b1">Run all checks</span><span class="b2">Copy report</span></div>
+ <div class="note" style="justify-content:center">The report has no sites, apps or names in it.</div>
+ <div class="grp" style="margin-top:14px">For support ›</div>
+ <div class="sub" style="font-size:12px">Packet counters and network details, folded away.</div>
+
+</div>
+<div class="cap"><b>Health check.</b> “Session diagnostics” (a wall of packet counters) becomes one answer, one list, one fix button and a shareable report with nothing personal. The counters stay, folded under “For support”.</div><div class="vs">Before: “Domains loaded: 0 · Blocked: 0 · Forwarded: 0 · Rewritten…” as the first thing you see.</div></div>
+<div class="item"><div class="phone"><div class="glow" style="background:var(--blush)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><span class="bk">←</span><b>Protection lock</b></div>
+ <div class="lockhero"><div class="lk">🔒</div><b>Make your rules read-only</b><span>For a while, you can make things stricter but not looser. For the moments you’d undo it.</span></div>
+ <div class="seg4"><span>1 day</span><span class="a">7 days</span><span>30 days</span><span>90 days</span></div>
+ <div class="card ends"><span>Ends</span><b>Friday 27 November, 14:00</b></div>
+ <div class="card" style="margin-top:10px"><div class="rw"><div class="tl" style="background:var(--sage)"></div><div class="tx"><b>You can</b><span>Add sites, apps, limits · make anything stricter</span></div><div class="rt"></div></div><div class="rw"><div class="tl" style="background:var(--blush)"></div><div class="tx"><b>You can’t</b><span>Turn a layer off · remove a rule · uninstall*</span></div><div class="rt"></div></div></div>
+ <div class="note">* Uninstall protection needs the direct build. Emergency calls always work.</div>
+ <div class="cta">Lock for 7 days</div>
+
+</div>
+<div class="cap"><b>Protection lock.</b> A clear promise (what you can and can’t do), the exact end date, and one action. Before, it was a row of chips and a pink button with no explanation.</div><div class="vs">Pairs with the Shield “Locked” state already built.</div></div>
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sky)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><span class="bk">←</span><b>About you</b></div>
+ <div class="card" style="padding:12px 14px;margin-top:10px"><div class="lb">Name</div><b class="big2">Sam</b></div>
+ <div class="card" style="padding:12px 14px"><div class="lb">Your note</div><div class="qt">“Go to sleep. Tomorrow-you has a big day.”</div></div>
+ <div class="grp">What you want back</div>
+ <div class="chips"><span class="a">Sleep</span><span class="a">Evenings with people</span><span>+ more</span></div>
+ <div class="grp">When it gets you</div>
+ <div class="chips"><span class="a">Late at night</span></div>
+ <div class="grp">How it feels · on the block screen</div>
+ <div class="chips"><span class="a">Tired</span><span class="a">Behind</span><span>Guilty</span></div>
+ <div class="grp">Instead · on every pause</div>
+ <div class="chips"><span class="a">Read 10 pages</span><span class="a">Text a friend</span><span>+ add</span></div>
+ <div class="note">🔒 On this phone only. <u>Remove all</u></div>
+
+</div>
+<div class="cap"><b>About you.</b> Replaces “Make Unrot yours” (an old list of reasons). Everything setup asked is here, editable, and each section says where it is used.</div><div class="vs">Before: radio list “For my faith / family / focus…”, disconnected from the new answers.</div></div>
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sky)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><span class="bk">←</span><b>Would this be blocked?</b></div>
+ <div class="search">reddit.com</div>
+ <div class="card verdict"><div class="vb">Blocked</div>
+  <div class="st2"><b>1</b>Not on the adult list</div><div class="st2"><b>2</b>Matches your rule <u>reddit.com</u> and its subdomains</div><div class="st2"><b>3</b>Active: always</div>
+  <div class="two" style="margin-top:10px"><span class="b2">Edit the rule</span><span class="b2">Check another</span></div></div>
+ <div class="grp">Try</div>
+ <div class="chips"><span>youtube.com</span><span>old.reddit.com</span><span>a link a friend sent</span></div>
+ <div class="note">🔒 Checked on this phone. Nothing is looked up online.</div>
+
+</div>
+<div class="cap"><b>Check a site.</b> The verdict and numbered reasons are built; this adds example sites to try, a link straight to the deciding rule, and “Check another”.</div><div class="vs">Before: an empty page with one input and a grey button.</div></div>
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sage)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><span class="bk">←</span><b>Your lists</b></div>
+ <div class="card" style="margin-top:12px"><div class="rw"><div class="tl" style="background:var(--blush)"></div><div class="tx"><b>Sites</b><span>2 · reddit.com, x.com</span></div><div class="rt">›</div></div><div class="rw"><div class="tl" style="background:var(--blush)"></div><div class="tx"><b>Words</b><span>2 · your own</span></div><div class="rt">›</div></div><div class="rw"><div class="tl" style="background:var(--butter)"></div><div class="tx"><b>Whole apps</b><span>2 · Reddit, X</span></div><div class="rt">›</div></div></div>
+ <div class="grp">Built-in list</div>
+ <div class="card"><div class="rw"><div class="tl" style="background:var(--sage)"></div><div class="tx"><b>Adult sites list</b><span>229,034 sites · signed · 3 days old</span></div><div class="rt"><span class="fix">Update</span></div></div></div>
+ <div class="grp">Move to another phone</div>
+ <div class="two"><span class="b2">Export as a file</span><span class="b2">Import</span></div>
+ <div class="note">The file holds only your sites and words. No history.</div>
+
+</div>
+<div class="cap"><b>Your lists.</b> Merges three near-empty pages (Blocklist updates, Personal rules file, the list counts) into one place: what you added, the built-in list and its age, and moving to a new phone.</div><div class="vs">Before: “Bundled list / Check for updates” and “Export / Import” on separate empty screens.</div></div>
+<div class="item"><div class="phone"><div class="glow" style="background:var(--butter)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><span class="bk">←</span><b>How Unrot works</b></div>
+ <div class="how"><div class="hn">1</div><div><b>You open TikTok</b><span>Unrot sees which app and screen is open — names only, never what’s on it.</span></div></div>
+ <div class="how"><div class="hn">2</div><div><b>Your rule decides</b><span>Feed? It closes. Wait? A breath first. Limit used up? Closed till tomorrow.</span></div></div>
+ <div class="how"><div class="hn">3</div><div><b>Websites pass a filter on the phone</b><span>Adult sites stop before they load, in every browser.</span></div></div>
+ <div class="how"><div class="hn">4</div><div><b>Nothing leaves the phone</b><span>No account, no history, no server that sees what you do.</span></div></div>
+ <div class="card" style="padding:12px 14px;margin-top:14px"><b style="font-size:13.5px">Where it stops</b><div class="sub" style="font-size:12px">A second phone profile, a computer, or switching the layers off in Android. <u>What can bypass Unrot ›</u></div></div>
+
+</div>
+<div class="cap"><b>How it works.</b> Opal’s “told as your own story”, in four numbered steps from the moment you open an app — instead of one dense paragraph about DNS and MDM.</div><div class="vs">Before: “Unrot combines a DNS filter, whole-app restrictions and on-device text, tag and image checks…”</div></div>
+<div class="item"><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+
+ <div class="blk"><div class="appic" style="background:#E62117">▶</div>
+ <h2 style="margin-top:14px">Shorts are closed.</h2>
+ <div class="sub">The rest of YouTube still works: search, subscriptions, messages.</div>
+ <div class="card quote" style="margin-top:14px"><span>From you, earlier</span>“Go to sleep. Tomorrow-you has a big day.”</div>
+ <div class="sub" style="margin-top:10px">You said scrolling leaves you tired.</div>
+ <div class="card insteadc"><span>Instead</span><b>Read 10 pages</b><u>Start a 10-min timer</u></div>
+ <div class="tally">16 walk-aways today · each one makes the habit weaker</div></div>
+ <div class="cta" style="bottom:86px">Back to my day</div>
+ <div class="ghost" style="bottom:40px">Ⅱ Breathe first · Go back to YouTube</div>
+
+</div>
+<div class="cap"><b>Block screen.</b> The app’s own icon instead of a generic grid, the “instead” idea as a card with a real action (a 10-minute timer), and the walk-away count framed as progress.</div><div class="vs">Before: the same grid icon for every app and reason.</div></div>
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sky)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><span class="bk">←</span><b>Tools and help</b></div>
+ <div class="tiles2"><div class="card"><i>⌕</i><b>Check a site</b></div><div class="card"><i>✓</i><b>Health check</b></div><div class="card"><i>☰</i><b>Your lists</b></div><div class="card"><i>▶</i><b>Replay setup</b></div></div>
+ <div class="grp">Appearance</div>
+ <div class="card"><div class="rw"><div class="tl" style="background:var(--paper2)"></div><div class="tx"><b>Theme</b><span>Follow system</span></div><div class="rt">›</div></div><div class="rw"><div class="tl" style="background:var(--paper2)"></div><div class="tx"><b>Wallpaper colours</b><span>Android 12+</span></div><div class="rt"><span class="sw off"></span></div></div><div class="rw"><div class="tl" style="background:var(--paper2)"></div><div class="tx"><b>Language</b><span>English · العربية</span></div><div class="rt">›</div></div></div>
+ <div class="grp">Help</div>
+ <div class="card"><div class="rw"><div class="tl" style="background:var(--paper2)"></div><div class="tx"><b>How Unrot works</b><span>4 steps</span></div><div class="rt">›</div></div><div class="rw"><div class="tl" style="background:var(--paper2)"></div><div class="tx"><b>What can bypass it</b><span>Honest limits</span></div><div class="rt">›</div></div><div class="rw"><div class="tl" style="background:var(--paper2)"></div><div class="tx"><b>Privacy</b><span>Nothing leaves the phone</span></div><div class="rt">›</div></div></div>
+
+</div>
+<div class="cap"><b>Tools.</b> The four tools people actually use become big tiles; appearance and help stay as short lists.</div><div class="vs">Before: one long settings list with 13 rows of equal weight.</div></div>
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sage)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="tb"><span class="bk">←</span><b>Daily limits</b></div>
+ <div class="sub">Minutes a day per app, from Android’s own screen time. When they run out, the app closes till midnight.</div>
+ <div class="grp">Suggested · your most used</div>
+ <div class="card"><div class="rw"><div class="tl" style="background:#C13584"></div><div class="tx"><b>Instagram</b><span>58m a day now</span></div><div class="rt"><span class="fix">45 min</span></div></div><div class="rw"><div class="tl" style="background:#E62117"></div><div class="tx"><b>YouTube</b><span>1h 29m a day now</span></div><div class="rt"><span class="fix">60 min</span></div></div><div class="rw"><div class="tl" style="background:#111"></div><div class="tx"><b>TikTok</b><span>1h 41m a day now</span></div><div class="rt"><span class="fix">60 min</span></div></div></div>
+ <div class="sub" style="font-size:12px;margin-top:8px">Suggested limits are about two-thirds of today — a step, not a cliff.</div>
+ <div class="cta">Add 3 limits</div>
+
+</div>
+<div class="cap"><b>Daily limits, first visit.</b> Instead of an empty “Add an app to start”, the most-used apps with a suggested limit you can tap to change.</div><div class="vs">Before: “No apps limited yet” and an Add button.</div></div>
+
+</div></body></html>

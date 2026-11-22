@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "open-for",
+      "kind": "prompt",
+      "topics": [
+        "time"
+      ],
+      "ar": "لماذا فتحت هذا؟ إن لم تعرف الجواب، فهذا هو الجواب.",
+      "en": "What did you open this for? If you can't say, that's your answer.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "next-video",
+      "kind": "prompt",
+      "topics": [
+        "time"
+      ],
+      "ar": "الفيديو التالي مصمَّم ليكون «واحدًا آخر». أنت من يقرّر متى ينتهي ذلك.",
+      "en": "The next video is built to be one more. You decide when there are no more.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "feed-ends",
+      "kind": "prompt",
+      "topics": [
+        "time"
+      ],
+      "ar": "الخلاصة لا تنتهي أبدًا، أما مساؤك فينتهي. اصرفه عن قصد.",
+      "en": "A feed never ends. Your evening does. Spend it on purpose.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "bored-ok",
+      "kind": "prompt",
+      "topics": [
+        "time",
+        "heart"
+      ],
+      "ar": "الملل ليس حالة طارئة. اتركه دقيقة وانظر إلامَ يتحوّل.",
+      "en": "Boredom is not an emergency. Let it sit for a minute and see what it turns into.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "one-thing",
+      "kind": "prompt",
+      "topics": [
+        "time"
+      ],
+      "ar": "سمِّ شيئًا واحدًا ستكون سعيدًا لو أنجزته اليوم. هل تستطيع فعله الآن بدلًا من هذا؟",
+      "en": "Name one thing you'd be glad to have done today. Can you do it now instead?",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "urge-wave",
+      "kind": "prompt",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "الرغبة موجة: ترتفع ثم تبلغ ذروتها ثم تهبط. لست مضطرًا لركوبها. انتظر حتى تمرّ.",
+      "en": "An urge is a wave: it rises, peaks and falls. You don't have to ride it. Wait it out.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "tired-lonely",
+      "kind": "prompt",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "هل أنت جائع أو غاضب أو وحيد أو متعب؟ عالج ذلك أولًا، فالشاشة لن تعالجه.",
+      "en": "Hungry, angry, lonely or tired? Fix that first. The screen won't.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "future-you",
+      "kind": "prompt",
+      "topics": [
+        "gaze",
+        "time"
+      ],
+      "ar": "أنت الليلة وأنت غدًا تريدان أشياء مختلفة. انحز لنفسك في الغد.",
+      "en": "Tonight's you and tomorrow's you want different things. Side with tomorrow.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "stand-up",
+      "kind": "prompt",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "قُم، اشرب ماءً، افتح نافذة. غيِّر المكان وستتغيّر الرغبة معه.",
+      "en": "Stand up, drink some water, open a window. Change the room and the urge changes too.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "attention-rent",
+      "kind": "prompt",
+      "topics": [
+        "time"
+      ],
+      "ar": "انتباهك هو ما تبيعه هذه التطبيقات. احتفظ ببعضه لنفسك.",
+      "en": "Your attention is what these apps sell. Keep some of it for yourself.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "slip-not-fall",
+      "kind": "prompt",
+      "topics": [
+        "heart"
+      ],
+      "ar": "الزلّة لحظة واحدة، وليست أنت. أغلقها وابدأ من جديد من هنا.",
+      "en": "A slip is one moment, not who you are. Close it and start again from here.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "count-days",
+      "kind": "prompt",
+      "topics": [
+        "heart"
+      ],
+      "ar": "كل يوم اخترت فيه شيئًا مختلفًا ما زال يُحسب لك، حتى بعد يوم صعب.",
+      "en": "Every day you chose differently still counts, even after a hard one.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "call-someone",
+      "kind": "prompt",
+      "topics": [
+        "heart"
+      ],
+      "ar": "راسل شخصًا تحبّه بدلًا من ذلك. إنسان حقيقي أفضل من خلاصة لا تنتهي.",
+      "en": "Message someone you like instead. A real person beats an endless feed.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "phone-down",
+      "kind": "prompt",
+      "topics": [
+        "time"
+      ],
+      "ar": "اقلب الهاتف على وجهه عشر دقائق، ولاحظ بماذا تفكّر.",
+      "en": "Put the phone face down for ten minutes. Notice what you think about.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "sleep-first",
+      "kind": "prompt",
+      "topics": [
+        "time"
+      ],
+      "ar": "تأخّر الوقت؟ النوم أفضل ما تقدّمه لتركيزك غدًا.",
+      "en": "It's late? Sleep is the best thing you can do for tomorrow's focus.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "small-wins",
+      "kind": "prompt",
+      "topics": [
+        "time",
+        "heart"
+      ],
+      "ar": "الانتصارات الصغيرة المملّة تتراكم: صفحة تقرؤها، مشي قصير، مهمة تُنجزها.",
+      "en": "Small, boring wins add up: a page read, a walk, a task done.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "eyes-choose",
+      "kind": "prompt",
+      "topics": [
+        "gaze"
+      ],
+      "ar": "ما تنظر إليه يشكّل ما تريده. اختر ما تُطعِم به عينيك.",
+      "en": "What you look at shapes what you want. Choose what you feed your eyes.",
+      "source_ar": "",
+      "source_en": ""
+    },
+    {
+      "id": "here-now",
+      "kind": "prompt",
+      "topics": [
+        "heart"
+      ],
+      "ar": "خذ ثلاثة أنفاس بطيئة، ثم قرّر، وليس قبل ذلك.",
+      "en": "Take three slow breaths. Then decide, not before.",
+      "source_ar": "",
+      "source_en": ""
+    }
+  ]
+}

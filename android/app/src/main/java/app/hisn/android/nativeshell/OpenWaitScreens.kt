@@ -48,6 +48,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.asComposePath
+import androidx.graphics.shapes.circle
+import androidx.graphics.shapes.star
+import androidx.graphics.shapes.toPath
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -59,10 +65,37 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.hisn.android.OpenWaitStore
 import app.hisn.android.R
 import kotlinx.coroutines.delay
 
 const val OPEN_WAIT_CIRCLE = "open_wait_circle"
+
+// A soft nine-lobed "cookie" and a circle with the same vertex count, so the morph between them is
+// smooth. Both are normalised to a unit square and scaled to the box when drawn.
+private val BreathMorph by lazy {
+    val cookie = androidx.graphics.shapes.RoundedPolygon.star(
+        numVerticesPerRadius = 9,
+        innerRadius = 0.8f,
+        rounding = androidx.graphics.shapes.CornerRounding(radius = 0.35f, smoothing = 0.6f)
+    ).normalized()
+    val circle = androidx.graphics.shapes.RoundedPolygon.circle(numVertices = 18).normalized()
+    androidx.graphics.shapes.Morph(cookie, circle)
+}
+
+/** The breathing shape at [progress]: 0 is the cookie (out), 1 the circle (in). */
+private class BreathShape(private val progress: Float) : androidx.compose.ui.graphics.Shape {
+    override fun createOutline(
+        size: androidx.compose.ui.geometry.Size,
+        layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+        density: androidx.compose.ui.unit.Density
+    ): androidx.compose.ui.graphics.Outline {
+        val native = android.graphics.Path()
+        BreathMorph.toPath(progress, native)
+        native.transform(android.graphics.Matrix().apply { setScale(size.width, size.height) })
+        return androidx.compose.ui.graphics.Outline.Generic(native.asComposePath())
+    }
+}
 
 /**
  * The few seconds before a chosen app opens. The breath circle grows and shrinks with the count;
@@ -78,7 +111,9 @@ fun OpenWaitScreen(
     closedToday: Int,
     reason: String,
     onClose: () -> Unit,
-    onOpen: () -> Unit
+    onOpen: () -> Unit,
+    onOpenFor: ((Int) -> Unit)? = null,
+    preview: Boolean = false
 ) {
     val colors = MaterialTheme.colorScheme
     var left by rememberSaveable { mutableIntStateOf(seconds) }
@@ -118,6 +153,14 @@ fun OpenWaitScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(Modifier.height(40.dp))
+                if (preview) {
+                    Text(
+                        stringResource(R.string.welcome_pause_preview),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = colors.primary
+                    )
+                    Spacer(Modifier.height(16.dp))
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     AppIcon(appPackage, 28.dp)
                     Spacer(Modifier.width(10.dp))
@@ -132,13 +175,37 @@ fun OpenWaitScreen(
                     modifier = Modifier.semantics { heading() }
                 )
                 Spacer(Modifier.height(36.dp))
-                Box(Modifier.size(220.dp).testTag(OPEN_WAIT_CIRCLE), contentAlignment = Alignment.Center) {
-                    // A thin ring that breathes; nothing filled, nothing decorative.
+                Box(Modifier.size(240.dp).testTag(OPEN_WAIT_CIRCLE), contentAlignment = Alignment.Center) {
+                    // The wait itself, as a ring that empties second by second (Pixel's
+                    // round-capped progress). It is information, so it runs with reduced motion too.
+                    val waited by androidx.compose.animation.core.animateFloatAsState(
+                        targetValue = if (seconds <= 0) 1f else 1f - left / seconds.toFloat(),
+                        animationSpec = tween(if (still) 0 else 1000, easing = androidx.compose.animation.core.LinearEasing),
+                        label = "waited"
+                    )
+                    androidx.compose.material3.CircularProgressIndicator(
+                        progress = { waited },
+                        modifier = Modifier
+                            .size(240.dp)
+                            .clearAndSetSemantics { },
+                        color = colors.primary,
+                        trackColor = colors.surfaceContainerHighest,
+                        strokeWidth = 6.dp,
+                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
+                        gapSize = 6.dp
+                    )
+                    // A soft nine-sided cookie that rounds into a circle on the in-breath and
+                    // back on the out-breath, turning a little each time: the breath you follow.
+                    val t = ((breath.value - 0.72f) / 0.28f).coerceIn(0f, 1f)
                     Box(
                         Modifier
-                            .size(220.dp)
-                            .scale(breath.value)
-                            .border(2.dp, colors.primary, CircleShape)
+                            .size(196.dp)
+                            .graphicsLayer {
+                                scaleX = 0.82f + 0.18f * t
+                                scaleY = scaleX
+                                rotationZ = 40f * t
+                            }
+                            .background(colors.primaryContainer, BreathShape(t))
                     )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
@@ -146,7 +213,7 @@ fun OpenWaitScreen(
                             style = MaterialTheme.typography.displayMedium,
                             color = colors.onSurface
                         )
-                        Text(
+                        if (left > 0) Text(
                             stringResource(if (breathingIn) R.string.open_wait_in else R.string.open_wait_out),
                             style = MaterialTheme.typography.titleMedium,
                             color = colors.onSurfaceVariant
@@ -173,12 +240,20 @@ fun OpenWaitScreen(
                     )
                     Spacer(Modifier.height(12.dp))
                 }
-                Text(
-                    stringResource(R.string.open_wait_today, openedToday, closedToday),
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    color = colors.onSurfaceVariant
-                )
+                if (!preview) {
+                    Text(
+                        stringResource(R.string.open_wait_today, openedToday, closedToday),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = colors.onSurfaceVariant
+                    )
+                }
+                // One reminder per wait, about time where the pack has one.
+                val reminder = remember { Reminders.pick(context, Reminders.TOPIC_TIME) }
+                if (reminder != null) {
+                    Spacer(Modifier.height(24.dp))
+                    ReminderText(reminder, center = true)
+                }
                 Spacer(Modifier.height(24.dp))
             }
             Button(
@@ -198,6 +273,19 @@ fun OpenWaitScreen(
                     else stringResource(R.string.open_wait_open, appLabel),
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
+            }
+            // Once the wait is over, a bounded visit is one tap: the wait comes back when it ends.
+            if (onOpenFor != null && left == 0) {
+                Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.open_wait_just), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    listOf(5, 15).forEach { m ->
+                        TextButton(onClick = { onOpenFor(m) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                            Text(stringResource(R.string.open_wait_for, m))
+                        }
+                    }
+                }
             }
             Spacer(Modifier.height(16.dp))
         }
@@ -237,32 +325,21 @@ fun OpenWaitSettings(
                 )
                 if (!guardOn && chosen.isNotEmpty()) {
                     Spacer(Modifier.height(12.dp))
-                    HisnCard {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(stringResource(R.string.open_wait_needs_guard),
-                                style = MaterialTheme.typography.bodyMedium, color = colors.error)
-                            TextButton(onClick = onFixGuard, modifier = Modifier.heightIn(min = 48.dp)) {
-                                Text(stringResource(R.string.open_wait_turn_on_guard))
-                            }
-                        }
-                    }
+                    AttentionCard(
+                        message = stringResource(R.string.open_wait_needs_guard),
+                        action = stringResource(R.string.open_wait_turn_on_guard),
+                        onAction = onFixGuard
+                    )
                 }
                 Spacer(Modifier.height(16.dp))
                 SectionHeader(stringResource(R.string.open_wait_how_long))
                 Spacer(Modifier.height(8.dp))
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    app.hisn.core.OpenWait.WAITS.forEach { option ->
-                        FilterChip(
-                            selected = option == seconds,
-                            onClick = { onChange(chosen, option, grows) },
-                            label = { Text(stringResource(R.string.open_wait_seconds_short, option)) },
-                            modifier = Modifier.heightIn(min = 48.dp)
-                        )
-                    }
-                }
+                ConnectedChoice(
+                    options = app.hisn.core.OpenWait.WAITS.toList(),
+                    selected = seconds,
+                    label = { stringResource(R.string.open_wait_seconds_short, it) },
+                    onSelect = { onChange(chosen, it, grows) }
+                )
                 Spacer(Modifier.height(8.dp))
                 HisnCard {
                     SwitchRow(
@@ -314,8 +391,27 @@ fun OpenWaitSettings(
                         ) {
                             AppIcon(app.packageName, 32.dp)
                             Spacer(Modifier.width(14.dp))
-                            Text(app.label, style = MaterialTheme.typography.titleMedium, maxLines = 1,
-                                overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                            Column(Modifier.weight(1f)) {
+                                Text(app.label, style = MaterialTheme.typography.titleMedium, maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis)
+                                // Today's honest counts for the apps that wait: the walk-aways are
+                                // the number that matters (one sec, PNAS 2023).
+                                if (on) {
+                                    val context = androidx.compose.ui.platform.LocalContext.current
+                                    val opened = remember(app.packageName) {
+                                        OpenWaitStore.openedToday(context, app.packageName)
+                                    }
+                                    val closed = remember(app.packageName) {
+                                        OpenWaitStore.closedToday(context, app.packageName)
+                                    }
+                                    Text(
+                                        if (opened == 0 && closed == 0) stringResource(R.string.open_wait_today_none)
+                                        else stringResource(R.string.open_wait_today_counts, opened, closed),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colors.onSurfaceVariant
+                                    )
+                                }
+                            }
                             Checkbox(checked = on, onCheckedChange = null)
                         }
                         if (index < apps.lastIndex) InsetDivider()

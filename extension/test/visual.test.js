@@ -1,5 +1,5 @@
 import { validateCapture, visualPreferences, adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections,
-  personDecision, squareFrame, unpadFaces } from '../visual/decisions.js';
+  personDecision, squareFrame, unpadFaces, needsFaceres, needsOarriaga, faceresPrediction } from '../visual/decisions.js';
 import { LocalInferenceQueue } from '../visual/queue.js';
 import {visualPolicyWeakens,validatePatch} from '../lib/policy.js';
 let checks = 0;
@@ -128,4 +128,24 @@ queue.cancelAll();
 check((await waitingCancel).reason === 'cancelled' && queue.pending.length === 0, 'disable releases all waiting frames');
 finish({ state: 'ready' });
 check((await activeCancel).reason === 'cancelled', 'disable discards active model result');
+// Appearance model choice: Oarriaga stays the default; FaceRes is opt-in; evaluation loads both.
+check(visualPreferences({ personBlur: 'female' }).appearance === 'oarriaga', 'Oarriaga is the default appearance model');
+check(visualPreferences({ personBlur: 'female', appearance: 'other' }).appearance === 'oarriaga', 'unknown appearance model falls back');
+check(needsFaceres(visualPreferences({ personBlur: 'female', appearance: 'faceres' }))
+  && !needsOarriaga(visualPreferences({ personBlur: 'female', appearance: 'faceres' })), 'FaceRes alone loads only FaceRes');
+check(!needsFaceres(visualPreferences({ personBlur: 'all', appearance: 'faceres' })), 'all faces needs no appearance model');
+check(needsFaceres(visualPreferences({ personBlur: 'male', evaluateAppearance: true }))
+  && needsOarriaga(visualPreferences({ personBlur: 'male', evaluateAppearance: true })), 'evaluation loads both models');
+check(faceresPrediction({ gender: 'female', score: 0.6 }).genderScore === 0.8, 'FaceRes confidence maps to class probability');
+check(faceresPrediction({ gender: 'unknown', score: 0 }) === null && faceresPrediction(null) === null, 'no FaceRes estimate stays null');
+check(faceDetections({ face: [{ boxScore: .9, box: face.box, gender: 'male', genderScore: .5, age: 31 }] })[0].description.gender === 'male',
+  'Human FaceRes output travels with the face');
+// FaceRes decisions: asymmetric thresholds, no small-face exception.
+const fr = (gender, score, size = 40) => ({ faceScore: .9, box: [0, 0, size, size], ...faceresPrediction({ gender, score }) });
+check(!personDecision([fr('male', .6)], [], 'female', 100, 100).blur, 'women setting shows a face FaceRes rates 0.80 male');
+check(personDecision([fr('male', .56)], [], 'female', 100, 100).blur, 'women setting covers a face FaceRes rates only 0.78 male');
+check(!personDecision([fr('female', .2)], [], 'male', 100, 100).blur, 'men setting shows a face FaceRes rates 0.60 female');
+check(personDecision([fr('female', .18)], [], 'male', 100, 100).blur, 'men setting covers a face FaceRes rates 0.59 female');
+check(personDecision([fr('male', .1, 12)], [], 'female', 100, 100).blur, 'a small FaceRes face still needs a confident estimate to be shown');
+check(personDecision([fr('female', .9)], [], 'female', 100, 100).blur, 'a matching FaceRes face is covered');
 print(`  ${checks}/${checks} visual checks passed`);

@@ -1,0 +1,507 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "quran-24-30",
+      "kind": "quran",
+      "topics": [
+        "gaze"
+      ],
+      "ar": "قُلْ لِلْمُؤْمِنِينَ يَغُضُّوا مِنْ أَبْصَارِهِمْ وَيَحْفَظُوا فُرُوجَهُمْ ۚ ذَٰلِكَ أَزْكَىٰ لَهُمْ ۗ إِنَّ اللَّهَ خَبِيرٌ بِمَا يَصْنَعُونَ",
+      "en": "Tell the believing men to lower their gaze and be modest. That is purer for them. Lo! Allah is aware of what they do.",
+      "source_ar": "سورة النور ٣٠",
+      "source_en": "Qur'an 24:30",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/24:30/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-17-32",
+      "kind": "quran",
+      "topics": [
+        "gaze"
+      ],
+      "ar": "وَلَا تَقْرَبُوا الزِّنَا ۖ إِنَّهُ كَانَ فَاحِشَةً وَسَاءَ سَبِيلًا",
+      "en": "And come not near unto adultery. Lo! it is an abomination and an evil way.",
+      "source_ar": "سورة الإسراء ٣٢",
+      "source_en": "Qur'an 17:32",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/17:32/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-17-36",
+      "kind": "quran",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "وَلَا تَقْفُ مَا لَيْسَ لَكَ بِهِ عِلْمٌ ۚ إِنَّ السَّمْعَ وَالْبَصَرَ وَالْفُؤَادَ كُلُّ أُولَٰئِكَ كَانَ عَنْهُ مَسْئُولًا",
+      "en": "(O man), follow not that whereof thou hast no knowledge. Lo! the hearing and the sight and the heart - of each of these it will be asked.",
+      "source_ar": "سورة الإسراء ٣٦",
+      "source_en": "Qur'an 17:36",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/17:36/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-96-14",
+      "kind": "quran",
+      "topics": [
+        "gaze"
+      ],
+      "ar": "أَلَمْ يَعْلَمْ بِأَنَّ اللَّهَ يَرَىٰ",
+      "en": "Is he then unaware that Allah seeth?",
+      "source_ar": "سورة العلق ١٤",
+      "source_en": "Qur'an 96:14",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/96:14/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-40-19",
+      "kind": "quran",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "يَعْلَمُ خَائِنَةَ الْأَعْيُنِ وَمَا تُخْفِي الصُّدُورُ",
+      "en": "He knoweth the traitor of the eyes, and that which the bosoms hide.",
+      "source_ar": "سورة غافر ١٩",
+      "source_en": "Qur'an 40:19",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/40:19/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-39-53",
+      "kind": "quran",
+      "topics": [
+        "repentance",
+        "hope"
+      ],
+      "ar": "۞ قُلْ يَا عِبَادِيَ الَّذِينَ أَسْرَفُوا عَلَىٰ أَنْفُسِهِمْ لَا تَقْنَطُوا مِنْ رَحْمَةِ اللَّهِ ۚ إِنَّ اللَّهَ يَغْفِرُ الذُّنُوبَ جَمِيعًا ۚ إِنَّهُ هُوَ الْغَفُورُ الرَّحِيمُ",
+      "en": "Say: O My slaves who have been prodigal to their own hurt! Despair not of the mercy of Allah, Who forgiveth all sins. Lo! He is the Forgiving, the Merciful.",
+      "source_ar": "سورة الزمر ٥٣",
+      "source_en": "Qur'an 39:53",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/39:53/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-13-28",
+      "kind": "quran",
+      "topics": [
+        "dhikr",
+        "heart"
+      ],
+      "ar": "الَّذِينَ آمَنُوا وَتَطْمَئِنُّ قُلُوبُهُمْ بِذِكْرِ اللَّهِ ۗ أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ",
+      "en": "Who have believed and whose hearts have rest in the remembrance of Allah. Verily in the remembrance of Allah do hearts find rest!",
+      "source_ar": "سورة الرعد ٢٨",
+      "source_en": "Qur'an 13:28",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/13:28/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-79-40-41",
+      "kind": "quran",
+      "topics": [
+        "patience"
+      ],
+      "ar": "وَأَمَّا مَنْ خَافَ مَقَامَ رَبِّهِ وَنَهَى النَّفْسَ عَنِ الْهَوَىٰ فَإِنَّ الْجَنَّةَ هِيَ الْمَأْوَىٰ",
+      "en": "But as for him who feared to stand before his Lord and restrained his soul from lust, Lo! the Garden will be his home.",
+      "source_ar": "سورة النازعات ٤٠-٤١",
+      "source_en": "Qur'an 79:40-41",
+      "verify_url": "https://api.alquran.cloud/v1/surah/79/editions/quran-simple,en.pickthall?offset=39&limit=2",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-2-186",
+      "kind": "quran",
+      "topics": [
+        "hope"
+      ],
+      "ar": "وَإِذَا سَأَلَكَ عِبَادِي عَنِّي فَإِنِّي قَرِيبٌ ۖ أُجِيبُ دَعْوَةَ الدَّاعِ إِذَا دَعَانِ ۖ فَلْيَسْتَجِيبُوا لِي وَلْيُؤْمِنُوا بِي لَعَلَّهُمْ يَرْشُدُونَ",
+      "en": "And when My servants question thee concerning Me, then surely I am nigh. I answer the prayer of the suppliant when he crieth unto Me. So let them hear My call and let them trust in Me, in order that they may be led aright.",
+      "source_ar": "سورة البقرة ١٨٦",
+      "source_en": "Qur'an 2:186",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/2:186/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-3-135",
+      "kind": "quran",
+      "topics": [
+        "repentance"
+      ],
+      "ar": "وَالَّذِينَ إِذَا فَعَلُوا فَاحِشَةً أَوْ ظَلَمُوا أَنْفُسَهُمْ ذَكَرُوا اللَّهَ فَاسْتَغْفَرُوا لِذُنُوبِهِمْ وَمَنْ يَغْفِرُ الذُّنُوبَ إِلَّا اللَّهُ وَلَمْ يُصِرُّوا عَلَىٰ مَا فَعَلُوا وَهُمْ يَعْلَمُونَ",
+      "en": "And those who, when they do an evil thing or wrong themselves, remember Allah and implore forgiveness for their sins - Who forgiveth sins save Allah only? - and will not knowingly repeat (the wrong) they did.",
+      "source_ar": "سورة آل عمران ١٣٥",
+      "source_en": "Qur'an 3:135",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/3:135/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-57-16",
+      "kind": "quran",
+      "topics": [
+        "heart",
+        "dhikr"
+      ],
+      "ar": "۞ أَلَمْ يَأْنِ لِلَّذِينَ آمَنُوا أَنْ تَخْشَعَ قُلُوبُهُمْ لِذِكْرِ اللَّهِ وَمَا نَزَلَ مِنَ الْحَقِّ وَلَا يَكُونُوا كَالَّذِينَ أُوتُوا الْكِتَابَ مِنْ قَبْلُ فَطَالَ عَلَيْهِمُ الْأَمَدُ فَقَسَتْ قُلُوبُهُمْ ۖ وَكَثِيرٌ مِنْهُمْ فَاسِقُونَ",
+      "en": "Is not the time ripe for the hearts of those who believe to submit to Allah's reminder and to the truth which is revealed, that they become not as those who received the scripture of old but the term was prolonged for them and so their hearts were hardened, and many of them are evil-livers.",
+      "source_ar": "سورة الحديد ١٦",
+      "source_en": "Qur'an 57:16",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/57:16/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-23-1-3",
+      "kind": "quran",
+      "topics": [
+        "time"
+      ],
+      "ar": "قَدْ أَفْلَحَ الْمُؤْمِنُونَ الَّذِينَ هُمْ فِي صَلَاتِهِمْ خَاشِعُونَ وَالَّذِينَ هُمْ عَنِ اللَّغْوِ مُعْرِضُونَ",
+      "en": "Successful indeed are the believers Who are humble in their prayers, And who shun vain conversation,",
+      "source_ar": "سورة المؤمنون ١-٣",
+      "source_en": "Qur'an 23:1-3",
+      "verify_url": "https://api.alquran.cloud/v1/surah/23/editions/quran-simple,en.pickthall?offset=0&limit=3",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-103-1-3",
+      "kind": "quran",
+      "topics": [
+        "time",
+        "patience"
+      ],
+      "ar": "وَالْعَصْرِ إِنَّ الْإِنْسَانَ لَفِي خُسْرٍ إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ",
+      "en": "By the declining day, Lo! man is a state of loss, Save those who believe and do good works, and exhort one another to truth and exhort one another to endurance.",
+      "source_ar": "سورة العصر ١-٣",
+      "source_en": "Qur'an 103:1-3",
+      "verify_url": "https://api.alquran.cloud/v1/surah/103/editions/quran-simple,en.pickthall?offset=0&limit=3",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-29-69",
+      "kind": "quran",
+      "topics": [
+        "patience",
+        "hope"
+      ],
+      "ar": "وَالَّذِينَ جَاهَدُوا فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا ۚ وَإِنَّ اللَّهَ لَمَعَ الْمُحْسِنِينَ",
+      "en": "As for those who strive in Us, We surely guide them to Our paths, and lo! Allah is with the good.",
+      "source_ar": "سورة العنكبوت ٦٩",
+      "source_en": "Qur'an 29:69",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/29:69/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-2-153",
+      "kind": "quran",
+      "topics": [
+        "patience"
+      ],
+      "ar": "يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ ۚ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ",
+      "en": "O ye who believe! Seek help in steadfastness and prayer. Lo! Allah is with the steadfast.",
+      "source_ar": "سورة البقرة ١٥٣",
+      "source_en": "Qur'an 2:153",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/2:153/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-7-201",
+      "kind": "quran",
+      "topics": [
+        "dhikr",
+        "repentance"
+      ],
+      "ar": "إِنَّ الَّذِينَ اتَّقَوْا إِذَا مَسَّهُمْ طَائِفٌ مِنَ الشَّيْطَانِ تَذَكَّرُوا فَإِذَا هُمْ مُبْصِرُونَ",
+      "en": "Lo! those who ward off (evil), when a glamour from the devil troubleth them, they do but remember (Allah's Guidance) and behold them seers!",
+      "source_ar": "سورة الأعراف ٢٠١",
+      "source_en": "Qur'an 7:201",
+      "verify_url": "https://api.alquran.cloud/v1/ayah/7:201/editions/quran-simple,en.pickthall",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-4-27-28",
+      "kind": "quran",
+      "topics": [
+        "repentance",
+        "hope"
+      ],
+      "ar": "وَاللَّهُ يُرِيدُ أَنْ يَتُوبَ عَلَيْكُمْ وَيُرِيدُ الَّذِينَ يَتَّبِعُونَ الشَّهَوَاتِ أَنْ تَمِيلُوا مَيْلًا عَظِيمًا يُرِيدُ اللَّهُ أَنْ يُخَفِّفَ عَنْكُمْ ۚ وَخُلِقَ الْإِنْسَانُ ضَعِيفًا",
+      "en": "And Allah would turn to you in mercy; but those who follow vain desires would have you go tremendously astray. Allah would make the burden light for you, for man was created weak.",
+      "source_ar": "سورة النساء ٢٧-٢٨",
+      "source_en": "Qur'an 4:27-28",
+      "verify_url": "https://api.alquran.cloud/v1/surah/4/editions/quran-simple,en.pickthall?offset=26&limit=2",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "quran-94-5-6",
+      "kind": "quran",
+      "topics": [
+        "hope",
+        "patience"
+      ],
+      "ar": "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا إِنَّ مَعَ الْعُسْرِ يُسْرًا",
+      "en": "But lo! with hardship goeth ease, Lo! with hardship goeth ease;",
+      "source_ar": "سورة الشرح ٥-٦",
+      "source_en": "Qur'an 94:5-6",
+      "verify_url": "https://api.alquran.cloud/v1/surah/94/editions/quran-simple,en.pickthall?offset=4&limit=2",
+      "en_note": "Pickthall (public domain)"
+    },
+    {
+      "id": "hadith-bukhari-6412",
+      "kind": "hadith",
+      "topics": [
+        "time"
+      ],
+      "ar": "نِعْمَتَانِ مَغْبُونٌ فِيهِمَا كَثِيرٌ مِنَ النَّاسِ، الصِّحَّةُ وَالْفَرَاغُ",
+      "en": "Two blessings in which many people are cheated: health and free time.",
+      "source_ar": "صحيح البخاري ٦٤١٢",
+      "source_en": "Sahih al-Bukhari 6412",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari/6412.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "hadith-bukhari-6474",
+      "kind": "hadith",
+      "topics": [
+        "gaze"
+      ],
+      "ar": "مَنْ يَضْمَنْ لِي مَا بَيْنَ لَحْيَيْهِ وَمَا بَيْنَ رِجْلَيْهِ أَضْمَنْ لَهُ الْجَنَّةَ",
+      "en": "Whoever guarantees me what is between his jaws and what is between his legs, I guarantee him Paradise.",
+      "source_ar": "صحيح البخاري ٦٤٧٤",
+      "source_en": "Sahih al-Bukhari 6474",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari/6474.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "hadith-bukhari-6243",
+      "kind": "hadith",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "إِنَّ اللَّهَ كَتَبَ عَلَى ابْنِ آدَمَ حَظَّهُ مِنَ الزِّنَا، أَدْرَكَ ذَلِكَ لاَ مَحَالَةَ، فَزِنَا الْعَيْنِ النَّظَرُ، وَزِنَا اللِّسَانِ الْمَنْطِقُ، وَالنَّفْسُ تَمَنَّى وَتَشْتَهِي، وَالْفَرْجُ يُصَدِّقُ ذَلِكَ كُلَّهُ وَيُكَذِّبُهُ",
+      "en": "Allah has written for the son of Adam his share of zina, which he will inevitably meet. The zina of the eye is looking, the zina of the tongue is speech; the soul wishes and desires, and the private part confirms all of that or denies it.",
+      "source_ar": "صحيح البخاري ٦٢٤٣",
+      "source_en": "Sahih al-Bukhari 6243",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari/6243.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "hadith-bukhari-5066",
+      "kind": "hadith",
+      "topics": [
+        "gaze",
+        "patience"
+      ],
+      "ar": "يَا مَعْشَرَ الشَّبَابِ مَنِ اسْتَطَاعَ الْبَاءَةَ فَلْيَتَزَوَّجْ، فَإِنَّهُ أَغَضُّ لِلْبَصَرِ، وَأَحْصَنُ لِلْفَرْجِ، وَمَنْ لَمْ يَسْتَطِعْ فَعَلَيْهِ بِالصَّوْمِ، فَإِنَّهُ لَهُ وِجَاءٌ",
+      "en": "O young men, whoever of you is able to marry, let him marry, for it lowers the gaze more and guards chastity better. And whoever is not able, let him fast, for it is a shield for him.",
+      "source_ar": "صحيح البخاري ٥٠٦٦",
+      "source_en": "Sahih al-Bukhari 5066",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari/5066.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "hadith-bukhari-5223",
+      "kind": "hadith",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "إِنَّ اللَّهَ يَغَارُ وَغَيْرَةُ اللَّهِ أَنْ يَأْتِيَ الْمُؤْمِنُ مَا حَرَّمَ اللَّهُ",
+      "en": "Allah has protective jealousy, and Allah's jealousy is that the believer does what Allah has forbidden.",
+      "source_ar": "صحيح البخاري ٥٢٢٣",
+      "source_en": "Sahih al-Bukhari 5223",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari/5223.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "hadith-muslim-2759",
+      "kind": "hadith",
+      "topics": [
+        "repentance",
+        "hope"
+      ],
+      "ar": "إِنَّ اللَّهَ عَزَّ وَجَلَّ يَبْسُطُ يَدَهُ بِاللَّيْلِ لِيَتُوبَ مُسِيءُ النَّهَارِ وَيَبْسُطُ يَدَهُ بِالنَّهَارِ لِيَتُوبَ مُسِيءُ اللَّيْلِ حَتَّى تَطْلُعَ الشَّمْسُ مِنْ مَغْرِبِهَا",
+      "en": "Allah, Mighty and Majestic, stretches out His hand by night so that the one who did wrong by day may repent, and stretches out His hand by day so that the one who did wrong by night may repent, until the sun rises from where it sets.",
+      "source_ar": "صحيح مسلم ٢٧٥٩",
+      "source_en": "Sahih Muslim 2759",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-muslim/6989.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "hadith-muslim-2760",
+      "kind": "hadith",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "لاَ أَحَدٌ أَغْيَرَ مِنَ اللَّهِ وَلِذَلِكَ حَرَّمَ الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ وَلاَ أَحَدٌ أَحَبَّ إِلَيْهِ الْمَدْحُ مِنَ اللَّهِ",
+      "en": "No one has more protective jealousy than Allah, and for that He has forbidden indecencies, the open and the hidden. And no one loves praise more than Allah.",
+      "source_ar": "صحيح مسلم ٢٧٦٠",
+      "source_en": "Sahih Muslim 2760",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-muslim/6992.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "hadith-tirmidhi-2777",
+      "kind": "hadith",
+      "topics": [
+        "gaze"
+      ],
+      "ar": "يَا عَلِيُّ لاَ تُتْبِعِ النَّظْرَةَ النَّظْرَةَ فَإِنَّ لَكَ الأُولَى وَلَيْسَتْ لَكَ الآخِرَةُ",
+      "en": "O Ali, do not follow a look with another look. The first is yours, but the second is not.",
+      "source_ar": "سنن الترمذي ٢٧٧٧ (حسن، الألباني)",
+      "source_en": "Jami' at-Tirmidhi 2777 (graded hasan by al-Albani)",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-tirmidhi/2777.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "hadith-tirmidhi-2317",
+      "kind": "hadith",
+      "topics": [
+        "time"
+      ],
+      "ar": "مِنْ حُسْنِ إِسْلاَمِ الْمَرْءِ تَرْكُهُ مَا لاَ يَعْنِيهِ",
+      "en": "Part of the excellence of a person's Islam is his leaving what does not concern him.",
+      "source_ar": "سنن الترمذي ٢٣١٧ (صحيح، الألباني)",
+      "source_en": "Jami' at-Tirmidhi 2317 (graded sahih by al-Albani)",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-tirmidhi/2317.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "hadith-tirmidhi-2516",
+      "kind": "hadith",
+      "topics": [
+        "heart",
+        "patience"
+      ],
+      "ar": "يَا غُلاَمُ إِنِّي أُعَلِّمُكَ كَلِمَاتٍ احْفَظِ اللَّهَ يَحْفَظْكَ احْفَظِ اللَّهَ تَجِدْهُ تُجَاهَكَ",
+      "en": "O young man, I will teach you some words: guard Allah and He will guard you; guard Allah and you will find Him before you.",
+      "source_ar": "سنن الترمذي ٢٥١٦ (صحيح، الألباني)",
+      "source_en": "Jami' at-Tirmidhi 2516 (graded sahih by al-Albani)",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-tirmidhi/2516.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "hadith-tirmidhi-2499",
+      "kind": "hadith",
+      "topics": [
+        "repentance",
+        "hope"
+      ],
+      "ar": "كُلُّ ابْنِ آدَمَ خَطَّاءٌ وَخَيْرُ الْخَطَّائِينَ التَّوَّابُونَ",
+      "en": "Every son of Adam errs often, and the best of those who err are those who repent often.",
+      "source_ar": "سنن الترمذي ٢٤٩٩ (حسن، الألباني)",
+      "source_en": "Jami' at-Tirmidhi 2499 (graded hasan by al-Albani)",
+      "verify_url": "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-tirmidhi/2499.min.json",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "iq-fawaid-time",
+      "kind": "scholar",
+      "topics": [
+        "time"
+      ],
+      "ar": "إضاعة الوقت أشد من الموت؛ لأن إضاعة الوقت تقطعك عن الله والدار الآخرة، والموت يقطعك عن الدنيا وأهلها.",
+      "en": "Wasting time is worse than death, because wasting time cuts you off from Allah and the Home of the Hereafter, while death only cuts you off from this world and its people.",
+      "source_ar": "ابن القيم، الفوائد",
+      "source_en": "Ibn al-Qayyim, al-Fawa'id",
+      "verify_url": "https://ar.wikisource.org/wiki/%D9%83%D8%AA%D8%A7%D8%A8_%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%A6%D8%AF/2",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "iq-fawaid-khatra",
+      "kind": "scholar",
+      "topics": [
+        "heart",
+        "gaze"
+      ],
+      "ar": "دافع الخطرة، فإن لم تفعل صارت فكرة، فدافع الفكرة، فإن لم تفعل صارت شهوة، فحاربها، فإن لم تفعل صارت عزيمة وهِمَّة. فإن لم تدافعها صارت فعلا.",
+      "en": "Push away the passing thought; if you do not, it becomes an idea. Push away the idea; if you do not, it becomes a desire. Fight the desire; if you do not, it becomes resolve and intent. If you do not push that away, it becomes an act.",
+      "source_ar": "ابن القيم، الفوائد",
+      "source_en": "Ibn al-Qayyim, al-Fawa'id",
+      "verify_url": "https://ar.wikisource.org/wiki/%D9%83%D8%AA%D8%A7%D8%A8_%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%A6%D8%AF/2",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "iq-fawaid-profit",
+      "kind": "scholar",
+      "topics": [
+        "time"
+      ],
+      "ar": "أعظم الربح في الدنيا أن تشغل نفسك كل الوقت بما هو أولى بها وأنفع لها في معادها.",
+      "en": "The greatest profit in this world is to keep yourself busy all the time with what is most fitting for it and most beneficial to it in the Hereafter.",
+      "source_ar": "ابن القيم، الفوائد",
+      "source_en": "Ibn al-Qayyim, al-Fawa'id",
+      "verify_url": "https://ar.wikisource.org/wiki/%D9%83%D8%AA%D8%A7%D8%A8_%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%A6%D8%AF/2",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "iq-fawaid-hour",
+      "kind": "scholar",
+      "topics": [
+        "patience",
+        "gaze"
+      ],
+      "ar": "كيف يكون عاقلا من باع الجنة بما فيها بشهوة ساعة.",
+      "en": "How can anyone be called sensible who sells Paradise and all it holds for the desire of an hour?",
+      "source_ar": "ابن القيم، الفوائد",
+      "source_en": "Ibn al-Qayyim, al-Fawa'id",
+      "verify_url": "https://ar.wikisource.org/wiki/%D9%83%D8%AA%D8%A7%D8%A8_%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%A6%D8%AF/2",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "iq-jawab-glances",
+      "kind": "scholar",
+      "topics": [
+        "gaze"
+      ],
+      "ar": "فأما اللحظات فهي رائد الشهوة ورسولها وحفظها أصل حفظ الفرج فمن أطلق نظره أورده موارد الهلاك",
+      "en": "As for glances, they are the scout and messenger of desire, and guarding them is the root of guarding one's chastity. Whoever lets his gaze roam free leads himself to the places of ruin.",
+      "source_ar": "ابن القيم، الجواب الكافي",
+      "source_en": "Ibn al-Qayyim, al-Jawab al-Kafi",
+      "verify_url": "https://ar.wikisource.org/wiki/%D8%A7%D9%84%D8%AC%D9%88%D8%A7%D8%A8_%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8A_%D9%84%D9%85%D9%86_%D8%B3%D8%A3%D9%84_%D8%B9%D9%86_%D8%A7%D9%84%D8%AF%D9%88%D8%A7%D8%A1_%D8%A7%D9%84%D8%B4%D8%A7%D9%81%D9%8A_1",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "iq-jawab-light",
+      "kind": "scholar",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "الرابع أنه يقوي القلب ويفرحه كما أن إطلاق البصر يضعفه ويحزنه الخامس أنه يكسب القلب نورا كما أن إطلاقه يكسبه ظلمة",
+      "en": "[Of the benefits of lowering the gaze:] Fourth, it strengthens the heart and gladdens it, just as letting the gaze roam weakens it and saddens it. Fifth, it gives the heart light, just as letting it roam gives it darkness.",
+      "source_ar": "ابن القيم، الجواب الكافي",
+      "source_en": "Ibn al-Qayyim, al-Jawab al-Kafi",
+      "verify_url": "https://ar.wikisource.org/wiki/%D8%A7%D9%84%D8%AC%D9%88%D8%A7%D8%A8_%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8A_%D9%84%D9%85%D9%86_%D8%B3%D8%A3%D9%84_%D8%B9%D9%86_%D8%A7%D9%84%D8%AF%D9%88%D8%A7%D8%A1_%D8%A7%D9%84%D8%B4%D8%A7%D9%81%D9%8A_1",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "iq-jawab-replace",
+      "kind": "scholar",
+      "topics": [
+        "gaze",
+        "hope"
+      ],
+      "ar": "والله سبحانه يجزي العبد على عمله بما هو من جنس عمله ومن ترك شيئا عوضه الله خيرا منه",
+      "en": "Allah rewards the servant for his deed with something of the same kind as his deed, and whoever leaves something for Allah, Allah gives him something better in its place.",
+      "source_ar": "ابن القيم، الجواب الكافي",
+      "source_en": "Ibn al-Qayyim, al-Jawab al-Kafi",
+      "verify_url": "https://ar.wikisource.org/wiki/%D8%A7%D9%84%D8%AC%D9%88%D8%A7%D8%A8_%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8A_%D9%84%D9%85%D9%86_%D8%B3%D8%A3%D9%84_%D8%B9%D9%86_%D8%A7%D9%84%D8%AF%D9%88%D8%A7%D8%A1_%D8%A7%D9%84%D8%B4%D8%A7%D9%81%D9%8A_1",
+      "en_note": "translation of the meaning by the app"
+    },
+    {
+      "id": "iq-jawab-thoughts",
+      "kind": "scholar",
+      "topics": [
+        "heart"
+      ],
+      "ar": "ومن استهان بالخطرات قادته قهرا إلى الهلكات",
+      "en": "Whoever takes passing thoughts lightly, they will drag him by force to ruin.",
+      "source_ar": "ابن القيم، الجواب الكافي",
+      "source_en": "Ibn al-Qayyim, al-Jawab al-Kafi",
+      "verify_url": "https://ar.wikisource.org/wiki/%D8%A7%D9%84%D8%AC%D9%88%D8%A7%D8%A8_%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8A_%D9%84%D9%85%D9%86_%D8%B3%D8%A3%D9%84_%D8%B9%D9%86_%D8%A7%D9%84%D8%AF%D9%88%D8%A7%D8%A1_%D8%A7%D9%84%D8%B4%D8%A7%D9%81%D9%8A_1",
+      "en_note": "translation of the meaning by the app"
+    }
+  ]
+}

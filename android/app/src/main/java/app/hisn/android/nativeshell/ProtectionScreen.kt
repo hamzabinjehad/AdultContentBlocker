@@ -7,10 +7,18 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.Button
+import androidx.compose.ui.semantics.heading
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import app.hisn.android.DnsVpnService
 import app.hisn.android.R
+import app.hisn.core.VisualHealth
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -33,10 +41,16 @@ import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -60,207 +74,372 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/** One protection layer as the screen needs it: list row, hero cell and the real setter. */
+/** The saved setting drives the control; the live state drives the coverage row. */
 private class Layer(
     val icon: ImageVector,
     val label: String,
     val title: String,
-    val supportingOn: String,
-    val supportingOff: String,
-    val on: Boolean,
+    val supporting: String,
+    val enabled: Boolean,
+    val active: Boolean,
+    val status: String,
     val set: (Boolean) -> Unit
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProtectionScreen(
-    attention: Boolean,
     state: HisnState,
     copy: ProtectionCopy = EnglishProtectionCopy,
-    onOpen: (String) -> Unit = {}
+    onOpen: (String) -> Unit = {},
+    mode: HomeMode = HomeMode.Full,
+    onShowShield: () -> Unit = {}
 ) {
+    // Unrot splits this screen across two tabs: Today (the person's day) and Shield (the
+    // protection itself). One computation of the protection state serves both.
+    val today = mode == HomeMode.Today
+    val shield = mode == HomeMode.Shield
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val status = LocalHisnStatusColors.current
-    val snackbar = LocalHisnSnackbar.current
     val haptics = rememberHisnHaptics()
     val scope = rememberCoroutineScope()
     val reduceMotion = LocalReduceMotion.current
-
+    val runtime = state.runtime
     var refreshing by remember { mutableStateOf(false) }
-    var checking by remember { mutableStateOf(false) }
     var celebrate by remember { mutableStateOf(false) }
 
+    val attentionText = stringResource(R.string.protection_home_needs_attention)
+    val waitingText = stringResource(R.string.protection_home_waiting)
+    val startingText = stringResource(R.string.welcome_status_starting)
+    val imagesUnsupported = android.os.Build.VERSION.SDK_INT < 34
+    val noScannedApps = state.scannedCount == 0 && !state.scanAll.on
+    var askScanAll by remember { mutableStateOf(false) }
+    if (askScanAll) {
+        ScanAllDialog(onConfirm = { askScanAll = false; state.scanAll.set(true) }, onDismiss = { askScanAll = false })
+    }
+    val guardReady = state.guardReady
+    val dnsIssue = when {
+        runtime.dnsAttached && runtime.dnsLockdown == true -> R.string.attention_dns_lockdown
+        runtime.dnsAttached && runtime.privateDnsStrict -> R.string.attention_private_dns
+        runtime.dns == DnsVpnService.State.ERROR -> R.string.attention_dns_error
+        runtime.dns == DnsVpnService.State.DEGRADED -> R.string.attention_dns_degraded
+        runtime.dns == DnsVpnService.State.OFF && runtime.dnsRequested -> R.string.attention_dns_not_running
+        runtime.dnsAttached && state.check == DnsVpnService.CheckState.FAILED -> R.string.attention_route_failed
+        else -> null
+    }
+    val guardIssue = when {
+        // Turned off in Hisn on purpose: nothing to fix, the switch says Off.
+        state.guardPaused -> null
+        !runtime.guardExpected && !state.apps.on -> null
+        !state.apps.on -> R.string.attention_guard_permission
+        !guardReady -> R.string.attention_guard_disconnected
+        else -> null
+    }
+    val imageIssue = when {
+        !state.images.on -> null
+        imagesUnsupported -> R.string.attention_visual_unsupported
+        state.guardPaused -> R.string.attention_guard_paused
+        !guardReady -> R.string.attention_guard_permission
+        noScannedApps -> R.string.attention_visual_no_apps
+        else -> when (runtime.visual) {
+            VisualHealth.State.UNREADABLE -> R.string.visual_unreadable
+            VisualHealth.State.PROTECTED -> R.string.visual_protected
+            VisualHealth.State.ERROR -> R.string.visual_error
+            else -> null
+        }
+    }
+    val imageActive = state.images.on && imageIssue == null && runtime.visual == VisualHealth.State.SAMPLED
     val layers = listOf(
         Layer(
-            icon = Icons.Rounded.Wifi,
-            label = copy.network,
-            title = copy.dnsTitle,
-            supportingOn = copy.dnsOnText(state.dnsDomains),
-            supportingOff = copy.dnsOff,
-            on = state.dns.on,
+            Icons.Rounded.Wifi, copy.network, copy.dnsTitle,
+            supporting = when {
+                dnsIssue != null -> stringResource(dnsIssue)
+                runtime.dnsReady -> copy.dnsOnText(state.dnsDomains)
+                runtime.dns == DnsVpnService.State.STARTING -> startingText
+                else -> copy.dnsOff
+            },
+            enabled = state.dns.on, active = runtime.dnsReady && dnsIssue == null,
+            status = when {
+                dnsIssue != null -> attentionText
+                runtime.dnsReady -> copy.on
+                runtime.dns == DnsVpnService.State.STARTING -> startingText
+                else -> copy.off
+            },
             set = state.dns::set
         ),
         Layer(
-            icon = Icons.Rounded.Apps,
-            label = copy.apps,
-            title = copy.appTitle,
-            supportingOn = copy.appsBlockedText(state.blockedApps.size),
-            supportingOff = copy.appOff,
-            on = state.apps.on,
+            Icons.Rounded.Apps, copy.apps, copy.appTitle,
+            supporting = if (guardIssue != null) stringResource(guardIssue)
+                else if (guardReady) copy.appsBlockedText(state.blockedApps.size) else copy.appOff,
+            enabled = state.apps.on, active = guardReady,
+            status = if (guardReady) copy.on else if (guardIssue != null) attentionText else copy.off,
             set = state.apps::set
         ),
         Layer(
-            icon = Icons.Rounded.LocalOffer,
-            label = copy.tags,
-            title = copy.tagsTitle,
-            supportingOn = copy.tagsOn,
-            supportingOff = copy.tagsOff,
-            on = state.tags.on,
+            Icons.Rounded.LocalOffer, copy.tags, copy.tagsTitle,
+            supporting = when {
+                !state.tags.on -> copy.tagsOff
+                !guardReady -> waitingText
+                noScannedApps -> stringResource(R.string.protection_home_tags_no_scope)
+                else -> copy.tagsOn
+            },
+            enabled = state.tags.on, active = state.tags.on && guardReady,
+            status = if (!state.tags.on) copy.off else if (guardReady) copy.on else waitingText,
             set = state.tags::set
         ),
         Layer(
-            icon = Icons.Rounded.Image,
-            label = copy.images,
-            title = copy.imageTitle,
-            supportingOn = copy.imageOn,
-            supportingOff = copy.imageOff,
-            on = state.images.on,
+            Icons.Rounded.Image, copy.images, copy.imageTitle,
+            supporting = when {
+                imageIssue != null -> stringResource(imageIssue)
+                imageActive -> stringResource(R.string.visual_sampled)
+                state.images.on -> stringResource(R.string.visual_waiting)
+                else -> copy.imageOff
+            },
+            enabled = state.images.on, active = imageActive,
+            status = when {
+                !state.images.on -> copy.off
+                imageIssue != null -> attentionText
+                imageActive -> copy.on
+                else -> waitingText
+            },
             set = state.images::set
         )
     )
 
-    // Only what is actually wrong right now; nothing is listed by default.
-    val guardNeeded = state.tags.on || state.images.on || state.blockedApps.isNotEmpty()
-    val issues = buildList {
-        if (state.dnsState == DnsVpnService.State.ERROR) {
-            add(Issue(Icons.Rounded.Wifi, copy.dnsStoppedTitle, copy.dnsStoppedBody) { state.dns.set(true) })
-        }
-        if (guardNeeded && !state.apps.on) {
-            add(Issue(Icons.Rounded.Security, copy.guardOffTitle, copy.guardOffBody) {
-                state.openPermission("accessibility")
-            })
-        } else if (guardNeeded && !state.guardConnected) {
-            add(Issue(Icons.Rounded.Security, copy.guardWaitTitle, copy.guardWaitBody) {
-                state.openPermission("accessibility")
-            })
-        }
+    val milestoneContext = androidx.compose.ui.platform.LocalContext.current
+    val otherVpn = shield && otherVpnActive()
+    var milestoneDue by remember(state.personal.day) {
+        mutableStateOf(if (today) MilestoneMemory.due(milestoneContext, state.personal.day) else 0)
     }
-    val showAttention = attention && issues.isNotEmpty()
-    // A real measured gap, not a maker guess: the battery is optimized or Android's own
-    // background switch is restricting Hisn. Shown even when every layer is currently running,
-    // because this is what stops them the next time the screen goes off.
+    // Unrot's "when something breaks": the parts the person turned on, each running or stopped.
+    val unrotParts = buildList {
+        if (state.shortVideos.on) add(stringResource(R.string.part_feeds) to guardReady)
+        if (state.dns.on) add(stringResource(R.string.part_sites) to (runtime.dnsReady && dnsIssue == null))
+        if ((state.limit.on && state.appLimits.isNotEmpty()) || state.appSchedule.enabled) {
+            add(stringResource(R.string.part_limits) to guardReady)
+        }
+        if (state.tags.on) add(stringResource(R.string.part_words) to guardReady)
+        // Waiting for its first screen after a restart is not "stopped"; only a real issue is.
+        if (state.images.on) add(stringResource(R.string.part_images) to (imageIssue == null))
+    }
+    // Browsers that load pages through their maker's servers or a built-in VPN: the website
+    // filter never sees which site opens there. An issue until blocked or "only Chrome" is on.
+    val leakyContext = androidx.compose.ui.platform.LocalContext.current
+    val leaky = remember(state.blockedApps.size, state.tags.on, state.dns.on) {
+        if (!(state.tags.on || state.dns.on) || app.hisn.android.BrowserOnlyStore.on(leakyContext)) emptyList()
+        else LeakyBrowsers.installed(leakyContext).filter { it !in state.blockedApps }
+    }
+    val leakyNames = leaky.joinToString(", ") { appLabel(leakyContext, it) }
+    val issues = buildList {
+        if (dnsIssue != null) add(Issue(
+            Icons.Rounded.Wifi, copy.dnsTitle, stringResource(dnsIssue), state::fixDns
+        ))
+        if (guardIssue != null) add(Issue(
+            Icons.Rounded.Security, copy.appTitle, stringResource(guardIssue)
+        ) { state.openPermission("accessibility") })
+        if (imageIssue != null && (imageIssue != R.string.attention_guard_permission || guardIssue == null)) {
+            val fixImages: (() -> Unit)? = when {
+                imagesUnsupported -> null
+                state.guardPaused -> { { state.apps.set(true) } }
+                !guardReady -> { { state.openPermission("accessibility") } }
+                // Unrot has no per-app list for image checks, only "Check every app".
+                noScannedApps -> if (unrotEdition) { { if (!state.scanBrowsers()) askScanAll = true } } else { { onOpen("apps") } }
+                else -> { { onOpen("diagnostics") } }
+            }
+            add(Issue(Icons.Rounded.Image, copy.imageTitle, stringResource(imageIssue), fixImages))
+        }
+        if (leaky.isNotEmpty()) add(Issue(
+            Icons.Rounded.Public, stringResource(R.string.leaky_browser_title, leakyNames),
+            stringResource(R.string.leaky_browser_body, leakyNames)
+        ) { leaky.forEach { state.setAppBlocked(it, true) } })
+    }
+    val showAttention = issues.isNotEmpty()
     val phoneAttention = state.phone.maker.isNotEmpty() &&
         (!state.phone.batteryUnrestricted || state.phone.backgroundRestricted == true)
-
-    // Two ways around every layer that only the owner can close: Android may stop the VPN (and
-    // let traffic past it), and a second space (Secure Folder, another profile) runs apps Hisn
-    // never sees.
-    val gapContext = androidx.compose.ui.platform.LocalContext.current
-    val vpnLoose = state.dns.on && (app.hisn.android.DnsVpnService.alwaysOn == false
-        || app.hisn.android.DnsVpnService.lockdown == false)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val showAlwaysOn = runtime.dnsAttached && runtime.dnsAlwaysOn == false && runtime.dnsLockdown != true
     val otherSpace = remember {
         runCatching {
-            gapContext.getSystemService(android.os.UserManager::class.java).userProfiles.size > 1
+            context.getSystemService(android.os.UserManager::class.java).userProfiles.size > 1
         }.getOrDefault(false)
     }
 
-    val onCount = layers.count { it.on }
-    val allOn = onCount == layers.size
-    val partial = !showAttention && !allOn
-    val accent = if (showAttention || partial) status.warning else status.success
-    val container = if (showAttention || partial) status.warningContainer else status.successContainer
-    val onContainer = if (showAttention || partial) status.onWarningContainer else status.onSuccessContainer
+    val anythingActive = layers.any { it.active }
+    val healthy = anythingActive && !showAttention
+    val checking = state.check == DnsVpnService.CheckState.CHECKING
+    val accent = if (healthy) status.success else status.warning
+    val container = if (healthy) status.successContainer else status.warningContainer
+    val onContainer = if (healthy) status.onSuccessContainer else status.onWarningContainer
     val heroTitle = when {
         showAttention -> copy.attentionTitle
-        partial -> copy.partialTitle
-        else -> copy.protectedTitle
+        anythingActive -> stringResource(R.string.protection_home_active)
+        runtime.dns == DnsVpnService.State.STARTING -> startingText
+        else -> stringResource(R.string.protection_home_off)
     }
     val heroBody = when {
-        showAttention -> issues.firstOrNull()?.title?.let { "$it. ${copy.attentionBody}" } ?: copy.attentionBody
-        partial -> copy.partialBody
-        else -> copy.protectedBody
+        showAttention -> issues.first().body
+        anythingActive -> stringResource(R.string.protection_home_active_body)
+        runtime.dns == DnsVpnService.State.STARTING -> stringResource(R.string.protection_home_starting_body)
+        else -> stringResource(R.string.protection_home_off_body)
     }
-    val heroIcon = if (allOn && !showAttention) Icons.Rounded.CheckCircle else Icons.Rounded.Warning
+    val fix = issues.firstNotNullOfOrNull { it.fix }
     val heroAction = when {
-        showAttention -> copy.fixNow
-        partial -> copy.fixGaps
-        else -> copy.runCheck
+        fix != null -> copy.fixNow
+        runtime.dnsReady -> stringResource(R.string.network_check_button)
+        anythingActive || runtime.dns == DnsVpnService.State.STARTING || showAttention ->
+            stringResource(R.string.protection_home_permissions)
+        else -> stringResource(R.string.welcome_enable_website)
     }
-    val heroActionIcon = if (allOn && !showAttention) Icons.Rounded.FactCheck else Icons.Rounded.AutoFixHigh
+    val heroActionIcon = if (runtime.dnsReady && fix == null) Icons.Rounded.FactCheck else Icons.Rounded.AutoFixHigh
 
-    // The halo is a transition, not a permanent decoration: it fires once when the last gap closes.
-    var wasAllOn by remember { mutableStateOf(allOn) }
-    LaunchedEffect(allOn) {
-        if (allOn && !wasAllOn && !reduceMotion) {
+    // Before Unrot → now: read off the main thread, again each time the screen returns.
+    var winsResumes by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) { winsResumes++; onPauseOrDispose { } }
+    val winsContext = androidx.compose.ui.platform.LocalContext.current
+    val wins by androidx.compose.runtime.produceState<WinsSummary?>(null, winsResumes, state.personal.day) {
+        value = if (!unrotEdition) null else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { Wins.read(winsContext, state) }.getOrNull()
+        }
+    }
+
+    var wasActive by remember { mutableStateOf(healthy) }
+    LaunchedEffect(healthy) {
+        if (healthy && !wasActive && !reduceMotion) {
             celebrate = true
             delay(900)
             celebrate = false
         }
-        wasAllOn = allOn
+        wasActive = healthy
     }
 
-    // Re-reads the real services and reports what is running; it never claims a pass.
-    fun performCheck(pulled: Boolean) {
-        if (checking) return
+    fun refresh() {
+        if (refreshing) return
+        refreshing = true
         scope.launch {
-            if (pulled) refreshing = true
-            checking = true
             haptics.edge()
             state.refreshAll()
-            delay(if (reduceMotion) 120 else 500)
-            checking = false
-            if (pulled) refreshing = false
-            snackbar(HisnMessage(copy.checkText(layers.count { it.on }, layers.size)))
+            delay(if (reduceMotion) 120 else 350)
+            refreshing = false
         }
-    }
-
-    // One gap at a time: each layer needs its own Android consent, so the next one waits for
-    // the user to finish the first. The ledger shows the result; nothing is announced early.
-    fun fixGaps() {
-        if (checking) return
-        val issue = issues.firstOrNull()
-        if (issue != null) {
-            issue.fix()
-            return
-        }
-        layers.firstOrNull { !it.on }?.set?.invoke(true)
     }
 
     PullToRefreshBox(
         isRefreshing = refreshing,
-        onRefresh = { performCheck(pulled = true) },
+        onRefresh = ::refresh,
         modifier = Modifier.fillMaxSize()
     ) {
         LazyColumn(
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
+            state = listState,
+            contentPadding = PaddingValues(
+                start = 16.dp, end = 16.dp, top = 8.dp,
+                // Unrot keeps the pause as a floating button, so the last card must clear it.
+                bottom = if (today) 104.dp else 28.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item {
+            if (today) {
+                if (!healthy) {
+                    item {
+                        UnrotNeedsYouCard(
+                            title = heroTitle,
+                            body = heroBody,
+                            action = if (fix != null) copy.fixNow else stringResource(R.string.today_open_shield),
+                            onAction = { if (fix != null) fix() else onShowShield() },
+                            onDetails = onShowShield,
+                            parts = unrotParts
+                        )
+                    }
+                }
+                if (milestoneDue > 0) {
+                    item {
+                        UnrotMilestoneCard(milestoneDue, state.personal.pauses) {
+                            MilestoneMemory.keep(milestoneContext, milestoneDue)
+                            milestoneDue = 0
+                        }
+                    }
+                }
+                val winsNow = wins
+                if (winsNow != null) {
+                    item {
+                        Box(Modifier.tourTarget("day")) {
+                            // A heavier stretch shows what still went well, never a rising line.
+                            if (winsNow.heavier) UnrotHeavyCard(winsNow, state, winsResumes, onOpen, onChanged = { winsResumes++ })
+                            else UnrotBeforeNowCard(winsNow, onOpen = { onOpen("progress") })
+                        }
+                    }
+                    if (!winsNow.heavier || winsNow.givenBackMs >= 3_600_000L) {
+                        item { UnrotGivenBackCard(winsNow, onShare = { shareWinsCard(winsContext, winsNow) }) }
+                    }
+                } else item {
+                    Box(Modifier.tourTarget("day")) {
+                    UnrotDayCard(
+                        day = state.personal.day,
+                        pauses = state.personal.pauses,
+                        onStart = { onOpen("personal") },
+                        onWeek = { onOpen("progress") },
+                        hero = healthy,
+                        sticker = if (milestoneDue > 0) 0 else MilestoneMemory.celebrated(milestoneContext)
+                    )
+                    }
+                }
+            }
+            if (!today) item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatusHero(
+                    if (shield) {
+                        // Unrot: one sentence and the one action that would fix it.
+                        // Today's saved count: the filter's own counter restarts at 0 with the filter.
+                        val shieldContext = androidx.compose.ui.platform.LocalContext.current
+                        val blocked = remember(state.blockedLookups) { app.hisn.android.StepIns.keptOutToday(shieldContext) }
+                        UnrotShieldStatus(
+                            healthy = healthy,
+                            title = if (healthy) stringResource(R.string.shield_status_ok) else heroTitle,
+                            body = when {
+                                !healthy -> heroBody
+                                runtime.dnsAttached -> stringResource(
+                                    R.string.shield_status_ok_body,
+                                    String.format(java.util.Locale.getDefault(), "%,d", blocked)
+                                )
+                                else -> stringResource(R.string.shield_status_ok_body_no_filter)
+                            },
+                            // A healthy shield keeps the real route check, quietly.
+                            action = if (!healthy || runtime.dnsReady) heroAction else null,
+                            onAction = {
+                                when {
+                                    fix != null -> fix()
+                                    runtime.dnsReady -> state.confirmNetworkCheck()
+                                    anythingActive || runtime.dns == DnsVpnService.State.STARTING || showAttention ->
+                                        onOpen("permissions")
+                                    else -> state.fixDns()
+                                }
+                            },
+                            parts = unrotParts
+                        )
+                    } else StatusHero(
                         title = heroTitle,
                         body = heroBody,
-                        icon = heroIcon,
+                        icon = if (healthy) Icons.Rounded.CheckCircle else Icons.Rounded.Warning,
                         accent = accent,
                         container = container,
                         onContainer = onContainer,
                         actionLabel = heroAction,
                         actionIcon = heroActionIcon,
                         onAction = {
-                            if (!allOn || showAttention) {
-                                fixGaps()
-                            } else {
-                                performCheck(pulled = false)
+                            when {
+                                fix != null -> fix()
+                                runtime.dnsReady -> state.confirmNetworkCheck()
+                                anythingActive || runtime.dns == DnsVpnService.State.STARTING || showAttention ->
+                                    onOpen("permissions")
+                                else -> state.fixDns()
                             }
                         },
-                        layerStates = layers.map {
-                            Triple(it.label, it.on, if (it.on) copy.on else copy.off)
-                        },
+                        layerStates = layers.map { Triple(it.label, it.active, it.status) },
                         checking = checking,
                         celebrate = celebrate
                     )
 
                     AnimatedVisibility(
-                        visible = showAttention,
+                        // Unrot's status card already says a single issue; the list is for two or more.
+                        visible = showAttention && !(shield && issues.size <= 1),
                         enter = fadeIn(HisnMotion.fadeIn) + expandVertically(
                             animationSpec = HisnMotion.spatial(),
                             expandFrom = Alignment.Top
@@ -288,39 +467,83 @@ fun ProtectionScreen(
                 }
             }
 
-            item {
-                PersonalCard(
-                    summary = state.personal,
-                    onSetUp = { onOpen("personal") }
-                )
+            if (shield && state.lockRemainingMillis > 0L) {
+                item { UnrotLockBanner(state.lockLabel, onBreathe = state::openPause) }
+            }
+            if (shield) {
+                item { UnrotShieldNumbers(state, onOpen) }
+            }
+            if (today && unrotEdition && !Wins.disabled) {
+                item(key = "today-plan") { Column { UnrotTodayPlan(state, winsResumes, onOpen) } }
+            }
+            if (today) {
+                item(key = "quick-tools") {
+                    Box(Modifier.tourTarget("pause")) {
+                    UnrotQuickTools(
+                        state = state,
+                        onPause = state::openPause,
+                        onNote = { onOpen("notes") },
+                        onLock = { onOpen("lock") }
+                    )
+                    }
+                }
+                item { UnrotTodayNumbers(state) }
+            } else if (!shield) {
+                item {
+                    PauseCard(onPause = state::openPause)
+                }
             }
 
-            if (vpnLoose || otherSpace) {
+            if (today) item { UnrotTonightCard(state, onEdit = { onOpen("personal") }) }
+            if (!shield) {
+            item {
+                ReminderCard()
+            }
+
+            // Unrot's Today shows the note in the evening card above; the hours live on Progress.
+            if (!today) item {
+                PersonalCard(
+                    summary = state.personal,
+                    onSetUp = { onOpen("personal") },
+                    // Unrot shows the day count in its own card at the top.
+                    showDay = !unrotEdition
+                )
+            }
+            }
+
+            if (!today) {
+            if (showAlwaysOn || otherSpace) {
                 item {
                     HisnCard {
-                        if (vpnLoose) {
+
+                        if (showAlwaysOn) {
                             IssueRow(
                                 icon = Icons.Rounded.Security,
-                                title = tr("Make Hisn's VPN always-on"),
-                                supporting = tr("If Android stops the VPN, sites are no longer filtered. In Settings › VPN › Hisn, turn on Always-on VPN and Block connections without VPN."),
-                                onClick = {
-                                    runCatching {
-                                        gapContext.startActivity(android.content.Intent(android.provider.Settings.ACTION_VPN_SETTINGS)
-                                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    }
-                                }
+                                title = stringResource(R.string.dns_offer_always_on),
+                                supporting = stringResource(R.string.dns_offer_always_on_body),
+                                onClick = { state.openPhoneSetting("vpn") }
                             )
                         }
-                        if (vpnLoose && otherSpace) InsetDivider()
+                        if (showAlwaysOn && otherSpace) InsetDivider()
                         if (otherSpace) {
                             IssueRow(
                                 icon = Icons.Rounded.Info,
-                                title = tr("A second space is not protected"),
-                                supporting = tr("Secure Folder or another profile runs its own apps. Hisn does not see them. Remove it, or install Hisn inside it too."),
-                                onClick = {}
+                                title = stringResource(R.string.dns_other_profile),
+                                supporting = stringResource(R.string.dns_other_profile_body),
+                                onClick = null
                             )
                         }
                     }
+                }
+            }
+
+            // The most common setup error: another VPN holds Android's one VPN slot.
+            if (shield && unrotEdition && state.dns.on && !runtime.dnsAttached && otherVpn) {
+                item {
+                    UnrotVpnConflict(
+                        onSettings = { state.openPhoneSetting("vpn") },
+                        onKeep = { state.dns.set(false) }
+                    )
                 }
             }
 
@@ -340,24 +563,47 @@ fun ProtectionScreen(
                 }
             }
 
-            item { SectionHeader(copy.layers) }
-            item {
+            if (shield) {
+                item {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val waiting = remember(state.blockedApps.size) { app.hisn.android.OpenWaitStore.apps(context).size }
+                    UnrotShieldLayers(state, onOpen, waiting)
+                }
+            }
+            if (!shield) item { SectionHeader(copy.layers) }
+            if (!shield) item {
                 HisnCard {
                     layers.forEachIndexed { index, layer ->
                         SwitchRow(
                             icon = layer.icon,
                             title = layer.title,
-                            supporting = if (layer.on) layer.supportingOn else layer.supportingOff,
-                            checked = layer.on,
+                            supporting = layer.supporting,
+                            checked = layer.enabled,
                             onCheckedChange = layer.set
                         )
                         if (index < layers.lastIndex) InsetDivider()
                     }
                 }
             }
+            // The people cover rides on Images and video, so it needs Android 14 like that layer.
+            if (android.os.Build.VERSION.SDK_INT >= 34) {
+                item { PeopleCoverCard(imagesOn = state.images.on) }
+            }
 
-            item { SectionHeader(copy.yourRules) }
-            item {
+            if (shield) {
+                item {
+                    HisnCard {
+                        RuleRow(
+                            icon = Icons.Rounded.Tune,
+                            title = stringResource(R.string.rules_all),
+                            value = "",
+                            onClick = { onOpen("rules") }
+                        )
+                    }
+                }
+            }
+            if (!shield) item { SectionHeader(copy.yourRules) }
+            if (!shield) item {
                 val locale = androidx.core.os.ConfigurationCompat.getLocales(
                     androidx.compose.ui.platform.LocalConfiguration.current
                 )[0] ?: java.util.Locale.ENGLISH
@@ -366,7 +612,7 @@ fun ProtectionScreen(
                     buildList {
                         add(Stat(copy.domains, count(state.domains.size.toLong())) { onOpen("domains") })
                         add(Stat(copy.appsBlocked, count(state.blockedApps.size.toLong())) { onOpen("apps") })
-                        if (state.dns.on) {
+                        if (runtime.dnsAttached) {
                             add(Stat(tr("Lookups blocked"), count(state.blockedLookups)) { onOpen("diagnostics") })
                         }
                     }
@@ -389,6 +635,26 @@ fun ProtectionScreen(
                     text = copy.reassurance
                 )
             }
+            }
+
+        }
+        // The floating pause would sit on top of the tools row and repeat its Breathe button:
+        // it only shows while that row is off screen.
+        val toolsVisible by androidx.compose.runtime.remember {
+            androidx.compose.runtime.derivedStateOf {
+                listState.layoutInfo.visibleItemsInfo.any { it.key == "quick-tools" }
+            }
+        }
+        if (today && !toolsVisible) {
+            UnrotPauseFab(
+                onPause = state::openPause,
+                // Wide only at the end of the list, where the bottom padding leaves it room;
+                // over cards it stays a small round button so it hides less of them.
+                expanded = !listState.canScrollForward,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 16.dp)
+            )
         }
     }
 }
@@ -398,10 +664,12 @@ fun ProtectionScreen(
  * fall in. Nothing here is a rule, and an untouched install shows a one-line invitation instead.
  */
 @Composable
-private fun PersonalCard(summary: PersonalSummary, onSetUp: () -> Unit) {
+private fun PersonalCard(summary: PersonalSummary, onSetUp: () -> Unit, showDay: Boolean = true) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val resources = androidx.compose.ui.platform.LocalResources.current
     if (summary.empty) {
+        // Unrot's day card at the top already invites the same setup.
+        if (unrotEdition) return
         HisnCard {
             IssueRowPlain(
                 title = resources.getString(app.hisn.android.R.string.personal_prompt_title),
@@ -434,7 +702,9 @@ private fun PersonalCard(summary: PersonalSummary, onSetUp: () -> Unit) {
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
-            if (summary.metric.isNotEmpty()) {
+            if (summary.day > 0 && showDay) {
+                DayProgress(day = summary.day, pauses = summary.pauses)
+            } else if (summary.metric.isNotEmpty()) {
                 Text(
                     text = summary.metric,
                     style = MaterialTheme.typography.bodyMedium,
@@ -521,6 +791,133 @@ private fun PersonalCard(summary: PersonalSummary, onSetUp: () -> Unit) {
     }
 }
 
+/**
+ * The way into the voluntary breathing pause, high on the dashboard. It is an action, not a
+ * status: nothing is blocked, and the screen it opens only breathes and counts the pause locally.
+ */
+@Composable
+private fun PauseCard(onPause: () -> Unit) {
+    val haptics = rememberHisnHaptics()
+    HisnCard {
+        Column(
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                IconBadge(
+                    icon = Icons.Rounded.SelfImprovement,
+                    container = MaterialTheme.colorScheme.secondaryContainer,
+                    content = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.pause_home_title),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = stringResource(R.string.pause_home_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(
+                        if (android.os.Build.VERSION.SDK_INT >= 25) R.string.pause_home_shortcut_hint
+                        else R.string.pause_voluntary_summary
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f).padding(end = 12.dp)
+                )
+                FilledTonalButton(onClick = {
+                    haptics.confirm()
+                    onPause()
+                }) {
+                    Icon(
+                        Icons.Rounded.SelfImprovement,
+                        contentDescription = null,
+                        modifier = Modifier.size(ButtonDefaults.IconSize)
+                    )
+                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                    Text(stringResource(R.string.pause_voluntary_action))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * "Day N" with a quiet bar to the next marker. The count only goes up: it is days since the
+ * person set this up, so the bar shows time kept, never a streak that a hard day can break.
+ */
+@Composable
+private fun DayProgress(day: Int, pauses: Int) {
+    val resources = androidx.compose.ui.platform.LocalResources.current
+    val next = app.hisn.core.PersonalProfile.nextMilestone(day)
+    val progress = app.hisn.core.PersonalProfile.milestoneProgress(day)
+    val reduceMotion = LocalReduceMotion.current
+    val shown by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = progress,
+        animationSpec = if (reduceMotion) androidx.compose.animation.core.snap()
+            else HisnMotion.spatialSlow(),
+        label = "day progress"
+    )
+    val left = next - day
+    val nextLine = resources.getQuantityString(R.plurals.personal_milestone_next, left, left, next)
+    val pauseLine = if (pauses > 0) {
+        resources.getQuantityString(R.plurals.personal_pauses, pauses, pauses)
+    } else {
+        resources.getString(R.string.personal_no_pauses)
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = resources.getString(R.string.personal_day_number, day),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        Text(
+            text = resources.getString(R.string.personal_day_since),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (next > 0) {
+            LinearProgressIndicator(
+                progress = { shown },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+                    .semantics {
+                        contentDescription =
+                            resources.getString(R.string.personal_milestone_progress, next)
+                    },
+                drawStopIndicator = {}
+            )
+            Row(Modifier.fillMaxWidth()) {
+                Text(
+                    text = nextLine,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = pauseLine,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
 private fun hourLabel(hour: Int): String =
     String.format(java.util.Locale.ROOT, "%02d:00", ((hour % 24) + 24) % 24)
 
@@ -551,17 +948,26 @@ private fun IssueRowPlain(title: String, supporting: String, onClick: () -> Unit
     )
 }
 
-private class Issue(val icon: ImageVector, val title: String, val body: String, val fix: () -> Unit)
+private class Issue(val icon: ImageVector, val title: String, val body: String, val fix: (() -> Unit)?)
 
 @Composable
 private fun IssueRow(
     icon: ImageVector,
     title: String,
     supporting: String,
-    onClick: () -> Unit
+    onClick: (() -> Unit)?
 ) {
     val status = LocalHisnStatusColors.current
     val haptics = rememberHisnHaptics()
+    val arrow: (@Composable () -> Unit)? = if (onClick == null) null else {
+        {
+            Icon(
+                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
     ListItem(
         headlineContent = {
             Text(title, style = MaterialTheme.typography.titleMedium)
@@ -580,15 +986,9 @@ private fun IssueRow(
                 content = status.warning
             )
         },
-        trailingContent = {
-            Icon(
-                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
+        trailingContent = arrow,
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier.clickable(role = Role.Button) {
+        modifier = if (onClick == null) Modifier else Modifier.clickable(role = Role.Button) {
             haptics.tick()
             onClick()
         }

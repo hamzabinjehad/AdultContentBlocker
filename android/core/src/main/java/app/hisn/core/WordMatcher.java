@@ -20,6 +20,7 @@ public final class WordMatcher {
     private final Set<String> rules;
     private final List<String> orderedRules;
     private final Node index;
+    private final String[] smallPatterns;
 
     /** Canonical configured rules, for comparing settings during a commitment. */
     public Set<String> configuredRules() { return rules; }
@@ -30,52 +31,93 @@ public final class WordMatcher {
     public WordMatcher(Iterable<String> input) {
         Set<String> compiled = new LinkedHashSet<>();
         for (String raw : input) {
-            if (raw == null || raw.codePointCount(0, raw.length()) > MAX_RULE_CODEPOINTS) {
-                throw new IllegalArgumentException("Invalid word or phrase");
-            }
-            String value = normalize(raw);
-            if (value.isEmpty()) throw new IllegalArgumentException("Empty word or phrase");
-            if (value.codePointCount(0, value.length()) > MAX_RULE_CODEPOINTS) {
-                throw new IllegalArgumentException("Normalized word or phrase too long");
-            }
-            compiled.add(value);
+            compiled.add(canonicalRule(raw));
             if (compiled.size() > MAX_RULES) throw new IllegalArgumentException("Too many rules");
         }
         rules = Collections.unmodifiableSet(compiled);
         orderedRules = Collections.unmodifiableList(new ArrayList<>(compiled));
         index = orderedRules.size() > 8 ? buildIndex(orderedRules) : null;
+        smallPatterns = index == null ? new String[orderedRules.size()] : null;
+        if (smallPatterns != null) {
+            for (int i = 0; i < smallPatterns.length; i++) smallPatterns[i] = " " + orderedRules.get(i) + " ";
+        }
+    }
+
+    /** Validates a single editor entry using the same spelling the matcher saves. */
+    public static String canonicalRule(String raw) {
+        if (raw == null || raw.codePointCount(0, raw.length()) > MAX_RULE_CODEPOINTS) {
+            throw new IllegalArgumentException("Invalid word or phrase");
+        }
+        String value = normalize(raw);
+        if (value.isEmpty()) throw new IllegalArgumentException("Empty word or phrase");
+        if (value.codePointCount(0, value.length()) > MAX_RULE_CODEPOINTS) {
+            throw new IllegalArgumentException("Normalized word or phrase too long");
+        }
+        return value;
     }
 
     /** Returns matching configured rules; never logs or retains the input text. */
     public List<String> matches(String input) {
-        if (input == null || input.isEmpty()) return Collections.emptyList();
-        if (input.codePointCount(0, input.length()) > MAX_TEXT_CODEPOINTS) {
+        String text = searchable(input);
+        if (text == null) return Collections.emptyList();
+        if (index != null) return indexedMatches(text);
+        List<String> matches = null;
+        for (int at = 0; at < smallPatterns.length; at++) {
+            if (!text.contains(smallPatterns[at])) continue;
+            if (matches == null) matches = new ArrayList<>();
+            matches.add(orderedRules.get(at));
+        }
+        return matches == null ? Collections.emptyList() : matches;
+    }
+
+    /** Answers a blocking check and stops at the first whole-word or phrase match. */
+    public boolean hasMatch(String input) {
+        String text = searchable(input);
+        if (text == null) return false;
+        if (index == null) {
+            for (String pattern : smallPatterns) if (text.contains(pattern)) return true;
+            return false;
+        }
+        Node node = index;
+        for (int at = 0; at < text.length(); at++) {
+            node = advance(node, text.charAt(at));
+            if (!node.outputs.isEmpty()) return true;
+        }
+        return false;
+    }
+
+    private String searchable(String input) {
+        if (input == null || input.isEmpty()) return null;
+        if (input.length() > MAX_TEXT_CODEPOINTS
+                && input.codePointCount(0, input.length()) > MAX_TEXT_CODEPOINTS) {
             throw new IllegalArgumentException("Text exceeds the inspection limit");
         }
-        // Most people add no custom words; skip normalizing a whole screen for nothing.
-        if (rules.isEmpty()) return Collections.emptyList();
-        String text = " " + normalize(input) + " ";
-        if (index != null) return indexedMatches(text);
-        List<String> matches = new ArrayList<>();
-        for (String rule : rules) {
-            if (text.contains(" " + rule + " ")) matches.add(rule);
-        }
-        return matches;
+        if (rules.isEmpty()) return null;
+        return " " + normalize(input) + " ";
     }
 
     private List<String> indexedMatches(String text) {
-        boolean[] found = new boolean[orderedRules.size()];
+        boolean[] found = null;
         Node node = index;
         for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-            while (node != index && !node.edges.containsKey(c)) node = node.failure;
-            Node next = node.edges.get(c);
-            node = next == null ? index : next;
+            node = advance(node, text.charAt(i));
+            if (node.outputs.isEmpty()) continue;
+            if (found == null) found = new boolean[orderedRules.size()];
             for (int output : node.outputs) found[output] = true;
         }
+        if (found == null) return Collections.emptyList();
         List<String> matches = new ArrayList<>();
         for (int i = 0; i < found.length; i++) if (found[i]) matches.add(orderedRules.get(i));
         return matches;
+    }
+
+    private Node advance(Node node, char ch) {
+        Node next = node.edges.get(ch);
+        while (next == null && node != index) {
+            node = node.failure;
+            next = node.edges.get(ch);
+        }
+        return next == null ? index : next;
     }
 
     private static Node buildIndex(List<String> rules) {

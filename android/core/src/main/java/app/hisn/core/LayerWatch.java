@@ -12,7 +12,7 @@ import java.util.Set;
  * A periodic check compares what the owner left armed with what is actually
  * running and raises a local notice when a layer has gone:
  *
- *   ACCESSIBILITY  selected-app text guard (direct build, keep installed)
+ *   ACCESSIBILITY  configured app protection or the direct build's removal guard
  *   DNS            the DNS-only VPN the owner left on
  *
  * It never restarts a service by itself and never claims a layer is running
@@ -34,8 +34,13 @@ public final class LayerWatch {
     /** What the owner's saved choices expect to be running. */
     public static Set<Layer> expected(boolean selfProtectionBuild, boolean keepInstalled,
                                       boolean dnsRequested) {
+        return expected(selfProtectionBuild, keepInstalled, false, dnsRequested);
+    }
+
+    public static Set<Layer> expected(boolean selfProtectionBuild, boolean keepInstalled,
+                                      boolean configuredAppProtection, boolean dnsRequested) {
         Set<Layer> layers = EnumSet.noneOf(Layer.class);
-        if (selfProtectionBuild && keepInstalled) layers.add(Layer.ACCESSIBILITY);
+        if (configuredAppProtection || (selfProtectionBuild && keepInstalled)) layers.add(Layer.ACCESSIBILITY);
         if (dnsRequested) layers.add(Layer.DNS);
         return Collections.unmodifiableSet(layers);
     }

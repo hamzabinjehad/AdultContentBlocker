@@ -84,4 +84,31 @@ object Usage {
             )
         }
     }
+
+    /**
+     * Foreground milliseconds per local day for [packages], oldest first, today (so far) last.
+     * Read from Android's own record each time; nothing is stored by the app.
+     */
+    fun dailyForeground(context: Context, packages: Set<String>, days: Int): LongArray {
+        val result = LongArray(days)
+        if (packages.isEmpty()) return result
+        val manager = context.getSystemService(UsageStatsManager::class.java) ?: return result
+        val now = System.currentTimeMillis()
+        for (index in 0 until days) {
+            val start = Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, -(days - 1 - index))
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val end = (start.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }
+            result[index] = runCatching {
+                manager.queryAndAggregateUsageStats(start.timeInMillis, minOf(end.timeInMillis, now))
+                    ?.filterKeys { it in packages }
+                    ?.values?.sumOf { it.totalTimeInForeground.coerceAtLeast(0L) } ?: 0L
+            }.getOrDefault(0L)
+        }
+        return result
+    }
 }

@@ -49,18 +49,21 @@ public final class EncryptedDnsResolvers {
      * addresses. The caller drops it without forwarding.
      */
     public static boolean blocks(byte[] packet) {
-        if (packet == null || packet.length < 20) return false;
+        return packet != null && blocks(packet, packet.length);
+    }
+
+    public static boolean blocks(byte[] packet, int length) {
+        if (packet == null || length < 20 || length > packet.length) return false;
         int version = (packet[0] & 0xf0) >>> 4;
         if (version == 4) {
             for (byte[] address : IPV4_BYTES) if (matches(packet, 16, address)) return true;
-        } else if (version == 6 && packet.length >= 40) {
+        } else if (version == 6 && length >= 40) {
             for (byte[] address : IPV6_BYTES) if (matches(packet, 24, address)) return true;
         }
         return false;
     }
 
     private static boolean matches(byte[] packet, int offset, byte[] address) {
-        if (offset + address.length > packet.length) return false;
         for (int i = 0; i < address.length; i++) {
             if (packet[offset + i] != address[i]) return false;
         }

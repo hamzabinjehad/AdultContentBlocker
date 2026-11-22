@@ -31,7 +31,7 @@ class FakeShellActions : ShellActions {
     override fun confirmAdult(enable: Boolean, onAccept: () -> Unit) = record("confirmAdult:$enable")
     override fun confirmImages(enable: Boolean, onAccept: () -> Unit) = record("confirmImages:$enable")
     override fun toast(text: String) = record("toast:$text")
-    override fun permission(key: String) = false
+    override fun permission(key: String) = key in grantedPermissions
     override fun openPermission(key: String) = record("openPermission:$key")
     override fun startLock(days: Int, onDone: () -> Unit) = record("startLock:$days")
     override fun remainingLabel(millis: Long) = "${millis / 3_600_000} hours"
@@ -49,10 +49,12 @@ class FakeShellActions : ShellActions {
     )
     override fun phone() = phoneState
     override fun openPhoneSetting(key: String) = record("openPhoneSetting:$key")
-    override fun personal() = PersonalSummary()
+    var personalSummary = PersonalSummary()
+    override fun personal() = personalSummary
     override fun savePersonal(name: String, preset: String, reason: String) = record("savePersonal")
     override fun clearPersonal() = record("clearPersonal")
     override fun openIntroduction() = record("openIntroduction")
+    override fun openPause() = record("openPause")
     override fun checkSite(raw: String, onResult: (SiteCheck) -> Unit) {
         record("checkSite:$raw")
         onResult(SiteCheck("checked $raw"))
@@ -65,6 +67,14 @@ class FakeShellActions : ShellActions {
     override fun exportRules() = record("exportRules")
     override fun importRules() = record("importRules")
     override fun confirmNetworkCheck() = record("confirmNetworkCheck")
+    var liveProtection = ProtectionRuntime()
+    val grantedPermissions = mutableSetOf<String>()
+    override fun protectionRuntime() = liveProtection
+    var scheduleSelection: Set<String>? = null
+    override fun pickScheduleApps(keepList: Boolean, selected: Set<String>, onChoose: (Set<String>) -> Unit) {
+        record("pickScheduleApps:$keepList")
+        scheduleSelection?.let(onChoose)
+    }
 }
 
 /** Shows the real shell over the app's real (test-device) policy store with [actions]. */
@@ -72,9 +82,16 @@ fun ComposeContentTestRule.showShell(
     actions: FakeShellActions = FakeShellActions(),
     fontScale: Float = 1f,
     rtl: Boolean = false,
-    tab: Int = 0
+    tab: Int = 0,
+    detail: String? = null,
+    tour: Boolean = false
 ): FakeShellActions {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
+    // The wins cards read the emulator's real usage; screens under test use the fake state only.
+    Wins.disabled = true
+    Spread.disabled = true
+    // The first-visit tour would cover Today; only its own test asks for it.
+    Tour.reset(context, done = !tour)
     setContent {
         val base = LocalDensity.current
         // One state object for the whole test: rebuilding it in the content lambda made every
@@ -84,7 +101,7 @@ fun ComposeContentTestRule.showShell(
             LocalDensity provides Density(base.density, fontScale),
             LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr
         ) {
-            NativeShell(state = state, initialTab = tab)
+            NativeShell(state = state, initialTab = tab, initialDetail = detail)
         }
     }
     waitForIdle()
@@ -102,10 +119,20 @@ fun SemanticsNode.spokenLabel(): String {
 fun SemanticsNode.insideHorizontalScroll(): Boolean {
     var node: SemanticsNode? = parent
     while (node != null) {
-        // The onboarding pager scrolls sideways but shows one full page, so its text must still fit.
-        val pager = node.config.getOrNull(SemanticsProperties.TestTag) == ONBOARDING_PAGER
-        if (!pager && node.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange) != null) return true
+        if (node.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange) != null) return true
         node = node.parent
     }
     return false
 }
+
+
+/*
+ * Where the rules and settings live in each edition. Hisn: three tabs (Protection, Rules,
+ * Settings). Unrot: four tabs (Today, Shield, Progress, You); the full rules list is the
+ * "All rules" page behind Shield.
+ */
+internal const val RulesTab = 1
+internal val RulesDetail: String? get() = if (unrotEdition) "rules" else null
+internal val SettingsTab: Int get() = if (unrotEdition) 3 else 2
+internal val HomeTabLabel: String get() = if (unrotEdition) "Today" else "Protection"
+internal val SettingsTabLabel: String get() = if (unrotEdition) "You" else "Settings"

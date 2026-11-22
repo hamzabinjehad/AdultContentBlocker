@@ -1,11 +1,14 @@
 package app.hisn.core;
 
+import java.util.BitSet;
+
 /** Ephemeral, bounded text sample. Never stores screen content beyond this inspection. */
 public final class VisibleTextSample {
     public static final int LIMIT = 32768;
     private final StringBuilder text = new StringBuilder();
     private boolean partial;
     private final boolean preservePunctuation;
+    private BitSet incompleteLines;
 
     public VisibleTextSample() { this(false); }
     public VisibleTextSample(boolean preservePunctuation) {
@@ -21,6 +24,10 @@ public final class VisibleTextSample {
     public int length() { return text.length(); }
     /** The text appended since {@code start}, without copying the part already read. */
     public String textFrom(int start) { return text.substring(start); }
+    /** Whether the line at this offset contains its entire original label. */
+    boolean isCompleteLineAt(int start) {
+        return incompleteLines == null || !incompleteLines.get(start);
+    }
     /** Where the last complete line begins, or 0. */
     public int lastLineStart() {
         int end = text.length() - 1;
@@ -49,6 +56,12 @@ public final class VisibleTextSample {
             normalized = boundary < 0 ? "" : normalized.substring(0, boundary);
             partial = true;
         }
-        if (!normalized.isEmpty()) text.append(normalized).append('\n');
+        if (!normalized.isEmpty()) {
+            if (truncated) {
+                if (incompleteLines == null) incompleteLines = new BitSet();
+                incompleteLines.set(text.length());
+            }
+            text.append(normalized).append('\n');
+        }
     }
 }

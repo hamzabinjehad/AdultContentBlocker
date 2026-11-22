@@ -149,6 +149,8 @@ public final class LabelScanTest {
                 LabelScan.NODE_BUDGET, (sample, visited) -> sample.text().contains("new message"));
         check(early.text().contains("new message") && early.text().split("\n").length < stopRows.length
                 && earlyTree.held.isEmpty(), "a matching checkpoint stops the walk early and releases every node");
+        check(earlyTree.obtained == LabelScan.CHECK_INTERVAL,
+                "an early match should avoid fetching the rest of a wide screen");
 
         // A 700-label screen: the label past the old 512-node budget is read at the current size.
         Node[] late = new Node[700];

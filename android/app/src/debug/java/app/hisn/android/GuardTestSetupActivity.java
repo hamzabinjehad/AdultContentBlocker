@@ -12,6 +12,9 @@ import java.util.Set;
 public final class GuardTestSetupActivity extends Activity {
     private static final String FIXTURE = "app.hisn.android.test";
     private static final String WORD = "hisnfixtureword";
+    private static final long LIVE_SAVE_DELAY_MS = 4500;
+    private static final android.os.Handler FIXTURE_TIMER = new android.os.Handler(android.os.Looper.getMainLooper());
+    private static Runnable pendingLiveSave;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -105,9 +108,10 @@ public final class GuardTestSetupActivity extends Activity {
                 report("PASS network-check");
                 return;
             }
-            if ("network-local-tcp".equals(mode)) {
-                report("PENDING network-local-tcp");
-                new Thread(this::localTcpCheck, "hisn-local-tcp-fixture").start();
+            if ("network-local-tcp".equals(mode) || "network-local-tcp6".equals(mode)
+                    || "network-local-backlog".equals(mode)) {
+                report("PENDING " + mode);
+                new Thread(() -> localTcpCheck(mode), "hisn-local-tcp-fixture").start();
                 return;
             }
             if ("network-change".equals(mode)) {
@@ -124,8 +128,13 @@ public final class GuardTestSetupActivity extends Activity {
             SharedPreferences backup = getSharedPreferences("hisn_live_fixture_backup", MODE_PRIVATE);
             if ("restore".equals(mode)) {
                 if (!backup.getBoolean("active", false)) throw new IllegalStateException("No fixture backup");
+                if (pendingLiveSave != null) {
+                    FIXTURE_TIMER.removeCallbacks(pendingLiveSave);
+                    pendingLiveSave = null;
+                }
                 restore(store, backup);
-            } else if ("setup".equals(mode) || "setup-adult".equals(mode) || "setup-schedule".equals(mode)) {
+            } else if ("setup".equals(mode) || "setup-adult".equals(mode) || "setup-schedule".equals(mode)
+                    || "setup-live-app".equals(mode)) {
                 if (!TextGuardService.connected) throw new IllegalStateException("Accessibility not connected");
                 if (store.remainingMillis() != 0) throw new IllegalStateException("Real commitment active");
                 if (backup.getBoolean("active", false)) throw new IllegalStateException("Previous fixture needs restoration");
@@ -134,6 +143,12 @@ public final class GuardTestSetupActivity extends Activity {
                         || rules.schedule.apps.contains(FIXTURE))
                     throw new IllegalStateException("Fixture has existing owner rules");
                 boolean scheduleTest = "setup-schedule".equals(mode);
+                boolean liveAppTest = "setup-live-app".equals(mode);
+                if (liveAppTest && (GuardPause.paused(this) || rules.schedule.targets(FIXTURE)
+                        || rules.timeLimits.monitored(FIXTURE)
+                        || OpenWaitStore.apps(this).contains(FIXTURE)
+                        || app.hisn.core.ScanScope.covers(rules.scannedApps, FIXTURE)))
+                    throw new IllegalStateException("Live fixture must be unselected with the guard running");
                 if (scheduleTest && (rules.schedule.enabled || !rules.schedule.apps.isEmpty()))
                     throw new IllegalStateException("Owner has a saved schedule; no live schedule replacement allowed");
                 if (!rules.words.matches("Hisn harmless protection test A harmless ordinary page ordinary").isEmpty())
@@ -145,6 +160,7 @@ public final class GuardTestSetupActivity extends Activity {
                         .putString("words", store.wordText()).putStringSet("apps", rules.blockedApps)
                         .putStringSet("scans", rules.scannedApps).putBoolean("adult_words", rules.adultWordsEnabled)
                         .putBoolean("adult_test", "setup-adult".equals(mode)).putBoolean("schedule_test", scheduleTest)
+                        .putBoolean("live_app_test", liveAppTest)
                         .putInt("schedule_start", rules.schedule.startMinute).putInt("schedule_end", rules.schedule.endMinute)
                         .commit())
                     throw new IllegalStateException("Cannot save fixture backup");
@@ -156,7 +172,7 @@ public final class GuardTestSetupActivity extends Activity {
                         if (!backup.edit().putInt("test_schedule_start", start).putInt("test_schedule_end", end).commit())
                             throw new IllegalStateException("Cannot save schedule test boundaries");
                         store.updateSchedule(new app.hisn.core.DailyAppSchedule(true, start, end, Collections.singleton(FIXTURE)));
-                    } else {
+                    } else if (!liveAppTest) {
                         Set<String> scans = new LinkedHashSet<>(rules.scannedApps);
                         scans.add(FIXTURE);
                         String words = store.wordText();
@@ -167,28 +183,98 @@ public final class GuardTestSetupActivity extends Activity {
                 } catch (RuntimeException failure) { restore(store, backup); throw failure; }
             } else if ("block-app".equals(mode)) {
                 if (!backup.getBoolean("active", false)) throw new IllegalStateException("No fixture backup");
-                Set<String> apps = new LinkedHashSet<>(store.snapshot().blockedApps);
-                apps.add(FIXTURE);
-                store.update(store.domainText(), store.wordText(), apps, store.snapshot().scannedApps);
+                blockFixture(store);
+            } else if ("block-app-later".equals(mode)) {
+                if (!backup.getBoolean("active", false) || !backup.getBoolean("live_app_test", false)
+                        || pendingLiveSave != null)
+                    throw new IllegalStateException("No unarmed live fixture");
+                pendingLiveSave = () -> {
+                    pendingLiveSave = null;
+                    try {
+                        blockFixture(store);
+                        report("APPLIED " + mode);
+                    } catch (RuntimeException failure) {
+                        report("FAIL " + mode + ": " + failure.getMessage());
+                    }
+                };
+                FIXTURE_TIMER.postDelayed(pendingLiveSave, LIVE_SAVE_DELAY_MS);
             } else throw new IllegalArgumentException("Unknown fixture action");
             report("PASS " + mode);
         } catch (RuntimeException | AssertionError failure) { report("FAIL " + failure.getClass().getSimpleName() + ": " + failure.getMessage()); }
         finally { finish(); }
     }
 
+    private static void blockFixture(PolicyStore store) {
+        synchronized (store) {
+            PolicyStore.Snapshot rules = store.snapshot();
+            Set<String> apps = new LinkedHashSet<>(rules.blockedApps);
+            apps.add(FIXTURE);
+            store.update(store.domainText(), store.wordText(), apps, rules.scannedApps);
+        }
+    }
+
     /** Fixed, harmless .invalid fixture through the actual app socket; no upstream lookup. */
-    private void localTcpCheck() {
-        try (java.net.Socket socket = new java.net.Socket()) {
-            socket.connect(new java.net.InetSocketAddress(java.net.InetAddress.getByAddress(new byte[]{10, 111, 0, 2}), 53), 3000);
-            socket.setSoTimeout(3000);
-            java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
-            bytes.write(new byte[]{0x12, 0x34, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0});
-            for (String label : app.hisn.core.DnsTunnelProbe.BLOCKED_HOST.split("\\.")) {
-                byte[] ascii = label.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
-                bytes.write(ascii.length); bytes.write(ascii);
+    private void localTcpCheck(String mode) {
+        try {
+            long began = android.os.SystemClock.elapsedRealtime();
+            if ("network-local-backlog".equals(mode)) {
+                try (AutoCloseable ignored = DnsVpnService.holdResolverWorkersForTest()) {
+                    localUdpBlock(false);
+                    localUdpBlock(true);
+                    localTcpBlock(false);
+                    localTcpBlock(true);
+                }
+                report("PASS " + mode + " ELAPSED_MS " + (android.os.SystemClock.elapsedRealtime() - began));
+            } else {
+                localTcpBlock("network-local-tcp6".equals(mode));
+                report("PASS " + mode);
             }
-            bytes.write(new byte[]{0, 0, 1, 0, 1});
-            byte[] first = bytes.toByteArray(), second = first.clone(); second[1]++;
+        } catch (Exception failed) {
+            report("FAIL " + mode + " " + failed.getClass().getSimpleName() + ": " + failed.getMessage());
+        }
+    }
+
+    private static byte[] localQuery() throws java.io.IOException {
+        java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+        bytes.write(new byte[]{0x12, 0x34, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0});
+        for (String label : app.hisn.core.DnsTunnelProbe.BLOCKED_HOST.split("\\.")) {
+            byte[] ascii = label.getBytes(StandardCharsets.US_ASCII);
+            bytes.write(ascii.length);
+            bytes.write(ascii);
+        }
+        bytes.write(new byte[]{0, 0, 1, 0, 1});
+        return bytes.toByteArray();
+    }
+
+    private static java.net.InetAddress dnsEndpoint(boolean ipv6) throws java.net.UnknownHostException {
+        return java.net.InetAddress.getByName(ipv6 ? "fd00:111::2" : "10.111.0.2");
+    }
+
+    private static void requireLocalBlock(byte[] query, byte[] reply) throws java.io.IOException {
+        app.hisn.core.DnsPolicy policy = new app.hisn.core.DnsPolicy(host -> app.hisn.core.DomainPolicy.Decision.BLOCK);
+        if (!java.util.Arrays.equals(reply, policy.evaluate(query).response)) {
+            throw new java.io.IOException("Block mismatch");
+        }
+    }
+
+    private static void localUdpBlock(boolean ipv6) throws java.io.IOException {
+        try (java.net.DatagramSocket socket = new java.net.DatagramSocket()) {
+            socket.connect(dnsEndpoint(ipv6), 53);
+            socket.setSoTimeout(2000);
+            byte[] query = localQuery();
+            socket.send(new java.net.DatagramPacket(query, query.length));
+            java.net.DatagramPacket response = new java.net.DatagramPacket(new byte[1232], 1232);
+            socket.receive(response);
+            requireLocalBlock(query, java.util.Arrays.copyOf(response.getData(), response.getLength()));
+        }
+    }
+
+    private static void localTcpBlock(boolean ipv6) throws java.io.IOException {
+        try (java.net.Socket socket = new java.net.Socket()) {
+            java.net.InetAddress endpoint = dnsEndpoint(ipv6);
+            socket.connect(new java.net.InetSocketAddress(endpoint, 53), 3000);
+            socket.setSoTimeout(3000);
+            byte[] first = localQuery(), second = first.clone(); second[1]++;
             java.io.DataOutputStream output = new java.io.DataOutputStream(socket.getOutputStream());
             for (byte[] query : new byte[][]{first, second}) { output.writeShort(query.length); output.write(query); }
             output.flush();
@@ -197,11 +283,26 @@ public final class GuardTestSetupActivity extends Activity {
                 int size = input.readUnsignedShort();
                 if (size < 12 || size > 4096) throw new java.io.IOException("Frame bounds");
                 byte[] reply = new byte[size]; input.readFully(reply);
-                byte[] expected = new app.hisn.core.DnsPolicy(host -> app.hisn.core.DomainPolicy.Decision.BLOCK).evaluate(query).response;
-                if (!java.util.Arrays.equals(reply, expected)) throw new java.io.IOException("Block mismatch");
+                requireLocalBlock(query, reply);
             }
-            report("PASS network-local-tcp");
-        } catch (Exception failed) { report("FAIL network-local-tcp " + failed.getClass().getSimpleName()); }
+            // Prove a valid reset was generated by the tunnel, not just a local socket error.
+            if (ipv6) {
+                long before = DnsVpnService.refusedTlsConnections.get();
+                try (java.net.Socket tls = new java.net.Socket()) {
+                    tls.connect(new java.net.InetSocketAddress(endpoint, 853), 3000);
+                    throw new java.io.IOException("Private DNS port unexpectedly accepted a connection");
+                } catch (java.net.ConnectException expected) {
+                    long deadline = android.os.SystemClock.elapsedRealtime() + 500;
+                    while (DnsVpnService.refusedTlsConnections.get() <= before
+                            && android.os.SystemClock.elapsedRealtime() < deadline) {
+                        android.os.SystemClock.sleep(10);
+                    }
+                    if (DnsVpnService.refusedTlsConnections.get() <= before) {
+                        throw new java.io.IOException("Tunnel did not refuse the IPv6 Private DNS port", expected);
+                    }
+                }
+            }
+        }
     }
 
     private void restore(PolicyStore store, SharedPreferences backup) {

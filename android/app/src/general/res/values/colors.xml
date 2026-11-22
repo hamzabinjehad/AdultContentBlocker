@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Unrot: paper and ink instead of Hisn's navy, for every surface still drawn with these
+     resources (the launch screen, notifications, the widget and the older view-based screens).
+     Contrast pairs match the Compose theme (Theme.kt) and keep at least 4.5:1 for body text. -->
+<resources>
+    <color name="splash_background">#1F2A23</color>
+    <color name="background">#F5EFE3</color>
+    <color name="surface">#FFFDF8</color>
+    <color name="surface_alt">#EFE7D8</color>
+    <color name="surface_sunken">#E2D8C5</color>
+    <color name="text_primary">#1F2A23</color>
+    <color name="text_secondary">#4E544C</color>
+    <color name="accent">#1F2A23</color>
+    <color name="accent_soft">#F4E7C2</color>
+    <color name="on_accent">#FFFDF8</color>
+    <color name="hero_start">#F5EFE3</color>
+    <color name="hero_end">#EFE7D8</color>
+    <color name="control_highlight">#221F2A23</color>
+    <color name="accent_border">#D6CCB8</color>
+    <color name="widget_mark">#F4C34E</color>
+</resources>

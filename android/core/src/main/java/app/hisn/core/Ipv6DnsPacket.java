@@ -2,30 +2,37 @@ package app.hisn.core;
 
 import java.util.Arrays;
 
-/** IPv6/UDP DNS packet adapter. Extension headers and IPv6 TCP are explicitly unsupported. */
+/** IPv6/UDP DNS packet adapter. Extension headers are unsupported. */
 public final class Ipv6DnsPacket implements UdpDnsPacket {
     private static final int HEADER = 40;
-    private final byte[] request;
+    private final byte[] addresses;
+    private final int clientPort;
     public final byte[] dns;
 
-    private Ipv6DnsPacket(byte[] request) {
-        this.request = request;
-        this.dns = Arrays.copyOfRange(request, HEADER + 8, request.length);
+    private Ipv6DnsPacket(byte[] packet, int length) {
+        addresses = Arrays.copyOfRange(packet, 8, 40);
+        clientPort = u16(packet, HEADER);
+        dns = Arrays.copyOfRange(packet, HEADER + 8, length);
     }
 
     @Override public byte[] getDns() { return dns; }
 
     public static Ipv6DnsPacket parse(byte[] packet, byte[] serverAddress) {
+        return packet == null ? null : parse(packet, packet.length, serverAddress);
+    }
+
+    /** Parses only the bytes read and owns the fields it needs after the buffer is reused. */
+    public static Ipv6DnsPacket parse(byte[] packet, int length, byte[] serverAddress) {
         if (packet == null || serverAddress == null || serverAddress.length != 16
-                || packet.length < 48 || packet.length > 1500 || (packet[0] & 0xf0) != 0x60) return null;
-        int udpLength = packet.length - HEADER;
+                || length < 48 || length > 1500 || length > packet.length || (packet[0] & 0xf0) != 0x60) return null;
+        int udpLength = length - HEADER;
         if (u16(packet, 4) != udpLength || packet[6] != 17) return null;
         for (int i = 0; i < 16; i++) if (packet[24 + i] != serverAddress[i]) return null;
         if (u16(packet, HEADER + 2) != 53 || u16(packet, HEADER + 4) != udpLength) return null;
         // IPv6 makes the UDP checksum mandatory; a zero checksum is not "absent".
         if (u16(packet, HEADER + 6) == 0
                 || checksum(packet, HEADER, udpLength, pseudoSum(packet, udpLength)) != 0) return null;
-        return new Ipv6DnsPacket(packet.clone());
+        return new Ipv6DnsPacket(packet, length);
     }
 
     @Override public byte[] response(byte[] payload) {
@@ -37,10 +44,10 @@ public final class Ipv6DnsPacket implements UdpDnsPacket {
         put16(out, 4, out.length - HEADER);
         out[6] = 17;
         out[7] = 64;
-        System.arraycopy(request, 24, out, 8, 16);   // server -> app
-        System.arraycopy(request, 8, out, 24, 16);   // app <- server
+        System.arraycopy(addresses, 16, out, 8, 16);
+        System.arraycopy(addresses, 0, out, 24, 16);
         put16(out, HEADER, 53);
-        put16(out, HEADER + 2, u16(request, HEADER));
+        put16(out, HEADER + 2, clientPort);
         put16(out, HEADER + 4, payload.length + 8);
         System.arraycopy(payload, 0, out, HEADER + 8, payload.length);
         int sum = checksum(out, HEADER, payload.length + 8, pseudoSum(out, payload.length + 8));

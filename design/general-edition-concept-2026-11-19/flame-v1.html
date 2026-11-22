@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unrot Day Flame</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..800,100&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F5EFE3;--paper2:#EDE4D3;--ink:#1F2A23;--ink2:#46534A;--muted:#7A8277;--butter:#F4C34E;--tomato:#E5553A;--sage:#9EC39A;--sky:#9CC8E0;--blush:#F2A08F;--white:#FFFDF8;--ember:#C9B9A0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#D9D2C3;font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);padding:30px 16px 40px}
+.head{max-width:1500px;margin:0 auto 26px}
+.head h1{font:700 34px/1.05 Fraunces,Georgia,serif;letter-spacing:-.5px}
+.head p{color:var(--ink2);font-size:14px;max-width:760px;margin-top:8px;line-height:1.5}
+.row{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;align-items:center}
+.cap{font-size:13px;color:var(--ink2);text-align:center;margin-top:12px;max-width:330px;line-height:1.45}
+.cap b{color:var(--ink)}
+.phone{width:340px;height:736px;border-radius:46px;background:var(--paper);position:relative;overflow:hidden;box-shadow:0 0 0 9px #1F2A23,0 26px 50px -18px rgba(31,42,35,.55)}
+.phone.dark{background:#16130E;color:#F3ECDF}
+.status{display:flex;justify-content:space-between;padding:15px 28px 0;font:700 12px 'DM Sans',sans-serif}
+.scr{padding:10px 18px 0}
+.top{display:flex;justify-content:space-between;align-items:center}
+.logo{font:800 25px Fraunces,Georgia,serif;letter-spacing:-.8px}.logo i{font-style:normal;color:var(--tomato)}
+.tag{font:700 11px 'DM Sans';padding:6px 11px;border-radius:999px;border:2px solid var(--ink);background:var(--sage)}
+.card{background:var(--white);border:2px solid var(--ink);border-radius:22px;box-shadow:3px 4px 0 var(--ink)}
+.serif{font-family:Fraunces,Georgia,serif}
+.lbl{font:700 11px 'DM Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+/* flame */
+.flame{position:relative;display:inline-block}
+.flame svg{display:block;overflow:visible}
+.flick{transform-origin:50% 95%;animation:flick 1.6s ease-in-out infinite alternate}
+.flick2{transform-origin:50% 95%;animation:flick 1.1s ease-in-out infinite alternate-reverse}
+@keyframes flick{0%{transform:scale(1,1) skewX(0)}35%{transform:scale(.97,1.04) skewX(2deg)}70%{transform:scale(1.02,.97) skewX(-2deg)}100%{transform:scale(.99,1.03) skewX(1deg)}}
+.spark{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--butter);animation:rise 2.4s linear infinite;opacity:0}
+@keyframes rise{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-70px) translateX(8px);opacity:0}}
+.num{position:absolute;left:0;right:0;text-align:center;font:800 40px/1 Fraunces,Georgia,serif;color:var(--ink)}
+/* week */
+.week{display:flex;justify-content:space-between;margin-top:14px}
+.wd{display:flex;flex-direction:column;align-items:center;gap:4px;font:700 11px 'DM Sans';color:var(--muted)}
+.wd.today{color:var(--ink)}
+.pill{display:inline-block;font:700 11px 'DM Sans';padding:5px 10px;border-radius:999px;border:2px solid var(--ink);background:var(--butter)}
+.bar{height:12px;border-radius:99px;border:2px solid var(--ink);background:var(--paper2);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--butter),var(--tomato))}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.tool{padding:12px;font:700 13px 'DM Sans';display:flex;gap:8px;align-items:center}
+.dot{width:26px;height:26px;border-radius:9px;border:2px solid var(--ink);background:var(--butter)}
+/* path */
+.stages{display:flex;justify-content:space-between;align-items:flex-end;margin-top:12px;position:relative}
+.stages:before{content:"";position:absolute;left:14px;right:14px;bottom:30px;border-top:2.5px dashed var(--ink2);opacity:.4}
+.st{display:flex;flex-direction:column;align-items:center;gap:3px;font:700 10px 'DM Sans';color:var(--muted);position:relative;z-index:1}
+.st.on{color:var(--ink)}
+.st .c{width:40px;height:40px;border-radius:50%;border:2px solid var(--ink);background:var(--white);display:flex;align-items:center;justify-content:center}
+.st.now .c{background:var(--butter);box-shadow:2px 3px 0 var(--ink)}
+.st.off .c{border-style:dashed;opacity:.6}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px;text-align:center}
+.cal .h{font:700 10px 'DM Sans';color:var(--muted)}
+.cal .d{color:var(--muted);height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:600 11px 'DM Sans';position:relative}
+.cal .k{background:#FCE7B4;color:var(--ink)}
+.cal .e{background:var(--paper2);color:var(--muted)}
+.cal .t{outline:2px solid var(--ink)}
+.cal .f{color:transparent}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.stat{padding:10px 8px;text-align:center}
+.stat b{display:block;font:800 22px Fraunces,Georgia,serif}
+.stat span{font:600 10.5px 'DM Sans';color:var(--muted)}
+.note{font-size:12.5px;line-height:1.45;color:var(--ink2);margin-top:10px}
+.btn{display:block;text-align:center;font:700 15px 'DM Sans';padding:14px;border-radius:30px;border:2px solid var(--ink);margin-top:10px}
+.btn.y{background:var(--butter);color:var(--ink)}
+.btn.g{color:#F3ECDF;border-color:#F3ECDF55}
+.glow{position:absolute;left:50%;top:205px;width:300px;height:300px;margin-left:-150px;border-radius:50%;background:radial-gradient(circle,rgba(244,195,78,.45),rgba(229,85,58,.12) 55%,transparent 70%);animation:pulse 2.6s ease-in-out infinite alternate}
+@keyframes pulse{from{transform:scale(.92);opacity:.8}to{transform:scale(1.06);opacity:1}}
+.legend{display:flex;gap:14px;margin-top:8px;font:600 11px 'DM Sans';color:var(--muted);align-items:center}
+.notes{max-width:1500px;margin:34px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.notes .card{padding:16px 18px;font-size:13.5px;line-height:1.5}
+.notes h3{font:700 17px Fraunces,Georgia,serif;margin-bottom:6px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="fo" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#E5553A"/><stop offset=".65" stop-color="#F08A3C"/><stop offset="1" stop-color="#F4C34E"/></linearGradient>
+    <linearGradient id="fi" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#F4C34E"/><stop offset="1" stop-color="#FFF3C9"/></linearGradient>
+    <symbol id="flame" viewBox="0 0 100 130">
+      <g class="flick"><path d="M50 4 C58 30 86 44 86 82 C86 108 69 126 50 126 C31 126 14 108 14 82 C14 62 26 52 32 38 C36 52 42 56 46 56 C42 40 44 20 50 4Z" fill="url(#fo)" stroke="#1F2A23" stroke-width="4" stroke-linejoin="round"/></g>
+      <g class="flick2"><path d="M50 52 C56 68 70 76 70 94 C70 110 61 118 50 118 C39 118 30 110 30 94 C30 82 38 76 42 68 C45 76 48 78 50 78 C48 70 48 62 50 52Z" fill="url(#fi)"/></g>
+    </symbol>
+    <symbol id="mini" viewBox="0 0 100 130"><path d="M50 4 C58 30 86 44 86 82 C86 108 69 126 50 126 C31 126 14 108 14 82 C14 62 26 52 32 38 C36 52 42 56 46 56 C42 40 44 20 50 4Z" fill="url(#fo)" stroke="#1F2A23" stroke-width="7" stroke-linejoin="round"/><path d="M50 60 C56 74 68 82 68 96 C68 110 60 116 50 116 C40 116 32 110 32 96 C32 86 40 80 50 60Z" fill="#FBE3A0"/></symbol>
+    <symbol id="ember" viewBox="0 0 100 130"><ellipse cx="50" cy="104" rx="30" ry="18" fill="#C9B9A0" stroke="#1F2A23" stroke-width="7"/><circle cx="42" cy="100" r="5" fill="#E5553A" opacity=".7"/><circle cx="58" cy="106" r="4" fill="#E5553A" opacity=".5"/></symbol>
+    <symbol id="wait" viewBox="0 0 100 130"><path d="M50 4 C58 30 86 44 86 82 C86 108 69 126 50 126 C31 126 14 108 14 82 C14 62 26 52 32 38 C36 52 42 56 46 56 C42 40 44 20 50 4Z" fill="none" stroke="#1F2A23" stroke-width="7" stroke-dasharray="14 10" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="head">
+  <h1>The day flame</h1>
+  <p>Your day count becomes a flame that grows as the days add up: <b>spark → flame → torch → blaze → bonfire → sun</b>. Each day of the week shows a small flame when it was a <b>kept day</b> (feeds stayed under your daily aim), or an <b>ember</b> when it was rough. A rough day never puts the flame out and never resets your count. That is the line we hold against punishing streaks.</p>
+</div>
+
+<div class="row">
+  <!-- 1. Today -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="scr">
+        <div class="top"><div class="logo">un<i>rot</i></div><div class="tag">● Shield on</div></div>
+        <div class="card" style="margin-top:14px;padding:16px 18px 14px">
+          <div style="display:flex;gap:14px;align-items:center">
+            <div class="flame" style="width:96px;height:124px">
+              <svg width="96" height="124"><use href="#flame"/></svg>
+              <div class="num" style="top:66px;font-size:34px">12</div>
+              <span class="spark" style="left:30px;top:30px;animation-delay:.2s"></span>
+              <span class="spark" style="left:62px;top:40px;animation-delay:1.1s;width:4px;height:4px"></span>
+              <span class="spark" style="left:46px;top:20px;animation-delay:1.8s;background:#E5553A"></span>
+            </div>
+            <div style="flex:1">
+              <div class="lbl">Day 12 · Flame</div>
+              <div class="serif" style="font:700 22px/1.15 Fraunces,Georgia,serif;margin-top:4px">Your flame is growing</div>
+              <div style="font-size:12.5px;color:var(--ink2);margin-top:4px">Torch in 2 days</div>
+              <div class="bar"><i style="width:71%"></i></div>
+            </div>
+          </div>
+          <div class="week">
+            <div class="wd"><svg width="26" height="32"><use href="#mini"/></svg>M</div>
+            <div class="wd"><svg width="26" height="32"><use href="#mini"/></svg>T</div>
+            <div class="wd"><svg width="26" height="32"><use href="#ember"/></svg>W</div>
+            <div class="wd"><svg width="26" height="32"><use href="#mini"/></svg>T</div>
+            <div class="wd"><svg width="26" height="32"><use href="#mini"/></svg>F</div>
+            <div class="wd today"><svg width="26" height="32"><use href="#wait"/></svg>S</div>
+            <div class="wd" style="opacity:.35"><svg width="26" height="32"><use href="#wait"/></svg>S</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+            <span style="font-size:12.5px;color:var(--ink2)"><b style="color:var(--ink)">4 kept days</b> this week</span>
+            <span class="pill">Today: 18 of 45 min</span>
+          </div>
+        </div>
+        <div class="tools">
+          <div class="card tool"><span class="dot"></span>Breathe</div>
+          <div class="card tool"><span class="dot" style="background:var(--sky)"></span>Note</div>
+          <div class="card tool"><span class="dot" style="background:var(--sage)"></span>Check a site</div>
+          <div class="card tool"><span class="dot" style="background:var(--blush)"></span>Lock</div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Today.</b> The flame replaces the plain day number and flickers gently. The week row answers "how am I doing?" at a glance. Today's flame is dashed until the day ends, and the pill shows how much of today's aim is used.</div>
+  </div>
+
+  <!-- 2. Days page -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="scr">
+        <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">←</span><span class="serif" style="font:700 24px Fraunces,Georgia,serif">Your days</span></div>
+        <div class="card" style="margin-top:12px;padding:14px 12px 10px">
+          <div class="lbl" style="padding-left:4px">Your flame's path</div>
+          <div class="stages">
+            <div class="st on"><div class="c"><svg width="16" height="20"><use href="#mini"/></svg></div>Spark<br>1</div>
+            <div class="st now on"><div class="c"><svg width="22" height="28"><use href="#mini"/></svg></div>Flame<br>7</div>
+            <div class="st off"><div class="c"><svg width="24" height="30"><use href="#wait"/></svg></div>Torch<br>14</div>
+            <div class="st off"><div class="c"><svg width="24" height="30"><use href="#wait"/></svg></div>Blaze<br>30</div>
+            <div class="st off"><div class="c"><svg width="24" height="30"><use href="#wait"/></svg></div>Bonfire<br>90</div>
+            <div class="st off"><div class="c" style="font-size:18px">☀</div>Sun<br>365</div>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="card stat"><b>12</b><span>days with Unrot</span></div>
+          <div class="card stat"><b>9</b><span>kept days</span></div>
+          <div class="card stat"><b>6</b><span>best run</span></div>
+        </div>
+        <div class="card" style="margin-top:12px;padding:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span class="serif" style="font:700 17px Fraunces,Georgia,serif">November</span><span style="color:var(--muted)">‹ ›</span></div>
+          <div class="cal">
+            <div class="h">M</div><div class="h">T</div><div class="h">W</div><div class="h">T</div><div class="h">F</div><div class="h">S</div><div class="h">S</div>
+            <div class="d">3</div><div class="d">4</div><div class="d">5</div><div class="d">6</div><div class="d">7</div><div class="d">8</div><div class="d">9</div><div class="d">10</div><div class="d k">11</div><div class="d e">12</div><div class="d k">13</div><div class="d k">14</div><div class="d k">15</div><div class="d k">16</div><div class="d k">17</div><div class="d k">18</div><div class="d e">19</div><div class="d k">20</div><div class="d k">21</div><div class="d t">22</div><div class="d">23</div>
+          </div>
+          <div class="legend"><span><svg width="12" height="15"><use href="#mini"/></svg> kept</span><span><svg width="12" height="15"><use href="#ember"/></svg> ember</span><span>before Unrot: plain</span></div>
+        </div>
+        <div class="card" style="margin-top:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+          <div><div class="lbl">Daily aim</div><div style="font:700 16px 'DM Sans';margin-top:2px">45 min of feeds</div></div>
+          <span class="pill" style="background:var(--white)">Change</span>
+        </div>
+        <div class="note">A kept day is a day your feeds stayed under your aim. An ember isn't a failure: the flame keeps its size and your days keep counting.</div>
+      </div>
+    </div>
+    <div class="cap"><b>Your days</b> (tap the flame). The path shows every stage ahead. The calendar marks kept days in warm yellow and embers in grey, with tomorrow onwards left plain. Three honest numbers, and a daily aim you can change. Tapping a day opens the existing day page.</div>
+  </div>
+
+  <!-- 3. Level up -->
+  <div class="col">
+    <div class="phone dark">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="glow"></div>
+      <div style="position:absolute;left:0;right:0;top:120px;text-align:center">
+        <div class="lbl" style="color:#C9B9A0">Day 14</div>
+        <div class="serif" style="font:700 34px/1.1 Fraunces,Georgia,serif;margin-top:8px;color:#F3ECDF">Your flame<br>became a torch</div>
+      </div>
+      <div class="flame" style="position:absolute;left:50%;top:230px;margin-left:-90px;width:180px;height:234px">
+        <svg width="180" height="234"><use href="#flame"/></svg>
+        <div class="num" style="top:128px;font-size:58px">14</div>
+        <span class="spark" style="left:50px;top:50px"></span>
+        <span class="spark" style="left:120px;top:70px;animation-delay:.7s"></span>
+        <span class="spark" style="left:90px;top:30px;animation-delay:1.3s;background:#E5553A"></span>
+        <span class="spark" style="left:30px;top:100px;animation-delay:1.9s"></span>
+        <span class="spark" style="left:140px;top:110px;animation-delay:.4s;background:#FFF3C9"></span>
+      </div>
+      <div style="position:absolute;left:24px;right:24px;bottom:34px">
+        <div style="text-align:center;font-size:13.5px;color:#C9B9A0;line-height:1.45;margin-bottom:6px">14 days, 11 of them kept.<br>Next: Blaze at day 30.</div>
+        <div class="btn y">Keep going</div>
+        <div class="btn g">Share my flame</div>
+      </div>
+    </div>
+    <div class="cap"><b>Level up.</b> Shown once per stage. The flame grows from its old size to the new one with sparks, the celebrate chime and the three-beat vibration. "Share" makes a picture card, like milestones do now.</div>
+  </div>
+
+  <!-- 4. Widgets -->
+  <div class="col">
+    <div class="phone" style="background:linear-gradient(160deg,#9CC8E0,#9EC39A 60%,#F4C34E)">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div style="padding:22px 20px 0">
+        <div style="font:500 54px/1 'DM Sans';color:#1F2A23;text-align:center;margin-top:6px">9:41</div>
+        <div style="font:600 13px 'DM Sans';color:#1F2A23;text-align:center;margin-top:4px">Saturday, 22 November</div>
+        <div style="display:flex;gap:14px;margin-top:26px">
+          <div class="card" style="width:140px;height:140px;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative">
+            <div class="flame" style="width:70px;height:90px"><svg width="70" height="90"><use href="#flame"/></svg><div class="num" style="top:48px;font-size:24px">12</div></div>
+            <div style="font:700 11px 'DM Sans';margin-top:4px">Day 12 · Flame</div>
+          </div>
+          <div class="card" style="flex:1;height:140px;border-radius:26px;padding:14px 12px;display:flex;flex-direction:column;justify-content:space-between">
+            <div class="lbl">Today's feeds</div>
+            <div class="serif" style="font:800 30px/1 Fraunces,Georgia,serif">18<span style="font-size:15px"> / 45 min</span></div>
+            <div class="bar" style="margin:0"><i style="width:40%"></i></div>
+            <div style="font:600 11px 'DM Sans';color:var(--ink2)">27 min left to keep today</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px;border-radius:26px;padding:14px 16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="flame" style="width:54px;height:70px"><svg width="54" height="70"><use href="#flame"/></svg><div class="num" style="top:37px;font-size:19px">12</div></div>
+            <div style="flex:1"><div class="serif" style="font:700 17px Fraunces,Georgia,serif">4 kept days this week</div><div style="font-size:12px;color:var(--ink2)">Torch in 2 days</div></div>
+          </div>
+          <div class="week" style="margin-top:8px">
+            <div class="wd"><svg width="22" height="27"><use href="#mini"/></svg>M</div>
+            <div class="wd"><svg width="22" height="27"><use href="#mini"/></svg>T</div>
+            <div class="wd"><svg width="22" height="27"><use href="#ember"/></svg>W</div>
+            <div class="wd"><svg width="22" height="27"><use href="#mini"/></svg>T</div>
+            <div class="wd"><svg width="22" height="27"><use href="#mini"/></svg>F</div>
+            <div class="wd today"><svg width="22" height="27"><use href="#wait"/></svg>S</div>
+            <div class="wd" style="opacity:.35"><svg width="22" height="27"><use href="#wait"/></svg>S</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:40px;justify-items:center">
+          <div style="width:54px;height:54px;border-radius:16px;background:#FFFDF8;border:2px solid #1F2A23"></div><div style="width:54px;height:54px;border-radius:16px;background:#FFFDF8;border:2px solid #1F2A23"></div><div style="width:54px;height:54px;border-radius:16px;background:#FFFDF8;border:2px solid #1F2A23"></div><div style="width:54px;height:54px;border-radius:16px;background:#F4C34E;border:2px solid #1F2A23"></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Home-screen widgets.</b> Three sizes: the flame alone (2×2), today's feed time against your aim (2×2), and the flame with the week (4×2). Tapping any of them opens "Your days". They refresh with the existing day widget's schedule, and the flame holds still there.</div>
+  </div>
+</div>
+
+<div class="notes">
+  <div class="card"><h3>Where it lives</h3>Today's day card becomes the flame card. Tapping it opens "Your days", and each day there opens the day page you already have. The home-screen widget can show the same flame later.</div>
+  <div class="card"><h3>What counts as kept</h3>Feed time under your daily aim, read from Android's usage record (no new data stored). The aim starts at your setup answer, or 45 minutes, and you can change it. Without usage access, days count but show no flame or ember.</div>
+  <div class="card"><h3>Motion and feel</h3>A slow flicker that respects "Remove animations" (then it holds still), sparks only on Today and on level-up, the celebrate chime and vibration on level-up, and a soft tick when today turns into a kept day.</div>
+</div>
+</body>
+</html>

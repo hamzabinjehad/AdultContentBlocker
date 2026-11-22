@@ -38,6 +38,12 @@ public final class EncryptedDnsResolversTest {
         if (EncryptedDnsResolvers.blocks(new byte[12])) {
             throw new AssertionError("Short packet accepted");
         }
+        byte[] staleIpv6 = packet(EncryptedDnsResolvers.ipv6()[0], 6);
+        if (EncryptedDnsResolvers.blocks(staleIpv6, 39)
+                || !EncryptedDnsResolvers.blocks(staleIpv6, 40)
+                || EncryptedDnsResolvers.blocks(staleIpv6, 41)) {
+            throw new AssertionError("Resolver detection read outside the received packet");
+        }
         System.out.println("EncryptedDnsResolvers tests passed ("
                 + EncryptedDnsResolvers.ipv4().length + " IPv4 and "
                 + EncryptedDnsResolvers.ipv6().length + " IPv6 dedicated resolver addresses)");

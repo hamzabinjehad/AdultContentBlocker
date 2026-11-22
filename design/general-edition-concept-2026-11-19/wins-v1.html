@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unrot Your Wins</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..800,100&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F5EFE3;--paper2:#EDE4D3;--ink:#1F2A23;--ink2:#46534A;--muted:#7A8277;--butter:#F4C34E;--tomato:#E5553A;--sage:#9EC39A;--sagedk:#3F6B45;--sky:#9CC8E0;--blush:#F2A08F;--white:#FFFDF8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#D9D2C3;font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);padding:30px 16px 40px}
+.head{max-width:1500px;margin:0 auto 26px}
+.head h1{font:700 34px/1.05 Fraunces,Georgia,serif;letter-spacing:-.5px}
+.head p{color:var(--ink2);font-size:14px;max-width:900px;margin-top:8px;line-height:1.5}
+.row{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;align-items:center}
+.cap{font-size:13px;color:var(--ink2);text-align:center;margin-top:12px;max-width:330px;line-height:1.45}
+.cap b{color:var(--ink)}
+.phone{width:340px;height:736px;border-radius:46px;background:var(--paper);position:relative;overflow:hidden;box-shadow:0 0 0 9px #1F2A23,0 26px 50px -18px rgba(31,42,35,.55)}
+.status{display:flex;justify-content:space-between;padding:15px 28px 0;font:700 12px 'DM Sans'}
+.scr{padding:10px 18px 0}
+.top{display:flex;justify-content:space-between;align-items:center}
+.logo{font:800 25px Fraunces,Georgia,serif;letter-spacing:-.8px}.logo i{font-style:normal;color:var(--tomato)}
+.tag{font:700 11px 'DM Sans';padding:6px 11px;border-radius:999px;border:2px solid var(--ink);background:var(--sage)}
+.card{background:var(--white);border:2px solid var(--ink);border-radius:22px;box-shadow:3px 4px 0 var(--ink)}
+.serif{font-family:Fraunces,Georgia,serif}
+.lbl{font:700 10.5px 'DM Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.big{font:800 34px/1 Fraunces,Georgia,serif;letter-spacing:-.5px}
+.down{display:inline-flex;align-items:center;gap:4px;font:700 12px 'DM Sans';padding:4px 9px;border-radius:999px;background:var(--sage);border:2px solid var(--ink)}
+/* then -> now */
+.tn{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:6px;margin-top:10px}
+.tn .then .big{color:var(--muted);text-decoration:line-through;text-decoration-thickness:2px;font-size:26px}
+.arrow{font:700 20px 'DM Sans';color:var(--muted);padding-bottom:4px}
+/* hour tiles */
+.tiles{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-top:10px}
+.tiles i{aspect-ratio:1;border-radius:3px;border:1.5px solid var(--ink);background:var(--butter);animation:pop .4s backwards}
+.tiles i.n{background:transparent;border-style:dashed;border-color:#1F2A2355}
+.tiles i.new{background:var(--tomato)}
+@keyframes pop{from{transform:scale(.3);opacity:0}}
+.gbar{height:10px;border-radius:99px;border:2px solid var(--ink);background:var(--paper2);overflow:hidden;margin-top:8px}
+.gbar i{display:block;height:100%;background:var(--sage)}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.tool{padding:12px;font:700 13px 'DM Sans';display:flex;gap:8px;align-items:center}
+.dot{width:26px;height:26px;border-radius:9px;border:2px solid var(--ink);background:var(--butter)}
+/* chart */
+.chart{margin-top:8px}
+.win{display:flex;gap:10px;align-items:center;padding:10px 12px}
+.win+.win{border-top:1.5px dashed #1F2A2333}
+.medal{width:34px;height:34px;border-radius:11px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:800 14px Fraunces,Georgia,serif;flex:none}
+.win b{display:block;font:700 13.5px 'DM Sans'}
+.win span{font-size:11.5px;color:var(--muted)}
+.win em{margin-left:auto;font:800 17px Fraunces,Georgia,serif;font-style:normal}
+.btn{display:block;text-align:center;font:700 15px 'DM Sans';padding:14px;border-radius:30px;border:2px solid var(--ink);margin-top:10px}
+.btn.y{background:var(--butter);color:var(--ink)}
+.notes{max-width:1500px;margin:34px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.notes .card{padding:16px 18px;font-size:13.5px;line-height:1.5}
+.notes h3{font:700 17px Fraunces,Georgia,serif;margin-bottom:6px}
+.seg{display:flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden;font:700 11px 'DM Sans'}
+.seg span{padding:5px 10px}.seg .on{background:var(--ink);color:var(--paper)}
+.report{background:var(--sagedk);color:#F3ECDF}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>Your wins: before Unrot, and now</h1>
+  <p>No flame, no score, nothing that resets. Progress is shown three honest ways: <b>you before Unrot vs you now</b>, measured by Android; <b>time given back</b>, a wall of hour tiles that only fills up; and <b>personal bests</b> taken from your own days. Research: tracking progress helps people reach goals, more so when it's recorded and visible (Harkin et al. 2016, 138 studies). Effort rises near a goal (goal gradient, Kivetz 2006). Resetting streaks cause "streak anxiety", and people drop the app.</p>
+</div>
+
+<div class="row">
+  <!-- 1. Today -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="scr">
+        <div class="top"><div class="logo">un<i>rot</i></div><div class="tag">● Shield on</div></div>
+        <div class="card" style="margin-top:14px;padding:16px 18px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span class="lbl">Feeds a day · day 12</span><span class="down">↓ 45%</span></div>
+          <div class="tn">
+            <div class="then"><div class="lbl" style="margin-bottom:4px">Before Unrot</div><div class="big">3 h 10</div></div>
+            <div class="arrow">→</div>
+            <div><div class="lbl" style="margin-bottom:4px;color:var(--ink)">This week</div><div class="big">1 h 45</div></div>
+          </div>
+          <svg viewBox="0 0 300 70" style="width:100%;margin-top:10px">
+            <line x1="0" y1="14" x2="300" y2="14" stroke="#7A8277" stroke-width="2" stroke-dasharray="5 5"/>
+            <text x="300" y="9" text-anchor="end" font-size="10" font-family="DM Sans" fill="#7A8277" font-weight="700">before</text>
+            <path d="M0 14 L25 22 L50 18 L75 30 L100 28 L125 38 L150 34 L175 44 L200 40 L225 46 L250 42 L275 50" fill="none" stroke="#1F2A23" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M0 14 L25 22 L50 18 L75 30 L100 28 L125 38 L150 34 L175 44 L200 40 L225 46 L250 42 L275 50 L275 70 L0 70Z" fill="#9EC39A" opacity=".45"/>
+            <circle cx="275" cy="50" r="6" fill="#F4C34E" stroke="#1F2A23" stroke-width="2.5"/>
+          </svg>
+        </div>
+        <div class="card" style="margin-top:12px;padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <div><div class="lbl">Time given back</div><div class="big" style="font-size:28px;margin-top:4px">17 hours</div></div>
+            <div style="text-align:right;font-size:11.5px;color:var(--ink2)">+1 h 25 m<br>yesterday</div>
+          </div>
+          <div class="tiles">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i><i class="new"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i>
+          </div>
+          <div style="font-size:12px;color:var(--ink2);margin-top:8px">7 more hours and it's <b style="color:var(--ink)">a whole day back</b>.</div>
+        </div>
+        <div class="tools">
+          <div class="card tool"><span class="dot"></span>Breathe</div>
+          <div class="card tool"><span class="dot" style="background:var(--sky)"></span>Note</div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Today.</b> The day card becomes two cards. "Before vs now" puts your old habit next to this week, with the dashed line showing where you started. "Time given back" fills one tile per hour (the newest in red), and the next round number is always close: a whole day, a week, a month.</div>
+  </div>
+
+  <!-- 2. Progress page -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div class="scr">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="serif" style="font:700 26px Fraunces,Georgia,serif">Your wins</span><div class="seg"><span class="on">Feed time</span><span>Opens</span></div></div>
+        <div class="card" style="margin-top:12px;padding:14px 14px 10px">
+          <div class="lbl">Each week vs before Unrot</div>
+          <svg viewBox="0 0 290 130" style="width:100%;margin-top:8px">
+            <line x1="0" y1="16" x2="290" y2="16" stroke="#E5553A" stroke-width="2" stroke-dasharray="5 5"/>
+            <text x="4" y="11" font-size="10" font-family="DM Sans" fill="#E5553A" font-weight="700">before Unrot · 3 h 10 a day</text>
+            <g stroke="#1F2A23" stroke-width="2">
+              <rect x="20" y="16" width="44" height="104" rx="8" fill="#EDE4D3"/>
+              <rect x="88" y="40" width="44" height="80" rx="8" fill="#F4C34E"/>
+              <rect x="156" y="58" width="44" height="62" rx="8" fill="#F4C34E"/>
+              <rect x="224" y="68" width="44" height="52" rx="8" fill="#9EC39A"/>
+            </g>
+            <g font-size="10" font-family="DM Sans" fill="#46534A" font-weight="700" text-anchor="middle">
+              <text x="42" y="12" opacity="0"> </text>
+              <text x="110" y="34">2 h 25</text><text x="178" y="52">1 h 55</text><text x="246" y="62">1 h 45</text>
+            </g>
+          </svg>
+          <div style="display:flex;justify-content:space-around;font:700 10.5px 'DM Sans';color:var(--muted)"><span>Before</span><span>Week 1</span><span>Week 2</span><span>Now</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+          <div class="card" style="padding:12px"><div class="lbl">Opens a day</div><div class="big" style="font-size:24px;margin-top:4px">38 <span style="font-size:14px;color:var(--muted)">was 71</span></div></div>
+          <div class="card" style="padding:12px"><div class="lbl">First scroll</div><div class="big" style="font-size:24px;margin-top:4px">9:40 <span style="font-size:14px;color:var(--muted)">was 7:05</span></div></div>
+        </div>
+        <div class="card" style="margin-top:12px;padding:4px 4px">
+          <div class="lbl" style="padding:10px 12px 0">Your personal bests</div>
+          <div class="win"><div class="medal" style="background:var(--butter)">1</div><div><b>Lightest day</b><span>Tuesday 18 Nov</span></div><em>22 min</em></div>
+          <div class="win"><div class="medal" style="background:var(--sky)">2</div><div><b>Phone down earliest</b><span>Last scroll, Friday</span></div><em>22:10</em></div>
+          <div class="win"><div class="medal" style="background:var(--sage)">3</div><div><b>Walked away</b><span>At a wait screen, in all</span></div><em>23×</em></div>
+          <div class="win"><div class="medal" style="background:var(--blush)">4</div><div><b>Longest without feeds</b><span>Sat 15 Nov, 10:00–19:30</span></div><em>9 h</em></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Your wins</b> (the Progress tab's new top). One bar per week, always against the "before" line. Opens and first scroll each show their old value. Personal bests come from your own days, so there is always something real to be proud of, even in a rough week.</div>
+  </div>
+
+  <!-- 3. Weekly report -->
+  <div class="col">
+    <div class="phone report">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div style="padding:30px 24px 0">
+        <div class="lbl" style="color:#C9D9C5">Your week · 17–23 Nov</div>
+        <div class="serif" style="font:700 33px/1.1 Fraunces,Georgia,serif;margin-top:10px">You gave yourself back 9 hours this week.</div>
+        <div style="margin-top:22px;display:grid;gap:10px">
+          <div class="card" style="padding:14px 16px;color:var(--ink);display:flex;justify-content:space-between;align-items:center"><div><div class="lbl">Feeds a day</div><div class="big" style="font-size:26px;margin-top:3px">1 h 45</div></div><span class="down">↓ 45% vs before</span></div>
+          <div class="card" style="padding:14px 16px;color:var(--ink);display:flex;justify-content:space-between;align-items:center"><div><div class="lbl">Opens a day</div><div class="big" style="font-size:26px;margin-top:3px">38</div></div><span class="down">↓ 33 fewer</span></div>
+          <div class="card" style="padding:14px 16px;color:var(--ink)"><div class="lbl">Best moment</div><div style="font:700 15px 'DM Sans';margin-top:4px">Friday: phone down at 22:10, your earliest yet.</div></div>
+        </div>
+        <div style="font-size:13px;color:#C9D9C5;margin-top:16px;line-height:1.45">Next week, try keeping mornings free: your first scroll is already 2½ hours later than before.</div>
+      </div>
+      <div style="position:absolute;left:24px;right:24px;bottom:30px">
+        <div class="btn y">Nice, keep going</div>
+        <div class="btn" style="color:#F3ECDF;border-color:#F3ECDF66">Share my week</div>
+      </div>
+    </div>
+    <div class="cap"><b>Sunday report.</b> Once a week, a short story of your week opens from a quiet notification: the headline win, two numbers against before, the best moment and one next step tied to your setup goals. It has the celebrate chime and vibration, and you can share it as a picture.</div>
+  </div>
+
+  <!-- 4. Widgets -->
+  <div class="col">
+    <div class="phone" style="background:linear-gradient(160deg,#9CC8E0,#9EC39A 60%,#F4C34E)">
+      <div class="status"><span>9:41</span><span>●●● 5G ▮</span></div>
+      <div style="padding:22px 20px 0">
+        <div style="font:500 54px/1 'DM Sans';text-align:center;margin-top:6px">9:41</div>
+        <div style="font:600 13px 'DM Sans';text-align:center;margin-top:4px">Saturday, 22 November</div>
+        <div style="display:flex;gap:14px;margin-top:26px">
+          <div class="card" style="width:140px;height:140px;border-radius:26px;padding:14px;display:flex;flex-direction:column;justify-content:space-between">
+            <div class="lbl">Given back</div>
+            <div class="big" style="font-size:40px">17<span style="font-size:16px"> h</span></div>
+            <div class="tiles" style="grid-template-columns:repeat(8,1fr);margin:0;gap:2px">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="new"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i>
+            </div>
+          </div>
+          <div class="card" style="flex:1;height:140px;border-radius:26px;padding:14px 12px;display:flex;flex-direction:column;justify-content:space-between">
+            <div class="lbl">Today so far</div>
+            <div class="big" style="font-size:28px">48 m</div>
+            <div style="font:600 11.5px 'DM Sans';color:var(--ink2)">Before Unrot you'd be at <b style="color:var(--ink)">1 h 50</b> by now</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px;border-radius:26px;padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span class="lbl">Feeds a day</span><span class="down">↓ 45%</span></div>
+          <div class="tn" style="margin-top:6px"><div class="then"><div class="big" style="font-size:22px">3 h 10</div></div><div class="arrow">→</div><div><div class="big" style="font-size:28px">1 h 45</div></div></div>
+          <svg viewBox="0 0 300 40" style="width:100%;margin-top:6px"><line x1="0" y1="6" x2="300" y2="6" stroke="#7A8277" stroke-width="2" stroke-dasharray="5 5"/><path d="M0 6 L50 12 L100 16 L150 22 L200 26 L250 28 L290 32" fill="none" stroke="#1F2A23" stroke-width="3" stroke-linecap="round"/><circle cx="290" cy="32" r="5" fill="#F4C34E" stroke="#1F2A23" stroke-width="2"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Home-screen widgets.</b> "Given back", which only grows. "Today so far" against where the old you would be by this hour, which works as a nudge mid-day. "Before → now" in a wide size. Tapping any of them opens Your wins.</div>
+  </div>
+</div>
+
+<div class="notes">
+  <div class="card"><h3>Where "before" comes from</h3>Android keeps several weeks of app use. On the day Unrot is set up, it saves one number per measure from the weeks before (feed time, opens, first and last scroll). Nothing else is stored. Without enough history, your first week becomes "before", and the page says so.</div>
+  <div class="card"><h3>Time given back, honestly</h3>Each day adds (before − that day) when it's lower. A heavier day adds nothing and takes nothing away, so the wall never empties, and "before" stays your own number, never an average of other people.</div>
+  <div class="card"><h3>Feel</h3>Tiles pop in one by one when you open Today; the newest hour is red. Reaching a round number (a day, a week back) plays the celebrate chime and three-beat vibration, once. Everything holds still with "Remove animations".</div>
+</div>
+</body>
+</html>

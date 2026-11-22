@@ -48,19 +48,29 @@ public final class WordMatcherTest {
         expectInvalid("x".repeat(65537));
         java.util.List<String> indexedRules = Arrays.asList("adult", "adult video", "video", "a", "a a", "إباحي", "example", "test", "other", "safe phrase");
         WordMatcher indexed = new WordMatcher(indexedRules);
+        WordMatcher empty = new WordMatcher(Collections.emptyList());
+        for (String sample : Arrays.asList(null, "", "ordinary", "adult, video", "Essex", "إباحِيّ", "ｓｅｘ")) {
+            for (WordMatcher policy : Arrays.asList(matcher, indexed, empty)) {
+                check(policy.hasMatch(sample) == !policy.matches(sample).isEmpty(), "boolean verdict: " + sample);
+            }
+        }
         java.util.Random random = new java.util.Random(18);
         String[] tokens = {"adult", "video", "safe", "phrase", "a", "إباحِيّ", "test", "Essex", "other", "example"};
         for (int i = 0; i < 1000; i++) {
             StringBuilder sample = new StringBuilder();
             for (int j = 0; j < 40; j++) sample.append(tokens[random.nextInt(tokens.length)]).append(j % 2 == 0 ? ", " : " ");
-            String normalized = " " + WordMatcher.normalize(sample.toString()) + " ";
+            String input = i % 7 == 0 ? "Ordinary captions only. Essex council." : sample.toString();
+            String normalized = " " + WordMatcher.normalize(input) + " ";
             java.util.List<String> expected = new java.util.ArrayList<>();
             for (String candidate : indexedRules) if (normalized.contains(" " + WordMatcher.normalize(candidate) + " ")) expected.add(WordMatcher.normalize(candidate));
-            check(indexed.matches(sample.toString()).equals(expected), "indexed matching preserves literal boundaries and rule order");
+            check(indexed.matches(input).equals(expected), "indexed matching preserves literal boundaries and rule order");
+            check(indexed.hasMatch(input) == !expected.isEmpty(), "indexed boolean verdict agrees with literal scan");
         }
         java.util.List<String> many = new java.util.ArrayList<>();
         for (int i = 0; i < 1000; i++) many.add("rule" + i);
         check(new WordMatcher(many).matches("rule999 rule0 notrule1").equals(Arrays.asList("rule0", "rule999")), "large rule set");
+        check(new WordMatcher(many).hasMatch("rule999") && !new WordMatcher(many).hasMatch("notrule999"),
+                "boolean lookup respects boundaries with a thousand rules");
         System.out.println("WordMatcher tests passed");
     }
 

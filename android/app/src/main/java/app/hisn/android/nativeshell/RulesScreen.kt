@@ -1,5 +1,6 @@
 package app.hisn.android.nativeshell
 
+import app.hisn.android.Edition
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Icon
@@ -13,6 +14,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -73,32 +77,8 @@ fun RulesScreen(
     }
 
     if (showScanAllDialog) {
-        AlertDialog(
-            onDismissRequest = { showScanAllDialog = false },
-            title = { Text(tr("Check every app?")) },
-            text = {
-                Text(
-                    tr(
-                        "Hisn will read on-screen text, and sample images when image checks are on, in " +
-                            "every app instead of only the ones you chose. Nothing leaves this phone. " +
-                            "System screens, the launcher, the phone app, keyboards and password fields " +
-                            "are skipped. Expect more battery use and more mistaken blocks. While a " +
-                            "protection lock is active this cannot be turned off."
-                    )
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showScanAllDialog = false
-                    state.scanAll.set(true)
-                }) { Text(tr("Turn on")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showScanAllDialog = false }) {
-                    Text(androidx.compose.ui.res.stringResource(android.R.string.cancel))
-                }
-            }
-        )
+        ScanAllDialog(onConfirm = { showScanAllDialog = false; state.scanAll.set(true) },
+            onDismiss = { showScanAllDialog = false })
     }
 
     if (showGrayDialog) {
@@ -108,12 +88,28 @@ fun RulesScreen(
         )
     }
 
+    if (unrotEdition) {
+        val lockedText = stringResource(R.string.rules_locked_refused)
+        UnrotRulesList(
+            state = state,
+            onOpen = onOpen,
+            resumes = resumes,
+            onScanAll = { showScanAllDialog = true },
+            onGrayWanted = { wanted ->
+                state.gray.set(wanted)
+                if (state.gray.on == wanted && wanted && !state.grayCanApply) showGrayDialog = true
+            },
+            onLockedRefusal = { snackbar(HisnMessage(lockedText)) }
+        )
+        return
+    }
+
     LazyColumn(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            PageIntro(tr("Choose what Hisn blocks or checks. Every rule below is saved on this phone."))
+            PageIntro(tr("Choose what ${Edition.NAME} blocks or checks. Every rule below is saved on this phone."))
         }
 
         if (state.lockRemainingMillis > 0L) {
@@ -246,7 +242,7 @@ fun RulesScreen(
                     title = androidx.compose.ui.res.stringResource(app.hisn.android.R.string.private_tabs_title),
                     supporting = androidx.compose.ui.res.stringResource(
                         when {
-                            privateTabs && !(state.apps.on && state.guardConnected) -> app.hisn.android.R.string.private_tabs_needs_guard
+                            privateTabs && !(state.guardReady) -> app.hisn.android.R.string.private_tabs_needs_guard
                             privateTabs -> app.hisn.android.R.string.private_tabs_on
                             else -> app.hisn.android.R.string.private_tabs_off
                         }
@@ -264,9 +260,9 @@ fun RulesScreen(
                 var browserOnly by remember(resumes) { mutableStateOf(app.hisn.android.BrowserOnlyStore.on(context)) }
                 SwitchRow(
                     icon = Icons.Rounded.VisibilityOff,
-                    title = tr("Only browsers Hisn controls"),
+                    title = tr("Only browsers ${Edition.NAME} controls"),
                     supporting = when {
-                        browserOnly && !(state.apps.on && state.guardConnected) -> tr("On · Needs App protection to block other browsers")
+                        browserOnly && !(state.guardReady) -> tr("On · Needs App protection to block other browsers")
                         browserOnly -> tr("On · Other browsers are blocked; Chrome stays")
                         else -> tr("Off · Every browser can be used")
                     },
@@ -315,7 +311,7 @@ fun RulesScreen(
         item {
             // A saved rule does nothing while its layer is off, so the tile says so where the
             // person is looking instead of leaving it to the Protection tab.
-            val guardReady = state.apps.on && state.guardConnected
+            val guardReady = state.guardReady
             // Short enough for a half-width tile; the tile's own title says which rule it is about.
             val guardIssue = if (state.apps.on) tr("Not connected") else tr("Protection is off")
             val fixGuard = { state.openPermission("accessibility") }
@@ -330,8 +326,13 @@ fun RulesScreen(
                             onClick = { onOpen("domains") },
                             modifier = modifier,
                             active = state.domains.isNotEmpty(),
-                            issue = tr("DNS filtering is off").takeIf { state.domains.isNotEmpty() && !state.dns.on },
-                            onIssue = { state.dns.set(true) }
+                            issue = when {
+                                state.domains.isEmpty() || state.runtime.dnsReady -> null
+                                state.dnsState == app.hisn.android.DnsVpnService.State.STARTING -> null
+                                state.dns.on -> stringResource(R.string.protection_home_needs_attention)
+                                else -> tr("DNS filtering is off")
+                            },
+                            onIssue = state::fixDns
                         )
                     },
                     { modifier ->
@@ -405,11 +406,11 @@ fun RulesScreen(
                         RuleTile(
                             icon = Icons.Rounded.Schedule,
                             title = tr("Schedule"),
-                            value = if (state.schedule.on) tr("On") else tr("Off"),
+                            value = if (state.appSchedule.isConfigured) tr("On") else tr("Off"),
                             onClick = { onOpen("schedule") },
                             modifier = modifier,
-                            active = state.schedule.on,
-                            issue = guardIssue.takeIf { state.schedule.on && !guardReady },
+                            active = state.appSchedule.isConfigured,
+                            issue = guardIssue.takeIf { state.appSchedule.isConfigured && !guardReady },
                             onIssue = fixGuard
                         )
                     }
@@ -494,4 +495,92 @@ private fun GrayPermissionDialog(command: String, onDismiss: () -> Unit) {
             }
         }
     )
+}
+
+
+/**
+ * Unrot's Shield shows what protection is made of, in numbers it really holds (CleanPath's
+ * "395k sites" idea, without the invented ones): the size of the built-in adult list, how many
+ * apps have a rule, and lookups blocked since the website filter last started. Each opens the
+ * screen behind it.
+ */
+@Composable
+internal fun UnrotShieldNumbers(state: HisnState, onOpen: (String) -> Unit) {
+    val context = LocalContext.current
+    val locale = androidx.core.os.ConfigurationCompat.getLocales(
+        androidx.compose.ui.platform.LocalConfiguration.current
+    )[0] ?: java.util.Locale.ENGLISH
+    val sites = app.hisn.android.BuildConfig.DOMAIN_SEED_COUNT
+    val sitesShort = if (sites >= 10_000) {
+        stringResource(R.string.shield_num_thousands, java.text.NumberFormat.getIntegerInstance(locale).format(sites / 1000))
+    } else {
+        java.text.NumberFormat.getIntegerInstance(locale).format(sites)
+    }
+    val waiting = remember(state.blockedApps.size, state.appLimits.size) { app.hisn.android.OpenWaitStore.apps(context) }
+    val scheduled = state.appSchedule.let { if (it.enabled && !it.allApps) it.apps else emptySet() }
+    val apps = (state.blockedApps.toSet() + state.appLimits.keys + waiting + scheduled).size
+    val filterOn = state.runtime.dnsAttached
+    val format = java.text.NumberFormat.getIntegerInstance(locale)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ShieldNumber(sitesShort, stringResource(R.string.shield_num_sites), Modifier.weight(1f)) { onOpen(if (unrotEdition) "lists" else "sitecheck") }
+        ShieldNumber(format.format(apps), stringResource(R.string.shield_num_apps), Modifier.weight(1f)) { onOpen("apps") }
+        ShieldNumber(
+            if (filterOn) format.format(remember(state.blockedLookups) { app.hisn.android.StepIns.keptOutToday(context) }) else "—",
+            stringResource(if (filterOn) R.string.shield_num_blocked else R.string.shield_num_filter_off),
+            Modifier.weight(1f)
+        ) { onOpen("diagnostics") }
+    }
+}
+
+@Composable
+private fun ShieldNumber(value: String, label: String, modifier: Modifier, onClick: () -> Unit) {
+    val shape = MaterialTheme.shapes.medium
+    Column(
+        modifier
+            .riseIn(1)
+            .unrotFrame(shape)
+            .background(LocalHisnStatusColors.current.card, shape)
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp)
+            .semantics(mergeDescendants = true) {},
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(value.toLongOrNull()?.let { "${countUp(it)}" } ?: value, style = MaterialTheme.typography.headlineSmall, maxLines = 1)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            minLines = 2,
+            maxLines = 3
+        )
+    }
+}
+
+
+/** "Check every app?": the honest cost of reading text and images in every app, before it turns on. */
+@Composable
+internal fun ScanAllDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(tr("Check every app?")) },
+            text = {
+                Text(
+                    tr(
+                        "${Edition.NAME} will read on-screen text, and sample images when image checks are on, in " +
+                            "every app instead of only the ones you chose. Nothing leaves this phone. " +
+                            "System screens, the launcher, the phone app, keyboards and password fields " +
+                            "are skipped. Expect more battery use and more mistaken blocks. While a " +
+                            "protection lock is active this cannot be turned off."
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = onConfirm) { Text(tr("Turn on")) }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(androidx.compose.ui.res.stringResource(android.R.string.cancel))
+                }
+            }
+        )
 }

@@ -22,6 +22,8 @@ def main():
     parser.add_argument("--adb", default=os.environ.get("ADB", "adb"))
     parser.add_argument("--configure", action="store_true", help="Configure only the isolated app, then stop")
     parser.add_argument("--confirm-synthetic-intervention", action="store_true")
+    parser.add_argument("--confirm-people-back", action="store_true",
+                        help="Also exercise automatic Back on the public-domain face fixture")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
 
@@ -54,6 +56,8 @@ def main():
         for key in ("CAPTURES", "REQUESTS", "SAMPLES", "INTERVENTIONS", "DISCARDED", "CAPTURE_FAILURES",
                     "CAPTURE_ERROR", "OVERLAYS"):
             values[key] = int(values[key])
+        if "PERSON_BACKS" in values:
+            values["PERSON_BACKS"] = int(values["PERSON_BACKS"])
         return values
 
     def scene(mode, seconds, restriction=False):
@@ -152,9 +156,14 @@ def main():
         passed({"check": "a detected app stays held after the intervention"})
 
         time.sleep(62)
-        resumed = scene("visual-normal", 10)
+        # Android can transiently reject a screenshot after a task transition. Allow
+        # the guard's bounded capture backoff to recover, while rejecting any new block.
+        for attempt in range(3):
+            resumed = scene("visual-normal", 10)
+            if resumed["INTERVENTIONS"] != forced["INTERVENTIONS"] or resumed["SAMPLES"] > forced["SAMPLES"]:
+                break
         require(resumed["SAMPLES"] > forced["SAMPLES"] and resumed["INTERVENTIONS"] == forced["INTERVENTIONS"],
-                "Synthetic lease repeated or ordinary capture did not recover after the hold")
+                "Synthetic lease repeated or ordinary capture did not recover after the hold: " + json.dumps(resumed))
         passed({"check": "one-shot expires and the hold ends; ordinary capture recovers"})
 
         adb("shell", "input", "keyevent", "3")
@@ -171,6 +180,21 @@ def main():
         stopped = scene("visual-normal", 6)
         require(stopped["STATE"] == "OFF" and stopped["REQUESTS"] == left["REQUESTS"], "Disabled layer still captured")
         passed({"check": "opt-out stops capture and model"})
+        if args.confirm_people_back:
+            people = control("configure-people-back")
+            no_face = scene("visual-normal", 18)
+            require(no_face["SAMPLES"] > people["SAMPLES"] and no_face["FRAME_EDGE"] == "384",
+                    "People engine did not sample the no-face fixture: " + json.dumps(no_face))
+            require(no_face["OVERLAYS"] == people["OVERLAYS"]
+                    and no_face["PERSON_BACKS"] == people["PERSON_BACKS"],
+                    "A shape-only scene triggered a people cover or Back: " + json.dumps(no_face))
+            passed({"check": "no speculative people cover on a shape-only scene"})
+            face = scene("visual-face", 12)
+            require(face["PERSON_BACKS"] == no_face["PERSON_BACKS"] + 1
+                    and face["OVERLAYS"] > no_face["OVERLAYS"]
+                    and face["INTERVENTIONS"] == no_face["INTERVENTIONS"],
+                    "The face did not cover and go back exactly once: " + json.dumps(face))
+            passed({"check": "a matching face is covered before going Back"})
         report = {"passed": True, "package": OWNER, "checks": checks,
                   "limits": "Synthetic fixtures only; no adult-content accuracy, real-app or battery benchmark."}
         if args.report:

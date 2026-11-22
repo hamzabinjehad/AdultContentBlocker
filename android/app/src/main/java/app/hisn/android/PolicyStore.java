@@ -2,6 +2,7 @@ package app.hisn.android;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Handler;
 import android.os.SystemClock;
 
 import app.hisn.core.CommitmentClock;
@@ -114,7 +115,16 @@ public final class PolicyStore {
 
         public boolean hasWordProtection() { return adultWordsEnabled || !words.configuredRules().isEmpty(); }
         public boolean hasConfiguredRestrictions() {
-            return !domains.blockedRules().isEmpty() || !blockedApps.isEmpty() || shortVideoEnabled
+            return !domains.blockedRules().isEmpty() || hasScopedAppRules();
+        }
+
+        public boolean hasConfiguredAppProtection() {
+            // The built-in adult layer also covers known adult apps and Telegram's search.
+            return adultWordsEnabled || hasScopedAppRules();
+        }
+
+        private boolean hasScopedAppRules() {
+            return !blockedApps.isEmpty() || shortVideoEnabled
                     || schedule.isConfigured() || timeLimits.configured()
                     || (!scannedApps.isEmpty() && (hasWordProtection() || visualEnabled));
         }
@@ -151,6 +161,8 @@ public final class PolicyStore {
     private boolean copyBehind;
     private long copyRetryAt;
     private volatile Snapshot snapshot;
+    private Handler guardHandler;
+    private Runnable guardRefresh;
     private CommitmentClock commitment;
     private long policyRevision;
     private boolean uninstallLock;
@@ -211,6 +223,19 @@ public final class PolicyStore {
 
     /** Reload through a fresh store when another component updates settings. */
     public Snapshot snapshot() { return snapshot; }
+
+    synchronized void watchGuardRules(Handler handler, Runnable refresh) {
+        if (guardRefresh != null) guardHandler.removeCallbacks(guardRefresh);
+        guardHandler = handler;
+        guardRefresh = refresh;
+    }
+
+    synchronized void unwatchGuardRules(Runnable refresh) {
+        if (guardRefresh != refresh) return;
+        guardHandler.removeCallbacks(refresh);
+        guardHandler = null;
+        guardRefresh = null;
+    }
 
     /** The committed policy version; 0 for a legacy record that has not changed yet. */
     public synchronized long policyRevision() { return policyRevision; }
@@ -460,20 +485,18 @@ public final class PolicyStore {
     }
 
     private static boolean sameRules(Snapshot a, Snapshot b) {
-        return a.domains.blockedRules().equals(b.domains.blockedRules())
-                && a.words.configuredRules().equals(b.words.configuredRules())
+        return a.domains.blockedRules().equals(b.domains.blockedRules()) && sameGuardRules(a, b);
+    }
+
+    private static boolean sameGuardRules(Snapshot a, Snapshot b) {
+        return a.words.configuredRules().equals(b.words.configuredRules())
                 && a.blockedApps.equals(b.blockedApps)
                 && a.scannedApps.equals(b.scannedApps)
                 && a.adultWordsEnabled == b.adultWordsEnabled
                 && a.visualEnabled == b.visualEnabled
                 && a.shortVideoEnabled == b.shortVideoEnabled
                 && a.timeLimits.equals(b.timeLimits)
-                && a.schedule.enabled == b.schedule.enabled
-                && a.schedule.startMinute == b.schedule.startMinute
-                && a.schedule.endMinute == b.schedule.endMinute
-                && a.schedule.allApps == b.schedule.allApps
-                && a.schedule.days == b.schedule.days
-                && a.schedule.apps.equals(b.schedule.apps);
+                && a.schedule.equals(b.schedule);
     }
 
     /** Every rule the previous snapshot held must still be held, and no switch may turn off. */
@@ -517,7 +540,8 @@ public final class PolicyStore {
         // countdown checkpoints, commitments and restores keep the identity already persisted.
         // Managed/removal choices are read back by their own controller and do not invalidate
         // DNS, text or visual evidence.
-        boolean changed = !sameRules(snapshot, rules);
+        boolean guardChanged = !sameGuardRules(snapshot, rules);
+        boolean changed = guardChanged || !snapshot.domains.blockedRules().equals(rules.domains.blockedRules());
         long nextRevision;
         try { nextRevision = PolicyVersion.next(policyRevision, changed); }
         catch (IllegalStateException exhausted) { throw saveFailed("Policy revision exhausted"); }
@@ -535,6 +559,11 @@ public final class PolicyStore {
         commitmentUnknown = unknown;
         restored = restoredNotice;
         mirror(SystemClock.elapsedRealtime());
+        if (guardChanged && guardRefresh != null) {
+            // Coalesce queued saves. The service always reads the latest committed snapshot.
+            guardHandler.removeCallbacks(guardRefresh);
+            guardHandler.post(guardRefresh);
+        }
     }
 
     private void mirror(long now) {

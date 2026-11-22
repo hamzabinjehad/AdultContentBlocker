@@ -14,7 +14,7 @@ hisn_test_output=$(mktemp -d "${TMPDIR:-/tmp}/hisn-core.XXXXXX")
 # Test class files stay in a newly created temporary directory; no repo files are changed.
 hisn_java_bin=${JAVA_HOME:+$JAVA_HOME/bin/}
 "${hisn_java_bin}javac" -d "$hisn_test_output" core/src/main/java/app/hisn/core/*.java core/src/test/java/app/hisn/core/*.java
-for hisn_test in TextFolding DeviceFamily OemGuide Hostname PersonalProfile AdultTldPolicy WordMatcher VisibleTextSample LabelScan GuardWindows VisualCadence VisualRetry AccessibilityGrant InterventionRepeat GuardHealth SetupGuide ProtectionReadiness PolicyVersion PolicyIdentity PolicyReceipt EvidenceAge DnsCheck HostDecision SiteCheckInput Ed25519 SignedManifest RulePreview RuleDocument DomainPolicy DistractionSites SocialApps BrowserCanary BrowserCoverage DnsPolicy DnsUdpTruncation DnsExchange DnsTunnelProbe DnsTunnelTcpProbe DnsReplyGuard Ipv4DnsPacket Ipv4TcpPacket DnsTcpServer DnsTcpFallback DnsPacketKind Ipv6DnsPacket EncryptedDnsProviders EncryptedDnsResolvers DnsHealth DnsNotice PolicyChangeError RemainingTime CommitmentClock DailyAppSchedule AppTimeLimit PauseTally PauseHours ScanScope ShortVideoSurfaces UninstallProtection ProtectionLock ManagedRestrictions AlwaysOnVpn BlockedAppSuspension GuardianPairing GuardianPolicy SafeSearch DnsPolicyRewrite BrowserAllowlist DomainListHash LayerWatch SeedFreshness SelfProtectionScreens VisualFrameGate VisualExecutionPolicy InspectionHealth VisualHealth VisualVerdictCache VisualRuntimeDeadline VisualDuty ResolverFailover UnderlyingNetwork SettingsIntegrity SavedSettings RestPeriod OpenWait PrivateBrowsing AdultApps ControlledBrowsers AdultAppNames ContentBox; do
+for hisn_test in TextFolding DeviceFamily OemGuide Hostname PersonalProfile AdultTldPolicy WordMatcher VisibleTextSample LabelScan GuardWindows VisualCadence VisualRetry AccessibilityGrant InterventionRepeat GuardHealth SetupGuide ProtectionReadiness PolicyVersion PolicyIdentity PolicyReceipt EvidenceAge DnsCheck HostDecision SiteCheckInput Ed25519 SignedManifest RulePreview RuleDocument DomainPolicy DistractionSites SocialApps BrowserCanary BrowserCoverage DnsPolicy DnsUdpTruncation DnsExchange DnsTunnelProbe DnsTunnelTcpProbe DnsReplyGuard Ipv4DnsPacket Ipv4TcpPacket DnsTcpServer DnsTcpFallback DnsPacketKind Ipv6DnsPacket Ipv6TcpPacket EncryptedDnsProviders EncryptedDnsResolvers DnsHealth DnsNotice PolicyChangeError RemainingTime CommitmentClock DailyAppSchedule AppTimeLimit PauseTally PauseHours BreathPattern SetupPlan FeedWeek ScanScope ShortVideoSurfaces UninstallProtection ProtectionLock ManagedRestrictions AlwaysOnVpn BlockedAppSuspension GuardianPairing GuardianPolicy SafeSearch DnsPolicyRewrite BrowserAllowlist DomainListHash LayerWatch SeedFreshness SelfProtectionScreens VisualFrameGate VisualExecutionPolicy InspectionHealth VisualHealth VisualVerdictCache VisualRuntimeDeadline VisualDuty ResolverFailover UnderlyingNetwork SettingsIntegrity SavedSettings RestPeriod OpenWait PrivateBrowsing AdultApps ControlledBrowsers AdultAppNames ContentBox; do
     "${hisn_java_bin}java" -cp "$hisn_test_output" "app.hisn.core.${hisn_test}Test"
 done
 # A test class that is not named above would compile and never run. Every file in the test
@@ -39,6 +39,11 @@ done
     app/src/debug/java/app/hisn/android/VisualTestHooks.java \
     release-test/java/app/hisn/android/DebugVisualTestHooksTest.java
 "${hisn_java_bin}java" -cp "$hisn_test_output/debug-visual" app.hisn.android.DebugVisualTestHooksTest
+"${hisn_java_bin}javac" -d "$hisn_test_output/face-cache" \
+    app/src/main/java/app/hisn/android/VisualResult.java \
+    app/src/main/java/app/hisn/android/FaceResultCache.java \
+    release-test/java/app/hisn/android/FaceResultCacheTest.java
+"${hisn_java_bin}java" -cp "$hisn_test_output/face-cache" app.hisn.android.FaceResultCacheTest
 # weight<TAB>language<TAB>phrase, the same subset AdultPolicyAssets loads (English, Arabic,
 # Franco-Arabic "ar-latn" and the negative context).
 python3 - <<'PY' > "$hisn_test_output/adult-terms.tsv"

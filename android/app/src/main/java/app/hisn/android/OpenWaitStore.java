@@ -32,6 +32,8 @@ public final class OpenWaitStore {
     /** When each app was last in use after its wait, and its opening window (elapsed realtime). */
     private static final ConcurrentHashMap<String, Long> LAST_SEEN = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Long> ALLOWED_UNTIL = new ConcurrentHashMap<>();
+    /** A visit the person bounded themselves ("Open for 5 min"): when it is over (elapsed realtime). */
+    private static final ConcurrentHashMap<String, Long> VISIT_END = new ConcurrentHashMap<>();
 
     private OpenWaitStore() { }
 
@@ -73,6 +75,15 @@ public final class OpenWaitStore {
         // Read without copying: this runs for every accessibility event.
         if (!prefs(context).getStringSet(APPS, Collections.emptySet()).contains(app)) return false;
         long now = SystemClock.elapsedRealtime();
+        // A visit the person timed ends on the next event from the app once its time is up,
+        // so the wait comes back even if they never leave the app.
+        Long end = VISIT_END.get(app);
+        if (end != null && now >= end) {
+            VISIT_END.remove(app);
+            LAST_SEEN.remove(app);
+            ALLOWED_UNTIL.remove(app);
+            return true;
+        }
         long lastSeen = LAST_SEEN.getOrDefault(app, 0L);
         long allowedUntil = ALLOWED_UNTIL.getOrDefault(app, 0L);
         if (newWindow && OpenWait.needsWait(true, now, lastSeen, allowedUntil)) return true;
@@ -82,16 +93,26 @@ public final class OpenWaitStore {
 
     /** "Open anyway": counts the open and lets the app come up. */
     public static void opened(Context context, String app) {
+        StepIns.record(context, StepIns.OPENED);
         long now = SystemClock.elapsedRealtime();
         ALLOWED_UNTIL.put(app, now + OpenWait.OPENING_MILLIS);
         LAST_SEEN.put(app, now);
         bump(context, OPENED + app);
+        VISIT_END.remove(app);
+    }
+
+    /** "Open for N min": like {@link #opened}, but the wait returns once the minutes are up. */
+    public static void openedFor(Context context, String app, int minutes) {
+        opened(context, app);
+        if (minutes > 0) VISIT_END.put(app, SystemClock.elapsedRealtime() + minutes * 60_000L);
     }
 
     /** "Close": counts it, and the next open waits again. */
     public static void closed(Context context, String app) {
+        StepIns.record(context, StepIns.WALKED);
         LAST_SEEN.remove(app);
         ALLOWED_UNTIL.remove(app);
+        VISIT_END.remove(app);
         bump(context, CLOSED + app);
     }
 

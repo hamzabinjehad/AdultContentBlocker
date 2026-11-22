@@ -28,6 +28,7 @@ class OpenWaitActivity : ComponentActivity() {
             finish()
             return
         }
+        if (savedInstanceState == null) ShieldMoments.mark(this)
         val label = runCatching {
             packageManager.getApplicationLabel(packageManager.getApplicationInfo(app, 0)).toString()
         }.getOrDefault(app)
@@ -60,7 +61,8 @@ class OpenWaitActivity : ComponentActivity() {
                     closedToday = closed,
                     reason = reason,
                     onClose = ::close,
-                    onOpen = ::open
+                    onOpen = ::open,
+                    onOpenFor = ::openFor
                 )
             }
         }
@@ -84,8 +86,17 @@ class OpenWaitActivity : ComponentActivity() {
         finish()
     }
 
+    private fun openFor(minutes: Int) {
+        OpenWaitStore.openedFor(this, app, minutes)
+        launchApp()
+    }
+
     private fun open() {
         OpenWaitStore.opened(this, app)
+        launchApp()
+    }
+
+    private fun launchApp() {
         val launch = packageManager.getLaunchIntentForPackage(app)
         if (launch != null) runCatching { startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
         finish()

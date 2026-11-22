@@ -10,10 +10,10 @@ import android.content.SharedPreferences;
  * shared visual engine's {@code PERSON_MODES}; {@code female}/{@code male} are model estimates,
  * not a person's identity.</p>
  */
-final class PersonBlur {
-    static final String OFF = "off", ALL = "all", WOMEN = "female", MEN = "male";
+public final class PersonBlur {
+    public static final String OFF = "off", ALL = "all", WOMEN = "female", MEN = "male";
     /** A matched face sends the app back to the previous page; the alternative is a full cover. */
-    static final String BACK = "back", COVER = "cover";
+    public static final String BACK = "back", COVER = "cover";
     private static final String FILE = "hisn_person_blur", KEY = "mode", RESPONSE = "response";
     private static final String[] MODES = {OFF, ALL, WOMEN, MEN};
     private static final String[] RESPONSES = {BACK, COVER};
@@ -21,13 +21,13 @@ final class PersonBlur {
     private PersonBlur() { }
 
     /** One of {@link #OFF}, {@link #ALL}, {@link #WOMEN} or {@link #MEN}; unknown values read as off. */
-    static String mode(Context context) {
+    public static String mode(Context context) {
         String value = preferences(context).getString(KEY, OFF);
         for (String allowed : MODES) if (allowed.equals(value)) return value;
         return OFF;
     }
 
-    static void set(Context context, String mode) {
+    public static void set(Context context, String mode) {
         for (String allowed : MODES) if (allowed.equals(mode)) {
             preferences(context).edit().putString(KEY, mode).apply();
             return;
@@ -35,16 +35,16 @@ final class PersonBlur {
         throw new IllegalArgumentException("Unsupported people mode");
     }
 
-    static boolean on(String mode) { return mode != null && !OFF.equals(mode); }
+    public static boolean on(String mode) { return mode != null && !OFF.equals(mode); }
 
     /** Back by default: a matched person returns the person to the last page they were on. */
-    static String response(Context context) {
+    public static String response(Context context) {
         String value = preferences(context).getString(RESPONSE, BACK);
         for (String allowed : RESPONSES) if (allowed.equals(value)) return value;
         return BACK;
     }
 
-    static void setResponse(Context context, String response) {
+    public static void setResponse(Context context, String response) {
         for (String allowed : RESPONSES) if (allowed.equals(response)) {
             preferences(context).edit().putString(RESPONSE, response).apply();
             return;
@@ -52,11 +52,11 @@ final class PersonBlur {
         throw new IllegalArgumentException("Unsupported people response");
     }
 
-    static int responseLabel(String response) {
+    public static int responseLabel(String response) {
         return COVER.equals(response) ? R.string.person_response_cover : R.string.person_response_back;
     }
 
-    static int label(String mode) {
+    public static int label(String mode) {
         if (ALL.equals(mode)) return R.string.person_blur_all;
         if (WOMEN.equals(mode)) return R.string.person_blur_women;
         if (MEN.equals(mode)) return R.string.person_blur_men;

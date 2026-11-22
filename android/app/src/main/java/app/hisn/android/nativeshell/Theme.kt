@@ -23,6 +23,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.hisn.android.Edition
+import app.hisn.android.R
+import androidx.compose.ui.text.font.Font
 
 // A warm neutral canvas with ink-blue as the brand seed. The tonal roles follow Material 3 so
 // every component gets a native state layer, container and on-colour without hand-picked pairs.
@@ -104,6 +107,124 @@ private val DarkColors = darkColorScheme(
     surfaceContainerLowest = Color(0xFF0D0F11)
 )
 
+// The Islamic edition (Hisn): the website's green (#1F6F5C / #4CC2A0) with a muted gold accent,
+// on the same warm neutral canvas. Status colours stay shared so meaning never changes per edition.
+private val IslamicLightColors = LightColors.copy(
+    primary = Color(0xFF1F6F5C),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFA6F2D9),
+    onPrimaryContainer = Color(0xFF002019),
+    inversePrimary = Color(0xFF8BD5BD),
+    secondary = Color(0xFF4B635B),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFCDE8DD),
+    onSecondaryContainer = Color(0xFF072019),
+    tertiary = Color(0xFF6B5E2F),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFF5E2A7),
+    onTertiaryContainer = Color(0xFF221B00),
+    surfaceTint = Color(0xFF1F6F5C)
+)
+
+private val IslamicDarkColors = DarkColors.copy(
+    primary = Color(0xFF4CC2A0),
+    onPrimary = Color(0xFF00382C),
+    primaryContainer = Color(0xFF005142),
+    onPrimaryContainer = Color(0xFFA6F2D9),
+    inversePrimary = Color(0xFF1F6F5C),
+    secondary = Color(0xFFB2CCC1),
+    onSecondary = Color(0xFF1D352E),
+    secondaryContainer = Color(0xFF344C44),
+    onSecondaryContainer = Color(0xFFCDE8DD),
+    tertiary = Color(0xFFD8C68E),
+    onTertiary = Color(0xFF3A3005),
+    tertiaryContainer = Color(0xFF524619),
+    onTertiaryContainer = Color(0xFFF5E2A7),
+    surfaceTint = Color(0xFF4CC2A0)
+)
+
+// The general edition (Unrot): warm paper, deep ink and a gold accent, the look of a printed
+// notebook rather than a settings app. Ink is the primary in light mode so switches, buttons and
+// the selected tab read as pen on paper; dark mode is warm charcoal with gold as the primary, never
+// a plain grey inversion. Tomato is the tertiary, kept dark enough for text on paper (5.5:1).
+private val UnrotLightColors = lightColorScheme(
+    primary = Color(0xFF1F2A23),
+    onPrimary = Color(0xFFFFFDF8),
+    primaryContainer = Color(0xFFF4C34E),
+    onPrimaryContainer = Color(0xFF2B2100),
+    inversePrimary = Color(0xFFF4C34E),
+    secondary = Color(0xFF5B5446),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFEAE1CF),
+    onSecondaryContainer = Color(0xFF2A251B),
+    tertiary = Color(0xFFB4432C),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFFFDCCF),
+    onTertiaryContainer = Color(0xFF3D0F04),
+    background = Color(0xFFF7F1E4),
+    onBackground = Color(0xFF1F2A23),
+    surface = Color(0xFFF7F1E4),
+    onSurface = Color(0xFF1F2A23),
+    surfaceVariant = Color(0xFFE6DDCB),
+    onSurfaceVariant = Color(0xFF4E544C),
+    surfaceTint = Color(0xFF1F2A23),
+    inverseSurface = Color(0xFF1F2A23),
+    inverseOnSurface = Color(0xFFF5EFE3),
+    error = Color(0xFFB3261E),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFF9DEDC),
+    onErrorContainer = Color(0xFF410E0B),
+    outline = Color(0xFF7A7466),
+    outlineVariant = Color(0xFFD6CCB8),
+    scrim = Color(0xFF000000),
+    surfaceBright = Color(0xFFFFFCF5),
+    surfaceDim = Color(0xFFDDD3C1),
+    surfaceContainer = Color(0xFFF1EADB),
+    surfaceContainerHigh = Color(0xFFE9E0CF),
+    surfaceContainerHighest = Color(0xFFE2D8C5),
+    surfaceContainerLow = Color(0xFFFBF7EE),
+    surfaceContainerLowest = Color(0xFFFFFFFF)
+)
+
+private val UnrotDarkColors = darkColorScheme(
+    primary = Color(0xFFF2C14E),
+    onPrimary = Color(0xFF2A1F00),
+    primaryContainer = Color(0xFF4A3B12),
+    onPrimaryContainer = Color(0xFFFFE3A0),
+    inversePrimary = Color(0xFF7A5C00),
+    secondary = Color(0xFFD3C8B4),
+    onSecondary = Color(0xFF362F22),
+    secondaryContainer = Color(0xFF39332A),
+    onSecondaryContainer = Color(0xFFEFE5D2),
+    tertiary = Color(0xFFFF9F86),
+    onTertiary = Color(0xFF5A1708),
+    tertiaryContainer = Color(0xFF7A2A18),
+    onTertiaryContainer = Color(0xFFFFDCCF),
+    background = Color(0xFF0E0D0B),
+    onBackground = Color(0xFFF3ECDF),
+    surface = Color(0xFF0E0D0B),
+    onSurface = Color(0xFFF3ECDF),
+    surfaceVariant = Color(0xFF3A362F),
+    onSurfaceVariant = Color(0xFFCFC6B6),
+    surfaceTint = Color(0xFFF2C14E),
+    inverseSurface = Color(0xFFF3ECDF),
+    inverseOnSurface = Color(0xFF1F2A23),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    outline = Color(0xFF8F877A),
+    outlineVariant = Color(0xFF2E2B24),
+    scrim = Color(0xFF000000),
+    surfaceBright = Color(0xFF383530),
+    surfaceDim = Color(0xFF0E0D0B),
+    surfaceContainer = Color(0xFF1A1915),
+    surfaceContainerHigh = Color(0xFF22201B),
+    surfaceContainerHighest = Color(0xFF2B2822),
+    surfaceContainerLow = Color(0xFF141310),
+    surfaceContainerLowest = Color(0xFF080807)
+)
+
 // Status colours are semantic, so they live outside the tonal palette. Each pair keeps at least
 // 4.5:1 for body text and never relies on colour alone (the row always carries a word).
 data class HisnStatusColors(
@@ -139,7 +260,32 @@ private val DarkStatusColors = HisnStatusColors(
     cardMuted = Color(0xFF26282B)
 )
 
+private val UnrotLightStatusColors = HisnStatusColors(
+    success = Color(0xFF2F6B45),
+    successContainer = Color(0xFFD6EBCB),
+    onSuccessContainer = Color(0xFF0E2A16),
+    warning = Color(0xFF8A5A00),
+    warningContainer = Color(0xFFFBE3A8),
+    onWarningContainer = Color(0xFF2B1D00),
+    card = Color(0xFFFFFFFF),
+    cardMuted = Color(0xFFF1EADB)
+)
+
+private val UnrotDarkStatusColors = HisnStatusColors(
+    success = Color(0xFF9CD3A8),
+    successContainer = Color(0xFF1E3324),
+    onSuccessContainer = Color(0xFFD6EBCB),
+    warning = Color(0xFFF2C14E),
+    warningContainer = Color(0xFF3D2F0C),
+    onWarningContainer = Color(0xFFFFE3A0),
+    card = Color(0xFF1A1915),
+    cardMuted = Color(0xFF22201B)
+)
+
 val LocalHisnStatusColors = staticCompositionLocalOf { LightStatusColors }
+
+/** Whether the shell is drawing dark, for the few edition styles that differ beyond colour roles. */
+val LocalDarkTheme = staticCompositionLocalOf { false }
 
 private val HisnTypography = Typography(
     displaySmall = TextStyle(
@@ -228,6 +374,46 @@ private val HisnTypography = Typography(
     )
 )
 
+// Unrot type: Fraunces (a soft, warm display serif) for headlines and screen titles, DM Sans for
+// everything you read or tap. Both are bundled as Latin static instances (SIL OFL 1.1); Arabic copy
+// keeps the system fonts, which carry proper Arabic shaping.
+private val UnrotDisplay = FontFamily(
+    Font(R.font.unrot_display_semibold, FontWeight.SemiBold),
+    Font(R.font.unrot_display_bold, FontWeight.Bold)
+)
+private val UnrotSans = FontFamily(
+    Font(R.font.unrot_sans_regular, FontWeight.Normal),
+    Font(R.font.unrot_sans_medium, FontWeight.Medium),
+    Font(R.font.unrot_sans_bold, FontWeight.Bold)
+)
+
+private val UnrotTypography = Typography(
+    displayLarge = TextStyle(fontFamily = UnrotDisplay, fontWeight = FontWeight.SemiBold, fontSize = 52.sp, lineHeight = 56.sp, letterSpacing = (-0.5).sp),
+    displayMedium = TextStyle(fontFamily = UnrotDisplay, fontWeight = FontWeight.SemiBold, fontSize = 44.sp, lineHeight = 48.sp, letterSpacing = (-0.4).sp),
+    displaySmall = TextStyle(fontFamily = UnrotDisplay, fontWeight = FontWeight.SemiBold, fontSize = 36.sp, lineHeight = 40.sp, letterSpacing = (-0.3).sp),
+    headlineLarge = TextStyle(fontFamily = UnrotDisplay, fontWeight = FontWeight.SemiBold, fontSize = 32.sp, lineHeight = 36.sp, letterSpacing = (-0.2).sp),
+    headlineMedium = TextStyle(fontFamily = UnrotDisplay, fontWeight = FontWeight.SemiBold, fontSize = 28.sp, lineHeight = 34.sp, letterSpacing = (-0.2).sp),
+    headlineSmall = TextStyle(fontFamily = UnrotDisplay, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, lineHeight = 30.sp, letterSpacing = (-0.1).sp),
+    titleLarge = TextStyle(fontFamily = UnrotDisplay, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, lineHeight = 30.sp, letterSpacing = 0.sp),
+    titleMedium = TextStyle(fontFamily = UnrotSans, fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 22.sp, letterSpacing = 0.sp),
+    titleSmall = TextStyle(fontFamily = UnrotSans, fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.1.sp),
+    bodyLarge = TextStyle(fontFamily = UnrotSans, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp, letterSpacing = 0.1.sp),
+    bodyMedium = TextStyle(fontFamily = UnrotSans, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.1.sp),
+    bodySmall = TextStyle(fontFamily = UnrotSans, fontWeight = FontWeight.Normal, fontSize = 12.sp, lineHeight = 17.sp, letterSpacing = 0.2.sp),
+    labelLarge = TextStyle(fontFamily = UnrotSans, fontWeight = FontWeight.Bold, fontSize = 15.sp, lineHeight = 20.sp, letterSpacing = 0.1.sp),
+    labelMedium = TextStyle(fontFamily = UnrotSans, fontWeight = FontWeight.Bold, fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.4.sp),
+    labelSmall = TextStyle(fontFamily = UnrotSans, fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 16.sp, letterSpacing = 0.4.sp)
+)
+
+// Rounder than the Islamic edition: cards read as paper slips, sheets as pages.
+private val UnrotShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(22.dp),
+    extraLarge = RoundedCornerShape(32.dp)
+)
+
 private val HisnShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
     small = RoundedCornerShape(8.dp),
@@ -307,16 +493,30 @@ fun HisnTheme(
     val target = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        darkTheme -> DarkColors
-        else -> LightColors
+        Edition.islamic -> if (darkTheme) IslamicDarkColors else IslamicLightColors
+        darkTheme -> UnrotDarkColors
+        else -> UnrotLightColors
     }
     val colors = animateScheme(target)
-    val status = animateStatus(if (darkTheme) DarkStatusColors else LightStatusColors)
-    CompositionLocalProvider(LocalHisnStatusColors provides status) {
+    val status = animateStatus(
+        when {
+            Edition.islamic -> if (darkTheme) DarkStatusColors else LightStatusColors
+            darkTheme -> UnrotDarkStatusColors
+            else -> UnrotLightStatusColors
+        }
+    )
+    // Arabic keeps the system fonts: the bundled Unrot faces are Latin only.
+    val arabic = androidx.compose.ui.platform.LocalConfiguration.current.let {
+        androidx.core.os.ConfigurationCompat.getLocales(it)[0]?.language == "ar"
+    }
+    val unrot = !Edition.islamic
+    val typography = if (unrot && !arabic) UnrotTypography else HisnTypography
+    val shapes = if (unrot) UnrotShapes else HisnShapes
+    CompositionLocalProvider(LocalHisnStatusColors provides status, LocalDarkTheme provides darkTheme) {
         MaterialTheme(
             colorScheme = colors,
-            typography = HisnTypography,
-            shapes = HisnShapes,
+            typography = typography,
+            shapes = shapes,
             content = content
         )
     }

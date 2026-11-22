@@ -74,7 +74,11 @@ public final class AdultTextPolicy {
                 new Rule("addiction recovery", -8), new Rule("علاج ادمان الاباحيه", -8),
                 new Rule("porn blocker", -8), new Rule("pornography blocker", -8),
                 new Rule("adult content blocker", -8), new Rule("porn blocking", -8),
-                new Rule("blocking porn", -8), new Rule("حجب الاباحيه", -8), new Rule("حظر الاباحيه", -8)));
+                new Rule("blocking porn", -8), new Rule("blocking pornography", -8),
+                new Rule("quit porn", -8), new Rule("quit pornography", -8),
+                new Rule("quitting porn", -8), new Rule("quitting pornography", -8),
+                new Rule("stop watching porn", -8), new Rule("stop watching pornography", -8),
+                new Rule("حجب الاباحيه", -8), new Rule("حظر الاباحيه", -8)));
     }
 
     private static final Set<String> EXPLICIT = immutableSet("porn", "porno", "pornography",
@@ -222,7 +226,7 @@ public final class AdultTextPolicy {
     /** Classify a bounded sample. Oversized input is rejected, never silently truncated. */
     public boolean blocks(String input) {
         String[] tokens = tokens(input);
-        return tokens != null && judge(tokens, tokens.length, true, 0);
+        return tokens != null && judge(tokens, true);
     }
 
     /** Classify one event label before the full screen has been read. A call to action and a
@@ -236,7 +240,7 @@ public final class AdultTextPolicy {
         for (String token : tokens) {
             if (isPromotion(token)) { promotion = true; break; }
         }
-        return promotion && judge(tokens, tokens.length, false, 0);
+        return promotion && judge(tokens, false);
     }
 
     /** Classify each line of a screen sample (one visible label per line) on its own, as
@@ -254,7 +258,7 @@ public final class AdultTextPolicy {
             tokens[at] = tokens(lines[at]);
             if (tokens[at] != null && protective(tokens[at])) lone = false;
         }
-        for (String[] line : tokens) if (line != null && judge(line, line.length, lone, 0)) return true;
+        for (String[] line : tokens) if (line != null && judge(line, lone)) return true;
         return false;
     }
 
@@ -300,7 +304,7 @@ public final class AdultTextPolicy {
         String[] request = new String[tokens.length + QUERY_REQUEST.length];
         System.arraycopy(QUERY_REQUEST, 0, request, 0, QUERY_REQUEST.length);
         System.arraycopy(tokens, 0, request, QUERY_REQUEST.length, tokens.length);
-        return judge(request, request.length, true, 0);
+        return judge(request, true);
     }
 
     // Names run words together ("PornDrive", "xxxVideos"); a token that starts with one of these
@@ -327,72 +331,53 @@ public final class AdultTextPolicy {
 
     /**
      * One screen sample read while {@link LabelScan} is still filling it. The sample only
-     * grows by whole lines, so each line is normalized and tokenized exactly once:
-     * {@link #blocksPromotion} answers what {@link AdultTextPolicy#blocksPromotion} answers
-     * for the lines read so far, judging only windows that reach the new lines, and
-     * {@link #blocksAnyLine} answers what {@link AdultTextPolicy#blocksAnyLine} answers for
-     * the finished sample from the tokens already held. A tree walk used to re-normalize the
-     * whole growing sample at every checkpoint and once more at the end.
+     * grows by whole lines. Each line is normalized once, then discarded after updating
+     * the verdict. Bare terms wait for the full screen because a later label can supply
+     * protective context. A clear match within one label can stop the walk immediately.
      *
-     * Not thread-safe; one per scan. The tokens live only as long as the scan.
+     * One instance belongs to one scan.
      */
     public final class ScreenScan {
-        private final List<String[]> lines = new ArrayList<>();
-        private String[] flat = new String[256];
-        private int flatLength, consumed, checkedTo;
+        private int consumed;
+        private boolean decisive, loneMatch;
         private boolean protectiveLine;
 
         private ScreenScan() { }
 
-        /** Promotion verdict over every line read so far (one token stream, as the whole
-         * sample would be). Windows that ended before the previous call were already judged
-         * false and later lines only add context to them, so they are not judged again. */
-        public boolean blocksPromotion(VisibleTextSample sample) {
-            feed(sample, false);
-            if (flatLength == checkedTo) return false;
-            int from = Math.max(0, checkedTo - (WINDOW + CONTEXT + MAX_PHRASE_TOKENS));
-            boolean promotion = false;
-            for (int at = from; at < flatLength && !promotion; at++) promotion = isPromotion(flat[at]);
-            boolean result = promotion && judge(flat, flatLength, false, checkedTo);
-            checkedTo = flatLength;
-            return result;
+        /** A single label already justifies stopping, even if later labels name recovery. */
+        public boolean blocksDecisiveLine(VisibleTextSample sample) {
+            feed(sample);
+            return decisive;
         }
 
-        /** {@link AdultTextPolicy#blocksAnyLine} for the finished sample. */
+        /** A bare label needs a complete screen to rule out protective context. */
         public boolean blocksAnyLine(VisibleTextSample sample) {
-            feed(sample, true);
-            for (String[] line : lines) {
-                if (line != null && judge(line, line.length, !protectiveLine, 0)) return true;
-            }
-            return false;
+            feed(sample);
+            return decisive || (loneMatch && !protectiveLine && !sample.isPartial());
         }
 
-        private void feed(VisibleTextSample sample, boolean finished) {
-            if (sample.length() <= consumed) return;
+        private void feed(VisibleTextSample sample) {
+            if (decisive || sample.length() <= consumed) return;
             String fresh = sample.textFrom(consumed);
             int start = 0;
             for (int end = fresh.indexOf('\n'); end >= 0; end = fresh.indexOf('\n', start)) {
-                add(fresh.substring(start, end));
+                if (sample.isCompleteLineAt(consumed + start)) add(fresh.substring(start, end));
                 start = end + 1;
-            }
-            // A sample always ends its lines; an unterminated tail is only read once finished.
-            if (finished && start < fresh.length()) {
-                add(fresh.substring(start));
-                start = fresh.length();
+                if (decisive) break;
             }
             consumed += start;
         }
 
         private void add(String line) {
             String[] tokens = line.isEmpty() ? null : tokens(line);
-            lines.add(tokens);
             if (tokens == null) return;
-            if (!protectiveLine && protective(tokens)) protectiveLine = true;
-            if (flatLength + tokens.length > flat.length) {
-                flat = Arrays.copyOf(flat, Math.max(flat.length * 2, flatLength + tokens.length));
+            decisive = judge(tokens, false);
+            if (!decisive && !protectiveLine) {
+                protectiveLine = protective(tokens);
+                if (!protectiveLine && !loneMatch && loneExplicitLabel(tokens, tokens.length)) {
+                    loneMatch = judge(tokens, true);
+                }
             }
-            System.arraycopy(tokens, 0, flat, flatLength, tokens.length);
-            flatLength += tokens.length;
         }
     }
 
@@ -429,32 +414,26 @@ public final class AdultTextPolicy {
         return false;
     }
 
-    /**
-     * Judges tokens[0, length). Windows ending before firstEnd are not judged: the caller
-     * already judged them false on a prefix, and later tokens can only add negative context
-     * to them. Tokens further back than one window plus its context and a phrase cannot
-     * affect a window ending at or after firstEnd, so they are not scanned.
-     */
-    private boolean judge(String[] tokens, int length, boolean lone, int firstEnd) {
-        int from = Math.max(0, firstEnd - (WINDOW + CONTEXT + MAX_PHRASE_TOKENS));
-        boolean[] promotions = new boolean[length];
-        boolean anyPromotion = false;
-        for (int at = from; at < length; at++) {
-            promotions[at] = isPromotion(tokens[at]);
-            anyPromotion |= promotions[at];
+    private boolean judge(String[] tokens, boolean lone) {
+        int length = tokens.length;
+        boolean[] promotions = null;
+        for (int at = 0; at < length; at++) {
+            if (isPromotion(tokens[at])) {
+                if (promotions == null) promotions = new boolean[length];
+                promotions[at] = true;
+            }
         }
         // A complete two-word media label is evidence without a call to action.
         // Do not apply this to substrings of research/recovery prose or generic
         // "adult" labels; configured strong terms and negative context still score.
-        // Both labels need length <= 3, which a resumed judge (from > 0) never has.
-        if (!anyPromotion && from == 0
+        if (promotions == null
                 && (explicitMediaLabel(tokens, length) || (lone && loneExplicitLabel(tokens, length)))) {
+            promotions = new boolean[length];
             promotions[0] = true;
-            anyPromotion = true;
         }
         // Most UI labels are ordinary navigation or prose. Avoid allocating
         // per-rule scoring buffers and hit lists when no verdict is possible.
-        if (!anyPromotion) return false;
+        if (promotions == null) return false;
         @SuppressWarnings("unchecked")
         List<Hit>[] hits = (List<Hit>[]) new List<?>[length];
         @SuppressWarnings("unchecked")
@@ -463,7 +442,7 @@ public final class AdultTextPolicy {
         // are then sized by the hits on this label, not by the ~6,000-entry vocabulary:
         // three vocabulary-sized arrays per judged label were 72 KB of garbage each.
         Map<Entry, Integer> slots = new HashMap<>();
-        for (int start = from; start < length; start++) {
+        for (int start = 0; start < length; start++) {
             Trie branch = index;
             for (int end = start; end < Math.min(length, start + MAX_PHRASE_TOKENS); end++) {
                 branch = branch.children.get(tokens[end]);
@@ -478,7 +457,7 @@ public final class AdultTextPolicy {
         }
         // No configured term anywhere near: no window can hold a strong signal.
         if (slots.isEmpty()) return false;
-        return classifyWindows(hits, starts, promotions, from, firstEnd, slots.size());
+        return classifyWindows(hits, starts, promotions, slots.size());
     }
 
     private boolean explicitMediaLabel(String[] tokens, int length) {
@@ -521,8 +500,7 @@ public final class AdultTextPolicy {
         return entry.ambiguous || AMBIGUOUS.contains(token);
     }
 
-    private boolean classifyWindows(List<Hit>[] hits, List<Hit>[] starts, boolean[] promotions,
-                                    int from, int firstEnd, int distinct) {
+    private boolean classifyWindows(List<Hit>[] hits, List<Hit>[] starts, boolean[] promotions, int distinct) {
         int[] clearCounts = new int[distinct];
         int[] ambiguousCounts = new int[distinct];
         int[] negativeCounts = new int[distinct];
@@ -533,10 +511,9 @@ public final class AdultTextPolicy {
         int negativeScore = 0, promotion = 0;
         // All mutations concern one bounded sliding window, never rescan the
         // vocabulary for each text position. Each hit enters/leaves once.
-        // Nothing before from was recorded, so starting there adds and expires the same hits.
-        for (int end = from; end < hits.length; end++) {
+        for (int end = 0; end < hits.length; end++) {
             int contextEnd = Math.min(hits.length - 1, end + CONTEXT);
-            int oldContextEnd = end == from ? from - 1 : Math.min(hits.length - 1, end - 1 + CONTEXT);
+            int oldContextEnd = end == 0 ? -1 : Math.min(hits.length - 1, end - 1 + CONTEXT);
             for (int at = oldContextEnd + 1; at <= contextEnd; at++) {
                 if (hits[at] == null) continue;
                 for (Hit hit : hits[at]) if (hit.entry.weight < 0 && negativeCounts[hit.slot]++ == 0) {
@@ -578,7 +555,7 @@ public final class AdultTextPolicy {
             // A contextual phrase must earn its signed weight; neither one
             // generic "education" nor distant benign paragraphs grant immunity.
             int threshold = strong >= 2 ? 16 : 8;
-            if (end >= firstEnd && promotion > 0 && strong > 0 && (trusted > 0 || strong >= 2)
+            if (promotion > 0 && strong > 0 && (trusted > 0 || strong >= 2)
                     && positiveScore - negativeScore >= threshold) return true;
         }
         return false;
@@ -779,9 +756,10 @@ public final class AdultTextPolicy {
         // Evasion aliases only recover an already configured reviewed strong
         // term. Never fold every number/homoglyph or arbitrary dictionary word.
         if (token.length() < 3 || token.length() > 32) return null;
-        StringBuilder folded = new StringBuilder();
+        StringBuilder folded = null;
         for (int at = 0; at < token.length(); at++) {
-            char value = token.charAt(at);
+            char original = token.charAt(at);
+            char value = original;
             switch (value) {
                 case '0': value = 'o'; break;
                 case '1': value = 'i'; break;
@@ -796,8 +774,13 @@ public final class AdultTextPolicy {
                 case '\u04bb': value = 'h'; break;
                 default: break;
             }
-            folded.append(value);
+            if (folded == null && value != original) {
+                folded = new StringBuilder(token.length()).append(token, 0, at);
+            }
+            if (folded != null) folded.append(value);
         }
+        // Unchanged tokens have already been looked up in the trie or single-word table.
+        if (folded == null) return null;
         String candidate = folded.toString();
         if (!EXPLICIT.contains(candidate)) return null;
         Entry entry = singleWords.get(candidate);

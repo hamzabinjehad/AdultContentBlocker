@@ -63,3 +63,9 @@ website/vendor/dist/
 # from dist/ with website/stage-downloads.sh before hosting.
 website/downloads/*.apk
 website/downloads/SHA256SUMS
+
+# Design working files too large for the repo: raw AI icon sheets (the finished icons live in
+# android/app/src/main/res/drawable-nodpi and icons-ai/cut), and the dropped third-party set.
+design/general-edition-concept-2026-11-19/icons-ai/*
+!design/general-edition-concept-2026-11-19/icons-ai/cut/
+design/general-edition-concept-2026-11-19/icons-3dicons/

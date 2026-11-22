@@ -151,19 +151,20 @@ jobs:
       - name: Core suite (strings, notices and JDK-only tests)
         working-directory: android
         run: sh test-core.sh
-      # lintDebug fails the job on any lint error; warnings are kept in the report.
+      # Both editions (hisn, general) build in debug and release. Lint fails the job on any
+      # error; warnings are kept in the report.
       - name: Debug, test and release APKs, and lint
         working-directory: android
-        run: ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug assembleRelease
+        run: ./gradlew --no-daemon assembleDebug assembleHisnDebugAndroidTest lintHisnDebug lintGeneralDebug assembleRelease
       - name: APK hashes
         working-directory: android
-        run: sha256sum app/build/outputs/apk/*/*.apk app/build/outputs/apk/androidTest/*/*.apk
+        run: sha256sum app/build/outputs/apk/*/*/*.apk app/build/outputs/apk/androidTest/*/*/*.apk
       - name: Keep the lint report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: android-lint-report
-          path: android/app/build/reports/lint-results-debug.*
+          path: android/app/build/reports/lint-results-*Debug.*
           if-no-files-found: ignore
 
   macos:

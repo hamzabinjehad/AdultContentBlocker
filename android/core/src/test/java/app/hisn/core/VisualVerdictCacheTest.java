@@ -55,8 +55,8 @@ public final class VisualVerdictCacheTest {
                 "fixture: the coarse grid cannot see the patch");
         check(VisualVerdictCache.fingerprint(screen, width) == VisualVerdictCache.fingerprint(screen.clone(), width),
                 "the same frame has the same fingerprint");
-        check(VisualVerdictCache.fingerprint(screen, width) == VisualVerdictCache.fingerprint(dithered, width),
-                "dithering noise is ignored");
+        check(VisualVerdictCache.fingerprint(screen, width) != VisualVerdictCache.fingerprint(dithered, width),
+                "low RGB bits can change a model verdict and must miss the cache");
         check(VisualVerdictCache.fingerprint(screen, width) != VisualVerdictCache.fingerprint(thumbnail, width),
                 "a small image between grid points changes the fingerprint");
         check(VisualVerdictCache.fingerprint(screen, width) != VisualVerdictCache.fingerprint(screen, height),

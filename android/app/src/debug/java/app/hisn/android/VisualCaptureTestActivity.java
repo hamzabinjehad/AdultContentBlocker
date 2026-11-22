@@ -26,15 +26,18 @@ public final class VisualCaptureTestActivity extends Activity {
             if (!"app.hisn.android.visualcheck".equals(getPackageName()))
                 throw new IllegalStateException("Isolated test package required");
             PolicyStore store = PolicyStore.get(this);
-            if ("configure".equals(action)) {
+            if ("configure".equals(action) || "configure-people-back".equals(action)) {
                 if (store.remainingMillis() != 0 || !store.snapshot().blockedApps.isEmpty()
                         || !store.domainText().isEmpty() || !store.wordText().isEmpty())
                     throw new IllegalStateException("Test copy must have no other restrictions");
                 store.update("", "", Collections.emptySet(), Collections.singleton(getPackageName() + ".test"), false);
+                PersonBlur.set(this, "configure".equals(action) ? PersonBlur.OFF : PersonBlur.ALL);
+                PersonBlur.setResponse(this, PersonBlur.BACK);
                 store.updateVisual(true);
             } else if ("stop".equals(action)) {
                 VisualTestHooks.clear();
                 store.updateVisual(false);
+                PersonBlur.set(this, PersonBlur.OFF);
             } else if ("force-once".equals(action)) {
                 if (!getIntent().getBooleanExtra("confirmSynthetic", false)
                         || !VisualTestHooks.arm(getPackageName(), SystemClock.uptimeMillis()))
@@ -50,8 +53,8 @@ public final class VisualCaptureTestActivity extends Activity {
                     + " ELIGIBILITY " + VisualGuard.eligibility
                     + " INTERVENTIONS " + VisualGuard.interventions + " DISCARDED " + VisualGuard.discarded
                     + " CAPTURE_FAILURES " + VisualGuard.captureFailures + " CAPTURE_ERROR " + VisualGuard.lastCaptureError
-                    + " OVERLAYS " + VisualOverlay.shows
-                    + " BACKEND " + VisualGuard.backend + " FRAME_EDGE " + VisualGuard.FRAME_EDGE
+                    + " OVERLAYS " + VisualOverlay.shows + " PERSON_BACKS " + VisualGuard.personBacks
+                    + " BACKEND " + VisualGuard.backend + " FRAME_EDGE " + VisualGuard.lastFrameEdge
                     + " LAST_CAPTURE_MS " + VisualGuard.lastCaptureMillis
                     + " LAST_INFERENCE_MS " + VisualGuard.lastInferenceMillis
                     + " LAST_SAMPLE_MS " + VisualGuard.lastSampleMillis

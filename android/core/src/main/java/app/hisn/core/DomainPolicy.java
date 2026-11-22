@@ -54,10 +54,16 @@ public final class DomainPolicy {
             remember(hostname, Decision.INVALID);
             return Decision.INVALID;
         }
-        Decision result = !containsParent(allowed, name) && containsParent(blocked, name)
-                ? Decision.BLOCK : Decision.ALLOW;
+        Decision result = evaluateCanonical(name);
         remember(hostname, result);
         return result;
+    }
+
+    /** For callers that already validated and normalized the hostname. */
+    Decision evaluateCanonical(String name) {
+        if (blocked.isEmpty()) return Decision.ALLOW;
+        return !containsParent(allowed, name) && containsParent(blocked, name)
+                ? Decision.BLOCK : Decision.ALLOW;
     }
 
     private void remember(String hostname, Decision decision) {

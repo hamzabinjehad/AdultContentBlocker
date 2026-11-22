@@ -46,7 +46,7 @@ final class AppPicker {
     }
 
     static AlertDialog create(Activity activity, int titleRes, int positiveRes, List<ChosenApps.Entry> apps,
-            Set<String> saved, Save save) {
+            Set<String> saved, boolean offerSocialApps, Save save) {
         Set<String> chosen = new LinkedHashSet<>(saved);
         List<ChosenApps.Entry> visible = new ArrayList<>(apps);
         Map<String, Drawable> icons = new HashMap<>();
@@ -104,6 +104,7 @@ final class AppPicker {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         socialParams.topMargin = Ui.dp(activity, 6);
         root.addView(socialRow, socialParams);
+        if (!offerSocialApps) socialRow.setVisibility(View.GONE);
 
         TextView error = Ui.caption(activity, "");
         error.setTextColor(Ui.color(activity, R.color.danger));
@@ -190,6 +191,8 @@ final class AppPicker {
                 .setTitle(titleRes).setView(root)
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(positiveRes, null).create();
+        android.view.Window pickerWindow = dialog.getWindow();
+        if (pickerWindow != null) pickerWindow.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
         dialog.setOnShowListener(ignored -> {
             android.view.Window window = dialog.getWindow();
             if (window != null) {

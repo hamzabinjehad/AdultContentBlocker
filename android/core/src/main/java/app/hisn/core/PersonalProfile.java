@@ -119,6 +119,46 @@ public final class PersonalProfile {
         return (int) elapsed + 1;
     }
 
+    /**
+     * Day numbers worth a small marker on the dashboard. After the last one, every further year is
+     * a milestone. The count is only "days since you set this up": nothing resets it except
+     * removing the personal details, so a milestone never punishes a hard day.
+     */
+    private static final int[] MILESTONES = {7, 14, 30, 60, 90, 180, 365};
+
+    /** The milestone days, in order, for screens that draw all of them. */
+    public static int[] milestones() { return MILESTONES.clone(); }
+
+    /** The first milestone after {@code day}, or zero for a count that has not started. */
+    public static int nextMilestone(int day) {
+        if (day <= 0) return 0;
+        for (int milestone : MILESTONES) if (day < milestone) return milestone;
+        int years = day / 365 + 1;
+        return (int) Math.min((long) years * 365, MAX_DAY_NUMBER);
+    }
+
+    /** The milestone already reached at {@code day}; zero before the first one. */
+    public static int lastMilestone(int day) {
+        if (day <= 0) return 0;
+        int reached = 0;
+        for (int milestone : MILESTONES) if (day >= milestone) reached = milestone;
+        if (day >= 365) reached = (day / 365) * 365;
+        return reached;
+    }
+
+    /**
+     * How far {@code day} has travelled from the last milestone to the next one, 0 to 1. Day 1 of
+     * the first week already shows a sliver, so a new count never looks empty.
+     */
+    public static float milestoneProgress(int day) {
+        int next = nextMilestone(day);
+        if (next <= 0) return 0f;
+        int from = lastMilestone(day);
+        if (next <= from) return 1f;
+        float progress = (float) (day - from) / (float) (next - from);
+        return Math.max(0f, Math.min(1f, progress));
+    }
+
     /** The next local pause count, bounded and tolerant of a damaged stored value. */
     public static int nextPauseCount(int pauses) {
         if (pauses < 0) return 1;

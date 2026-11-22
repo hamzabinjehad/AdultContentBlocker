@@ -301,8 +301,8 @@ public final class AdultTextPolicyTest {
     /** Random everyday Arabizi chat, names and every contextual single Arabizi seed spelling, beside
      * promotion words, never blocks; one clear seed phrase in the same window does. */
     /**
-     * ScreenScan, fed a sample a few lines at a time as LabelScan does, gives the verdict the
-     * whole-text calls give at every checkpoint up to the first block, and the same final verdict.
+     * The incremental scanner gives the same final verdict as a full per-label pass.
+     * An early verdict must also hold for the completed screen.
      */
     private static void checkScreenScan(AdultTextPolicy seed) {
         String[] labels = {"Home", "Subscriptions", "Watch later", "Share", "Download", "Free shipping",
@@ -324,9 +324,12 @@ public final class AdultTextPolicyTest {
                 sample.append(random.nextInt(6) == 0 ? labels[random.nextInt(labels.length)]
                         : labels[random.nextInt(6)] + " " + labels[18 + random.nextInt(6)]);
                 if (random.nextInt(5) == 0) {
-                    boolean whole = seed.blocksPromotion(sample.text());
-                    check(screen.blocksPromotion(sample) == whole, "screen checkpoint verdict: " + sample.text());
-                    if (whole) { stopped = true; early++; break; }
+                    if (screen.blocksDecisiveLine(sample)) {
+                        check(seed.blocksAnyLine(sample.text()), "early verdict must hold on a full pass");
+                        stopped = true;
+                        early++;
+                        break;
+                    }
                 }
             }
             if (stopped) continue;
@@ -335,6 +338,40 @@ public final class AdultTextPolicyTest {
             if (whole) blocked++;
         }
         check(blocked > 100 && early > 100, "screen fixture exercises both verdicts: " + blocked + "/" + early);
+
+        VisibleTextSample separated = new VisibleTextSample(true);
+        AdultTextPolicy.ScreenScan scan = seed.screen();
+        separated.append("Watch");
+        separated.append("Porn");
+        check(seed.blocksPromotion(separated.text()), "flattened prefix exercises the old checkpoint");
+        check(!scan.blocksDecisiveLine(separated), "separate labels cannot stop the walk");
+        check(scan.blocksAnyLine(separated), "a bare label still counts without protective context");
+        separated.append("Addiction recovery resources");
+        check(!scan.blocksAnyLine(separated), "later recovery context protects the bare label");
+        separated.append("Watch free porn videos");
+        check(scan.blocksDecisiveLine(separated) && scan.blocksAnyLine(separated),
+                "the genuine promotion later on the screen still blocks");
+
+        VisibleTextSample incomplete = new VisibleTextSample(true);
+        AdultTextPolicy.ScreenScan incompleteScan = seed.screen();
+        incomplete.append("Porn");
+        incomplete.markPartial();
+        check(!incompleteScan.blocksAnyLine(incomplete),
+                "a bare tag cannot block when protective context may be unread");
+        incomplete.append("Watch free porn videos");
+        check(incompleteScan.blocksAnyLine(incomplete),
+                "a complete promotional label still blocks on an incomplete screen");
+
+        VisibleTextSample truncated = new VisibleTextSample(true);
+        AdultTextPolicy.ScreenScan truncatedScan = seed.screen();
+        truncated.append("Porn videos " + "x".repeat(VisibleTextSample.LIMIT));
+        check(truncated.isPartial() && truncated.text().equals("Porn videos\n"),
+                "fixture truncates a longer line to an apparent adult media label");
+        check(!truncatedScan.blocksDecisiveLine(truncated) && !truncatedScan.blocksAnyLine(truncated),
+                "a truncated label cannot manufacture decisive adult evidence");
+        truncated.append("Watch free porn videos");
+        check(truncatedScan.blocksDecisiveLine(truncated),
+                "a subsequent complete promotion still blocks");
     }
 
     private static void checkArabiziChat(List<AdultTextPolicy.Rule> rules, AdultTextPolicy seed) {

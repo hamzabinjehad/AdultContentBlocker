@@ -8,34 +8,37 @@ public enum DnsPacketKind {
     TCP_DNS_UNSUPPORTED,
     /** TCP to the DNS-over-TLS port 853, which Hisn refuses so Android falls back to port 53. */
     TCP_TLS_PORT,
-    /** An IPv4 fragment is not a complete message; a fragmented DNS query cannot be served. */
+    /** Fragmented messages cannot be served by the virtual DNS endpoints. */
     FRAGMENT,
     OTHER_UNSUPPORTED,
     MALFORMED;
 
-    /** Unrelated traffic (another protocol or port, IPv6, port 853) does not mean a DNS request failed. */
+    /** Unrelated traffic and Private DNS probes do not mean a DNS request failed. */
     public boolean benign() { return this == TCP_TLS_PORT || this == OTHER_UNSUPPORTED; }
 
     /** UDP_DNS is returned only for packets accepted by the existing tunnel adapter. */
     public static DnsPacketKind classify(byte[] packet, byte[] server) {
+        return classify(packet, server, null);
+    }
+
+    public static DnsPacketKind classify(byte[] packet, byte[] server, byte[] server6) {
+        return packet == null ? MALFORMED : classify(packet, packet.length, server, server6);
+    }
+
+    public static DnsPacketKind classify(byte[] packet, int length, byte[] server, byte[] server6) {
         if (packet == null || server == null || server.length != 4
-                || packet.length < 20 || packet.length > 1500) return MALFORMED;
+                || length < 20 || length > 1500 || length > packet.length) return MALFORMED;
         int version = (packet[0] & 255) >>> 4;
-        if (version == 6) {
-            // IPv6 has no header checksum. The UDP tunnel parses IPv6 separately; this classifier
-            // still reports unsupported IPv6 TCP and extension-header forms.
-            return packet.length >= 40 && u16(packet, 4) == packet.length - 40
-                    ? OTHER_UNSUPPORTED : MALFORMED;
-        }
+        if (version == 6) return classifyIpv6(packet, length, server6);
         if (version != 4) return MALFORMED;
         int header = (packet[0] & 15) * 4;
-        if (header < 20 || header > packet.length || u16(packet, 2) != packet.length
+        if (header < 20 || header > length || u16(packet, 2) != length
                 || Ipv4DnsPacket.checksum(packet, 0, header, 0) != 0
                 || (u16(packet, 6) & 0x8000) != 0) return MALFORMED;
         // A fragment is not a complete UDP/TCP message. Do not infer a transport from it.
         if ((u16(packet, 6) & 0x3fff) != 0) return FRAGMENT;
         int protocol = packet[9] & 255;
-        int payload = packet.length - header;
+        int payload = length - header;
         if (protocol == 17) {
             if (payload < 8 || u16(packet, header + 4) != payload
                     || (u16(packet, header + 6) != 0
@@ -43,17 +46,40 @@ public enum DnsPacketKind {
                     pseudoSum(packet, protocol, payload)) != 0)) return MALFORMED;
             if (!destinationMatches(packet, server) || u16(packet, header + 2) != 53)
                 return OTHER_UNSUPPORTED;
-            return Ipv4DnsPacket.parse(packet, server) == null ? MALFORMED : UDP_DNS;
+            return Ipv4DnsPacket.parse(packet, length, server) == null ? MALFORMED : UDP_DNS;
         }
         if (protocol == 6) {
             if (payload < 20) return MALFORMED;
             int tcpHeader = ((packet[header + 12] & 255) >>> 4) * 4;
             if (tcpHeader < 20 || tcpHeader > payload) return MALFORMED;
             if (!destinationMatches(packet, server)) return OTHER_UNSUPPORTED;
-            int port = u16(packet, header + 2);
-            return port == 53 ? TCP_DNS_UNSUPPORTED : port == 853 ? TCP_TLS_PORT : OTHER_UNSUPPORTED;
+            return tcpPort(u16(packet, header + 2));
         }
         return OTHER_UNSUPPORTED;
+    }
+
+    private static DnsPacketKind classifyIpv6(byte[] packet, int length, byte[] server) {
+        int header = 40;
+        if (length < header || u16(packet, 4) != length - header) return MALFORMED;
+        if (server == null || server.length != 16) return OTHER_UNSUPPORTED;
+        for (int i = 0; i < 16; i++) if (packet[24 + i] != server[i]) return OTHER_UNSUPPORTED;
+        if (packet[6] == 44) return length >= header + 8 ? FRAGMENT : MALFORMED;
+        if (packet[6] == 17) {
+            if (length < header + 8) return MALFORMED;
+            if (u16(packet, header + 2) != 53) return OTHER_UNSUPPORTED;
+            return Ipv6DnsPacket.parse(packet, length, server) == null ? MALFORMED : UDP_DNS;
+        }
+        if (packet[6] == 6) {
+            if (length < header + 20) return MALFORMED;
+            int tcpHeader = ((packet[header + 12] & 255) >>> 4) * 4;
+            if (tcpHeader < 20 || tcpHeader > length - header) return MALFORMED;
+            return tcpPort(u16(packet, header + 2));
+        }
+        return OTHER_UNSUPPORTED;
+    }
+
+    private static DnsPacketKind tcpPort(int port) {
+        return port == 53 ? TCP_DNS_UNSUPPORTED : port == 853 ? TCP_TLS_PORT : OTHER_UNSUPPORTED;
     }
 
     private static boolean destinationMatches(byte[] packet, byte[] server) {

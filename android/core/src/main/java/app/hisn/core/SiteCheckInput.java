@@ -33,12 +33,7 @@ public final class SiteCheckInput {
                     || containsWhitespace(text)) throw new Invalid("hostname");
             authority = text;
         }
-        int end = authority.length();
-        for (int i = 0; i < authority.length(); i++) {
-            char c = authority.charAt(i);
-            if (c == '/' || c == '?' || c == '#') { end = i; break; }
-        }
-        authority = authority.substring(0, end);
+        authority = authority.substring(0, authorityEnd(authority));
         int at = authority.lastIndexOf('@');
         if (at >= 0) authority = authority.substring(at + 1);
         if (authority.isEmpty()) throw new Invalid("host");
@@ -55,6 +50,27 @@ public final class SiteCheckInput {
         } catch (IllegalArgumentException invalid) {
             throw new Invalid("hostname");
         }
+    }
+
+    /** A rule editor also accepts a pasted address without its HTTP(S) scheme. */
+    public static String ruleHost(String raw) {
+        if (raw == null || raw.length() > 8192) throw new Invalid("host");
+        String text = raw.trim();
+        int boundary = authorityEnd(text);
+        int scheme = text.indexOf("://");
+        if (text.startsWith("//")) return host("https:" + text);
+        if (scheme >= 0 && scheme < boundary) return host(text);
+        int at = text.indexOf('@');
+        if (at >= 0 && at < boundary) throw new Invalid("hostname");
+        return host("https://" + text);
+    }
+
+    private static int authorityEnd(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch == '/' || ch == '?' || ch == '#') return i;
+        }
+        return text.length();
     }
 
     private static boolean containsWhitespace(String text) {

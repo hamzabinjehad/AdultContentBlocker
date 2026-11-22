@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unrot Concept</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#07090D; --ink2:#0E131B; --card:#141A24; --card2:#1B2330; --line:#232C3B;
+  --lime:#C8F542; --lime-d:#9BC21F; --mint:#5CE1C6; --coral:#FF6B57; --amber:#FFB547;
+  --text:#F2F5F8; --muted:#8C97A8; --dim:#5B6577;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#E9EDF2;font-family:Inter,system-ui,sans-serif;color:var(--text);padding:28px 16px}
+h1.page{font-family:'Space Grotesk';color:#0B0F14;font-size:26px;text-align:center}
+p.sub{color:#4A5568;text-align:center;margin:6px 0 24px;font-size:14px}
+.row{display:flex;gap:26px;justify-content:center;flex-wrap:wrap}
+.cap{color:#2D3748;font:600 13px Inter;text-align:center;margin-top:10px;max-width:340px}
+.phone{width:340px;height:736px;border-radius:44px;background:var(--ink);position:relative;overflow:hidden;
+  box-shadow:0 30px 60px -20px rgba(7,9,13,.55),0 0 0 9px #11151C,0 0 0 10px #2A313D}
+.status{display:flex;justify-content:space-between;padding:14px 26px 0;font:600 12px Inter;color:var(--text)}
+.scr{padding:12px 18px 0}
+.top{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.brand{font:700 20px 'Space Grotesk';letter-spacing:-.5px}
+.brand b{color:var(--lime)}
+.chip{font:600 11px Inter;padding:6px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.chip.on{color:var(--ink);background:var(--lime);border:none}
+.glow{position:absolute;inset:-40% -30% auto;height:420px;background:radial-gradient(closest-side,rgba(200,245,66,.18),transparent 70%);pointer-events:none}
+.hero{margin-top:14px;display:flex;flex-direction:column;align-items:center;position:relative}
+.ring{width:214px;height:214px;position:relative}
+.ring svg{position:absolute;inset:0}
+.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.big{font:700 54px/1 'Space Grotesk';letter-spacing:-2px}
+.big small{font-size:22px;color:var(--muted);letter-spacing:0}
+.lbl{font:500 12px Inter;color:var(--muted);margin-top:6px}
+.pill{display:inline-flex;gap:6px;align-items:center;margin-top:12px;font:600 12px Inter;color:var(--lime);background:rgba(200,245,66,.1);padding:6px 12px;border-radius:999px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px}
+.tile .k{font:500 11px Inter;color:var(--muted)}
+.tile .v{font:700 24px 'Space Grotesk';margin-top:4px}
+.tile .v span{font-size:13px;color:var(--muted);font-weight:500}
+.bar{height:6px;border-radius:9px;background:var(--card2);margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:9px;background:var(--lime)}
+.cta{position:absolute;left:18px;right:18px;bottom:92px;height:62px;border-radius:22px;background:var(--coral);
+  display:flex;align-items:center;justify-content:center;gap:10px;font:700 17px 'Space Grotesk';color:#1A0B08;
+  box-shadow:0 12px 30px -8px rgba(255,107,87,.55)}
+.cta .dot{width:26px;height:26px;border-radius:50%;border:3px solid #1A0B08;position:relative}
+.cta .dot:after{content:"";position:absolute;inset:5px;border-radius:50%;background:#1A0B08}
+.nav{position:absolute;left:14px;right:14px;bottom:16px;height:64px;border-radius:24px;background:var(--ink2);border:1px solid var(--line);
+  display:flex;justify-content:space-around;align-items:center}
+.nav div{display:flex;flex-direction:column;align-items:center;gap:3px;font:600 10px Inter;color:var(--dim)}
+.nav div.a{color:var(--text)}
+.nav .ic{width:22px;height:22px;border-radius:7px;border:2px solid currentColor}
+.nav div.a .ic{background:var(--lime);border-color:var(--lime)}
+/* breathe */
+.breathe{background:radial-gradient(120% 70% at 50% 40%,#13261F 0%,var(--ink) 65%)}
+.blob{width:250px;height:250px;margin:56px auto 0;position:relative}
+.blob span{position:absolute;inset:0;border-radius:47% 53% 44% 56%/52% 45% 55% 48%;border:2px solid rgba(92,225,198,.35)}
+.blob span:nth-child(2){inset:22px;border-color:rgba(92,225,198,.55);transform:rotate(30deg)}
+.blob span:nth-child(3){inset:46px;background:radial-gradient(circle at 40% 35%,#7FF0D8,#2BAE93);border:none;transform:rotate(60deg);box-shadow:0 0 60px rgba(92,225,198,.45)}
+.bt{text-align:center;font:700 34px 'Space Grotesk';margin-top:30px}
+.bs{text-align:center;color:var(--muted);font-size:13px;margin-top:6px}
+.dots{display:flex;gap:8px;justify-content:center;margin-top:18px}
+.dots i{width:28px;height:5px;border-radius:5px;background:var(--card2)}.dots i.f{background:var(--mint)}
+.why{margin:26px 18px 0;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:20px;padding:14px 16px}
+.why .k{font:600 10px Inter;letter-spacing:1.2px;color:var(--mint)}
+.why .q{font:600 16px 'Space Grotesk';margin-top:6px}
+.ghost{position:absolute;left:18px;right:18px;bottom:26px;height:54px;border-radius:18px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font:600 15px Inter;color:var(--muted)}
+/* shield */
+.layers{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.layer{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:13px 14px}
+.lic{width:40px;height:40px;border-radius:14px;display:flex;align-items:center;justify-content:center;font:700 15px 'Space Grotesk';color:var(--ink)}
+.lt{flex:1}.lt b{display:block;font:600 14px Inter}.lt span{font-size:11.5px;color:var(--muted)}
+.tg{width:44px;height:26px;border-radius:99px;background:var(--lime);position:relative}
+.tg:after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:var(--ink)}
+.tg.off{background:var(--card2)}.tg.off:after{left:3px;right:auto;background:var(--dim)}
+.status-card{margin-top:14px;border-radius:24px;padding:16px;background:linear-gradient(135deg,rgba(200,245,66,.16),rgba(92,225,198,.08));border:1px solid rgba(200,245,66,.3)}
+.status-card .t{font:700 20px 'Space Grotesk'}.status-card .s{font-size:12px;color:var(--muted);margin-top:4px}
+.stats{display:flex;gap:16px;margin-top:12px}.stats div{font:700 18px 'Space Grotesk'}.stats div span{display:block;font:500 10.5px Inter;color:var(--muted)}
+/* progress */
+.wk{display:flex;align-items:flex-end;gap:9px;height:120px;margin-top:14px}
+.wk div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;font:600 10px Inter;color:var(--dim)}
+.wk i{display:block;width:100%;border-radius:8px;background:var(--card2)}
+.wk i.l{background:var(--lime)}
+.ms{display:flex;gap:8px;margin-top:14px;overflow:hidden}
+.m{min-width:68px;height:78px;border-radius:18px;border:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 18px 'Space Grotesk'}
+.m span{font:500 10px Inter;color:var(--muted)}
+.m.d{background:var(--lime);color:var(--ink);border:none}.m.d span{color:#3B4A10}
+.m.n{border:1.5px dashed var(--lime);color:var(--lime)}
+.peak{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px}
+.peak b{font:600 14px Inter}.peak p{font-size:12px;color:var(--muted);margin-top:4px}
+.hrs{display:flex;gap:2px;align-items:flex-end;height:38px;margin-top:10px}
+.hrs i{flex:1;background:var(--card2);border-radius:2px}.hrs i.p{background:var(--amber)}
+.note{max-width:1450px;margin:30px auto 0;background:#fff;border-radius:18px;padding:18px 22px;color:#1F2937;font-size:13.5px;line-height:1.6}
+.note b{color:#0B0F14}
+</style>
+</head>
+<body>
+<h1 class="page">Unrot — general edition concept (picture only, nothing built)</h1>
+<p class="sub">Original look for the paid edition: ink + electric lime + coral. Real Android parts underneath (Compose, Material 3). Every number shown is something the app actually measures.</p>
+<div class="row">
+
+<!-- 1 HOME -->
+<div><div class="phone"><div class="glow"></div>
+ <div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+ <div class="scr">
+  <div class="top"><div class="brand">un<b>rot</b></div><div style="display:flex;gap:6px"><span class="chip on">● Protected</span></div></div>
+  <div class="hero">
+   <div class="ring">
+    <svg viewBox="0 0 214 214"><circle cx="107" cy="107" r="94" fill="none" stroke="#1B2330" stroke-width="14"/>
+     <circle cx="107" cy="107" r="94" fill="none" stroke="#C8F542" stroke-width="14" stroke-linecap="round" stroke-dasharray="590" stroke-dasharray="590" stroke-dashoffset="250" transform="rotate(-90 107 107)"/></svg>
+    <div class="c"><div class="big">12<small> days</small></div><div class="lbl">2 days to day 14</div></div>
+   </div>
+   <div class="pill">▲ 1h 48m less on short videos than last week</div>
+  </div>
+  <div class="grid">
+   <div class="tile"><div class="k">Feeds today</div><div class="v">22<span> / 45 min</span></div><div class="bar"><i style="width:49%"></i></div></div>
+   <div class="tile"><div class="k">Pauses kept</div><div class="v">3<span> today</span></div><div class="bar"><i style="width:60%;background:var(--mint)"></i></div></div>
+   <div class="tile"><div class="k">Blocked</div><div class="v">148<span> lookups</span></div></div>
+   <div class="tile"><div class="k">Next lock-in</div><div class="v">22:00<span> sleep</span></div></div>
+  </div>
+ </div>
+ <div class="cta"><span class="dot"></span>I feel the pull — breathe</div>
+ <div class="nav"><div class="a"><span class="ic"></span>Today</div><div><span class="ic"></span>Shield</div><div><span class="ic"></span>Progress</div><div><span class="ic"></span>You</div></div>
+</div><div class="cap">1 · Today — one ring (days, never reset), real usage tiles, and the pause button always in thumb reach.</div></div>
+
+<!-- 2 BREATHE -->
+<div><div class="phone breathe">
+ <div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+ <div class="scr"><div class="top"><span class="chip">Breath 2 of 3</span><span class="chip">✕</span></div></div>
+ <div class="blob"><span></span><span></span><span></span></div>
+ <div class="bt">Breathe in…</div><div class="bs">The pull peaks and fades within minutes.</div>
+ <div class="dots"><i class="f"></i><i class="f"></i><i></i></div>
+ <div class="why"><div class="k">YOUR REASON</div><div class="q">“Evenings with my family, not my feed.”</div></div>
+ <div class="ghost">Back to what I was doing</div>
+</div><div class="cap">2 · Breathe — shape-morphing blob (graphics-shapes, works on Android 6), your own reason, nothing blocked. Also opens from Quick Settings.</div></div>
+
+<!-- 3 SHIELD -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+ <div class="scr">
+  <div class="top"><div class="brand">Shield</div><span class="chip">+ Add rule</span></div>
+  <div class="status-card"><div class="t">All 4 layers running</div><div class="s">Checked 2 min ago · filter on Wi-Fi and mobile data</div>
+   <div class="stats"><div>229k<span>sites known</span></div><div>7<span>apps limited</span></div><div>148<span>blocked today</span></div></div></div>
+  <div class="layers">
+   <div class="layer"><div class="lic" style="background:var(--lime)">W</div><div class="lt"><b>Websites</b><span>Adult and your own list</span></div><div class="tg"></div></div>
+   <div class="layer"><div class="lic" style="background:var(--mint)">S</div><div class="lt"><b>Short videos</b><span>Shorts, Reels, TikTok feed</span></div><div class="tg"></div></div>
+   <div class="layer"><div class="lic" style="background:var(--amber)">T</div><div class="lt"><b>Daily limits</b><span>7 apps · 45 min each</span></div><div class="tg"></div></div>
+   <div class="layer"><div class="lic" style="background:#9AA6B8">I</div><div class="lt"><b>Images and video</b><span>Needs Android 14</span></div><div class="tg off"></div></div>
+  </div>
+ </div>
+ <div class="nav"><div><span class="ic"></span>Today</div><div class="a"><span class="ic"></span>Shield</div><div><span class="ic"></span>Progress</div><div><span class="ic"></span>You</div></div>
+</div><div class="cap">3 · Shield — honest status first (never green unless it runs), each layer one switch.</div></div>
+
+<!-- 4 PROGRESS -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+ <div class="scr">
+  <div class="top"><div class="brand">Progress</div><span class="chip">This week</span></div>
+  <div class="tile" style="margin-top:14px"><div class="k">Time on feeds</div><div class="v">3h 10m<span>  −36% vs last week</span></div>
+   <div class="wk">
+    <div><i style="height:80px"></i>M</div><div><i style="height:66px"></i>T</div><div><i style="height:58px"></i>W</div>
+    <div><i style="height:40px"></i>T</div><div><i style="height:34px"></i>F</div><div><i style="height:26px"></i>S</div><div><i class="l" style="height:18px"></i>S</div></div></div>
+  <div class="ms"><div class="m d">7<span>days</span></div><div class="m n">14<span>2 to go</span></div><div class="m">30<span>days</span></div><div class="m">60<span>days</span></div></div>
+  <div class="peak"><b>Your hard hours: 22:00–01:00</b><p>Most pauses happen here. Turn on a gentle heads-up at 21:45?</p>
+   <div class="hrs"><i style="height:6px"></i><i style="height:4px"></i><i style="height:3px"></i><i style="height:3px"></i><i style="height:3px"></i><i style="height:3px"></i><i style="height:5px"></i><i style="height:8px"></i><i style="height:10px"></i><i style="height:9px"></i><i style="height:8px"></i><i style="height:10px"></i><i style="height:14px"></i><i style="height:11px"></i><i style="height:9px"></i><i style="height:10px"></i><i style="height:12px"></i><i style="height:15px"></i><i style="height:18px"></i><i style="height:20px"></i><i style="height:24px"></i><i style="height:28px"></i><i class="p" style="height:38px"></i><i class="p" style="height:34px"></i></div></div>
+ </div>
+ <div class="nav"><div><span class="ic"></span>Today</div><div><span class="ic"></span>Shield</div><div class="a"><span class="ic"></span>Progress</div><div><span class="ic"></span>You</div></div>
+</div><div class="cap">4 · Progress — real Android usage, milestones you keep, and your own peak hours (kept on the phone).</div></div>
+
+</div>
+<div class="note"><b>What changes vs today (general edition only):</b> new theme and type (ink, lime, coral; Space Grotesk headings), a 4-tab layout (Today · Shield · Progress · You), a bold pause button, a usage-based Today screen, and a weekly Progress screen.
+<b>What stays the same:</b> the blocking engine, the honest status, privacy (nothing leaves the phone), Android 6+ support. <b>Islamic edition:</b> untouched; it keeps its own calm look.
+<b>Not copied from CleanPath:</b> no fake scores, fake reviews, made-up "people online" numbers, streak resets or forced sign-in.</div>
+</body>
+</html>

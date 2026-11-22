@@ -57,6 +57,9 @@ VISUAL_ASSETS = frozenset({
     "wasm/tfjs-backend-wasm.wasm", "wasm/tfjs-backend-wasm-simd.wasm",
     "wasm/tfjs-backend-wasm-threaded-simd.wasm",
 })
+# In the shared build inventory for the Android app only (FaceRes); verified, never staged.
+ANDROID_ONLY_VISUAL = frozenset({"models/faceres.json", "models/faceres.bin",
+                                 "notices/hse-facerec-Apache-2.0.txt"})
 VISUAL_MAX_BYTES = 32 * 1024 * 1024
 
 
@@ -77,10 +80,12 @@ def verified_visual_resources(repo: Path = ROOT) -> dict[str, bytes]:
             or len(metadata["revision"]) != 40
             or any(c not in "0123456789abcdef" for c in metadata["revision"])
             or not isinstance(metadata.get("artifacts"), dict)
-            or set(metadata["artifacts"]) != VISUAL_ASSETS):
+            or set(metadata["artifacts"]) - ANDROID_ONLY_VISUAL != VISUAL_ASSETS):
         raise Rejected("unexpected visual build asset inventory")
     result = {"visual/assets.json": metadata_raw}
     for name, entry in metadata["artifacts"].items():
+        if name in ANDROID_ONLY_VISUAL:
+            continue
         raw = read_small(visual / name, VISUAL_MAX_BYTES)
         if (not raw or not isinstance(entry, dict)
                 or type(entry.get("bytes")) is not int or len(raw) != entry["bytes"]

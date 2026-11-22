@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Unrot at night: warm charcoal with gold as the accent, as in the Compose theme. -->
+<resources>
+    <color name="splash_background">#1F2A23</color>
+    <color name="background">#121110</color>
+    <color name="surface">#1C1A17</color>
+    <color name="surface_alt">#252320</color>
+    <color name="surface_sunken">#2F2C28</color>
+    <color name="text_primary">#F3ECDF</color>
+    <color name="text_secondary">#CFC6B6</color>
+    <color name="accent">#F2C14E</color>
+    <color name="accent_soft">#3D2F0C</color>
+    <color name="on_accent">#2A1F00</color>
+    <color name="hero_start">#191715</color>
+    <color name="hero_end">#121110</color>
+    <color name="control_highlight">#33F2C14E</color>
+    <color name="accent_border">#3A362F</color>
+    <color name="widget_mark">#F2C14E</color>
+</resources>

@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unrot onboarding v2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..800,100&family=DM+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{--paper:#F5EFE3;--paper2:#EDE4D3;--ink:#1F2A23;--ink2:#46534A;--muted:#7A8277;--butter:#F4C34E;--tomato:#E5553A;--sage:#9EC39A;--sky:#9CC8E0;--blush:#F2A08F;--white:#FFFDF8;--green:#2F6B45}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#E6DECF;font-family:'DM Sans',-apple-system,sans-serif;color:var(--ink);padding:28px 24px 60px}
+h1{font:700 34px Fraunces,Georgia,serif}
+.lead{max-width:900px;margin:8px 0 18px;color:var(--ink2);font-size:15px;line-height:1.45}
+.flow{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px;align-items:center;font:600 12px 'DM Sans'}
+.flow span{padding:5px 10px;border-radius:10px;border:2px solid var(--ink);background:var(--white)}
+.flow span.new{background:var(--butter)}.flow span.chg{background:var(--sky)}.flow b{font-weight:700;margin-right:4px}
+.row{display:flex;flex-wrap:wrap;gap:26px;margin-top:22px}
+.item{width:340px}
+.phone{width:340px;height:736px;border-radius:46px;background:var(--paper);border:3px solid var(--ink);box-shadow:5px 7px 0 var(--ink);position:relative;overflow:hidden;padding:52px 20px 0}
+.status{position:absolute;top:16px;left:28px;right:28px;display:flex;justify-content:space-between;font:600 12px 'DM Sans'}
+.bar{display:flex;align-items:center;gap:10px;font:600 12px 'DM Sans';color:var(--muted)}
+.bar .seg{flex:1;display:flex;gap:4px}.bar .seg i{flex:1;height:4px;border-radius:2px;background:var(--paper2)}.bar .seg i.on{background:var(--ink)}
+h2{font:700 27px/1.1 Fraunces,Georgia,serif;margin-top:16px}
+.sub{font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.4}
+.card{background:var(--white);border:2px solid var(--ink);border-radius:20px;box-shadow:3px 4px 0 var(--ink)}
+.cta{position:absolute;left:20px;right:20px;bottom:30px;height:56px;border-radius:18px;background:var(--butter);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;font:700 16px 'DM Sans'}
+.ghost{position:absolute;left:0;right:0;bottom:96px;text-align:center;font:600 13px 'DM Sans';color:var(--ink2)}
+.cap{margin-top:16px;font-size:13px;line-height:1.45;color:var(--ink2)}.cap b{color:var(--ink)}
+.vs{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4}.vs b{color:var(--tomato)}
+/* goals */
+.goals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.goal{padding:12px;min-height:118px;display:flex;flex-direction:column;gap:4px}
+.goal .ic{width:34px;height:34px;border-radius:10px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:16px}
+.goal b{font:700 14.5px 'DM Sans';margin-top:4px}.goal span{font-size:11.5px;color:var(--ink2);line-height:1.3}
+.goal.sel{background:var(--ink);color:var(--paper)}.goal.sel span{color:#D9D2C3}.goal.sel .ic{border-color:var(--paper)}
+.tick{position:absolute;margin-left:118px;margin-top:-4px;width:20px;height:20px;border-radius:10px;background:var(--butter);color:var(--ink);font:800 12px 'DM Sans';display:flex;align-items:center;justify-content:center}
+/* start */
+.big{font:700 46px/1 Fraunces,Georgia,serif}
+.apps .a{display:flex;align-items:center;gap:10px;padding:9px 0}
+.apps .ico{width:30px;height:30px;border-radius:9px;border:2px solid var(--ink)}
+.apps .nm{width:82px;font:600 13px 'DM Sans'}.apps .tr{flex:1;height:12px;border-radius:6px;background:var(--paper2);overflow:hidden}
+.apps .tr i{display:block;height:100%;background:var(--tomato)}.apps .t{width:52px;text-align:right;font:700 12.5px 'DM Sans'}
+.hrs{display:flex;gap:2px;align-items:flex-end;height:44px;margin-top:8px}.hrs i{flex:1;background:var(--ink);opacity:.2;border-radius:2px}.hrs i.p{opacity:1;background:var(--tomato)}
+.note{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;color:var(--ink2);margin-top:10px;line-height:1.35}
+/* dots */
+.dots{display:grid;grid-template-columns:repeat(21,1fr);gap:3px;margin-top:14px}
+.dots i{aspect-ratio:1;border-radius:50%;background:var(--paper2)}.dots i.f{background:var(--tomato)}.dots i.b{background:var(--sage)}
+.legend{display:flex;gap:14px;font-size:11.5px;margin-top:10px;color:var(--ink2)}.legend i{display:inline-block;width:10px;height:10px;border-radius:5px;margin-right:5px;vertical-align:-1px}
+/* notifications */
+.nrow{display:flex;gap:12px;padding:13px 14px;border-bottom:2px solid var(--paper2)}.nrow:last-child{border-bottom:0}
+.nrow .ic{width:36px;height:36px;border-radius:11px;border:2px solid var(--ink);flex:none;display:flex;align-items:center;justify-content:center}
+.nrow b{font:700 14px 'DM Sans'}.nrow p{font-size:12px;color:var(--ink2);margin-top:2px;line-height:1.3}
+.never{margin-top:12px;padding:12px 14px;border-radius:16px;background:var(--paper2);font-size:12px;color:var(--ink2);line-height:1.4}
+/* hold */
+.hold{position:relative;width:190px;height:190px;margin:34px auto 0}
+.hold svg{position:absolute;inset:0}
+.hold .mark{position:absolute;inset:34px;border-radius:50%;background:var(--butter);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;gap:12px}
+.hold .mark i{width:14px;height:52px;border-radius:7px;background:var(--ink)}
+.quote{margin-top:22px;text-align:center;font:600 18px/1.3 Fraunces,Georgia,serif}
+.who{text-align:center;font-size:12px;color:var(--muted);margin-top:6px}
+/* finish */
+.green{background:var(--green);color:#F7F2E8}.green .status{color:#F7F2E8}
+.green h2{color:#F7F2E8}.green .sub{color:#D6E5D9}
+.week{display:flex;gap:6px;margin-top:18px}.week div{flex:1;text-align:center;font:700 11px 'DM Sans';color:#D6E5D9}
+.week i{display:block;height:34px;border-radius:10px;border:2px solid #F7F2E8;margin-bottom:5px}.week i.t{background:var(--butter);border-color:var(--butter)}
+.week i.m{background:#F7F2E8}
+.plan{margin-top:16px;background:#F7F2E8;color:var(--ink);border:0;box-shadow:none}
+.plan .r{display:flex;gap:10px;padding:9px 14px;border-bottom:2px solid var(--paper2);font-size:13px}.plan .r:last-child{border:0}
+.plan .r b{min-width:96px;font:700 12.5px 'DM Sans';color:var(--ink2)}
+.green .cta{background:#F7F2E8;color:var(--green);border-color:#F7F2E8;box-shadow:none}
+.section{font:700 13px 'DM Sans';letter-spacing:1.5px;color:var(--muted);margin-top:34px}
+.table{margin-top:12px;border-collapse:collapse;max-width:1100px;font-size:13px;background:var(--white);border:2px solid var(--ink)}
+.table td,.table th{padding:9px 12px;border-bottom:1px solid var(--paper2);text-align:left;vertical-align:top}
+.table th{background:var(--ink);color:var(--paper);font-weight:700}
+
+/* v2 additions */
+.feed{position:relative;height:178px;margin-top:6px}
+.fc{position:absolute;left:30px;right:30px;height:120px;border:2px solid var(--ink);border-radius:18px}
+.fc:nth-child(1){top:0;transform:rotate(-5deg)}.fc:nth-child(2){top:12px;transform:rotate(3deg)}.fc:nth-child(3){top:24px}
+.fend{position:absolute;left:30px;right:30px;top:36px;height:130px;border:2px solid var(--ink);border-radius:18px;background:var(--white);box-shadow:3px 4px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+.fend b{font:700 14px 'DM Sans'}.fend span{font-size:11.5px;color:var(--ink2)}
+.pm{display:flex;gap:7px;margin-bottom:4px}.pm i{width:9px;height:30px;border-radius:5px;background:var(--tomato)}
+.promise{display:flex;gap:12px;margin-top:12px;font-size:13px;line-height:1.35;color:var(--ink2)}.promise b{flex:none;width:24px;height:24px;border-radius:12px;background:var(--ink);color:var(--paper);font:700 12px 'DM Sans';display:flex;align-items:center;justify-content:center}.promise strong{color:var(--ink)}
+.mini{margin-top:10px;padding:9px 12px;border-radius:12px;background:var(--paper2);font-size:12px;display:flex;align-items:center;gap:6px}
+.sw2,.sw{display:inline-block;width:36px;height:20px;border-radius:10px;background:var(--ink);position:relative;margin-left:auto;flex:none}.sw2:after,.sw:after{content:'';position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:7px;background:var(--butter)}
+.slider{position:relative;height:8px;border-radius:4px;background:var(--paper2);margin-top:14px}.slider i{display:block;height:100%;border-radius:4px;background:var(--tomato)}.slider b{position:absolute;top:-8px;width:24px;height:24px;margin-left:-12px;border-radius:12px;background:var(--white);border:3px solid var(--ink)}
+.ar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:2px solid var(--paper2)}.ar:last-child{border:0}
+.ar .ico{width:32px;height:32px;border-radius:9px;border:2px solid var(--ink);flex:none}.ar .tx{flex:1}.ar .tx b{font:700 13.5px 'DM Sans'}
+.ar .tr{height:6px;border-radius:3px;background:var(--paper2);margin-top:5px;overflow:hidden}.ar .tr i{display:block;height:100%;background:var(--tomato)}
+.ar .t{font:700 12px 'DM Sans';width:44px;text-align:right}.ck{width:22px;height:22px;border-radius:7px;background:var(--ink);color:var(--butter);font:800 12px 'DM Sans';display:flex;align-items:center;justify-content:center}.ck.off{background:transparent;border:2px solid var(--ink)}
+.fr{margin-top:10px;padding:12px 14px}.fh{display:flex;align-items:center;gap:10px}.fh .ico{width:28px;height:28px;border-radius:8px;border:2px solid var(--ink)}.fh b{font:700 14px 'DM Sans'}
+.sug{margin-left:auto;font:700 10px 'DM Sans';background:var(--butter);border:1.5px solid var(--ink);border-radius:8px;padding:2px 6px}
+.seg3{display:flex;margin-top:10px;border:2px solid var(--ink);border-radius:12px;overflow:hidden}.seg3 span{flex:1;text-align:center;padding:7px 0;font:700 12px 'DM Sans'}.seg3 span+span{border-left:2px solid var(--ink)}.seg3 .a{background:var(--ink);color:var(--paper)}
+.fr p{font-size:12px;color:var(--ink2);margin-top:8px;line-height:1.35}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.chips span{white-space:nowrap}.chips span{padding:6px 11px;border-radius:12px;border:2px solid var(--ink);background:var(--white);font:600 12px 'DM Sans'}.chips span.a{background:var(--ink);color:var(--paper)}
+.trycard{margin-top:12px;padding:16px;border-radius:22px;background:var(--ink);color:#F3EEE6;text-align:center;border:2px solid var(--ink);box-shadow:3px 4px 0 #C9BFA9}
+.ring{position:relative;width:112px;height:112px;margin:0 auto}.ring svg{position:absolute;inset:0}.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 40px Fraunces,serif}
+.br{font:600 17px Fraunces,serif;margin-top:8px}.op{font-size:12px;opacity:.8;margin-top:4px}
+.yes{margin-top:12px;padding:13px;border-radius:14px;background:var(--butter);color:var(--ink);font:700 14px 'DM Sans'}.no{margin-top:8px;font:600 12.5px 'DM Sans';opacity:.55}
+.dial{position:relative;width:226px;height:226px;margin:14px auto 0}.dial svg{position:absolute;inset:0}.dc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.dc b{font:700 18px 'DM Sans'}.dc span{font-size:11.5px;color:var(--ink2)}
+.hint{margin-top:8px;text-align:center;font:600 12.5px 'DM Sans';background:var(--sky);border:2px solid var(--ink);border-radius:12px;padding:7px 10px}
+.caret{display:inline-block;width:2px;height:20px;background:var(--ink);vertical-align:-3px;margin-left:2px}
+.swc{display:flex;gap:12px;align-items:flex-start;margin-top:12px;padding:13px 14px}.swc b{font:700 14px 'DM Sans'}.swc p{font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.3}
+.num{width:30px;height:30px;border-radius:15px;border:2px solid var(--ink);flex:none;display:flex;align-items:center;justify-content:center;font:700 13px 'DM Sans'}.num.done{background:var(--sage)}
+.on2{align-self:center;padding:6px 10px;border-radius:10px;background:var(--butter);border:2px solid var(--ink);font:700 11.5px 'DM Sans';flex:none}
+.dlg{margin-top:16px;padding:14px;border-radius:18px;background:#fff;border:2px dashed var(--muted)}.ring2{border:2.5px solid var(--tomato);border-radius:14px;padding:3px 10px}
+.arrow{margin-top:8px;font:600 11px 'DM Sans';color:var(--tomato);text-align:right}
+.testic{display:flex;justify-content:center;margin-top:40px}
+.steps{margin-top:18px;display:flex;flex-direction:column;gap:8px}.steps div{display:flex;gap:10px;align-items:center;font:600 13.5px 'DM Sans';padding:10px 12px;border-radius:14px;background:var(--white);border:2px solid var(--ink)}.steps b{width:22px;height:22px;border-radius:11px;background:var(--ink);color:var(--paper);font:700 11px 'DM Sans';display:flex;align-items:center;justify-content:center}
+.cta2{position:absolute;left:20px;right:20px;bottom:96px;height:56px;border-radius:18px;background:var(--butter);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;font:700 16px 'DM Sans'}
+
+/* CleanPath-informed polish */
+.glow{position:absolute;left:-40px;right:-40px;top:-150px;height:300px;border-radius:50%;filter:blur(42px);opacity:.42;pointer-events:none}
+.phone>*:not(.glow){position:relative}
+.phone>.status,.phone>.cta,.phone>.cta2,.phone>.ghost,.phone>.dots3,.phone>.anon,.phone>.kbd,.phone>.tourcard,.phone>.today,.phone>.callt{position:absolute}
+.eyebrow{font:700 10.5px 'DM Sans';letter-spacing:1.6px;color:var(--muted);margin-top:14px;text-transform:uppercase}
+.eyebrow+h2{margin-top:4px}
+h2 em{font-style:normal;color:var(--tomato)}
+.why{margin-left:6px;width:24px;height:24px;border-radius:12px;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font:800 12px 'DM Sans'}
+.cta,.cta2{justify-content:space-between;padding:0 8px 0 22px;border-radius:30px}
+.cta:after,.cta2:after{content:'→';width:42px;height:42px;border-radius:21px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font:700 18px 'DM Sans'}
+.green .cta:after{background:var(--green);color:#F7F2E8}
+.gauge{position:relative;width:250px;height:136px;margin:10px auto 0}.gauge svg{position:absolute;inset:0}
+.gauge .v{position:absolute;left:0;right:0;bottom:4px;text-align:center}.gauge .v b{display:block;font:700 40px/1 Fraunces,serif}.gauge .v span{font-size:11.5px;color:var(--ink2)}
+.tiles{display:flex;gap:8px;margin-top:10px}.tiles div{flex:1;padding:10px 12px}.tiles b{display:block;font:700 22px Fraunces,serif}.tiles span{font-size:11px;color:var(--ink2)}
+.ann{position:relative}.ann .mk{position:absolute;top:-6px;bottom:0;border-left:2px dashed var(--tomato)}.ann .lb{position:absolute;top:-24px;font:700 10.5px 'DM Sans';color:var(--tomato);white-space:nowrap}
+.planmap{position:relative;height:330px;margin-top:6px}
+.planmap .hub{position:absolute;left:50%;top:50%;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:48px;background:var(--butter);border:3px solid var(--ink);box-shadow:3px 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;gap:9px}
+.planmap .hub i{width:11px;height:38px;border-radius:6px;background:var(--ink)}
+.planmap .n{position:absolute;width:128px;padding:9px 10px;font-size:11px;line-height:1.3}.planmap .n b{display:block;font:700 12.5px 'DM Sans'}
+.planmap svg{position:absolute;inset:0}
+.arch{position:relative;width:280px;height:150px;margin:6px auto 0}.arch svg{position:absolute;inset:0}
+.arch .v{position:absolute;left:0;right:0;top:46px;text-align:center}.arch .v b{font:800 64px/1 Fraunces,serif;color:var(--butter)}.arch .v span{display:block;font:700 11.5px 'DM Sans';letter-spacing:2px;color:#F7F2E8}
+.datepill{display:inline-block;margin-top:6px;padding:7px 14px;border-radius:16px;background:#F7F2E8;color:var(--green);font:700 13px 'DM Sans'}
+
+/* v2.2: about-you questions and live demos */
+.pct{flex:1;height:6px;border-radius:3px;background:var(--paper2);overflow:hidden}.pct i{display:block;height:100%;background:var(--ink);border-radius:3px}
+.demo{position:relative;height:300px;margin-top:8px}
+.legend2{display:flex;flex-direction:column;gap:5px;margin-top:6px}.legend2 div{display:flex;gap:8px;align-items:center;font:600 12px 'DM Sans'}.legend2 b{width:20px;height:20px;border-radius:10px;background:var(--butter);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:800 10.5px 'DM Sans';flex:none}
+.mini-ph{position:absolute;left:66px;top:0;width:166px;height:296px;border-radius:26px;border:3px solid var(--ink);background:#111;overflow:hidden;box-shadow:3px 4px 0 var(--ink)}
+.tt{position:absolute;inset:0;background:linear-gradient(160deg,#2b2b2b,#0c0c0c)}.ttbar{display:flex;justify-content:center;gap:12px;color:#aaa;font:600 10px 'DM Sans';padding-top:14px}.ttbar b{color:#fff}
+.closed{position:absolute;left:10px;right:10px;top:56px;padding:14px 10px;border-radius:18px;background:var(--paper);text-align:center;display:flex;flex-direction:column;gap:5px;align-items:center}
+.closed b{font:700 13px 'DM Sans'}.closed span{font:600 11px/1.3 Fraunces,serif;color:var(--ink2)}.row2{display:flex;gap:6px;margin-top:4px}.row2 .k{font:700 9.5px 'DM Sans';color:var(--ink);background:var(--paper2);padding:4px 7px;border-radius:8px}
+.pm2{display:flex;gap:4px}.pm2 i{width:6px;height:20px;border-radius:3px;background:var(--tomato)}
+.wait{position:absolute;inset:0;background:var(--ink);color:#F3EEE6;display:flex;flex-direction:column;align-items:center;padding-top:26px;gap:6px;text-align:center}
+.ring3{width:84px;height:84px;border-radius:42px;border:7px solid rgba(243,238,230,.15);border-top-color:var(--butter);border-right-color:var(--butter);display:flex;align-items:center;justify-content:center}.ring3 b{font:700 30px Fraunces,serif}
+.wb{font:600 14px Fraunces,serif;margin-top:6px}.ws{font-size:9.5px;opacity:.75}.wy{margin-top:8px;padding:9px 14px;border-radius:12px;background:var(--butter);color:var(--ink);font:700 11px 'DM Sans'}.wn{font:600 10px 'DM Sans';opacity:.5}
+.night{position:absolute;inset:0;background:linear-gradient(180deg,#1E2740,#2E2A4A);color:#EDE7F6;display:flex;flex-direction:column;align-items:center;padding:32px 12px 0;gap:6px;text-align:center}
+.moon{font-size:34px}.night b{font:700 15px 'DM Sans'}.night span{font-size:10.5px;opacity:.85}.nn{margin-top:8px;font:600 12px/1.3 Fraunces,serif}.nk{margin-top:10px;font:600 9.5px 'DM Sans';opacity:.6}
+.call{position:absolute;width:26px;height:26px;border-radius:13px;background:var(--butter);border:2px solid var(--ink);font:800 12px 'DM Sans';display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 0 var(--ink)}
+.call.c1{left:52px;top:10px}.call.c2{right:52px;top:96px}.call.c3{left:52px;top:200px}
+.dots3{display:flex;justify-content:center;gap:6px;position:absolute;left:0;right:0;bottom:100px}.dots3 i{width:8px;height:8px;border-radius:4px;background:var(--paper2)}.dots3 i.on{width:22px;background:var(--ink)}
+.field{margin-top:22px;padding:14px 16px;border-radius:16px;border:2px solid var(--ink);background:var(--white);font:600 22px Fraunces,serif}
+.skip2{margin-top:10px;text-align:right;font:600 12.5px 'DM Sans';color:var(--ink2)}
+.kbd{position:absolute;left:0;right:0;bottom:0;height:226px;background:#D4CDBF;padding:12px 8px;display:flex;flex-direction:column;gap:9px;font:600 15px 'DM Sans';text-align:center;letter-spacing:9px;color:var(--ink)}.kbd div{background:transparent}.kbd .sp{margin:0 60px;padding:7px;border-radius:8px;background:var(--white);letter-spacing:1px;font-size:12px}
+.opts{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:16px;border:2px solid var(--ink);background:var(--white);font:600 13.5px 'DM Sans'}
+.opt .n{width:22px;height:22px;border-radius:11px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:700 10.5px 'DM Sans';flex:none}
+.opt.sel{background:var(--ink);color:var(--paper)}.opt.sel .n{border-color:var(--paper)}.chk{margin-left:auto;color:var(--butter)}
+.used{margin-top:8px;font:600 12px 'DM Sans';color:var(--green)}
+.anon{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:11.5px;color:var(--muted)}
+.opts~.cta{bottom:40px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.acts span{padding:9px 12px;border-radius:14px;border:2px solid var(--ink);background:var(--white);font:600 13px 'DM Sans'}.acts span.sel{background:var(--ink);color:var(--paper)}
+.lock{margin-top:14px;padding:16px 12px 12px;border-radius:22px;background:linear-gradient(170deg,#3B4A63,#22283A);display:flex;flex-direction:column;gap:7px}
+.lt{text-align:center;color:#F3EEE6;font:600 34px 'DM Sans';margin-bottom:4px}
+.nt{padding:9px 11px;border-radius:14px;background:rgba(255,253,248,.88);font-size:11px;line-height:1.3}.nt b{display:block;font:700 10.5px 'DM Sans';color:var(--muted)}
+.phone.dim{background:#2A2F2A}
+.today{position:absolute;left:14px;right:14px;top:44px;bottom:0;background:var(--paper);border-radius:30px 30px 0 0;padding:16px;opacity:.5}
+.tdh{display:flex;justify-content:space-between;align-items:center}.tdh b{font:700 24px Fraunces,serif}.chipok{font:700 11px 'DM Sans';padding:5px 9px;border-radius:10px;background:var(--sage)}
+.tday{margin-top:12px;padding:14px;display:flex;flex-direction:column}.tday span{font-size:11px;color:var(--muted)}.tday b{font:700 34px Fraunces,serif}.tday i{height:6px;border-radius:3px;background:var(--butter);width:20%;margin-top:6px}
+.ttools{display:flex;justify-content:space-around;margin-top:16px;font:600 11px/1.6 'DM Sans';text-align:center}
+.fab{position:absolute;right:14px;bottom:110px;padding:12px 14px;border-radius:18px;background:var(--butter);border:2px solid var(--ink);font:700 12px 'DM Sans'}
+.callt{position:absolute;padding:7px 10px;border-radius:12px;background:var(--butter);border:2px solid var(--ink);font:700 11px 'DM Sans';box-shadow:2px 3px 0 var(--ink)}
+.callt.t1{left:28px;top:238px}.callt.t2{right:18px;top:110px}.callt.t3{right:18px;bottom:180px}
+.today .tday{outline:3px solid var(--butter);outline-offset:4px;opacity:1}
+.tourcard{position:absolute;left:16px;right:16px;bottom:22px;padding:14px 16px;border-radius:22px;background:var(--white);border:2px solid var(--ink)}.tourcard b{display:block;font:700 17px Fraunces,serif}.tourcard span{font-size:12px;color:var(--ink2)}
+.tc{display:flex;justify-content:space-between;align-items:center;margin-top:10px}.tc span{font:600 11px 'DM Sans';color:var(--muted)}.tc .tn{padding:8px 16px;border-radius:14px;background:var(--ink);color:var(--paper)}
+</style></head><body>
+<h1>Onboarding v2.2 — about you, and the app working</h1>
+<p class="lead">Researched against Unchaind (89 captured screens), Unrot (64) and CleanPath (screen recording). Asks about you — one question per screen, each answer used — and shows the app working before and after setup. Earlier: researched against CleanPath (from its screen recording) and against how Unchain and Unrot onboard (quiz, score, pledge, target date, from memory of those apps — the store pages could not be opened in this session). We keep what works in them — a goal grid, a starting point, a commitment, a date to aim for — and replace every invented number with one the phone really measured. Yellow = new screen, blue = changed.</p>
+<div class="flow"><b>The whole flow</b>
+<span>1 Hello</span><span class="new">2 See it work ×3</span><span class="new">3 Your name</span><span class="chg">4 What you want back</span><span class="new">5 When it gets you</span><span class="new">6 How it feels</span><span class="chg">7 Your starting point</span><span class="chg">8 What it adds up to</span><span class="new">8b Your time back</span><span>9 Your apps</span><span>10 How firm</span><span>11 Try it</span><span class="chg">12 Quiet hours</span><span class="chg">12b Your note</span><span class="chg">13 Your plan</span><span>14 Switches</span><span class="chg">15 Notifications</span><span>16 Real test</span><span>17 Hold</span><span class="chg">18 First 7 days</span><span class="new">19 Your home tour</span></div>
+
+<div class="row">
+<!-- 1 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--blush)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+
+ <div style="text-align:right;font:600 13px 'DM Sans';color:var(--ink2)">Skip for now</div>
+ <div class="feed">
+  <div class="fc" style="background:var(--blush)"></div><div class="fc" style="background:var(--sky)"></div><div class="fc" style="background:var(--butter)"></div>
+  <div class="fend"><div class="pm"><i></i><i></i></div><b>That’s the end of the feed.</b><span>No more. Go live your day.</span></div>
+ </div>
+ <h2 style="font-size:32px">Make your phone boring again.</h2>
+ <div class="promise"><b>1</b><span><strong>Endless feeds get an end.</strong> Shorts, Reels and For You close. Search and messages work.</span></div>
+ <div class="promise"><b>2</b><span><strong>A breath before the apps you choose.</strong> Opening stays your choice.</span></div>
+ <div class="promise"><b>3</b><span><strong>Nothing leaves this phone.</strong> No account, no tracking.</span></div>
+ <div class="cta">Set it up · 4 min</div>
+</div>
+<div class="cap"><b>1 · Hello.</b> A feed that actually ends, and three plain promises before anything is asked. “3 min” is the honest length of v2.</div><div class="vs">CleanPath: “Let’s map your PATH”, a quiz before it says what the app does.</div></div>
+
+<!-- DEMO1 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--butter)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:4%"></i></div>4%<span class="why">?</span></div>
+ <div class="eyebrow">See it work · 1 of 3</div><h2>You open TikTok. The <em>feed</em> closes.</h2>
+ <div class="demo">
+  <div class="mini-ph "><div class="tt"><div class="ttbar"><span>Following</span><b>For You</b></div><div class="ttvid"></div>
+   <div class="closed"><div class="pm2"><i></i><i></i></div><b>Feed closed</b><span>“Go to sleep. Tomorrow-you has a big day.”</span><div class="row2"><span class="k">Messages ›</span><span class="k">Search ›</span></div></div></div></div>
+  <div class="call c1">1</div><div class="call c2">2</div><div class="call c3">3</div>
+ </div>
+ <div class="legend2"><div><b>1</b>You tap For You</div><div><b>2</b>Unrot closes it in a second, with your note</div><div><b>3</b>DMs and search still work</div></div>
+ <div class="dots3"><i class="on"></i><i></i><i></i></div>
+ <div class="cta">Next</div>
+</div>
+<div class="cap"><b>2 · See it work (1/3).</b> Before any question, three swipeable demos of the real screens, with callouts — Unrot’s “your apps go to jail” and Unchaind’s annotated phones, but showing exactly what our app does, nothing more.</div><div class="vs">Unrot: “Your apps go to jail” and a coin economy we don’t have.</div></div>
+
+<!-- DEMO2 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sky)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:6%"></i></div>6%<span class="why">?</span></div>
+ <div class="eyebrow">See it work · 2 of 3</div><h2>You open YouTube. A <em>breath</em> first.</h2>
+ <div class="demo">
+  <div class="mini-ph "><div class="wait"><div class="ring3"><b>8</b></div><div class="wb">Breathe in…</div><div class="ws">YouTube opens in 8 s · 3rd open today</div><div class="wy">I’m done, close it</div><div class="wn">Open YouTube</div></div></div>
+  <div class="call c1">1</div><div class="call c2">2</div><div class="call c3">3</div>
+ </div>
+ <div class="legend2"><div><b>1</b>You tap YouTube</div><div><b>2</b>10 seconds to breathe, longer each time today</div><div><b>3</b>Closing is the big button</div></div>
+ <div class="dots3"><i></i><i class="on"></i><i></i></div>
+ <div class="cta">Next</div>
+</div>
+<div class="cap"><b>2 · See it work (2/3).</b> The wait before an app, with the one-sec finding in plain sight: walking away is the easy button.</div></div>
+
+<!-- DEMO3 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--blush)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:8%"></i></div>8%<span class="why">?</span></div>
+ <div class="eyebrow">See it work · 3 of 3</div><h2>At 23:00, your apps <em>sleep</em> too.</h2>
+ <div class="demo">
+  <div class="mini-ph "><div class="night"><div class="moon">☾</div><b>Quiet hours</b><span>Instagram is asleep until 07:00.</span><div class="nn">“Go to sleep. Tomorrow-you has a big day.”</div><div class="nk">Calls, messages and alarms work</div></div></div>
+  <div class="call c1">1</div><div class="call c2">2</div><div class="call c3">3</div>
+ </div>
+ <div class="legend2"><div><b>1</b>23:00 on your clock</div><div><b>2</b>The apps you pick close till morning</div><div><b>3</b>Calls and alarms always work</div></div>
+ <div class="dots3"><i></i><i></i><i class="on"></i></div>
+ <div class="cta">Set mine up</div>
+</div>
+<div class="cap"><b>2 · See it work (3/3).</b> Quiet hours, shown as the screen you’ll actually meet at night.</div></div>
+
+<!-- NAME -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sage)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:10%"></i></div>10%<span class="why">?</span></div>
+ <div class="eyebrow">About you</div><h2>What should we call you?</h2>
+ <div class="sub">A first name is enough. It’s only used on this phone.</div>
+ <div class="field">Sam<span class="caret"></span></div>
+ <div class="skip2">Skip</div>
+ <div class="kbd"><div>q w e r t y u i o p</div><div>a s d f g h j k l</div><div>⇧ z x c v b n m ⌫</div><div class="sp">space</div></div>
+ <div class="cta" style="bottom:250px">Next</div>
+</div>
+<div class="cap"><b>3 · Your name.</b> Unchaind and Unrot both ask; we use it where it matters: the plan, the finish and your pause screen (“Sam, breathe first”).</div></div>
+
+<!-- 2 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sky)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="bar">‹<div class="pct"><i style="width:12%"></i></div>12%<span class="why">?</span></div>
+ <div class="eyebrow">Your goals</div><h2>What do you want back?</h2>
+ <div class="sub">Pick any. Each one says what it switches on — you can change all of it later.</div>
+ <div class="goals">
+  <div class="card goal sel"><div class="tick">✓</div><div class="ic" style="background:var(--sky)">☾</div><b>Sleep</b><span>Feeds close 23:00–07:00</span></div>
+  <div class="card goal"><div class="ic" style="background:var(--butter)">◎</div><b>Focus</b><span>A wait before your feed apps</span></div>
+  <div class="card goal sel"><div class="tick">✓</div><div class="ic" style="background:var(--blush)">♥</div><b>Evenings with people</b><span>Daily limit on your top app</span></div>
+  <div class="card goal"><div class="ic" style="background:var(--sage)">⛨</div><b>No adult content</b><span>Sites, words and images blocked</span></div>
+  <div class="card goal"><div class="ic" style="background:var(--paper2)">☀</div><b>Calm mornings</b><span>No feeds for the first hour</span></div>
+  <div class="card goal"><div class="ic" style="background:var(--paper2)">∞</div><b>Just less scrolling</b><span>Endless feeds closed</span></div>
+ </div>
+ <div class="cta">2 picked · Next</div>
+</div>
+<div class="cap"><b>2 · What you want back.</b> The quick 2×3 grid people liked in CleanPath, but every card states the exact rule it turns on, and the picks pre-fill the rest of setup.</div>
+<div class="vs">CleanPath: icon cards that change nothing you can see.</div></div>
+
+<!-- WHEN -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sky)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:16%"></i></div>16%<span class="why">?</span></div>
+ <div class="eyebrow">About you</div><h2>When does scrolling get you most?</h2>
+ <div class="sub">Pick the one that’s most true.</div>
+ <div class="opts"><div class="opt sel"><span class="n">1</span>Late at night, in bed<span class=chk>✓</span></div><div class="opt"><span class="n">2</span>First thing in the morning</div><div class="opt"><span class="n">3</span>When I’m bored</div><div class="opt"><span class="n">4</span>When I’m stressed or lonely</div><div class="opt"><span class="n">5</span>Between tasks at work or school</div></div>
+ <div class="used">↳ Sets your quiet hours and when your nudge comes.</div>
+ <div class="anon">🔒 Your answers stay on this phone.</div>
+</div>
+<div class="cap"><b>5 · When.</b> Unchaind’s one-question-per-screen cards (tap = next). Unlike their 14 questions, this answer is used: “late at night” pre-sets quiet hours and the nudge.</div><div class="vs">Unchaind: 14 questions incl. age of first exposure — used for a fake “37% higher dependency”.</div></div>
+
+<!-- FEEL -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--blush)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:20%"></i></div>20%<span class="why">?</span></div>
+ <div class="eyebrow">About you</div><h2>How do you feel after a long scroll?</h2>
+ <div class="sub">Pick any.</div>
+ <div class="opts"><div class="opt sel"><span class="n">1</span>Tired<span class=chk>✓</span></div><div class="opt"><span class="n">2</span>Guilty</div><div class="opt sel"><span class="n">3</span>Behind on things<span class=chk>✓</span></div><div class="opt"><span class="n">4</span>Anxious</div><div class="opt"><span class="n">5</span>Numb</div><div class="opt"><span class="n">6</span>Honestly fine</div></div>
+ <div class="used">↳ Words your pause screen: “You said scrolling leaves you tired.”</div>
+ <div class="anon">🔒 Your answers stay on this phone.</div><div class="cta">Next</div>
+</div>
+<div class="cap"><b>6 · How it feels.</b> Unrot asks this too; we use the answer on the pause and block screens, in the person’s own terms.</div></div>
+
+<!-- 3 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--blush)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="bar">‹<div class="pct"><i style="width:24%"></i></div>24%<span class="why">?</span></div>
+ <div class="eyebrow">Your starting point</div><h2>Your real starting point</h2>
+ <div class="sub">From Android’s own screen time, not a quiz.</div>
+ <div class="gauge"><svg viewBox="0 0 250 136"><path d="M20 128 A105 105 0 0 1 230 128" fill="none" stroke="#EDE4D3" stroke-width="18" stroke-linecap="round"/><path d="M20 128 A105 105 0 0 1 196 52" fill="none" stroke="#E5553A" stroke-width="18" stroke-linecap="round"/></svg><div class="v"><b>3h 12m</b><span>a day in feed apps · last 7 days</span></div></div>
+ <div class="tiles"><div class="card"><b>74</b><span>opens a day</span></div><div class="card"><b>52m</b><span>longest single scroll</span></div></div>
+ <div class="card" style="margin-top:10px;padding:12px 14px">
+  <div class="apps">
+   <div class="a"><div class="ico" style="background:#111"></div><div class="nm">TikTok</div><div class="tr"><i style="width:84%"></i></div><div class="t">1h 41m</div></div>
+   <div class="a"><div class="ico" style="background:#C13584"></div><div class="nm">Instagram</div><div class="tr"><i style="width:48%"></i></div><div class="t">58m</div></div>
+  </div>
+  <div class="ann" style="margin-top:22px"><div class="hrs" style="margin-top:0;height:34px"><i style="height:20%"></i><i style="height:10%"></i><i style="height:8%"></i><i style="height:6%"></i><i style="height:6%"></i><i style="height:6%"></i><i style="height:12%"></i><i style="height:30%"></i><i style="height:26%"></i><i style="height:18%"></i><i style="height:16%"></i><i style="height:20%"></i><i style="height:36%"></i><i style="height:22%"></i><i style="height:18%"></i><i style="height:20%"></i><i style="height:28%"></i><i style="height:34%"></i><i style="height:42%"></i><i style="height:50%"></i><i style="height:62%"></i><i style="height:74%"></i><i class="p" style="height:96%"></i><i class="p" style="height:80%"></i></div><div class="mk" style="left:91.5%"></div><div class="lb" style="right:0">23:00 · your hardest hour</div></div>
+ </div>
+ <div class="note">🔒 Read on this phone. No score, no “risk %”.</div>
+ <div class="cta">That’s me · Next</div>
+</div>
+<div class="cap"><b>3 · Your real starting point.</b> Replaces the quiz with a real “results” moment: a gauge, two telling numbers (opens a day, longest single scroll) and the hour chart with the hardest hour pointed out — CleanPath’s strongest screen, with true numbers. The numbers are the person’s own, from Android; without access, see 3b.</div>
+<div class="vs">CleanPath: a 5-question quiz → <b>“95/100 severe”, “relapse risk 100%”</b>.</div></div>
+
+<!-- 3b -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sky)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:24%"></i></div>24%<span class="why">?</span></div>
+ <div class="eyebrow">One permission</div><h2>Your real starting point</h2>
+ <div class="sub">To show it, Android needs one permission: screen time.</div>
+ <div class="card" style="margin-top:14px;padding:16px">
+  <div style="font:700 15px 'DM Sans'">Why “Usage access”?</div>
+  <div class="sub" style="font-size:12.5px">It lets Unrot read how long each app was open. Only totals, only on this phone. It also powers limits and your weekly view.</div>
+  <div class="mini">Settings › Usage access › <b>Unrot</b> <span class="sw2"></span></div>
+ </div>
+ <div class="card" style="margin-top:12px;padding:14px">
+  <div style="font:700 14px 'DM Sans'">Rather guess?</div>
+  <div class="sub" style="font-size:12.5px">About how long a day in short videos and feeds?</div>
+  <div class="slider"><i style="width:46%"></i><b style="left:46%"></b></div>
+  <div style="display:flex;justify-content:space-between;font:600 11px 'DM Sans';color:var(--muted);margin-top:6px"><span>0</span><span style="color:var(--ink);font-size:13px">about 3 h</span><span>6 h+</span></div>
+ </div>
+ <div class="ghost">Use my guess</div>
+ <div class="cta">Allow screen time</div>
+</div>
+<div class="cap"><b>3b · No access yet.</b> One permission, why it’s needed in one line, and a picture of exactly where the switch is. People who say no can guess with a slider; the next pages say “your estimate”.</div><div class="vs">CleanPath asks nothing real and scores your answers instead.</div></div>
+
+<!-- 4 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--blush)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="bar">‹<div class="pct"><i style="width:28%"></i></div>28%<span class="why">?</span></div>
+ <div class="eyebrow">What it adds up to</div><h2>Sam, 3h 12m a day is <em>49 days</em> a year.</h2>
+ <div class="sub">Each dot is a day of your year. Red is feeds, at your pace.</div>
+ <div class="dots" id="dots"></div>
+ <div class="legend"><span><i style="background:var(--tomato)"></i>49 days on feeds</span><span><i style="background:var(--sage)"></i>24 back if you halve it</span></div>
+ <div class="card" style="margin-top:14px;padding:13px 14px;font-size:13px;line-height:1.4">Halving it is a real, common result: <b>24 days a year back.</b> That’s the goal we’ll set — not zero.</div>
+ <div class="cta">Let’s get them back</div>
+</div>
+<div class="cap"><b>4 · What it adds up to.</b> Waking-hours maths on the person’s own number, and a reachable goal (half), not a brain scan. Calm, not shame.</div>
+<div class="vs">CleanPath: three pages of glowing brains, “mental health decline”.</div></div>
+
+<!-- INSTEAD -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sage)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:32%"></i></div>32%<span class="why">?</span></div>
+ <div class="eyebrow">Your time back</div><h2>Sam, what would you do with <em>24 days</em>?</h2>
+ <div class="sub">Pick a few. They become your “instead” ideas on every pause.</div>
+ <div class="acts"><span class="sel">😴 Sleep</span><span class="sel">📖 Read</span><span>🏃 Train</span><span class="sel">👋 See friends</span><span>📚 Study</span><span>🎸 Make something</span><span>🌳 Go outside</span><span>📞 Call family</span></div>
+ <div class="card" style="margin-top:14px;padding:12px 14px"><div style="font:600 11px 'DM Sans';color:var(--muted)">On your pause screen</div><div style="font:600 15px Fraunces,serif;margin-top:4px">Instead: read 10 pages · text a friend</div></div>
+ <div class="cta">3 picked · Next</div>
+</div>
+<div class="cap"><b>8b · Your time back.</b> Unrot’s habit picker (which feeds its coin game) becomes the “instead” suggestions on our pause screen — useful the moment it matters.</div><div class="vs">Unrot: 25+ habits to earn Brain Coins.</div></div>
+
+<!-- 5 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--butter)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:40%"></i></div>40%<span class="why">?</span></div>
+ <div class="eyebrow">Your apps</div><h2>Your apps</h2>
+ <div class="sub">Picked from your screen time and your goals. Tap to change.</div>
+ <div class="card" style="margin-top:14px">
+  <div class="ar on"><div class="ico" style="background:#111"></div><div class="tx"><b>TikTok</b><div class="tr"><i style="width:84%"></i></div></div><span class="t">1h 41m</span><span class="ck">✓</span></div>
+  <div class="ar on"><div class="ico" style="background:#C13584"></div><div class="tx"><b>Instagram</b><div class="tr"><i style="width:48%"></i></div></div><span class="t">58m</span><span class="ck">✓</span></div>
+  <div class="ar on"><div class="ico" style="background:#E62117"></div><div class="tx"><b>YouTube</b><div class="tr"><i style="width:28%"></i></div></div><span class="t">33m</span><span class="ck">✓</span></div>
+  <div class="ar"><div class="ico" style="background:#FF4500"></div><div class="tx"><b>Reddit</b><div class="tr"><i style="width:12%"></i></div></div><span class="t">14m</span><span class="ck off"></span></div>
+  <div class="ar"><div class="ico" style="background:#FFFC00"></div><div class="tx"><b>Snapchat</b><div class="tr"><i style="width:6%"></i></div></div><span class="t">7m</span><span class="ck off"></span></div>
+ </div>
+ <div style="text-align:center;font:600 12.5px 'DM Sans';margin-top:10px">Show all 20 apps</div>
+ <div class="card" style="margin-top:12px;padding:12px 14px;display:flex;align-items:center;gap:10px"><div style="flex:1"><b style="font-size:14px">Adult sites and images</b><div class="sub" style="font-size:11.5px;margin:0">Every browser and app · from your goals</div></div><span class="sw on"></span></div>
+ <div class="cta">3 apps · Next</div>
+</div>
+<div class="cap"><b>5 · Your apps.</b> Already ticked from the person’s own usage and goals, so most people just confirm. Real icons, real minutes.</div><div class="vs">Unrot/Opal-style app pickers start empty and make you search.</div></div>
+
+<!-- 6 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sage)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:48%"></i></div>48%<span class="why">?</span></div>
+ <div class="eyebrow">How firm</div><h2>How firm with each?</h2>
+ <div class="sub">One choice per app. The sentence says exactly what happens.</div>
+ <div class="card fr">
+  <div class="fh"><div class="ico" style="background:#111"></div><b>TikTok</b><span class="sug">Suggested · opened 31× a day</span></div>
+  <div class="seg3"><span>Wait</span><span>Limit</span><span class="a">Close feed</span></div>
+  <p>The For You feed closes as it opens. Search, DMs and your profile still work.</p>
+ </div>
+ <div class="card fr">
+  <div class="fh"><div class="ico" style="background:#C13584"></div><b>Instagram</b></div>
+  <div class="seg3"><span>Wait</span><span class="a">Limit</span><span>Close feed</span></div>
+  <p>45 minutes a day, then it closes until tomorrow. <u>Change minutes</u></p>
+ </div>
+ <div class="card fr">
+  <div class="fh"><div class="ico" style="background:#E62117"></div><b>YouTube</b></div>
+  <div class="seg3"><span class="a">Wait</span><span>Limit</span><span>Close feed</span></div>
+  <p>10 seconds to breathe before it opens. Longer each time today.</p>
+ </div>
+ <div class="cta">Next</div>
+</div>
+<div class="cap"><b>6 · How firm.</b> A three-way switch per app and one sentence. The suggestion comes from how often the app is really opened, and it says why.</div><div class="vs">Pickers elsewhere: a grid of nine toggles with no explanation.</div></div>
+
+<!-- 7 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--butter)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:56%"></i></div>56%<span class="why">?</span></div>
+ <div class="eyebrow">Try it</div><h2>Try it once, safely.</h2>
+ <div class="sub">This is exactly what you’ll see. Nothing is blocked yet.</div>
+ <div class="chips"><span class="a">YouTube</span><span>Instagram</span><span>TikTok</span></div>
+ <div class="trycard">
+  <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="rgba(243,238,230,.15)" stroke-width="9"/><circle cx="60" cy="60" r="52" fill="none" stroke="#F4C34E" stroke-width="9" stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="130" transform="rotate(-90 60 60)"/></svg><b>6</b></div>
+  <div class="br">Breathe in…</div>
+  <div class="op">YouTube opens in 6 seconds. 3rd open today.</div>
+  <div class="yes">I’m done, close it</div>
+  <div class="no">Open YouTube</div>
+ </div>
+ <div style="text-align:center;font:600 12.5px 'DM Sans';margin-top:12px">See it full screen</div>
+ <div class="cta">That’s fair · Next</div>
+</div>
+<div class="cap"><b>7 · Try it.</b> The real wait, live on the page, for each app the person picked. Closing is the big button — one sec’s study found walking away is what changes habits.</div></div>
+
+<!-- 8 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sky)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:64%"></i></div>64%<span class="why">?</span></div>
+ <div class="eyebrow">Quiet hours</div><h2>When should it be quiet?</h2>
+ <div class="sub">Drag the ends round the clock. Your apps stay closed in these hours.</div>
+ <div class="dial"><svg viewBox="0 0 220 220"><circle cx="110" cy="110" r="82" fill="none" stroke="#EDE4D3" stroke-width="24"/><circle cx="110" cy="110" r="82" fill="none" stroke="#1F2A23" stroke-width="24" stroke-linecap="round" stroke-dasharray="515" stroke-dashoffset="343" transform="rotate(255 110 110)"/><circle cx="89" cy="31" r="13" fill="#F4C34E" stroke="#1F2A23" stroke-width="3"/><circle cx="189" cy="131" r="13" fill="#F4C34E" stroke="#1F2A23" stroke-width="3"/><text x="110" y="14" text-anchor="middle" font-size="11" font-family="DM Sans" fill="#7A8277">0</text><text x="212" y="114" text-anchor="middle" font-size="11" font-family="DM Sans" fill="#7A8277">6</text><text x="110" y="216" text-anchor="middle" font-size="11" font-family="DM Sans" fill="#7A8277">12</text><text x="8" y="114" text-anchor="middle" font-size="11" font-family="DM Sans" fill="#7A8277">18</text></svg><div class="dc"><b>23:00–07:00</b><span>8 quiet hours</span></div></div>
+ <div class="hint">☾ Set from “late at night” and your hardest hour, 23:00.</div>
+ <div class="chips" style="justify-content:center"><span class="a">Nights</span><span>Late nights</span><span>Work hours</span><span>Not now</span></div>
+ <div class="sub" style="text-align:center;font-size:12px">Calls, messages, maps and alarms always work.</div>
+ <div class="cta">Next</div>
+</div>
+<div class="cap"><b>8 · Quiet hours.</b> The clock starts at the person’s own hardest hour, and says so. Drag to change; presets for one tap.</div></div>
+
+<!-- 9 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--blush)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:72%"></i></div>72%<span class="why">?</span></div>
+ <div class="eyebrow">Your note</div><h2>It’s 23:40 and you reach for <em>TikTok</em>.</h2>
+ <div class="sub">What should you read? One line from you, to you. It shows on the pause and when a feed closes.</div>
+ <div class="card" style="margin-top:14px;padding:14px 16px;min-height:112px">
+  <div style="font:600 11px 'DM Sans';color:var(--muted)">From you, earlier</div>
+  <div style="font:600 20px/1.3 Fraunces,Georgia,serif;margin-top:6px">Go to sleep. Tomorrow-you has a big day.<span class="caret"></span></div>
+ </div>
+ <div class="chips" style="flex-wrap:wrap;margin-top:12px"><span>“You’ll be tired tomorrow”</span><span>“Read 10 pages instead”</span><span>“Text a friend”</span><span>“You said 23:00”</span></div>
+ <div class="note">🔒 Stays on this phone. You can change it any time.</div>
+ <div class="ghost">Skip · add it later</div>
+ <div class="cta">Save my note</div>
+</div>
+<div class="cap"><b>9 · A note to late-night you.</b> The question uses the person’s real hardest hour and top app, so it reads like the actual moment. Suggestions come from the answers: tired → “you’ll be tired tomorrow”; read and friends → their “instead” lines.</div></div>
+
+<!-- PLAN -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sage)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="bar">‹<div class="pct"><i style="width:78%"></i></div>78%<span class="why">?</span></div>
+ <div class="eyebrow">Your plan</div><h2>Sam, here’s how we’ll get your <em>evenings</em> back.</h2>
+ <div class="planmap">
+  <svg viewBox="0 0 300 330"><g stroke="#1F2A23" stroke-width="2" stroke-dasharray="4 5"><line x1="150" y1="165" x2="70" y2="50"/><line x1="150" y1="165" x2="232" y2="50"/><line x1="150" y1="165" x2="70" y2="280"/><line x1="150" y1="165" x2="232" y2="280"/></g></svg>
+  <div class="hub"><i></i><i></i></div>
+  <div class="card n" style="left:0;top:4px;background:var(--white)"><b>TikTok</b>Feed closed. DMs work.</div>
+  <div class="card n" style="right:0;top:4px"><b>Instagram</b>45 min a day</div>
+  <div class="card n" style="left:0;bottom:4px"><b>YouTube</b>10 s to breathe first</div>
+  <div class="card n" style="right:0;bottom:4px"><b>Quiet 23–07</b>Covers your hardest hour</div>
+ </div>
+ <div class="sub" style="text-align:center">+ adult sites and images blocked · your note on every pause</div>
+ <div class="cta">Make it live</div>
+</div>
+<div class="cap"><b>9b · Your plan.</b> CleanPath’s “How we’re going to help you” diagram, but drawn from the person’s own choices, right before the permissions — so the switches feel like the last step of <i>their</i> plan, not a demand.</div>
+<div class="vs">CleanPath: a generic figure with “Block · Reset · Emergency” icons.</div></div>
+
+<!-- 10 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--sage)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:84%"></i></div>84%<span class="why">?</span></div>
+ <div class="eyebrow">Make it live</div><h2>Two switches and it’s live.</h2>
+ <div class="sub">Android asks for these. Here’s why, in one line each.</div>
+ <div class="card swc"><div class="num done">✓</div><div><b>See which app is open</b><p>To pause and close feeds. Reads app names and feed screens only.</p></div></div>
+ <div class="card swc"><div class="num">2</div><div style="flex:1"><b>Filter websites</b><p>A local filter for adult sites. No browsing leaves the phone.</p></div><span class="on2">Turn on</span></div>
+ <div class="dlg"><div style="font:700 13px 'DM Sans'">Connection request</div><div style="font-size:11.5px;color:var(--ink2);margin-top:4px">Unrot wants to set up a VPN connection that allows it to monitor network traffic…</div><div style="text-align:right;margin-top:8px;font:700 12px 'DM Sans'"><span style="color:var(--muted);margin-right:16px">Cancel</span><span class="ring2">OK</span></div><div class="arrow">tap OK — it stays on this phone</div></div>
+ <div class="cta">Turn on website filter</div>
+</div>
+<div class="cap"><b>10 · Two switches.</b> Live ticks as each turns on, and a drawing of the exact Android dialog with the button circled, so the scary system wording is expected.</div><div class="vs">CleanPath draws the iPhone settings screen; we draw Android’s, per maker.</div></div>
+
+<!-- 10b -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--butter)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="bar">‹<div class="pct"><i style="width:88%"></i></div>88%<span class="why">?</span></div>
+ <div class="eyebrow">Notifications</div><h2>Three notifications. <em>Never more.</em></h2>
+ <div class="sub">Android will ask. Here they are, exactly as they’ll look.</div>
+ <div class="lock"><div class="lt">21:45</div>
+  <div class="nt"><b>Unrot · now</b><span>Your hard hours start at 22:00 · “Go to sleep. Tomorrow-you has a big day.”</span></div>
+  <div class="nt"><b>Unrot · Thu</b><span>Day 7. A sticker for your first week.</span></div>
+  <div class="nt"><b>Unrot · rarely</b><span>Android stopped the website filter. Tap to turn it back on.</span></div></div>
+ <div class="never">Never: “your streak is in danger”, daily check-ins, ads, or news.</div>
+ <div class="ghost">Not now</div>
+ <div class="cta">Allow these three</div>
+</div>
+<div class="cap"><b>10b · Notifications in context.</b> Asked right after the switches, listing the exact three, so Android’s prompt is no surprise.</div>
+<div class="vs">CleanPath: “Keep this streak alive” before you’ve done anything.</div></div>
+
+<!-- 11 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--blush)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+<div class="bar">‹<div class="pct"><i style="width:92%"></i></div>92%<span class="why">?</span></div>
+ <div class="testic"><div class="ico" style="background:#111;width:88px;height:88px;border-radius:24px"></div></div>
+ <div class="eyebrow" style="text-align:center">Proof</div><h2 style="text-align:center;font-size:30px">Go on. Open TikTok.</h2>
+ <div class="sub" style="text-align:center">See it work for real, then come back. This is the moment most blockers skip.</div>
+ <div class="steps"><div><b>1</b>Open TikTok</div><div><b>2</b>Meet the closed feed and your note</div><div><b>3</b>Come back here</div></div>
+ <div class="cta2">Open TikTok</div>
+ <div class="ghost" style="bottom:40px">I believe you · skip</div>
+</div>
+<div class="cap"><b>11 · First real test.</b> Three numbered steps so nobody wonders what to do. The end page only says “It worked” if a block really showed.</div></div>
+
+<!-- 12 -->
+<div class="item"><div class="phone"><div class="glow" style="background:var(--butter)"></div>
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="bar">‹<div class="pct"><i style="width:97%"></i></div>97%<span class="why">?</span></div>
+ <div class="eyebrow" style="text-align:center">Commit</div><h2 style="text-align:center">Hold to begin.</h2>
+ <div class="sub" style="text-align:center">Press and hold for 3 seconds. A small promise to yourself, kept on this phone.</div>
+ <div class="hold">
+  <svg viewBox="0 0 190 190"><circle cx="95" cy="95" r="86" fill="none" stroke="#EDE4D3" stroke-width="10"/><circle cx="95" cy="95" r="86" fill="none" stroke="#1F2A23" stroke-width="10" stroke-linecap="round" stroke-dasharray="540" stroke-dasharray="540" stroke-dashoffset="190" transform="rotate(-90 95 95)"/></svg>
+  <div class="mark"><i></i><i></i></div>
+ </div>
+ <div class="quote">“Go to sleep. Tomorrow-you has a big day.”</div>
+ <div class="who">For: Sleep · Evenings with people</div>
+ <div class="ghost" style="bottom:40px">Skip — I’ll just start</div>
+</div>
+<div class="cap"><b>12 · Hold to begin.</b> The commitment moment Unchain and Unrot use (a pledge or signature), done as holding the pause mark: the same gesture the person will use in a hard moment. Optional, haptic ticks as the ring fills.</div>
+<div class="vs">Pledge screens elsewhere: sign your name, share with a friend.</div></div>
+
+<!-- 13 -->
+<div class="item"><div class="phone green">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="arch"><svg viewBox="0 0 280 150"><path d="M24 144 A116 116 0 0 1 256 144" fill="none" stroke="rgba(247,242,232,.25)" stroke-width="14" stroke-linecap="round"/><path d="M24 144 A116 116 0 0 1 40 86" fill="none" stroke="#F4C34E" stroke-width="14" stroke-linecap="round"/><circle cx="256" cy="144" r="13" fill="#F7F2E8"/></svg><div class="v"><b>7</b><span>DAYS</span></div></div>
+ <h2 style="text-align:center;margin-top:4px">Your first week starts now, Sam.</h2>
+ <div style="text-align:center"><span class="datepill">Thursday 26 November</span></div>
+  <div class="card plan">
+  <div class="r"><b>Aim</b><span>Under 1h 36m a day on feeds (half of today)</span></div>
+  <div class="r"><b>TikTok</b><span>Feed closed · search and DMs work</span></div>
+  <div class="r"><b>Instagram</b><span>45 min a day</span></div>
+  <div class="r"><b>Quiet</b><span>23:00 – 07:00, tonight in 13 hours</span></div>
+  <div class="r"><b>Checked</b><span>✓ Blocked TikTok’s feed just now</span></div>
+ </div>
+ <div class="sub" style="margin-top:12px">Slips don’t reset anything. The day count only goes up.</div>
+ <div class="cta">Go to Today</div>
+</div>
+<div class="cap"><b>13 · Your first 7 days.</b> CleanPath’s “90-day path” made honest: the next real milestone and its date, an aim from the person’s own number, and proof from the real test. No paywall in setup.</div>
+<div class="vs">CleanPath: 90-day promise, then straight to a paywall.</div></div>
+
+<!-- TOUR -->
+<div class="item"><div class="phone dim">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+
+ <div class="today">
+  <div class="tdh"><b>Today</b><span class="chipok">● Shield on</span></div>
+  <div class="tday card"><span>With Unrot</span><b>Day 1</b><i></i></div>
+  <div class="ttools"><span>Ⅱ<br>Breathe</span><span>✎<br>Note</span><span>⌕<br>Check</span><span>🔒<br>Lock</span></div>
+  <div class="fab">Ⅱ Feeling the pull?</div>
+ </div>
+ <div class="callt t1">Your day count — it only goes up</div>
+ <div class="tourcard"><b>This is your home, Sam.</b><span>Three things to know. You can replay this in You › Help.</span><div class="tc"><span>1 of 3</span><span class="tn">Next</span></div></div>
+</div>
+<div class="cap"><b>14 · Your home (in the app).</b> Unchaind’s annotated tour, done on the real Today screen as a dimmed spotlight with three stops — already built, shown once, skippable.</div></div>
+
+</div>
+
+<div class="section">WHAT WE TAKE, WHAT WE LEAVE</div>
+<table class="table">
+<tr><th>Pattern</th><th>CleanPath / Unchain / Unrot</th><th>Unrot (ours)</th></tr>
+<tr><td>Why are you here</td><td>Goal grid, mostly decorative</td><td>Goal grid where each card names its rule and pre-fills setup</td></tr>
+<tr><td>Diagnosis</td><td>Quiz → invented severity score and “relapse risk”</td><td>Android screen time: hours, apps, hardest hour. Slider if no access</td></tr>
+<tr><td>Motivation</td><td>Brain-damage pages, testimonials with stock names</td><td>Your year in dots; a reachable goal (half)</td></tr>
+<tr><td>Notifications</td><td>“Keep your streak alive”</td><td>The exact three we send, and what we never send</td></tr>
+<tr><td>Commitment</td><td>Sign a pledge</td><td>Hold the pause mark for 3 s (optional)</td></tr>
+<tr><td>Target</td><td>“Your 90-day path”, then paywall</td><td>Next milestone date, aim from your own data, no paywall in setup</td></tr>
+<tr><td>Length</td><td>~20 screens</td><td>12 steps, about 3 minutes; every step can be skipped except the switches</td></tr>
+</table>
+<script>
+const d=document.getElementById('dots');for(let i=0;i<365;i++){const e=document.createElement('i');if(i<49)e.className='f';if(i>=25&&i<49)e.className="b";d.appendChild(e)}
+
+if(location.hash==='#photos'){document.querySelectorAll('h1,.lead,.flow,.section,.table,.cap,.vs').forEach(e=>e.style.display='none');document.body.style.zoom='0.72';document.body.style.padding='14px 12px'}
+</script>
+</body></html>

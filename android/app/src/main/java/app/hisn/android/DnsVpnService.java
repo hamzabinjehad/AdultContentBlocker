@@ -39,7 +39,7 @@ import app.hisn.core.EncryptedDnsResolvers;
 import app.hisn.core.Ipv4DnsPacket;
 import app.hisn.core.Ipv6DnsPacket;
 import app.hisn.core.UdpDnsPacket;
-import app.hisn.core.Ipv4TcpPacket;
+import app.hisn.core.TcpDnsPacket;
 import app.hisn.core.PolicyReceipt;
 import app.hisn.core.TlsDnsTransport;
 import app.hisn.core.UnderlyingNetwork;
@@ -49,7 +49,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -64,8 +63,28 @@ import java.util.concurrent.atomic.AtomicLong;
  * lockdown never enables VPN lockdown. A full-tunnel service would be a separate project.
  */
 public final class DnsVpnService extends VpnService {
-    /** Read when the tunnel is established (Android 10+); null when not known. */
+    /** Read from the active Android VPN (Android 10+); null when unavailable. */
     public static volatile Boolean alwaysOn, lockdown;
+
+    static void refreshAndroidVpnSettings() {
+        if (Build.VERSION.SDK_INT < 29) return;
+        DnsVpnService current;
+        synchronized (CHECK_LOCK) { current = activeService; }
+        if (current == null) return;
+        Boolean seenAlwaysOn = null;
+        Boolean seenLockdown = null;
+        try {
+            seenAlwaysOn = current.isAlwaysOn();
+            seenLockdown = current.isLockdownEnabled();
+        } catch (RuntimeException unavailable) {
+            // Android may be replacing or revoking this VPN.
+        }
+        synchronized (CHECK_LOCK) {
+            if (activeService != current) return;
+            alwaysOn = seenAlwaysOn;
+            lockdown = seenLockdown;
+        }
+    }
 
     public enum State { OFF, STARTING, RUNNING, DEGRADED, ERROR }
     public enum CheckState { IDLE, CHECKING, PASSED, FAILED, STALE }
@@ -137,7 +156,7 @@ public final class DnsVpnService extends VpnService {
     public static final AtomicLong tcpQueries = new AtomicLong();
     public static final AtomicLong tcpReplies = new AtomicLong();
     public static final AtomicLong udpTruncated = new AtomicLong();
-    /** Unrelated packets (other protocols or ports, IPv6): counted, never treated as DNS failures. */
+    /** Unrelated packets (other protocols or ports): counted, never treated as DNS failures. */
     public static final AtomicLong ignoredPackets = new AtomicLong();
     public static final AtomicLong blockedResolvers = new AtomicLong();
     public static final AtomicLong refusedTlsConnections = new AtomicLong();
@@ -204,6 +223,43 @@ public final class DnsVpnService extends VpnService {
             Session current = activeService == null ? null : activeService.session;
             return current != null && current.networkEpoch > 0
                     && current.recordRequestFailure("IO", current.networkEpoch - 1);
+        }
+    }
+
+    /** Debug fixture only. Fills the resolver queue with bounded no-network work. */
+    static AutoCloseable holdResolverWorkersForTest() {
+        if (!BuildConfig.DEBUG) throw new IllegalStateException("Debug fixture unavailable");
+        synchronized (CHECK_LOCK) {
+            Session current = activeService == null ? null : activeService.session;
+            if (current == null || current.closed || state != State.RUNNING) {
+                throw new IllegalStateException("Start the test VPN first");
+            }
+            ThreadPoolExecutor workers = current.workers;
+            java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+            Runnable parked = () -> {
+                try {
+                    release.await(15, TimeUnit.SECONDS);
+                } catch (InterruptedException cancelled) {
+                    Thread.currentThread().interrupt();
+                }
+            };
+            AutoCloseable cleanup = () -> {
+                while (workers.remove(parked)) { /* Remove all queued copies. */ }
+                release.countDown();
+            };
+            int slots = workers.getMaximumPoolSize() + workers.getQueue().remainingCapacity();
+            for (int i = 0; i < slots; i++) {
+                try {
+                    workers.execute(parked);
+                } catch (RejectedExecutionException full) {
+                    break;
+                }
+            }
+            if (workers.getQueue().remainingCapacity() != 0) {
+                release.countDown();
+                throw new IllegalStateException("Could not fill the test queue");
+            }
+            return cleanup;
         }
     }
 
@@ -429,6 +485,13 @@ public final class DnsVpnService extends VpnService {
                 .setContentText(getString(text))
                 .setStyle(new Notification.BigTextStyle().bigText(getString(text) + "\n" + getString(R.string.dns_notification_body)))
                 .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true)
+                // The notification is always there while filtering, so the pause is one pull away.
+                .addAction(new Notification.Action.Builder(
+                        android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_breath),
+                        getString(R.string.today_tool_breathe),
+                        PendingIntent.getActivity(this, 1, PauseEntry.intent(this)
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT)).build())
                 .setShowWhen(false).setCategory(Notification.CATEGORY_SERVICE).build();
     }
 
@@ -567,16 +630,11 @@ public final class DnsVpnService extends VpnService {
                 if (established == null) throw new IOException("VPN permission unavailable");
                 tunnel = established;
                 if (closed) { established.close(); return; }
-                // Whether Android keeps this VPN up by itself and blocks traffic without it; the
-                // Protection screen asks the owner to switch both on when they are off.
-                if (Build.VERSION.SDK_INT >= 29) {
-                    alwaysOn = isAlwaysOn();
-                    lockdown = isLockdownEnabled();
-                }
                 // The tunnel exists now, so a device owner's always-on request can be
                 // applied without racing the VPN preparation. Non-owners are a no-op.
                 try { UninstallProtectionController.sync(DnsVpnService.this); }
                 catch (RuntimeException ignored) { /* The status screen reports any gap. */ }
+                refreshAndroidVpnSettings();
                 PolicyStore settings = PolicyStore.get(DnsVpnService.this);
                 DnsPolicy.Rules savedRules = hostname -> {
                     // One composed order, shared with the read-only site check:
@@ -589,10 +647,13 @@ public final class DnsVpnService extends VpnService {
                     // when the active generation has no usable terms.
                     HostTermPolicy terms = active.hostTerms != null ? active.hostTerms : fallbackHostTerms;
                     HostDecision.Policy current = composedPolicy(active, settings.snapshot(), terms);
-                    return current.evaluate(hostname).enforcement();
+                    return current.enforce(hostname);
                 };
                 DnsPolicy.Rules rules = hostname -> EncryptedDnsProviders.blocks(hostname, privateDnsName)
                         ? DomainPolicy.Decision.BLOCK : browserTest.evaluate(hostname, savedRules);
+                android.content.SharedPreferences dnsChoices = getSharedPreferences(PREFS, MODE_PRIVATE);
+                DnsPolicy.Rewriter rewrite = hostname -> dnsChoices.getBoolean(SAFE_SEARCH, false)
+                        ? SafeSearch.target(hostname) : null;
                 DnsPolicy policy = new DnsPolicy(hostname -> {
                     // This reserved test name must always be handled locally, regardless of user rules.
                     if (DnsTunnelProbe.BLOCKED_HOST.equalsIgnoreCase(hostname)) {
@@ -600,15 +661,13 @@ public final class DnsVpnService extends VpnService {
                         return DomainPolicy.Decision.BLOCK;
                     }
                     return rules.evaluate(hostname);
-                }, hostname -> safeSearchEnabled(DnsVpnService.this)
-                        ? SafeSearch.target(hostname) : null);
+                }, rewrite);
                 DnsPolicy tcpPolicy = new DnsPolicy(hostname -> {
                     if (DnsTunnelProbe.BLOCKED_HOST.equalsIgnoreCase(hostname)) {
                         selfCheckTcpSeen.incrementAndGet(); return DomainPolicy.Decision.BLOCK;
                     }
                     return rules.evaluate(hostname);
-                }, hostname -> safeSearchEnabled(DnsVpnService.this)
-                        ? SafeSearch.target(hostname) : null);
+                }, rewrite);
                 // Cloudflare for Families at 1.1.1.3, or 1.0.0.3 with the same TLS identity when 1.1.1.3
                 // cannot be reached or times out. Never plaintext, never an unfiltered resolver.
                 // Android 6 needs the bundled SSL.com anchor for the resolver's chain; newer
@@ -629,11 +688,12 @@ public final class DnsVpnService extends VpnService {
                     StructPollfd poll = new StructPollfd();
                     poll.fd = established.getFileDescriptor();
                     poll.events = (short) OsConstants.POLLIN;
+                    StructPollfd[] descriptors = { poll };
                     byte[] buffer = new byte[1501];
                     long checkpointAt = android.os.SystemClock.elapsedRealtime();
                     while (!closed) {
                         refreshNotice();
-                        emitTcp(tcp.poll(android.os.SystemClock.elapsedRealtime()), tcpExchange, tcpPolicy, output);
+                        if (!tcp.idle()) emitTcp(tcp.poll(android.os.SystemClock.elapsedRealtime()), tcpExchange, output);
                         if (android.os.SystemClock.elapsedRealtime() - checkpointAt >= 60000) {
                             checkpointAt = android.os.SystemClock.elapsedRealtime();
                             // Retried next minute; failing to save commitment progress must not stop DNS filtering.
@@ -643,45 +703,35 @@ public final class DnsVpnService extends VpnService {
                         }
                         // TCP flows need quarter-second timers; with none open only the notice and the
                         // minute checkpoint depend on this wake-up, and a packet still wakes it at once.
-                        if (Os.poll(new StructPollfd[]{poll}, tcp.idle() ? 2000 : 250) == 0) continue;
+                        if (Os.poll(descriptors, tcp.idle() ? 2000 : 250) == 0) continue;
                         if ((poll.revents & (OsConstants.POLLERR | OsConstants.POLLHUP | OsConstants.POLLNVAL)) != 0) {
                             throw new IOException("Tunnel disconnected");
                         }
                         if ((poll.revents & OsConstants.POLLIN) == 0) continue;
                         int size = input.read(buffer);
                         if (size <= 0) continue;
-                        byte[] raw = Arrays.copyOf(buffer, size);
-                        if (EncryptedDnsResolvers.blocks(raw)) {
+                        // Adapters retain only the endpoint and payload they need; the next read
+                        // reuses the buffer, including when a resolver reply is still in flight.
+                        UdpDnsPacket packet = (buffer[0] & 0xf0) == 0x60
+                                ? Ipv6DnsPacket.parse(buffer, size, SERVER6)
+                                : Ipv4DnsPacket.parse(buffer, size, SERVER);
+                        if (packet != null) {
+                            receiveUdp(packet, exchange, output);
+                            continue;
+                        }
+                        TcpDnsPacket tcpPacket = TcpDnsPacket.parse(buffer, size, SERVER, SERVER6, 53);
+                        if (tcpPacket != null) {
+                            emitTcp(tcp.receive(tcpPacket, android.os.SystemClock.elapsedRealtime()), tcpExchange, output);
+                            continue;
+                        }
+                        if (EncryptedDnsResolvers.blocks(buffer, size)) {
                             blockedResolvers.incrementAndGet();
                             ignoredPackets.incrementAndGet();
                             continue;
                         }
-                        UdpDnsPacket packet = (raw[0] & 0xf0) == 0x60
-                                ? Ipv6DnsPacket.parse(raw, SERVER6)
-                                : Ipv4DnsPacket.parse(raw, SERVER);
-                        if (packet == null) {
-                            Ipv4TcpPacket tcpPacket = Ipv4TcpPacket.parse(raw, SERVER);
-                            if (tcpPacket != null) {
-                                emitTcp(tcp.receive(tcpPacket, android.os.SystemClock.elapsedRealtime()), tcpExchange, tcpPolicy, output);
-                                continue;
-                            }
-                            Ipv4TcpPacket tlsPacket = Ipv4TcpPacket.parse(raw, SERVER, 853);
-                            if (tlsPacket != null) refuseTls(tlsPacket, output);
-                            else recordUnsupported(DnsPacketKind.classify(raw, SERVER));
-                            continue;
-                        }
-                        long queuedAt = android.os.SystemClock.elapsedRealtime();
-                        try {
-                            workers.execute(() -> {
-                                if (closed) return;
-                                if (android.os.SystemClock.elapsedRealtime() - queuedAt > 4000) {
-                                    recordRequestFailure("QUEUE_EXPIRED");
-                                    sendUdpFailure(packet, policy, output);
-                                } else handle(packet, exchange, policy, output);
-                            });
-                        } catch (RejectedExecutionException full) {
-                            recordRequestFailure("QUEUE_FULL"); sendUdpFailure(packet, policy, output);
-                        }
+                        TcpDnsPacket tlsPacket = TcpDnsPacket.parse(buffer, size, SERVER, SERVER6, 853);
+                        if (tlsPacket != null) refuseTls(tlsPacket, output);
+                        else recordUnsupported(DnsPacketKind.classify(buffer, size, SERVER, SERVER6));
                     }
                 }
             } catch (Exception failure) {
@@ -703,7 +753,7 @@ public final class DnsVpnService extends VpnService {
             }
         }
 
-        private void emitTcp(DnsTcpServer.Result result, DnsExchange exchange, DnsPolicy policy, OutputStream output) throws IOException {
+        private void emitTcp(DnsTcpServer.Result result, DnsExchange exchange, OutputStream output) throws IOException {
             synchronized (outputLock) {
                 if (closed) return;
                 for (byte[] packet : result.packets) output.write(packet);
@@ -713,25 +763,38 @@ public final class DnsVpnService extends VpnService {
                     if (closed || session != this || !tcp.isPending(request)) continue;
                     tcpQueries.incrementAndGet();
                 }
+                DnsExchange.PreparedQuery prepared;
+                try {
+                    prepared = exchange.prepare(request.dns);
+                } catch (IOException | RuntimeException unsupported) {
+                    recordRequestFailure(failureCategory(unsupported));
+                    finishTcp(request, null, exchange, output);
+                    continue;
+                }
+                DnsExchange.Resolution local = prepared.localAnswer();
+                if (local != null) {
+                    sendTcpAnswer(request, local, exchange, output, -1);
+                    continue;
+                }
                 long queuedAt = android.os.SystemClock.elapsedRealtime();
                 try {
                     workers.execute(() -> {
                         if (closed || !tcp.isPending(request)) return;
                         if (android.os.SystemClock.elapsedRealtime() - queuedAt > 4000) {
                             recordRequestFailure("QUEUE_EXPIRED");
-                            finishTcp(request, null, exchange, policy, output);
-                        } else handleTcp(request, exchange, policy, output);
+                            finishTcp(request, prepared.failureAnswer(), exchange, output);
+                        } else handleTcp(request, prepared, exchange, output);
                     });
                 } catch (RejectedExecutionException full) {
                     recordRequestFailure("QUEUE_FULL");
-                    emitTcp(tcp.fail(request, android.os.SystemClock.elapsedRealtime()), exchange, policy, output);
+                    emitTcp(tcp.fail(request, android.os.SystemClock.elapsedRealtime()), exchange, output);
                 }
             }
         }
 
         /** Android's automatic Private DNS probes port 853 on the advertised server; an immediate
          * reset lets it fall back to filtered port 53 instead of waiting for a connect timeout. */
-        private void refuseTls(Ipv4TcpPacket packet, OutputStream output) throws IOException {
+        private void refuseTls(TcpDnsPacket packet, OutputStream output) throws IOException {
             byte[] reset = DnsTcpServer.refuse(packet);
             if (reset != null) {
                 synchronized (outputLock) {
@@ -741,7 +804,7 @@ public final class DnsVpnService extends VpnService {
             }
             synchronized (CHECK_LOCK) {
                 if (closed || session != this) return;
-                if ((packet.flags & (Ipv4TcpPacket.SYN | Ipv4TcpPacket.ACK)) == Ipv4TcpPacket.SYN)
+                if ((packet.flags & (TcpDnsPacket.SYN | TcpDnsPacket.ACK)) == TcpDnsPacket.SYN)
                     refusedTlsConnections.incrementAndGet();
                 else ignoredPackets.incrementAndGet();
             }
@@ -790,37 +853,39 @@ public final class DnsVpnService extends VpnService {
             }
         }
 
-        private void finishTcp(DnsTcpServer.Request request, byte[] response,
-                DnsExchange exchange, DnsPolicy policy, OutputStream output) {
+        private void finishTcp(DnsTcpServer.Request request, byte[] response, DnsExchange exchange, OutputStream output) {
             if (closed) return;
             try {
-                if (response == null) response = policy.failureResponse(request.dns);
                 emitTcp(response == null ? tcp.fail(request, android.os.SystemClock.elapsedRealtime())
-                        : tcp.complete(request, response, android.os.SystemClock.elapsedRealtime()), exchange, policy, output);
+                        : tcp.complete(request, response, android.os.SystemClock.elapsedRealtime()), exchange, output);
             } catch (IOException | RuntimeException failed) { recordRequestFailure("TCP_OUTPUT"); }
         }
 
-        private void handleTcp(DnsTcpServer.Request request, DnsExchange exchange, DnsPolicy policy, OutputStream output) {
+        private void handleTcp(DnsTcpServer.Request request, DnsExchange.PreparedQuery prepared,
+                DnsExchange exchange, OutputStream output) {
             final long requestEpoch;
             synchronized (CHECK_LOCK) {
                 if (closed || session != this || !tcp.isPending(request)) return;
                 requestEpoch = networkEpoch;
             }
             try {
-                DnsExchange.Resolution resolution = exchange.resolveDetailed(request.dns);
-                synchronized (CHECK_LOCK) {
-                    if (closed || session != this || !tcp.isPending(request)) return;
-                    if (requestEpoch != networkEpoch) throw new IOException("DNS connection invalidated");
-                    tcpReplies.incrementAndGet();
-                    if (resolution.rewrite) rewritten.incrementAndGet();
-                    else if (resolution.blocked) blocked.incrementAndGet();
-                    else { forwarded.incrementAndGet(); markSuccess(); }
-                }
-                finishTcp(request, resolution.answer, exchange, policy, output);
-            } catch (IOException | IllegalArgumentException failure) {
+                sendTcpAnswer(request, exchange.resolvePrepared(prepared), exchange, output, requestEpoch);
+            } catch (IOException | RuntimeException failure) {
                 if (recordRequestFailure(failureCategory(failure), requestEpoch))
-                    finishTcp(request, null, exchange, policy, output);
+                    finishTcp(request, prepared.failureAnswer(), exchange, output);
             }
+        }
+
+        private void sendTcpAnswer(DnsTcpServer.Request request, DnsExchange.Resolution resolution,
+                DnsExchange exchange, OutputStream output, long requestEpoch) throws IOException {
+            synchronized (CHECK_LOCK) {
+                if (closed || session != this || !tcp.isPending(request)) return;
+                // A local reply has no resolver connection or network epoch.
+                if (requestEpoch >= 0 && requestEpoch != networkEpoch) throw new IOException("DNS connection invalidated");
+                tcpReplies.incrementAndGet();
+                recordResolution(resolution);
+            }
+            finishTcp(request, resolution.answer, exchange, output);
         }
 
         private void networkChanged() {
@@ -1006,39 +1071,78 @@ public final class DnsVpnService extends VpnService {
             }
         }
 
-        void handle(UdpDnsPacket packet, DnsExchange exchange, DnsPolicy policy, OutputStream output) {
+        private void receiveUdp(UdpDnsPacket packet, DnsExchange exchange, OutputStream output) {
+            DnsExchange.PreparedQuery prepared;
+            try {
+                prepared = exchange.prepare(packet.getDns());
+            } catch (IOException | RuntimeException unsupported) {
+                recordRequestFailure(failureCategory(unsupported));
+                return;
+            }
+            DnsExchange.Resolution local = prepared.localAnswer();
+            if (local != null) {
+                try {
+                    sendUdpAnswer(packet, prepared, local, output);
+                } catch (IOException | IllegalArgumentException failed) {
+                    recordRequestFailure(failureCategory(failed));
+                }
+                return;
+            }
+            long queuedAt = android.os.SystemClock.elapsedRealtime();
+            try {
+                workers.execute(() -> {
+                    if (closed) return;
+                    if (android.os.SystemClock.elapsedRealtime() - queuedAt > 4000) {
+                        recordRequestFailure("QUEUE_EXPIRED");
+                        sendUdpFailure(packet, prepared, output);
+                    } else handleUdp(packet, prepared, exchange, output);
+                });
+            } catch (RejectedExecutionException full) {
+                recordRequestFailure("QUEUE_FULL");
+                sendUdpFailure(packet, prepared, output);
+            }
+        }
+
+        private void handleUdp(UdpDnsPacket packet, DnsExchange.PreparedQuery prepared,
+                DnsExchange exchange, OutputStream output) {
             final long requestEpoch;
             synchronized (CHECK_LOCK) {
                 if (closed || session != this || activeService != DnsVpnService.this) return;
                 requestEpoch = networkEpoch;
             }
             try {
-                DnsExchange.Resolution resolution = exchange.resolveDetailed(packet.getDns());
+                DnsExchange.Resolution resolution = exchange.resolvePrepared(prepared);
                 synchronized (CHECK_LOCK) {
                     if (requestEpoch != networkEpoch) throw new IOException("DNS connection invalidated");
                 }
-                byte[] payload = resolution.answer;
-                // The exchange already parsed and evaluated this question; reuse its
-                // question offset instead of running the whole policy a second time.
-                boolean truncated = payload.length > policy.udpResponseLimit(
-                        packet.getDns(), resolution.questionEnd);
-                if (truncated) {
-                    payload = policy.truncatedResponse(packet.getDns());
-                }
-                byte[] response = packet.response(payload);
-                synchronized (outputLock) {
-                    if (closed) return;
-                    output.write(response);
-                }
-                synchronized (CHECK_LOCK) {
-                    if (closed || session != this || activeService != DnsVpnService.this) return;
-                    if (truncated) udpTruncated.incrementAndGet();
-                    if (resolution.rewrite) rewritten.incrementAndGet();
-                    else if (resolution.blocked) blocked.incrementAndGet();
-                    else { forwarded.incrementAndGet(); markSuccess(); }
-                }
-            } catch (IOException | IllegalArgumentException failure) {
-                if (recordRequestFailure(failureCategory(failure), requestEpoch)) sendUdpFailure(packet, policy, output);
+                sendUdpAnswer(packet, prepared, resolution, output);
+            } catch (IOException | RuntimeException failure) {
+                if (recordRequestFailure(failureCategory(failure), requestEpoch)) sendUdpFailure(packet, prepared, output);
+            }
+        }
+
+        private void sendUdpAnswer(UdpDnsPacket packet, DnsExchange.PreparedQuery prepared,
+                DnsExchange.Resolution resolution, OutputStream output) throws IOException {
+            boolean truncated = resolution.answer.length > prepared.udpResponseLimit();
+            byte[] response = packet.response(truncated ? prepared.truncatedAnswer() : resolution.answer);
+            synchronized (outputLock) {
+                if (closed) return;
+                output.write(response);
+            }
+            synchronized (CHECK_LOCK) {
+                if (closed || session != this || activeService != DnsVpnService.this) return;
+                if (truncated) udpTruncated.incrementAndGet();
+                recordResolution(resolution);
+            }
+        }
+
+        /** Caller holds CHECK_LOCK and has checked this session is current. */
+        private void recordResolution(DnsExchange.Resolution resolution) {
+            if (resolution.rewrite) rewritten.incrementAndGet();
+            else if (resolution.blocked) { blocked.incrementAndGet(); StepIns.siteBlocked(DnsVpnService.this); }
+            else {
+                forwarded.incrementAndGet();
+                markSuccess();
             }
         }
 
@@ -1058,12 +1162,10 @@ public final class DnsVpnService extends VpnService {
                             : "IO";
         }
 
-        private void sendUdpFailure(UdpDnsPacket packet, DnsPolicy policy, OutputStream output) {
-            byte[] error = policy.failureResponse(packet.getDns());
-            if (error == null) return;
+        private void sendUdpFailure(UdpDnsPacket packet, DnsExchange.PreparedQuery prepared, OutputStream output) {
             try {
                 synchronized (outputLock) {
-                    if (!closed) output.write(packet.response(error));
+                    if (!closed) output.write(packet.response(prepared.failureAnswer()));
                 }
             } catch (IOException | IllegalArgumentException ignored) {
                 recordRequestFailure("UDP_OUTPUT");

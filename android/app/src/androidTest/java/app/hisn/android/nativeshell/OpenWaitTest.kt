@@ -52,6 +52,26 @@ class OpenWaitTest {
         assertEquals(0, closed)
     }
 
+    @Test fun aTimedVisitIsOfferedOnceTheWaitIsOver() {
+        var minutes = 0
+        rule.mainClock.autoAdvance = false
+        rule.setContent {
+            HisnTheme(darkTheme = false) {
+                OpenWaitScreen(
+                    appLabel = "Chrome", appPackage = "com.android.chrome", seconds = 3,
+                    openedToday = 0, closedToday = 0, reason = "",
+                    onClose = { closed++ }, onOpen = { opened++ }, onOpenFor = { minutes = it }
+                )
+            }
+        }
+        rule.mainClock.advanceTimeByFrame()
+        assertTrue(rule.onAllNodes(hasText("5 min")).fetchSemanticsNodes().isEmpty())
+        rule.mainClock.advanceTimeBy(3_200)
+        rule.onNodeWithText("5 min").performClick()
+        assertEquals(5, minutes)
+        assertEquals(0, opened)
+    }
+
     @Test fun closeWorksAtOnceAndShowsTodaysCounts() {
         showWait()
         rule.onNodeWithText("Today: opened 2 · closed instead 3").assertIsDisplayed()

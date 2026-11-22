@@ -1,5 +1,7 @@
 package app.hisn.core;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * One composed hostname decision, in the order Android DNS actually enforces it:
  * a personal block, then the adult-TLD rail, then the hostname term layer, then the
@@ -44,12 +46,15 @@ public final class HostDecision {
 
     /** An immutable set of rule layers. The caller owns generation changes and reloads. */
     public static final class Policy {
+        private static final int MAX_DECISIONS = 8192;
         private final DomainPolicy personal;
         private final DomainPolicy published;
         private final AdultTldPolicy adultTlds;
         private final HostTermPolicy terms;
         private final boolean publishedAvailable;
         private final long generation;
+        // Scoped to one immutable rule set. Rule edits or a new list get a new cache.
+        private final ConcurrentHashMap<String, DomainPolicy.Decision> decisions = new ConcurrentHashMap<>();
 
         public Policy(DomainPolicy personal, DomainPolicy published, boolean publishedAvailable,
                 long generation, HostTermPolicy terms) {
@@ -69,26 +74,39 @@ public final class HostDecision {
             catch (IllegalArgumentException invalid) {
                 return new Result(null, Outcome.INVALID, Source.NONE, generation);
             }
-            DomainPolicy.Decision own = personal.evaluate(host);
-            if (own == DomainPolicy.Decision.BLOCK) {
-                return new Result(host, Outcome.BLOCKED, Source.PERSONAL_BLOCK, generation);
+            Source source = source(host);
+            Outcome outcome = source != Source.NONE ? Outcome.BLOCKED
+                    : publishedAvailable ? Outcome.NOT_LISTED : Outcome.UNAVAILABLE;
+            return new Result(host, outcome, source, generation);
+        }
+
+        /** The same ordered verdict for the packet path, without allocating an explanation. */
+        public DomainPolicy.Decision enforce(String input) {
+            if (input == null) return DomainPolicy.Decision.INVALID;
+            DomainPolicy.Decision cached = decisions.get(input);
+            if (cached != null) return cached;
+            final String host;
+            try { host = Hostname.normalize(input); }
+            catch (IllegalArgumentException invalid) { return DomainPolicy.Decision.INVALID; }
+            if (host != input) {
+                cached = decisions.get(host);
+                if (cached != null) return cached;
             }
-            if (own == DomainPolicy.Decision.INVALID) {
-                return new Result(host, Outcome.INVALID, Source.NONE, generation);
+            DomainPolicy.Decision verdict = source(host) != Source.NONE ? DomainPolicy.Decision.BLOCK
+                    : publishedAvailable ? DomainPolicy.Decision.ALLOW : DomainPolicy.Decision.INVALID;
+            if (decisions.size() >= MAX_DECISIONS) decisions.clear();
+            decisions.put(host, verdict);
+            return verdict;
+        }
+
+        private Source source(String host) {
+            if (personal.evaluateCanonical(host) == DomainPolicy.Decision.BLOCK) return Source.PERSONAL_BLOCK;
+            if (adultTlds.matchesCanonical(host)) return Source.ADULT_TLD;
+            if (terms != null && terms.matchesCanonical(host)) return Source.HOST_TERM;
+            if (publishedAvailable && published.evaluateCanonical(host) == DomainPolicy.Decision.BLOCK) {
+                return Source.PUBLISHED_LIST;
             }
-            if (adultTlds.matches(host)) {
-                return new Result(host, Outcome.BLOCKED, Source.ADULT_TLD, generation);
-            }
-            if (terms != null && terms.matches(host)) {
-                return new Result(host, Outcome.BLOCKED, Source.HOST_TERM, generation);
-            }
-            if (!publishedAvailable) {
-                return new Result(host, Outcome.UNAVAILABLE, Source.NONE, generation);
-            }
-            if (published.evaluate(host) == DomainPolicy.Decision.BLOCK) {
-                return new Result(host, Outcome.BLOCKED, Source.PUBLISHED_LIST, generation);
-            }
-            return new Result(host, Outcome.NOT_LISTED, Source.NONE, generation);
+            return Source.NONE;
         }
 
         public long generation() { return generation; }

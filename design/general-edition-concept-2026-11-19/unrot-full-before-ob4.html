@@ -1,0 +1,2077 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unrot Full Concept</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..800,100&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F5EFE3; --paper2:#EDE4D3; --ink:#1F2A23; --ink2:#46534A; --muted:#7A8277;
+  --butter:#F4C34E; --tomato:#E5553A; --sage:#9EC39A; --sky:#9CC8E0; --blush:#F2A08F; --white:#FFFDF8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#D9D2C3;font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);padding:30px 16px 40px}
+.head{max-width:1460px;margin:0 auto 26px;display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap}
+.head h1{font:700 34px/1.05 Fraunces,'Iowan Old Style','Palatino',Georgia,serif;letter-spacing:-.5px}
+.head p{color:var(--ink2);font-size:14px;max-width:620px}
+.row{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+.cap{font-size:13px;color:var(--ink2);text-align:center;margin-top:12px;max-width:330px;line-height:1.45}
+.cap b{color:var(--ink)}
+.phone{width:340px;height:736px;border-radius:46px;background:var(--paper);position:relative;overflow:hidden;
+  box-shadow:0 0 0 9px #1F2A23,0 26px 50px -18px rgba(31,42,35,.55)}
+/* paper grain */
+.phone:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:radial-gradient(rgba(31,42,35,.07) 1px,transparent 1.2px);background-size:5px 5px}
+.status{display:flex;justify-content:space-between;padding:15px 28px 0;font:700 12px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;position:relative}
+.scr{padding:10px 18px 0;position:relative}
+.top{display:flex;justify-content:space-between;align-items:center}
+.logo{font:800 25px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;letter-spacing:-.8px}
+.logo i{font-style:normal;color:var(--tomato)}
+.tag{font:700 11px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;padding:6px 11px;border-radius:999px;border:2px solid var(--ink);background:var(--white)}
+.tag.ok{background:var(--sage)}
+.card{background:var(--white);border:2px solid var(--ink);border-radius:22px;box-shadow:3px 4px 0 var(--ink)}
+h2{font:700 27px/1.08 Fraunces,'Iowan Old Style','Palatino',Georgia,serif;letter-spacing:-.4px}
+.serif{font-family:Fraunces,'Iowan Old Style','Palatino',Georgia,serif}
+/* today */
+.hello{margin-top:12px;display:flex;gap:10px;align-items:flex-end}
+.bubble{position:relative;flex:1;padding:12px 14px;font-size:14px;line-height:1.35}
+.bubble:after{content:"";position:absolute;left:-9px;bottom:16px;width:14px;height:14px;background:var(--white);border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg)}
+.bubble b{font:700 17px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;display:block;margin-bottom:2px}
+.garden{margin-top:14px;padding:14px 16px 12px;background:var(--butter)}
+.garden .k{font:700 11px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;letter-spacing:1px;text-transform:uppercase}
+.days{font:800 58px/0.95 Fraunces,'Iowan Old Style','Palatino',Georgia,serif;letter-spacing:-2px;margin-top:4px}
+.days span{font-size:20px;letter-spacing:0;font-weight:600}
+.track{margin-top:10px;position:relative;height:30px}
+.track .line{position:absolute;left:4px;right:4px;top:14px;height:3px;background:var(--ink);border-radius:3px;opacity:.25}
+.track .fill{position:absolute;left:4px;top:14px;height:3px;background:var(--ink);border-radius:3px}
+.track .st{position:absolute;top:5px;width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);background:var(--butter);font:700 9px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center}
+.track .st.d{background:var(--ink);color:var(--butter)}
+.track .st.n{background:var(--white)}
+.garden .s{font-size:12.5px;margin-top:2px;color:var(--ink2)}
+.minis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.mini{padding:12px 13px}
+.mini .k{font-size:11.5px;color:var(--muted);font-weight:600}
+.mini .v{font:700 26px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;margin-top:2px}
+.mini .v small{font:500 12px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:var(--muted)}
+.squig{display:block;margin-top:6px}
+.pause{position:absolute;left:18px;right:18px;bottom:96px;height:64px;border-radius:20px;background:var(--tomato);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);
+  display:flex;align-items:center;gap:12px;padding:0 10px 0 8px;color:var(--white)}
+.pause .ic{width:46px;height:46px;border-radius:14px;background:var(--white);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center}
+.pause b{font:700 17px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;display:block}
+.pause span{font-size:11.5px;opacity:.9}
+.nav{position:absolute;left:14px;right:14px;bottom:18px;height:62px;border-radius:22px;background:var(--white);border:2px solid var(--ink);display:flex;justify-content:space-around;align-items:center}
+.nav div{font:700 11px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:var(--muted);padding:8px 12px;border-radius:14px}
+.nav div.a{background:var(--ink);color:var(--paper)}
+/* breathe */
+.breathe{background:var(--sky)}
+.breathe .scr{text-align:center}
+.pipbig{margin:42px auto 0;width:230px;height:230px;position:relative}
+.pipbig .halo{position:absolute;inset:-6px;border-radius:50%;border:2px dashed var(--ink);opacity:.35}
+.pipbig .noodle{display:block}
+@keyframes breathe{0%,100%{transform:scale(.86)}45%,55%{transform:scale(1.04)}}
+@media (prefers-reduced-motion:reduce){.pipbig svg{animation:none}}
+.bt{font:700 40px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;margin-top:22px;letter-spacing:-.6px}
+.bs{font-size:14px;color:var(--ink2);margin-top:4px}
+.counts{display:flex;justify-content:center;gap:8px;margin-top:16px}
+.counts i{width:12px;height:12px;border-radius:50%;border:2px solid var(--ink)}.counts i.f{background:var(--ink)}
+.reason{margin:22px 4px 0;padding:13px 15px;text-align:left;background:var(--white)}
+.reason .k{font:700 10.5px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.reason .q{font:600 18px/1.25 Fraunces,'Iowan Old Style','Palatino',Georgia,serif;margin-top:4px}
+.leave{position:absolute;left:18px;right:18px;bottom:26px;height:54px;border-radius:18px;border:2px solid var(--ink);background:transparent;display:flex;align-items:center;justify-content:center;font:700 14px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif}
+/* shield */
+.shieldhead{margin-top:14px;padding:16px;background:var(--sage);display:flex;gap:12px;align-items:center}
+.shieldhead .t{font:700 21px/1.1 Fraunces,'Iowan Old Style','Palatino',Georgia,serif}
+.shieldhead .s{font-size:12px;color:var(--ink2);margin-top:4px}
+.rows{margin-top:14px;overflow:hidden}
+.r{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:2px solid var(--paper2)}
+.r:last-child{border-bottom:none}
+.r .ico{width:38px;height:38px;border-radius:12px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center}
+.r .tx{flex:1}.r .tx b{display:block;font-size:14.5px}.r .tx span{font-size:11.5px;color:var(--muted)}
+.sw{width:46px;height:28px;border-radius:99px;border:2px solid var(--ink);background:var(--ink);position:relative}
+.sw:after{content:"";position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:var(--butter)}
+.sw.off{background:var(--paper2)}.sw.off:after{left:2px;right:auto;background:var(--white);border:2px solid var(--ink);top:2px;width:16px;height:16px}
+.addrow{margin-top:12px;display:flex;gap:10px}
+.addrow div{flex:1;padding:12px;text-align:center;font:700 13px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif}
+/* progress */
+.week{margin-top:14px;padding:14px}
+.week .k{font-size:11.5px;color:var(--muted);font-weight:600}
+.week .v{font:700 28px Fraunces,'Iowan Old Style','Palatino',Georgia,serif}.week .v small{font:600 12px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:#2F7A3A}
+.bars{display:flex;gap:8px;align-items:flex-end;height:110px;margin-top:10px}
+.bars div{flex:1;text-align:center;font:700 10px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:var(--muted)}
+.bars i{display:block;border:2px solid var(--ink);border-radius:9px 9px 4px 4px;background:var(--paper2);margin-bottom:5px}
+.bars i.t{background:var(--tomato)}
+.stickers{display:flex;gap:9px;margin-top:14px}
+.st2{flex:1;height:96px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;font:700 15px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;position:relative}
+.st2 span{font:600 9.5px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:var(--muted)}
+.st2.lock{background:var(--paper2);box-shadow:none;border-style:dashed}
+.st2.lock .lk{font:800 26px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;color:var(--muted);position:absolute;top:16px}
+.hard{margin-top:14px;padding:13px 14px;background:var(--blush)}
+.hard b{font:700 16px Fraunces,'Iowan Old Style','Palatino',Georgia,serif}.hard p{font-size:12px;color:var(--ink2);margin-top:3px}
+.hrs{display:flex;gap:2px;align-items:flex-end;height:30px;margin-top:8px}
+.hrs i{flex:1;background:var(--ink);opacity:.22;border-radius:2px}.hrs i.p{opacity:1}
+.btnsm{display:inline-block;margin-top:9px;font:700 12px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;padding:7px 12px;border-radius:12px;border:2px solid var(--ink);background:var(--white)}
+.sheet{max-width:1460px;margin:34px auto 0;display:grid;grid-template-columns:1.2fr 1fr;gap:22px}
+.panel{background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:20px 22px;box-shadow:4px 5px 0 var(--ink)}
+.panel h3{font:700 22px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;margin-bottom:10px}
+.moods{display:flex;gap:16px;flex-wrap:wrap}
+.mood{text-align:center;font:600 12px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;color:var(--ink2)}
+.mood svg{width:96px;height:96px;display:block;margin-bottom:4px}
+.panel li{font-size:13.5px;line-height:1.55;margin-left:18px;color:var(--ink2)}
+.panel li b{color:var(--ink)}
+.sw8{display:flex;gap:8px;margin-top:12px}.sw8 div{flex:1;height:44px;border-radius:12px;border:2px solid var(--ink);font:700 9.5px 'DM Sans',-apple-system,'Helvetica Neue',sans-serif;display:flex;align-items:flex-end;padding:4px 6px}
+@media (max-width:900px){.sheet{grid-template-columns:1fr}}
+
+.noodle{display:inline-block;vertical-align:bottom}
+.noodle svg{width:100%;height:100%;overflow:visible}
+.n-all{transform-box:fill-box;transform-origin:50% 100%;animation:n-bob 2.6s ease-in-out infinite}
+@keyframes n-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3.5px)}}
+.n-eyes{transform-box:fill-box;transform-origin:50% 50%;animation:n-blink 4.2s infinite}
+@keyframes n-blink{0%,93%,100%{transform:scaleY(1)}95.5%{transform:scaleY(.08)}}
+.n-mouth-talk{transform-box:fill-box;transform-origin:50% 30%;animation:n-talk .32s ease-in-out infinite alternate}
+@keyframes n-talk{from{transform:scaleY(.35)}to{transform:scaleY(1.05)}}
+.walking .n-legL{transform-box:fill-box;transform-origin:50% 0;animation:n-step .5s ease-in-out infinite alternate}
+.walking .n-legR{transform-box:fill-box;transform-origin:50% 0;animation:n-step .5s ease-in-out infinite alternate-reverse}
+@keyframes n-step{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}
+.walking .n-all{animation:n-bob .5s ease-in-out infinite}
+.n-wave{transform-box:fill-box;transform-origin:0% 100%;animation:n-wave 1.1s ease-in-out infinite alternate}
+@keyframes n-wave{from{transform:rotate(-18deg)}to{transform:rotate(16deg)}}
+.n-point{transform-box:fill-box;transform-origin:0% 50%;animation:n-point 1.4s ease-in-out infinite alternate}
+@keyframes n-point{from{transform:rotate(-4deg)}to{transform:rotate(6deg)}}
+.breathing .n-all{animation:n-breathe 8s ease-in-out infinite;transform-origin:50% 85%}
+@keyframes n-breathe{0%,100%{transform:scale(.86)}45%,55%{transform:scale(1.05)}}
+.n-spark{animation:n-spark 1.2s ease-in-out infinite alternate}
+@keyframes n-spark{from{opacity:.25}to{opacity:1}}
+.n-swirl{transform-box:fill-box;transform-origin:50% 50%;animation:n-spin 1.6s linear infinite}
+@keyframes n-spin{to{transform:rotate(360deg)}}
+.typed{display:inline;border-right:2px solid var(--ink);animation:caret .8s steps(1) infinite}
+@keyframes caret{50%{border-color:transparent}}
+@media (prefers-reduced-motion:reduce){.noodle *{animation:none!important}}
+body.dk .noodle .n-rim{stroke:rgba(255,236,214,.16)}
+
+.mood{width:120px}.mood .noodle{display:block;margin:0 auto 6px}
+.explain{display:flex;gap:6px;align-items:flex-end;margin-top:14px}
+.bubble2{flex:1;padding:11px 13px;font-size:12.5px;line-height:1.4;position:relative;background:var(--butter)}
+.bubble2 b{display:block;font:700 14px Fraunces,'Iowan Old Style','Palatino',Georgia,serif;margin-bottom:3px}
+.bubble2:after{content:"";position:absolute;left:-9px;bottom:14px;width:14px;height:14px;background:var(--butter);border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg)}
+.bubble span,.bubble2 span{min-height:2.8em;display:block}
+.sec{max-width:1460px;margin:46px auto 18px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.sec h2{font:800 30px Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-.5px}
+.sec p{font-size:14px;color:var(--ink2);max-width:700px}
+.num{font:800 13px 'DM Sans',-apple-system,sans-serif;background:var(--ink);color:var(--paper);border-radius:99px;padding:4px 10px}
+/* onboarding */
+.ob{display:flex;flex-direction:column;align-items:center;text-align:center}
+.ob h3{font:800 31px/1.05 Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-.6px;margin-top:8px}
+.ob p{font-size:14px;color:var(--ink2);margin-top:8px;padding:0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+.chipx{padding:10px 14px;border:2px solid var(--ink);border-radius:16px;background:var(--white);font:700 13.5px 'DM Sans',-apple-system,sans-serif;display:flex;gap:7px;align-items:center}
+.chipx.on{background:var(--ink);color:var(--paper)}
+.chipx .ck{width:16px;height:16px;border-radius:5px;border:2px solid currentColor;display:inline-block}
+.chipx.on .ck{background:var(--butter);border-color:var(--butter)}
+.stepdots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.stepdots i{width:22px;height:6px;border-radius:6px;background:var(--paper2);border:1.5px solid var(--ink)}.stepdots i.f{background:var(--ink)}
+.primary{position:absolute;left:18px;right:18px;bottom:28px;height:58px;border-radius:18px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font:700 16px 'DM Sans',-apple-system,sans-serif;box-shadow:3px 4px 0 var(--tomato)}
+.skip{position:absolute;left:0;right:0;bottom:96px;text-align:center;font:600 13px 'DM Sans',-apple-system,sans-serif;color:var(--muted)}
+/* block moment */
+.feedbg{position:absolute;inset:0;background:#111;}
+.feedbg:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,#222 0 160px,#1a1a1a 160px 320px);opacity:.9}
+.blocksheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-top:2px solid var(--ink);border-radius:30px 30px 0 0;padding:16px 20px 26px}
+.grab{width:42px;height:5px;border-radius:5px;background:var(--ink);opacity:.25;margin:0 auto 8px}
+.blocksheet h3{font:800 26px/1.08 Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-.4px}
+.blocksheet p{font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.45}
+.still{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.still span{font:700 11.5px 'DM Sans',-apple-system,sans-serif;padding:6px 10px;border-radius:99px;background:var(--sage);border:2px solid var(--ink)}
+.btn2{display:flex;gap:10px;margin-top:16px}
+.btn2 div{flex:1;height:52px;border-radius:16px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:700 14px 'DM Sans',-apple-system,sans-serif;text-align:center;padding:0 6px}
+.btn2 .p{background:var(--ink);color:var(--paper)}
+.fine{font-size:11.5px;color:var(--muted);margin-top:12px;text-align:center}
+/* attention */
+.alert{margin-top:14px;padding:15px;background:var(--blush)}
+.alert .t{font:700 20px/1.12 Fraunces,'Iowan Old Style',Georgia,serif}
+.alert .s{font-size:12.5px;color:var(--ink2);margin-top:5px;line-height:1.4}
+.fixbtn{margin-top:12px;height:48px;border-radius:14px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font:700 14px 'DM Sans',-apple-system,sans-serif}
+.steps{margin-top:12px;padding:6px 0}
+.steps .r{padding:11px 14px}
+.dotst{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);flex:none}
+.dotst.ok{background:var(--sage)}.dotst.bad{background:var(--tomato)}
+/* milestone */
+.confetti{position:absolute;inset:0;pointer-events:none}
+.confetti i{position:absolute;width:10px;height:16px;border:2px solid var(--ink);border-radius:3px;animation:fall 3.5s linear infinite}
+@keyframes fall{from{transform:translateY(-40px) rotate(0)}to{transform:translateY(760px) rotate(540deg)}}
+@media (prefers-reduced-motion:reduce){.confetti i{animation:none}}
+.ms-sheet{position:absolute;left:14px;right:14px;top:150px;padding:20px 18px 18px;text-align:center;background:var(--butter)}
+.ms-sheet .big{font:800 72px/1 Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-3px}
+.ms-sheet h3{font:800 24px Fraunces,'Iowan Old Style',Georgia,serif;margin-top:4px}
+.ms-sheet p{font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.45}
+.dim{position:absolute;inset:0;background:rgba(31,42,35,.45)}
+/* paywall */
+.plan{margin-top:12px;padding:14px;display:flex;gap:12px;align-items:center}
+.plan .rb{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);flex:none}
+.plan.sel{background:var(--butter)}.plan.sel .rb{background:var(--ink);box-shadow:inset 0 0 0 4px var(--butter)}
+.plan .pt{flex:1}.plan .pt b{display:block;font:700 16px Fraunces,'Iowan Old Style',Georgia,serif}.plan .pt span{font-size:12px;color:var(--ink2)}
+.plan .pp{font:800 18px Fraunces,'Iowan Old Style',Georgia,serif;text-align:right}.plan .pp small{display:block;font:600 10.5px 'DM Sans',-apple-system,sans-serif;color:var(--muted)}
+.cmp{margin-top:12px;overflow:hidden}
+.cmp .cr{display:flex;padding:9px 12px;border-bottom:2px solid var(--paper2);font-size:12.5px;align-items:center}
+.cmp .cr:last-child{border:none}
+.cmp .cr span{flex:1}.cmp .cr b{width:46px;text-align:center;font:700 11px 'DM Sans',-apple-system,sans-serif}
+.cmp .hd{background:var(--paper2);font-weight:700}
+.yes{color:#2F7A3A}.no{color:var(--muted)}
+.trial{margin-top:10px;font-size:11.5px;color:var(--ink2);text-align:center;line-height:1.45}
+/* explain overlay */
+.dimx{position:absolute;inset:0;background:rgba(31,42,35,.55)}
+.spot{position:absolute;left:18px;right:18px;top:262px;height:64px;border-radius:18px;background:var(--white);border:2px solid var(--ink);display:flex;align-items:center;gap:12px;padding:0 14px;box-shadow:0 0 0 6px rgba(244,195,78,.9)}
+.xbubble{position:absolute;left:18px;right:18px;top:352px;padding:13px 15px;background:var(--white);font-size:13.5px;line-height:1.45}
+.xbubble b{display:block;font:700 17px Fraunces,'Iowan Old Style',Georgia,serif;margin-bottom:4px}
+.xbubble .acts{display:flex;gap:8px;margin-top:10px}
+.xbubble .acts span{font:700 12px 'DM Sans',-apple-system,sans-serif;padding:7px 11px;border-radius:12px;border:2px solid var(--ink)}
+.xbubble .acts span.p{background:var(--ink);color:var(--paper)}
+/* rtl + dark */
+.rtl{direction:rtl;font-family:'IBM Plex Sans Arabic','Geeza Pro','DM Sans',sans-serif}
+.rtl .bubble:after{left:auto;right:-9px;transform:rotate(-135deg)}
+.rtl .days,.rtl h2,.rtl .bubble b{font-family:'IBM Plex Sans Arabic','Geeza Pro',sans-serif;font-weight:700}
+.dark{--paper:#16130E;--paper2:#2A251D;--white:#221E17;--ink:#F3ECDF;--ink2:#C9C0B0;--muted:#968D7E;background:var(--paper);box-shadow:0 0 0 9px #0B0A07,0 26px 50px -18px rgba(0,0,0,.6)}
+.dark .card{box-shadow:3px 4px 0 #000}
+.dark .garden{background:#5A4A1C;border-color:#F4C34E}
+.dark .pause{border-color:#000;box-shadow:3px 4px 0 #000}
+.dark .nav div.a{background:var(--ink);color:#16130E}
+/* rules */
+.flow{max-width:1460px;margin:0 auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.fbox{background:var(--paper);border:2px solid var(--ink);border-radius:16px;padding:10px 14px;font:700 13px 'DM Sans',-apple-system,sans-serif;box-shadow:3px 3px 0 var(--ink)}
+.fbox small{display:block;font-weight:500;color:var(--ink2);font-size:11.5px}
+.arrow{font:700 20px 'DM Sans',sans-serif;color:var(--ink2)}
+.rules{max-width:1460px;margin:22px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.rule{background:var(--paper);border:2px solid var(--ink);border-radius:20px;padding:16px 18px}
+.rule h4{font:700 18px Fraunces,'Iowan Old Style',Georgia,serif;margin-bottom:6px}
+.rule p{font-size:13px;line-height:1.55;color:var(--ink2)}
+.map{max-width:1460px;margin:30px auto 0;background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:18px 22px;box-shadow:4px 5px 0 var(--ink)}
+.map h3{font:700 22px Fraunces,'Iowan Old Style',Georgia,serif;margin-bottom:10px}
+.map table{width:100%;border-collapse:collapse;font-size:13px}
+.map th{text-align:left;font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:2px solid var(--ink)}
+.map td{padding:8px;border-bottom:1.5px solid var(--paper2);vertical-align:top;color:var(--ink2)}
+.map td:first-child{color:var(--ink);font-weight:600;width:48%}
+.dark{color:var(--ink)}
+.tight .r{padding:9px 14px}.tight .r .tx b{font-size:13.5px}
+.dark .tag.ok{color:#1F2A23}
+.dark .garden .days,.dark .garden .k{color:#F7E7B5}
+/* v5 */
+.lbl2{font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;color:var(--muted);margin:12px 4px 6px;text-transform:uppercase}
+.check{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-bottom:2px solid var(--paper2)}
+.check:last-child{border:none}
+.cbox{width:26px;height:26px;border-radius:9px;border:2px solid var(--ink);flex:none;display:flex;align-items:center;justify-content:center;font:800 13px 'DM Sans',sans-serif}
+.cbox.done{background:var(--sage)}.cbox.now{background:var(--butter)}
+.check b{display:block;font-size:14px}.check span{font-size:12px;color:var(--ink2);line-height:1.35}
+.why{font-size:11.5px;color:var(--muted);margin-top:4px}
+.bigtime{font:800 64px/1 Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-2px}
+.moon{background:#24304A;color:#F3ECDF}
+.moon .card{background:#2F3C59;border-color:#F3ECDF;box-shadow:3px 4px 0 #0E1424;color:#F3ECDF}
+.moon .tag{background:#2F3C59;color:#F3ECDF;border-color:#F3ECDF}
+.moon .muted{color:#B9C2D6}
+.stars{position:absolute;inset:0;background-image:radial-gradient(#F3ECDF 1px,transparent 1.4px),radial-gradient(#F3ECDF 1px,transparent 1.4px);background-size:70px 90px,110px 130px;background-position:10px 20px,45px 60px;opacity:.35}
+.locked .sw{opacity:.45}
+.lockbar{margin-top:12px;padding:12px 14px;background:var(--sky);display:flex;gap:10px;align-items:center}
+.lockbar b{font:700 16px Fraunces,Georgia,serif;display:block}.lockbar span{font-size:12px;color:var(--ink2)}
+.lk{width:34px;height:34px;border-radius:11px;border:2px solid var(--ink);background:var(--white);display:flex;align-items:center;justify-content:center;flex:none}
+/* android surfaces */
+.shade{background:#1C1B19;color:#EEE}
+.qs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 14px 0}
+.qt{height:62px;border-radius:22px;background:#33312D;display:flex;align-items:center;gap:10px;padding:0 12px;font:600 12.5px 'DM Sans',sans-serif}
+.qt i{width:28px;height:28px;border-radius:50%;background:#4A4740;flex:none}
+.qt.on{background:#F4C34E;color:#1F2A23}.qt.on i{background:#1F2A23}
+.qt small{display:block;font-weight:500;opacity:.75;font-size:11px}
+.notif{margin:10px 14px 0;background:#2A2926;border-radius:24px;padding:12px 14px}
+.notif .h{display:flex;gap:8px;align-items:center;font:600 11px 'DM Sans',sans-serif;opacity:.75}
+.notif .h i{width:18px;height:18px;border-radius:50%;background:#F6A9BC}
+.notif b{display:block;font-size:14px;margin-top:6px}
+.notif p{font-size:12.5px;opacity:.85;margin-top:2px}
+.notif .acts{display:flex;gap:8px;margin-top:10px}
+.notif .acts span{font:700 12px 'DM Sans',sans-serif;padding:7px 12px;border-radius:99px;background:#3B3934}
+.notif .acts span.p{background:#F4C34E;color:#1F2A23}
+.wall{background:linear-gradient(160deg,#C9D8C4,#E9D9B8)}
+.widget{position:absolute;left:16px;right:16px;top:70px;border-radius:28px;background:var(--paper);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);padding:14px;display:flex;gap:12px;align-items:center}
+.widget .d{font:800 44px/1 Fraunces,Georgia,serif}
+.widget .d span{display:block;font:600 11px 'DM Sans',sans-serif;color:var(--muted)}
+.widget .b{margin-left:auto;height:52px;padding:0 14px;border-radius:16px;background:var(--tomato);border:2px solid var(--ink);color:#fff;display:flex;align-items:center;font:700 13px 'DM Sans',sans-serif}
+.wsmall{position:absolute;top:230px;width:140px;height:140px;border-radius:28px;background:var(--butter);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);padding:12px}
+.apps{position:absolute;left:24px;right:24px;bottom:110px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.apps i{display:block;width:54px;height:54px;border-radius:18px;background:rgba(255,255,255,.65);margin:0 auto}
+.sheetx{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-top:2px solid var(--ink);border-radius:30px 30px 0 0;padding:14px 18px 22px}
+.seg{display:flex;border:2px solid var(--ink);border-radius:14px;overflow:hidden;margin-top:12px}
+.seg div{flex:1;text-align:center;padding:9px 0;font:700 13px 'DM Sans',sans-serif;border-right:2px solid var(--ink)}
+.seg div:last-child{border:none}.seg div.a{background:var(--ink);color:var(--paper)}
+.field{margin-top:12px;height:52px;border-radius:14px;border:2px solid var(--ink);background:var(--white);display:flex;align-items:center;padding:0 14px;font-size:15px}
+.field .cur{width:2px;height:22px;background:var(--ink);margin-left:2px;animation:caret 1s steps(1) infinite}
+.sugg{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.sugg span{font:600 12px 'DM Sans',sans-serif;padding:6px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--white)}
+.howlong{margin-top:12px;display:flex;gap:6px}
+.howlong span{flex:1;text-align:center;padding:9px 0;border-radius:12px;border:2px solid var(--ink);font:700 12px 'DM Sans',sans-serif;background:var(--white)}
+.howlong span.a{background:var(--butter)}
+/* design system */
+.ds{max-width:1460px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px}
+.dsb{background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:16px 18px;box-shadow:4px 5px 0 var(--ink)}
+.dsb h4{font:700 19px Fraunces,Georgia,serif;margin-bottom:10px}
+.tok{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1.5px solid var(--paper2);color:var(--ink2)}
+.tok b{color:var(--ink);font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.typ div{margin:6px 0}
+.cmpr{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.bx{height:48px;padding:0 16px;border-radius:16px;border:2px solid var(--ink);display:inline-flex;align-items:center;font:700 14px 'DM Sans',sans-serif}
+.bx.p{background:var(--ink);color:var(--paper);box-shadow:3px 4px 0 var(--tomato)}
+.bx.t{background:var(--butter)}.bx.g{background:transparent}
+.bx.d{background:var(--white);color:#B23A23}
+/* v6 */
+.goals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;text-align:left}
+.goal{padding:12px;border-radius:20px;border:2px solid var(--ink);background:var(--white);position:relative;min-height:112px}
+.goal.on{background:var(--butter);box-shadow:3px 4px 0 var(--ink)}
+.goal .gi{width:34px;height:34px;border-radius:11px;border:2px solid var(--ink);background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:16px}
+.goal b{display:block;font:700 15px Fraunces,Georgia,serif;margin-top:8px}
+.goal span{font-size:11.5px;color:var(--ink2);line-height:1.3;display:block;margin-top:2px}
+.goal .tick{position:absolute;right:10px;top:10px;width:20px;height:20px;border-radius:50%;border:2px solid var(--ink);background:var(--white)}
+.goal.on .tick{background:var(--ink)}
+.goal.on .tick:after{content:"";position:absolute;left:5px;top:2px;width:5px;height:9px;border:solid var(--butter);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.week7{display:flex;justify-content:space-between;margin-top:12px}
+.week7 div{display:flex;flex-direction:column;align-items:center;gap:4px;font:700 10px 'DM Sans',sans-serif;color:var(--ink2)}
+.week7 i{width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);background:var(--white);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px}
+.week7 i.g{background:var(--sage)}.week7 i.o{background:var(--blush)}.week7 i.t{background:var(--butter);box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--ink)}.week7 i.f{border-style:dashed;opacity:.55}
+.toast{position:absolute;left:18px;right:18px;top:46px;z-index:5;padding:10px 12px;border-radius:18px;background:var(--ink);color:var(--paper);display:flex;gap:10px;align-items:center;font-size:12.5px;box-shadow:0 10px 20px -8px rgba(0,0,0,.4)}
+.toast b{display:block;font-size:13.5px}
+.toast .pb{height:5px;border-radius:5px;background:rgba(245,239,227,.25);margin-top:5px;overflow:hidden}.toast .pb i{display:block;height:100%;width:62%;background:var(--butter)}
+.start-num{font:800 46px/1 Fraunces,Georgia,serif;letter-spacing:-1.5px}
+.start-num small{font:600 15px 'DM Sans',sans-serif;letter-spacing:0}
+.appbar{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}
+.appbar span{width:76px;color:var(--ink2);font-weight:600}
+.appbar div{flex:1;height:14px;border-radius:7px;border:2px solid var(--ink);background:var(--paper2);overflow:hidden}
+.appbar div i{display:block;height:100%;background:var(--tomato)}
+.appbar b{width:46px;text-align:right;font-size:12px}
+.src{font-size:10.5px;color:var(--muted);margin-top:8px}
+.coach{position:absolute;inset:0;background:rgba(31,42,35,.62)}
+.coach-hole{position:absolute;border-radius:22px;box-shadow:0 0 0 3px var(--butter),0 0 0 2000px rgba(31,42,35,.62)}
+.coach-tip{position:absolute;left:24px;right:24px;padding:13px 14px;background:var(--white);border:2px solid var(--ink);border-radius:18px;font-size:13px;line-height:1.4;box-shadow:3px 4px 0 var(--ink)}
+.coach-tip b{display:block;font:700 17px Fraunces,Georgia,serif;margin-bottom:3px}
+.coach-tip .ft{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font:700 12px 'DM Sans',sans-serif}
+.coach-tip .ft span.p{background:var(--ink);color:var(--paper);padding:7px 12px;border-radius:12px}
+.mini-phone{margin:12px auto 0;width:210px;border:2px solid var(--ink);border-radius:22px;background:#fff;padding:10px;font-size:11.5px;color:#222}
+.mini-phone .h{font:700 12.5px 'DM Sans',sans-serif;margin-bottom:6px}
+.mini-phone .it{display:flex;justify-content:space-between;align-items:center;padding:7px 8px;border-radius:10px;margin-top:4px;background:#F2F2F2}
+.mini-phone .it.hl{background:#FFF3C4;box-shadow:0 0 0 2.5px var(--tomato)}
+.msw{width:28px;height:16px;border-radius:9px;background:#BBB;position:relative}.msw:after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff}
+.stepper{display:flex;gap:6px;justify-content:center;margin-top:12px}.stepper i{width:8px;height:8px;border-radius:50%;background:var(--paper2);border:1.5px solid var(--ink)}.stepper i.f{background:var(--ink)}
+.lens{display:flex;gap:8px;margin-top:14px}
+.lens span{flex:1;padding:10px 0;text-align:center;border-radius:14px;border:2px solid var(--ink);background:var(--white);font:700 13px 'DM Sans',sans-serif}
+.lens span small{display:block;font:500 10.5px 'DM Sans',sans-serif;color:var(--muted)}
+.lens span.a{background:var(--ink);color:var(--paper)}.lens span.a small{color:#C9C0B0}
+.alts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.alt{padding:11px;border-radius:18px;border:2px solid var(--ink);background:var(--white);font-size:11.5px;color:var(--ink2)}
+.alt b{display:block;font:700 14.5px Fraunces,Georgia,serif;color:var(--ink);margin:4px 0 2px}
+.alt .go{display:inline-block;margin-top:8px;font:700 11.5px 'DM Sans',sans-serif;padding:5px 10px;border-radius:10px;border:2px solid var(--ink);background:var(--paper)}
+.empty-arrow{display:block;margin:6px auto 0}
+.vs{max-width:1460px;margin:24px auto 0;background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:18px 22px;box-shadow:4px 5px 0 var(--ink)}
+.vs h3{font:700 22px Fraunces,Georgia,serif;margin-bottom:8px}
+.vs table{width:100%;border-collapse:collapse;font-size:13px}
+.vs th{text-align:left;font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:2px solid var(--ink)}
+.vs td{padding:8px;border-bottom:1.5px solid var(--paper2);vertical-align:top;color:var(--ink2)}
+.vs td:first-child{width:24%;color:var(--ink);font-weight:600}
+.pbar{display:flex;align-items:center;gap:10px;margin-top:6px}
+.pbar .bk{width:34px;height:34px;border-radius:12px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:800}
+.pbar .tr{flex:1;height:10px;border-radius:10px;border:2px solid var(--ink);background:var(--white);overflow:hidden}
+.pbar .tr i{display:block;height:100%;background:var(--ink)}
+.pbar b{font:800 12px 'DM Sans',sans-serif;width:34px;text-align:right}
+.act{font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:16px}
+.q{font:800 26px/1.12 Fraunces,'Iowan Old Style',Georgia,serif;letter-spacing:-.4px;margin-top:6px}
+.qs2{font-size:13px;color:var(--ink2);margin-top:6px}
+.ans{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+.an{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:18px;border:2px solid var(--ink);background:var(--white);font:600 14.5px 'DM Sans',sans-serif}
+.an .k{width:26px;height:26px;border-radius:9px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:800 12px 'DM Sans',sans-serif;background:var(--paper);flex:none}
+.an.on{background:var(--butter);box-shadow:3px 4px 0 var(--ink)}.an.on .k{background:var(--ink);color:var(--butter)}
+.an small{display:block;font:500 11.5px 'DM Sans',sans-serif;color:var(--ink2)}
+.private{position:absolute;left:0;right:0;bottom:26px;text-align:center;font:600 12px 'DM Sans',sans-serif;color:var(--muted)}
+.planrow{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-bottom:2px solid var(--paper2)}
+.planrow:last-child{border:none}
+.planrow .n{width:28px;height:28px;border-radius:50%;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:800 12px 'DM Sans',sans-serif;flex:none;background:var(--paper)}
+.planrow b{display:block;font-size:14px}.planrow span{font-size:12px;color:var(--ink2);line-height:1.35}
+.planrow em{font-style:normal;font:700 10.5px "DM Sans",sans-serif;background:var(--sage);border:1.5px solid var(--ink);border-radius:99px;padding:1px 7px;display:table;margin:4px 0 3px}
+.nstack{position:relative;height:236px;margin-top:20px}
+.nmock{position:absolute;left:8px;right:8px;background:var(--white);border:2px solid var(--ink);border-radius:20px;padding:10px 12px;font-size:12px;box-shadow:3px 4px 0 var(--ink)}
+.nmock .h{display:flex;justify-content:space-between;font:700 10.5px 'DM Sans',sans-serif;color:var(--muted)}
+.nmock b{display:block;font-size:13.5px;margin-top:3px}
+.ring2{width:180px;height:180px;margin:20px auto 0;border-radius:50%;border:2px dashed var(--ink);display:flex;align-items:center;justify-content:center;position:relative}
+.holdbtn{position:absolute;left:18px;right:18px;bottom:64px;height:64px;border-radius:20px;border:2px solid var(--ink);background:var(--white);overflow:hidden;display:flex;align-items:center;justify-content:center;font:800 16px 'DM Sans',sans-serif;box-shadow:3px 4px 0 var(--ink)}
+.holdbtn i{position:absolute;left:0;top:0;bottom:0;width:58%;background:var(--butter);border-right:2px solid var(--ink)}
+.holdbtn span{position:relative}
+.notnow{position:absolute;left:0;right:0;bottom:30px;text-align:center;font:600 13px 'DM Sans',sans-serif;color:var(--muted)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.cal div{height:40px;border-radius:12px;border:2px solid var(--ink);background:var(--white);font:700 11px 'DM Sans',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cal div small{font-size:8.5px;color:var(--muted);font-weight:600}
+.cal div.t{background:var(--butter)}.cal div.m{background:var(--sage)}
+.flowcmp{max-width:1460px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:14px}
+.lane{background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:14px 16px;box-shadow:4px 5px 0 var(--ink)}
+.lane h4{font:700 18px Fraunces,Georgia,serif;margin-bottom:8px}
+.pills{display:flex;flex-wrap:wrap;gap:5px}
+.pills span{font:600 11px 'DM Sans',sans-serif;padding:4px 8px;border-radius:9px;border:1.5px solid var(--ink);background:var(--white)}
+.pills span.l{background:var(--paper2);color:var(--muted);border-style:dashed}
+.pills span.s{background:var(--sage)}
+.pills span.a1{background:#FFE7A8}.pills span.a2{background:#CFE6F2}.pills span.a3{background:#FAD0C6}
+.pills b{font:800 11px 'DM Sans',sans-serif;align-self:center;margin:0 4px}
+/* onboarding v2 */
+.bleed{background:var(--tomato);color:var(--white)}
+.bleed.sage{background:#7FB27A;color:var(--ink)}
+.bleed .status{color:inherit}
+.bleed .primary{background:var(--white);color:var(--ink);box-shadow:3px 4px 0 var(--ink)}
+.bleed p,.bleed .qs2{color:inherit;opacity:.9}
+.chatlog{display:flex;flex-direction:column;gap:7px;margin-top:14px}
+.bub{max-width:78%;padding:9px 13px;border-radius:18px 18px 18px 6px;border:2px solid var(--ink);background:var(--white);font-size:13.5px;line-height:1.35;align-self:flex-start}
+.bub.me{align-self:flex-end;border-radius:18px 18px 6px 18px;background:var(--ink);color:var(--paper)}
+.bub.typing{font-weight:800;letter-spacing:3px}
+.who{display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:2px solid var(--paper2)}
+.who b{font-size:14px;display:block}.who span{font-size:11px;color:#2F7A3A;font-weight:700}
+.replies{position:absolute;left:18px;right:18px;bottom:26px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.replies .hint{font:600 11px 'DM Sans',sans-serif;color:var(--muted)}
+.replies span.r{padding:10px 14px;border-radius:16px;border:2px solid var(--ink);background:var(--butter);font:700 13.5px 'DM Sans',sans-serif;box-shadow:2px 3px 0 var(--ink)}
+.namefield{display:flex;gap:8px;align-items:center;margin-top:4px}
+.namefield .field{flex:1;margin:0}
+.math{margin-top:16px;padding:16px;text-align:center;background:var(--white)}
+.math .n{font:800 48px/1 Fraunces,Georgia,serif;color:var(--tomato)}
+.math .u{font:700 12.5px 'DM Sans',sans-serif;margin-top:2px}
+.math .ar{font:800 20px 'DM Sans',sans-serif;margin:6px 0;color:var(--tomato)}
+.dots365{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin-top:12px}
+.dots365 i{aspect-ratio:1;border-radius:50%;background:var(--paper2)}
+.dots365 i.s{background:var(--tomato)}
+.ways{display:flex;border:2px solid var(--ink);border-radius:16px;overflow:hidden;margin-top:14px;background:var(--white)}
+.ways div{flex:1;text-align:center;padding:10px 0;font:800 13px 'DM Sans',sans-serif}
+.ways div.a{background:var(--ink);color:var(--paper)}
+.waylist{margin-top:12px;display:flex;flex-direction:column;gap:9px}
+.wl{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.35}
+.wl i{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:12px;background:var(--white)}
+.wl.bad i{background:var(--blush)}.wl.good i{background:var(--sage)}
+.weekcards{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.wk{display:flex;gap:10px;padding:11px 12px;border-radius:18px;border:2px solid var(--ink);background:var(--white)}
+.wk .wn{flex:none;width:46px;text-align:center;font:800 11px 'DM Sans',sans-serif;color:var(--muted)}
+.wk .wn b{display:block;font:800 22px Fraunces,Georgia,serif;color:var(--ink)}
+.wk b.t{display:block;font:700 15px Fraunces,Georgia,serif}
+.wk span{font-size:12px;color:var(--ink2);line-height:1.35}
+.wk.hard{background:#FBE3DC}
+.holdring{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);width:112px;height:112px}
+.holdring svg{position:absolute;inset:0}
+.holdring .core{position:absolute;inset:14px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;color:var(--butter);font:800 30px 'DM Sans',sans-serif;box-shadow:3px 4px 0 var(--tomato)}
+.holdhint{position:absolute;left:0;right:0;bottom:192px;text-align:center;font:600 12px 'DM Sans',sans-serif;color:var(--muted)}
+.brainshot{margin-top:6px}
+.brainshot .bars{display:flex;gap:5px;align-items:flex-end;height:84px;margin-top:8px}
+.brainshot .bars i{flex:1;border:2px solid var(--ink);border-radius:6px 6px 3px 3px;background:var(--paper2)}
+.brainshot .bars i.h{background:var(--butter)}
+.facts{margin-top:10px}
+.facts .check{padding:9px 12px}
+.toc{position:sticky;top:0;z-index:20;max-width:1460px;margin:0 auto 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 12px;background:rgba(217,210,195,.94);backdrop-filter:blur(6px);border-bottom:2px solid #1F2A23}
+.toc b{font:800 13px 'DM Sans',sans-serif;margin-right:4px}
+.toc a{font:700 12px 'DM Sans',sans-serif;color:#1F2A23;text-decoration:none;padding:5px 9px;border:2px solid #1F2A23;border-radius:10px;background:#F5EFE3}
+.toc a:hover{background:#F4C34E}
+html{scroll-behavior:smooth}
+/* K + L */
+.web{position:absolute;inset:0;background:#fff}
+.web .bar{margin:44px 12px 0;height:40px;border-radius:14px;background:#F1F1F1;display:flex;align-items:center;padding:0 12px;font:500 13px 'DM Sans',sans-serif;color:#555}
+.web .ln{height:10px;border-radius:5px;background:#E6E6E6;margin:10px 16px}
+.web .img{margin:12px 16px;height:190px;border-radius:14px;background:linear-gradient(135deg,#C9B8A8,#8E7B6B);position:relative;overflow:hidden}
+.cover{position:absolute;inset:0;background:var(--paper);border:2px solid var(--ink);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:10px}
+.cover b{font:700 15px Fraunces,Georgia,serif}.cover span{font-size:11.5px;color:var(--ink2)}
+.cover .lk2{display:flex;gap:6px;margin-top:6px}.cover .lk2 i{font-style:normal;font:700 11px 'DM Sans',sans-serif;padding:5px 9px;border-radius:10px;border:2px solid var(--ink);background:var(--white)}
+.ig{position:absolute;inset:0;background:#fff}
+.ig .hd{margin:44px 14px 8px;display:flex;align-items:center;gap:8px;font:700 13px 'DM Sans',sans-serif;color:#222}
+.ig .hd i{width:30px;height:30px;border-radius:50%;background:linear-gradient(45deg,#f58529,#dd2a7b)}
+.ig .post{height:330px;background:linear-gradient(160deg,#9DB7C9,#5E7F96);position:relative;overflow:hidden}
+.ig .person{position:absolute;left:96px;top:60px;width:150px;height:250px;border-radius:70px 70px 20px 20px;background:#D9A98C;filter:blur(14px)}
+.ig .blurchip{position:absolute;left:12px;bottom:12px;padding:7px 10px;border-radius:12px;background:var(--paper);border:2px solid var(--ink);font:700 11.5px 'DM Sans',sans-serif;color:var(--ink)}
+.tg{position:absolute;inset:0;background:#EFF3F7}
+.tg .hd{margin-top:40px;padding:10px 14px;background:#fff;display:flex;gap:8px;align-items:center;font:600 14px 'DM Sans',sans-serif;color:#333}
+.tg .hd .s{flex:1;height:36px;border-radius:12px;background:#F1F3F5;display:flex;align-items:center;padding:0 12px;color:#333}
+.tg .chat{display:flex;gap:10px;align-items:center;padding:12px 14px;background:#fff;border-bottom:1px solid #eee;font-size:13px;color:#333}
+.tg .chat i{width:40px;height:40px;border-radius:50%;background:#7FB3E0}
+.qr{width:150px;height:150px;margin:14px auto 0;border:2px solid var(--ink);border-radius:16px;background:
+ repeating-linear-gradient(90deg,var(--ink) 0 10px,transparent 10px 20px),repeating-linear-gradient(0deg,var(--ink) 0 10px,transparent 10px 20px);background-blend-mode:difference;opacity:.85}
+.sas{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.sas span{width:36px;height:46px;border-radius:12px;border:2px solid var(--ink);background:var(--white);display:flex;align-items:center;justify-content:center;font:800 22px Fraunces,Georgia,serif}
+.daysel{display:flex;gap:6px;margin-top:10px}
+.daysel span{flex:1;height:40px;border-radius:12px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:700 12px 'DM Sans',sans-serif;background:var(--white)}
+.daysel span.a{background:var(--ink);color:var(--paper)}
+.timebox{display:flex;gap:10px;margin-top:10px}
+.timebox div{flex:1;padding:10px 12px;border-radius:16px;border:2px solid var(--ink);background:var(--white)}
+.timebox small{display:block;font:700 10.5px 'DM Sans',sans-serif;color:var(--muted);letter-spacing:1px}
+.timebox b{font:800 28px Fraunces,Georgia,serif}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper span{width:30px;height:30px;border-radius:10px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:800 15px 'DM Sans',sans-serif;background:var(--white)}
+.stepper b{min-width:44px;text-align:center;font:800 14px 'DM Sans',sans-serif}
+.useline{height:6px;border-radius:6px;background:var(--paper2);margin-top:5px;overflow:hidden}.useline i{display:block;height:100%;background:var(--tomato)}
+.search{display:flex;align-items:center;gap:8px;height:46px;border-radius:14px;border:2px solid var(--ink);background:var(--white);padding:0 12px;font-size:14px;color:var(--muted);margin-top:12px}
+.result{margin-top:12px;padding:14px;background:var(--blush)}
+.result b{font:700 18px Fraunces,Georgia,serif;display:block}
+.result .chain{display:flex;flex-direction:column;gap:6px;margin-top:8px;font-size:12.5px}
+.result .chain div{display:flex;gap:8px;align-items:center}
+.result .chain i{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink);background:var(--white);flex:none;font-style:normal;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:800}
+.swipe{position:relative;overflow:hidden}
+.swipe .del{position:absolute;right:0;top:0;bottom:0;width:90px;background:var(--tomato);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px 'DM Sans',sans-serif}
+.swipe .r{position:relative;background:var(--white);margin-right:90px;box-shadow:6px 0 10px -6px rgba(31,42,35,.25)}
+.pw .cmp .cr{padding:6px 12px}.pw .plan{margin-top:8px;padding:11px 14px}.pw .trial{margin-top:6px}
+
+/* ===== UX pass ===== */
+:root{--muted:#5E665B}
+.nav div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px}
+.nav div:before{font:700 16px/1 'DM Sans',sans-serif}
+.nav div:nth-child(1):before{content:"⌂"}
+.nav div:nth-child(2):before{content:"⛨"}
+.nav div:nth-child(3):before{content:"▥"}
+.nav div:nth-child(4):before{content:"◉"}
+.tag{min-height:30px;display:inline-flex;align-items:center}
+/* ===== Dark (black) version ===== */
+body.dk{background:#0E0D0B;color:#EDE6D8}
+body.dk .head h1,body.dk .sec h2,body.dk .head p,body.dk .sec p,body.dk .cap,body.dk .cap b{color:#EDE6D8}
+body.dk .num{background:#EDE6D8;color:#0E0D0B}
+body.dk .toc{background:rgba(14,13,11,.94);border-color:#EDE6D8}
+body.dk .toc b{color:#EDE6D8}
+body.dk .phone{
+ --paper:#15130F;--paper2:#2A2620;--white:#1F1C17;--ink:#F1EADC;--ink2:#C8BFAE;--muted:#A39A8A;
+ --butter:#5B4917;--sage:#2E4A2E;--sky:#1F3647;--blush:#55302A;--tomato:#E8603F;
+ background:var(--paper);color:var(--ink);box-shadow:0 0 0 9px #000,0 0 0 10px #3A352C,0 26px 50px -18px rgba(0,0,0,.8)}
+body.dk .phone:before{opacity:.12;background-image:radial-gradient(rgba(255,255,255,.08) 1px,transparent 1.2px)}
+body.dk .phone .card,body.dk .phone .an.on,body.dk .phone .goal.on,body.dk .phone .chipx.on{box-shadow:3px 4px 0 #000}
+body.dk .phone .pause,body.dk .phone .primary,body.dk .phone .holdbtn,body.dk .phone .widget,body.dk .phone .wsmall{box-shadow:3px 4px 0 #000}
+body.dk .phone .primary{background:#F1EADC;color:#15130F;box-shadow:3px 4px 0 var(--tomato)}
+body.dk .phone .pause{color:#fff}
+body.dk .phone .pause .ic{background:#F1EADC}
+body.dk .phone .nav div.a{background:#F1EADC;color:#15130F}
+body.dk .phone .tag.ok{background:#2E4A2E;color:#DDEBD9}
+body.dk .phone .sw{background:#F1EADC}.body.dk .phone .sw:after{background:#5B4917}
+body.dk .phone .sw:after{background:#E3B341}
+body.dk .phone .sw.off{background:#2A2620}.body.dk .phone .sw.off:after{background:#1F1C17}
+body.dk .phone .bleed,body.dk .bleed{background:#B8432B;color:#fff}
+body.dk .bleed.sage{background:#22381F;color:#F1EADC}
+body.dk .bleed .primary{background:#F1EADC;color:#15130F}
+body.dk .phone .an.on .k,body.dk .phone .chipx.on .ck{background:#F1EADC;color:#15130F}
+body.dk .phone .an.on,body.dk .phone .goal.on{background:#5B4917}
+body.dk .phone .goal.on .tick{background:#F1EADC}
+body.dk .phone .goal.on .tick:after{border-color:#5B4917}
+body.dk .phone .bars i.t,body.dk .phone .appbar div i{background:#E8603F}
+body.dk .phone .week7 i.t{box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--ink)}
+body.dk .phone .result{background:#55302A}
+body.dk .phone .toast{background:#F1EADC;color:#15130F}
+body.dk .phone .coach-tip{background:#1F1C17}
+body.dk .phone .wk.hard{background:#4A2A24}
+body.dk .phone .holdring .core{background:#F1EADC;color:#15130F}
+body.dk .phone .mini-phone{background:#1E1E1E;color:#ddd;border-color:#F1EADC}
+body.dk .phone .mini-phone .it{background:#2B2B2B}
+body.dk .phone .mini-phone .it.hl{background:#4A3B10}
+body.dk .phone .cover{background:#1F1C17}
+body.dk .phone .blurchip{background:#1F1C17;color:#F1EADC}
+body.dk .phone .blocksheet,body.dk .phone .sheetx{background:var(--paper)}
+body.dk .phone .dim{background:rgba(0,0,0,.6)}
+body.dk .phone .fixbtn{background:#F1EADC;color:#15130F}
+body.dk .phone .btn2 .p{background:#F1EADC;color:#15130F}
+body.dk .phone .breathe{background:var(--sky)}
+body.dk .phone .ways div.a,body.dk .phone .seg div.a,body.dk .phone .lens span.a,body.dk .phone .daysel span.a{background:#F1EADC;color:#15130F}
+body.dk .phone .cal div.t{background:#5B4917}.body.dk .phone .cal div.m{background:#2E4A2E}
+body.dk .map,body.dk .vs,body.dk .lane,body.dk .rule,body.dk .dsb,body.dk .panel,body.dk .fbox{background:#1A1814;color:#EDE6D8;border-color:#EDE6D8;box-shadow:4px 5px 0 #000}
+body.dk .map td,body.dk .vs td,body.dk .rule p,body.dk .tok{color:#C8BFAE}
+body.dk .map td:first-child,body.dk .vs td:first-child,body.dk .lane h4,body.dk .rule h4,body.dk .dsb h4,body.dk .tok b{color:#EDE6D8}
+body.dk .pills span{background:#24211B;color:#EDE6D8;border-color:#EDE6D8}
+body.dk .pills span.a1{background:#4D3F12}body.dk .pills span.a2{background:#1F3647}body.dk .pills span.a3{background:#4A2A24}body.dk .pills span.s{background:#2E4A2E}
+body.dk .why{color:#A39A8A}
+.modesw{margin-left:auto;display:flex;border:2px solid #1F2A23;border-radius:12px;overflow:hidden}
+.modesw button{font:800 12px 'DM Sans',sans-serif;padding:6px 12px;border:0;background:#F5EFE3;color:#1F2A23;cursor:pointer}
+.modesw button.a{background:#1F2A23;color:#F5EFE3}
+body.dk .modesw{border-color:#EDE6D8}
+body.dk .modesw button{background:#1A1814;color:#EDE6D8}
+body.dk .modesw button.a{background:#EDE6D8;color:#0E0D0B}
+
+/* ===== prototype + interaction ===== */
+.proto{max-width:1460px;margin:0 auto 24px;display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+.proto .stage{width:340px;height:736px;position:relative}
+.proto .stage .phone{position:absolute;inset:0;animation:pin .32s cubic-bezier(.2,.8,.2,1)}
+.proto .stage .phone.back{animation:pinb .32s cubic-bezier(.2,.8,.2,1)}
+@keyframes pin{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:none}}
+@keyframes pinb{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.proto .stage .phone{animation:none}}
+.proto .side{max-width:420px}
+.proto .side h3{font:800 26px Fraunces,Georgia,serif}
+.proto .side p{font-size:14px;color:var(--ink2);margin-top:6px;line-height:1.5}
+body.dk .proto .side p{color:#C8BFAE}
+.proto .ctrl{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.proto .ctrl button{font:800 13px 'DM Sans',sans-serif;padding:9px 14px;border-radius:12px;border:2px solid #1F2A23;background:#F5EFE3;cursor:pointer}
+.proto .ctrl button.p{background:#1F2A23;color:#F5EFE3}
+.proto .where{margin-top:12px;font:700 13px 'DM Sans',sans-serif}
+.proto .dots{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.proto .dots i{width:14px;height:6px;border-radius:4px;background:#C9BFAE}
+.proto .dots i.on{background:#1F2A23;width:24px}
+body.dk .proto .dots i.on{background:#EDE6D8}
+.proto .stage [data-go],.proto .stage .primary,.proto .stage .an,.proto .stage .replies .r,.proto .stage .bk,.proto .stage .nav div,.proto .stage .pause,.proto .stage .leave,.proto .stage .holdring,.proto .stage .notnow,.proto .stage .private,.proto .stage .ways div{cursor:pointer}
+.primary,.btn2 div,.fixbtn,.an,.goal,.chipx,.r,.alt .go,.pause,.tag,.nav div,.replies .r,.lens span,.howlong span,.daysel span{transition:transform .09s ease,box-shadow .09s ease,background .2s}
+.primary:active,.btn2 div:active,.fixbtn:active,.pause:active,.replies .r:active{transform:translate(2px,3px);box-shadow:1px 1px 0 var(--ink)!important}
+.an:active,.goal:active,.chipx:active{transform:translate(1px,2px)}
+.proto .stage .an:hover,.proto .stage .replies .r:hover{filter:brightness(.97)}
+.holdring.holding svg circle:last-child{transition:stroke-dashoffset 1.2s linear;stroke-dashoffset:0!important}
+/* large text test */
+body.big .phone{font-size:118%}
+body.dk .proto .ctrl button{background:#1A1814;color:#EDE6D8;border-color:#EDE6D8}
+body.dk .proto .ctrl button.p{background:#EDE6D8;color:#0E0D0B}
+body.dk .proto .side h3{color:#EDE6D8}
+/* ===== onboarding v3 (original) ===== */
+.appgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;margin-top:16px}
+.ap{display:flex;flex-direction:column;align-items:center;gap:5px;font:600 11px 'DM Sans',sans-serif;color:var(--ink2);position:relative}
+.ap .ic{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;font:800 20px 'DM Sans',sans-serif;color:#fff;border:2px solid transparent}
+.ap.on .ic{outline:3px solid var(--tomato);outline-offset:3px}
+.ap .tm{font:700 10px 'DM Sans',sans-serif;color:var(--tomato)}
+.ap.on:after{content:"✓";position:absolute;top:-4px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--tomato);color:#fff;font:800 11px/20px 'DM Sans',sans-serif;text-align:center}
+.alsorow{display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px 14px}
+.alsorow .tx{flex:1}.alsorow b{display:block;font-size:14px}.alsorow span{font-size:12px;color:var(--ink2)}
+.strength{padding:12px 14px;border-bottom:2px solid var(--paper2)}
+.strength:last-child{border:none}
+.strength .top2{display:flex;align-items:center;gap:10px}
+.strength .mi{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font:800 14px 'DM Sans',sans-serif;flex:none}
+.strength .top2 b{flex:1;font-size:14.5px}
+.strength .top2 small{font:600 11.5px 'DM Sans',sans-serif;color:var(--ink2)}
+.three{display:flex;gap:6px;margin-top:9px}
+.three span{flex:1;text-align:center;padding:8px 2px;border-radius:12px;border:2px solid var(--ink);background:var(--white);font:700 12px 'DM Sans',sans-serif}
+.three span small{display:block;font:500 10px 'DM Sans',sans-serif;color:var(--ink2)}
+.three span.a{background:var(--ink);color:var(--paper)}.three span.a small{color:var(--paper);opacity:.8}
+.whyline{margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--paper2);font-size:12px;line-height:1.4;color:var(--ink2)}
+.whyline b{color:var(--ink)}
+.sandbox{margin:14px auto 0;width:190px;height:330px;border-radius:30px;border:3px solid var(--ink);background:var(--sage);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:12px}
+.sandbox .rg{width:110px;height:110px;position:relative;display:flex;align-items:center;justify-content:center}
+.sandbox .rg svg{position:absolute;inset:0}
+.sandbox b{font:800 26px Fraunces,Georgia,serif}
+.sandbox span{font-size:11px;color:var(--ink2)}
+.sandbox .sb{display:flex;gap:6px;margin-top:6px}.sandbox .sb i{font-style:normal;font:700 10.5px 'DM Sans',sans-serif;padding:6px 9px;border-radius:10px;border:2px solid var(--ink);background:var(--paper)}
+.sandbox .sb i.p{background:var(--ink);color:var(--paper)}
+.tryapps{display:flex;gap:10px;justify-content:center;margin-top:12px}
+.tryapps .ap .ic{width:46px;height:46px;border-radius:15px;font-size:16px}
+.dial{width:230px;height:230px;margin:14px auto 0;position:relative}
+.dial svg{position:absolute;inset:0}
+.dial .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dial .c b{font:800 30px Fraunces,Georgia,serif}.dial .c span{font:600 12px 'DM Sans',sans-serif;color:var(--ink2)}
+.presets{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.presets span{padding:8px 12px;border-radius:12px;border:2px solid var(--ink);background:var(--white);font:700 12.5px 'DM Sans',sans-serif}
+.presets span.a{background:var(--ink);color:var(--paper)}
+.notecard{margin-top:14px;padding:14px;border-radius:20px;background:var(--white);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink)}
+.notecard .k{font:700 10.5px 'DM Sans',sans-serif;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.notecard .n{font:600 19px/1.25 Fraunces,Georgia,serif;margin-top:6px}
+.notecard .cur{display:inline-block;width:2px;height:20px;background:var(--ink);vertical-align:-3px;animation:caret 1s steps(1) infinite}
+.ideas{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ideas span{font:600 12px 'DM Sans',sans-serif;padding:6px 10px;border-radius:99px;border:2px dashed var(--ink);background:transparent}
+.sw2{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:2px solid var(--paper2)}
+.sw2:last-child{border:none}
+.sw2 .st{width:28px;height:28px;border-radius:50%;border:2px solid var(--ink);flex:none;display:flex;align-items:center;justify-content:center;font:800 13px 'DM Sans',sans-serif}
+.sw2 .st.ok{background:var(--sage)}.sw2 .st.now{background:var(--butter)}
+.sw2 .tx{flex:1}.sw2 b{display:block;font-size:14px}.sw2 span{font-size:12px;color:var(--ink2)}
+.sw2 .go{font:700 12px 'DM Sans',sans-serif;padding:7px 11px;border-radius:11px;background:var(--ink);color:var(--paper)}
+.bigapp{width:96px;height:96px;border-radius:28px;margin:22px auto 0;display:flex;align-items:center;justify-content:center;color:#fff;font:800 34px 'DM Sans',sans-serif;box-shadow:0 0 0 6px var(--paper),0 0 0 8px var(--ink)}
+.setup{margin-top:14px;overflow:hidden;width:100%;text-align:left}
+.c-tt{background:#111}.c-ig{background:linear-gradient(45deg,#f58529,#dd2a7b,#8134af)}.c-yt{background:#E62117}.c-rd{background:#FF4500}.c-x{background:#000}.c-sc{background:#FFFC00;color:#111!important}.c-nf{background:#B20710}.c-ch{background:#4285F4}.c-tw{background:#9146FF}.c-fb{background:#1877F2}.c-pi{background:#E60023}.c-gm{background:#2E7D32}
+</style>
+</head>
+<body>
+<div class="head">
+ <div><h1>Unrot · the version I will build</h1></div>
+ <p>The general edition, end to end: <b>51 screens</b>, from the first launch through every tab, moment, state and Android surface, plus the design system and rules. Picture only, nothing built yet. Every number is something the app really measures; every feature in today's app has a home (section E). The brain character is placeholder art until the real one is made in Blender.</p>
+</div>
+
+<div class="lane" style="max-width:1460px;margin:0 auto 18px"><h4>Build plan, general edition only (the Islamic edition stays as it is)</h4>
+<div class="pills"><span class="a1">1 · Design system: colours, type, cards, buttons</span><span class="a1">2 · Onboarding, 9 screens</span><span class="a2">3 · Today, Shield, Progress, You</span><span class="a2">4 · Block, time-up, bedtime, lock, broken states</span><span class="a3">5 · Rule editors and tools</span><span class="a3">6 · Widgets, notifications, tile</span><span class="l">Later, needs your decision: paywall prices, real character (Blender), final name</span></div>
+<div class="why" style="margin-top:8px">Every screen below is in scope. Each step is built, tested on your phone's test copy, and shown to you before the next one.</div></div>
+<nav class="toc"><b>Contents</b>
+<a href="#try">▶ Try it</a><a href="#ob">A · Onboarding (9 screens)</a><a href="#core">B · Core screens</a><a href="#moments">C · Key moments</a><a href="#money">D · Paywall</a><a href="#features">E · Every feature</a><a href="#states">F · States</a><a href="#outside">G · Outside the app</a><a href="#ds">H · Design system</a><a href="#flow">I · Flow and rules</a><a href="#different">K · What makes us different</a><a href="#details">L · Detail screens</a><a href="#learned">J · Lessons from CleanPath</a><div class="modesw" role="group" aria-label="Colour mode"><button id="mLight" class="a">Light</button><button id="mDark">Dark</button></div></nav>
+<div class="sec" id="try"><span class="num">▶</span><h2>Try it</h2><p>A clickable prototype of the real flow. Tap like on a phone.</p></div>
+<div class="proto">
+ <div class="stage" id="stage"></div>
+ <div class="side">
+  <h3 id="ptitle">Onboarding</h3>
+  <p id="phint">Tap apps, choices and the big button, as on a phone. ‹ goes back. After the last screen you land on Today: switch tabs, or tap "Feeling the pull?".</p>
+  <div class="where" id="pwhere"></div>
+  <div class="dots" id="pdots"></div>
+  <div class="ctrl"><button id="pprev">‹ Back</button><button class="p" id="pnext">Next ›</button><button id="pstart">Restart</button><button id="papp">Jump to the app</button></div>
+ </div>
+</div>
+<div class="sec" id="ob"><span class="num">A</span><h2>Onboarding</h2><p>Original, not borrowed: you set it up <b>by doing, not by answering</b>. No quiz, no maths, no pledge. You pick real apps from your phone, choose how firm each one is, feel it once, and you're protected by screen 7 of 9.</p></div>
+<div class="flowcmp">
+ <div class="lane"><h4>9 screens · about 2 minutes</h4><div class="pills">
+  <span class="a1">1 Hello</span><span class="a1">2 Your apps</span><span class="a1">3 How firm</span><span class="a1">4 Feel it</span><b>→</b>
+  <span class="a2">5 Quiet hours</span><span class="a2">6 Note to late-night you</span><span class="a2">7 Two switches</span><b>→</b>
+  <span class="a3">8 First real test</span><span class="a3">9 You're set</span></div>
+  <div class="why" style="margin-top:8px">The "why it's hard" learning moves into the moment it matters (one line on screens 3 and 4), plus an optional 60-second read on Today. Nothing is asked that isn't used.</div></div>
+</div>
+<div class="row">
+
+<div><div class="phone" data-name="Hello">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr ob" style="padding-top:34px">
+  <div class="appgrid" style="width:230px;margin:0 auto;gap:10px">
+   <div class="ap"><div class="ic c-tt" style="width:48px;height:48px;opacity:.25">♪</div></div><div class="ap"><div class="ic c-ig" style="width:48px;height:48px;opacity:.25">◎</div></div><div class="ap"><div class="ic c-yt" style="width:48px;height:48px;opacity:.25">▶</div></div><div class="ap"><div class="ic c-rd" style="width:48px;height:48px;opacity:.25">◉</div></div>
+   <div class="ap"><div class="ic" style="width:48px;height:48px;background:#9CC8E0;color:#1F2A23">☏</div></div><div class="ap"><div class="ic" style="width:48px;height:48px;background:#9EC39A;color:#1F2A23">✉</div></div><div class="ap"><div class="ic" style="width:48px;height:48px;background:#F4C34E;color:#1F2A23">⌖</div></div><div class="ap"><div class="ic" style="width:48px;height:48px;background:#F2A08F;color:#1F2A23">♫</div></div>
+  </div>
+  <span class="noodle" data-mood="happy" style="width:110px;height:100px;margin-top:14px"></span>
+  <h3 style="font-size:34px;line-height:1.02">Make your phone<br>boring again.</h3>
+  <p>The useful apps stay. The ones that swallow your evenings get quieter. Two minutes, no account.</p>
+ </div>
+ <div class="primary">Let's do it</div>
+</div><div class="cap"><b>1 · Hello.</b> One line, one picture: feeds fade, useful apps stay bright. That's the whole product, before a single question.</div></div>
+
+<div><div class="phone tight" data-name="Your apps">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:11%"></i></div><b>1/9</b></div>
+  <div class="q" style="margin-top:12px">Which apps take more than they give?</div>
+  <div class="qs2">These are on your phone. Tap the ones you want quieter.</div>
+  <div class="appgrid">
+   <div class="ap on"><div class="ic c-tt">♪</div>TikTok<span class="tm">1h 12m today</span></div>
+   <div class="ap on"><div class="ic c-ig">◎</div>Instagram<span class="tm">46m</span></div>
+   <div class="ap on"><div class="ic c-yt">▶</div>YouTube<span class="tm">30m</span></div>
+   <div class="ap"><div class="ic c-rd">◉</div>Reddit<span class="tm" style="color:var(--muted)">6m</span></div>
+   <div class="ap"><div class="ic c-x">X</div>X<span class="tm" style="color:var(--muted)">4m</span></div>
+   <div class="ap"><div class="ic c-sc">👻</div>Snapchat<span class="tm" style="color:var(--muted)">—</span></div>
+   <div class="ap"><div class="ic c-nf">N</div>Netflix<span class="tm" style="color:var(--muted)">—</span></div>
+   <div class="ap"><div class="ic c-tw">◆</div>Twitch<span class="tm" style="color:var(--muted)">—</span></div>
+  </div>
+  <div class="card alsorow"><div class="tx"><b>Adult sites, apps and images</b><span>Not an app, but blocked everywhere</span></div><div class="sw off"></div></div>
+ </div>
+ <div class="primary">3 apps · Next</div>
+</div><div class="cap"><b>2 · Your apps.</b> Your real installed apps, sorted by today's use (if you allow it). You point at the problem instead of describing it. Adult content is one switch, never a question about your habits.</div></div>
+
+<div><div class="phone tight" data-name="How firm">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:22%"></i></div><b>2/9</b></div>
+  <div class="q" style="margin-top:12px">How firm with each one?</div>
+  <div class="card" style="margin-top:12px;overflow:hidden">
+   <div class="strength"><div class="top2"><span class="mi c-tt">♪</span><b>TikTok</b></div><div class="three"><span>Pause<small>wait 10 s</small></span><span>Limit<small>45 min</small></span><span class="a">Close feed<small>For You off</small></span></div></div>
+   <div class="strength"><div class="top2"><span class="mi c-ig">◎</span><b>Instagram</b></div><div class="three"><span>Pause<small>wait 10 s</small></span><span>Limit<small>45 min</small></span><span class="a">Close Reels<small>DMs stay</small></span></div></div>
+   <div class="strength"><div class="top2"><span class="mi c-yt">▶</span><b>YouTube</b></div><div class="three"><span class="a">Pause<small>wait 10 s</small></span><span>Limit<small>45 min</small></span><span>Close Shorts<small>videos stay</small></span></div></div>
+  </div>
+  <div class="whyline"><b>Why a pause works:</b> most urges peak and fade within a few minutes. A short wait is often enough to let one pass.</div>
+ </div>
+ <div class="primary">Next</div>
+</div><div class="cap"><b>3 · How firm.</b> One three-step control per app maps straight onto real rules (wait before opening, daily limit, feed closed). The "why" sits right where you choose.</div></div>
+
+<div><div class="phone" data-name="Feel it">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr" style="text-align:center">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:33%"></i></div><b>3/9</b></div>
+  <div class="q" style="margin-top:12px">Feel it once, safely.</div>
+  <div class="qs2">Tap an app. This is exactly what you'll see.</div>
+  <div class="tryapps"><div class="ap"><div class="ic c-tt">♪</div></div><div class="ap on"><div class="ic c-yt">▶</div></div><div class="ap"><div class="ic c-ig">◎</div></div></div>
+  <div class="sandbox">
+   <div class="rg"><svg viewBox="0 0 110 110"><circle cx="55" cy="55" r="48" fill="none" stroke="#1F2A23" stroke-opacity=".18" stroke-width="7"/><circle cx="55" cy="55" r="48" fill="none" stroke="#1F2A23" stroke-width="7" stroke-linecap="round" stroke-dasharray="302" stroke-dashoffset="120" transform="rotate(-90 55 55)"/></svg><span class="noodle breathing" data-mood="calm" style="width:66px;height:62px"></span></div>
+   <b>6 s</b><span>YouTube opens after a breath.</span>
+   <div class="sb"><i class="p">Close it</i><i>Open</i></div>
+  </div>
+ </div>
+ <div class="primary">That's fair · Next</div>
+</div><div class="cap"><b>4 · Feel it.</b> A live preview of the real pause or closed feed for each picked app. No surprises later, and you learn the product by touching it.</div></div>
+
+<div><div class="phone" data-name="Quiet hours">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr" style="text-align:center">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:44%"></i></div><b>4/9</b></div>
+  <div class="q" style="margin-top:12px">When should it be quiet?</div>
+  <div class="qs2">Drag around the clock. Feeds close in these hours.</div>
+  <div class="dial"><svg viewBox="0 0 230 230">
+   <circle cx="115" cy="115" r="92" fill="none" stroke="var(--paper2)" stroke-width="22"/>
+   <circle cx="115" cy="115" r="92" fill="none" stroke="#1F2A23" stroke-width="22" stroke-linecap="round" stroke-dasharray="217 578" transform="rotate(240 115 115)"/>
+   <circle cx="115" cy="23" r="3" fill="var(--muted)"/><circle cx="207" cy="115" r="3" fill="var(--muted)"/><circle cx="115" cy="207" r="3" fill="var(--muted)"/><circle cx="23" cy="115" r="3" fill="var(--muted)"/>
+   <text x="115" y="48" text-anchor="middle" font-size="11" font-weight="700" fill="var(--muted)" font-family="DM Sans">0</text><text x="186" y="119" text-anchor="middle" font-size="11" font-weight="700" fill="var(--muted)" font-family="DM Sans">6</text><text x="115" y="190" text-anchor="middle" font-size="11" font-weight="700" fill="var(--muted)" font-family="DM Sans">12</text><text x="44" y="119" text-anchor="middle" font-size="11" font-weight="700" fill="var(--muted)" font-family="DM Sans">18</text>
+  </svg><div class="c"><b>22:00–07:00</b><span>9 quiet hours</span></div></div>
+  <div class="presets"><span class="a">Nights</span><span>+ Mornings</span><span>+ Work hours</span><span>None</span></div>
+  <div class="qs2" style="margin-top:10px">Calls, messages, maps and alarms always work.</div>
+ </div>
+ <div class="primary">Next</div>
+</div><div class="cap"><b>5 · Quiet hours.</b> Paint the hours on a 24-hour clock instead of picking from a list. Presets for one-tap people.</div></div>
+
+<div><div class="phone" data-name="Note to late-night you">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:56%"></i></div><b>5/9</b></div>
+  <div class="q" style="margin-top:12px">It's 23:40 and you reach for TikTok. What should you read?</div>
+  <div class="qs2">One line from you to you. It shows on the pause and when a feed is closed.</div>
+  <div class="notecard"><div class="k">From you, earlier</div><div class="n">Go to sleep. Tomorrow-you has a big day.<span class="cur"></span></div></div>
+  <div class="ideas"><span>“Call mum instead”</span><span>“You said 22:00”</span><span>“Read 10 pages”</span></div>
+ </div>
+ <div class="primary" style="bottom:58px">Save my note</div>
+ <div class="private">Skip · you can add it later</div>
+</div><div class="cap"><b>6 · A note to late-night you.</b> Instead of "what's your reason?", you write the exact line you'll see in the hard moment, in your own voice. Stays on the phone.</div></div>
+
+<div><div class="phone" data-name="Two switches">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="pbar"><span class="bk">‹</span><div class="tr"><i style="width:67%"></i></div><b>6/9</b></div>
+  <div class="q" style="margin-top:12px">Two switches and it's live.</div>
+  <div class="qs2">Android asks for these. Here's why, in one line each.</div>
+  <div class="card" style="margin-top:14px;overflow:hidden">
+   <div class="sw2"><span class="st ok">✓</span><div class="tx"><b>See which app is open</b><span>To pause and close feeds. Reads app names and feed screens only.</span></div></div>
+   <div class="sw2"><span class="st now">2</span><div class="tx"><b>Filter websites</b><span>A local filter for adult sites. No browsing leaves the phone.</span></div><span class="go">Turn on</span></div>
+  </div>
+  <div class="mini-phone" style="margin-top:14px"><div class="h">Connection request</div><div class="mpsub" style="font-size:11px;margin:4px 0 8px">Unrot wants to set up a VPN connection…</div><div class="it hl"><span><b>OK</b></span><span class="mpsub" style="font-size:10px">tap this</span></div></div>
+ </div>
+ <div class="primary">Turn on website filter</div>
+</div><div class="cap"><b>7 · Two switches.</b> Live ticks as each turns on, a picture of the Android dialog you'll see, and nothing else. You're protected from here.</div></div>
+
+<div><div class="phone" data-name="First real test">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr ob" style="padding-top:26px">
+  <div class="pbar" style="width:100%"><span class="bk">‹</span><div class="tr"><i style="width:78%"></i></div><b>7/9</b></div>
+  <div class="bigapp c-tt">♪</div>
+  <h3 style="font-size:30px;margin-top:20px">Go on. Open TikTok.</h3>
+  <p>See it work for real, then come back. This is the moment most blockers skip.</p>
+ </div>
+ <div class="primary" style="bottom:58px">Open TikTok</div>
+ <div class="private">I believe you · skip</div>
+</div><div class="cap"><b>8 · First real test.</b> You leave the app, open TikTok, meet the closed feed with your own note, and come back. Proof beats promises.</div></div>
+
+<div><div class="phone bleed sage" data-name="You're set">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr ob" style="padding-top:30px">
+  <span class="noodle" data-mood="proud" style="width:140px;height:128px"></span>
+  <h3 style="font-size:34px;line-height:1.02">It worked. You're set.</h3>
+  <div class="card setup">
+   <div class="planrow"><span class="n">♪</span><div><b>TikTok and Instagram feeds closed</b><span>DMs and search still work</span></div></div>
+   <div class="planrow"><span class="n">▶</span><div><b>YouTube waits 10 s</b><span>Grows with each open today</span></div></div>
+   <div class="planrow"><span class="n">☾</span><div><b>Quiet from 22:00</b><span>Tonight, in 12 hours</span></div></div>
+  </div>
+  <div style="font-size:12.5px;margin-top:10px">Optional: why stopping is hard, in 60 seconds</div>
+ </div>
+ <div class="primary">Go to Today</div>
+</div><div class="cap"><b>9 · You're set.</b> A plain summary of what is running, written from your choices. The education is offered, not forced.</div></div>
+</div>
+
+<div class="vs"><h3>Why this onboarding is different</h3><table>
+<tr><th>Usual onboarding (Unrot, Unchaind, CleanPath, old Hisn)</th><th>Ours</th></tr>
+<tr><td>Questions about habits, feelings and hours</td><td>You tap the actual apps on your phone</td></tr>
+<tr><td>Generic plan and a promised result date</td><td>One "how firm" control per app, mapped to real rules</td></tr>
+<tr><td>Slides that explain the product</td><td>A safe preview you can tap: you feel the pause before it's real</td></tr>
+<tr><td>A schedule picked from a list</td><td>A 24-hour clock you paint</td></tr>
+<tr><td>"What's your reason?"</td><td>A note written to yourself for the exact late-night moment</td></tr>
+<tr><td>Pledge or hold-to-commit</td><td>A real first test: open the app, see it work, come back</td></tr>
+<tr><td>Education up front, 10+ screens</td><td>One "why" line where it matters, the rest optional</td></tr>
+</table></div>
+
+<div class="sec" id="core"><span class="num">B</span><h2>Core screens</h2><p>The four tabs people use every day.</p></div>
+<div class="row">
+
+<!-- TODAY -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><div class="logo">un<i>rot</i></div><span class="tag ok">Shield on</span></div>
+  <div class="hello">
+   <span class="noodle walking" data-mood="talk" style="width:84px;height:84px"></span>
+   <div class="card bubble"><b>Evening, Sam.</b><span data-say="22 min on feeds today. That's half your usual. Nice."></span></div>
+  </div>
+  <div class="card garden">
+   <div class="k">Days with Unrot</div>
+   <div class="days">12 <span>days</span></div>
+   <div class="track"><div class="line"></div><div class="fill" style="width:41%"></div>
+    <div class="st d" style="left:0">1</div><div class="st d" style="left:24%">7</div><div class="st n" style="left:44%">14</div><div class="st" style="left:67%">30</div><div class="st" style="left:89%">60</div></div>
+   <div class="s">2 days to your next sticker. This number never resets.</div>
+  </div>
+  <div class="minis">
+   <div class="card mini"><div class="k">Pauses today</div><div class="v">3 <small>kept</small></div>
+    </div>
+   <div class="card mini"><div class="k">Lights-out lock</div><div class="v">22:00</div>
+    </div>
+  </div>
+  <div class="card reason" style="margin:12px 0 0;transform:rotate(-1.2deg);background:var(--paper2)"><div class="k">Why you're doing this</div><div class="q">“Evenings with my family, not my feed.”</div></div>
+ </div>
+ <div class="pause"><div class="ic"><span class="noodle" data-mood="calm" style="width:34px;height:36px"></span></div>
+  <div><b>Feeling the pull?</b><span>Breathe for 30 seconds</span></div></div>
+ <div class="nav"><div class="a">Today</div><div>Shield</div><div>Progress</div><div>You</div></div>
+</div><div class="cap"><b>1 · Today.</b> The character walks in and says what happened today, in plain words about real numbers. Days only go up. The pause sits right above your thumb.</div></div>
+
+<!-- BREATHE -->
+<div><div class="phone breathe">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><span class="tag">Breath 2 of 3</span><span class="xbtn" role="button" aria-label="Close">✕</span></div>
+  <div class="pipbig"><div class="halo"></div><span class="noodle breathing" data-mood="calm" style="width:100%;height:100%"></span></div>
+  <div class="bt">Breathe in…</div>
+  <div class="bs">Breathe in and out with me. The pull fades in minutes.</div>
+  <div class="counts"><i class="f"></i><i class="f"></i><i></i></div>
+  <div class="card reason"><div class="k">You said</div><div class="q">“Evenings with my family, not my feed.”</div></div>
+ </div>
+ <div class="leave">Back to what I was doing</div>
+</div><div class="cap"><b>2 · Breathe.</b> The character swells on the in-breath and shrinks on the out-breath (animated here). It opens from Home, Quick Settings or the app icon.</div></div>
+
+<!-- SHIELD -->
+<div><div class="phone tight">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><h2>Shield</h2><span class="act">+ Rule</span></div>
+  <div class="card shieldhead">
+   <span class="noodle" data-mood="happy" style="width:64px;height:64px"></span>
+   <div><div class="t">Everything you turned on is running.</div><div class="s">Checked 2 minutes ago · 148 blocked today</div></div>
+  </div>
+  <div class="card rows">
+   <div class="r"><div class="ico" style="background:var(--butter)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h12" stroke="#1F2A23" stroke-width="2.6" stroke-linecap="round"/></svg></div><div class="tx"><b>Endless feeds</b><span>Shorts, Reels, TikTok · 3 apps</span></div><div class="sw"></div></div>
+   <div class="r"><div class="ico" style="background:var(--sky)"><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#1F2A23" stroke-width="2.6"/><path d="M12 7v5l3 2" stroke="#1F2A23" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg></div><div class="tx"><b>Daily limits</b><span>7 apps · 45 minutes each</span></div><div class="sw"></div></div>
+   <div class="r"><div class="ico" style="background:var(--blush)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" fill="none" stroke="#1F2A23" stroke-width="2.6" stroke-linejoin="round"/></svg></div><div class="tx"><b>Adult sites and apps</b><span>229k sites on the list</span></div><div class="sw"></div></div>
+   <div class="r"><div class="ico" style="background:var(--paper2)"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3" fill="none" stroke="#1F2A23" stroke-width="2.6"/><circle cx="9" cy="10" r="1.8" fill="#1F2A23"/><path d="M5 17l5-4 3 2 3-3 4 4" fill="none" stroke="#1F2A23" stroke-width="2.2" stroke-linejoin="round"/></svg></div><div class="tx"><b>Images and video</b><span>Needs Android 14</span></div><div class="sw off"></div></div>
+  </div>
+  <div class="explain"><span class="noodle" data-mood="talk" style="width:74px;height:70px"></span>
+   <div class="card bubble2"><b>What does "Endless feeds" do?</b><span data-say="It closes the Shorts and Reels feeds, but YouTube and Instagram still work for everything else."></span></div></div>
+ </div>
+ <div class="nav"><div>Today</div><div class="a">Shield</div><div>Progress</div><div>You</div></div>
+</div><div class="cap"><b>3 · Shield.</b> Status in a full sentence, never green unless it really runs. One switch per layer, two common actions underneath.</div></div>
+
+<!-- PROGRESS -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><h2>Progress</h2><span class="tag">This week</span></div>
+  <div class="card week"><div class="k">Time on feeds</div><div class="v">3h 10m <small>▼ 36% vs last week</small></div>
+   <div class="bars"><div><i style="height:78px"></i>M</div><div><i style="height:64px"></i>T</div><div><i style="height:57px"></i>W</div><div><i style="height:40px"></i>T</div><div><i style="height:33px"></i>F</div><div><i style="height:25px"></i>S</div><div><i class="t" style="height:16px"></i>S</div></div></div>
+  <div class="stickers">
+   <div class="card st2"><span class="noodle" data-mood="proud" style="width:52px;height:58px"></span>7<span>first week</span></div>
+   <div class="card st2 lock"><div class="lk">14</div><span>in 2 days</span></div>
+   <div class="card st2 lock"><div class="lk">30</div><span>a month</span></div>
+   <div class="card st2 lock"><div class="lk">90</div><span>a season</span></div>
+  </div>
+  <div class="card hard"><b>Your hard hours: 22:00–01:00</b><p>Most of your pauses happen then. Want a gentle nudge at 21:45?</p>
+   <div class="hrs"><i style="height:5px"></i><i style="height:4px"></i><i style="height:3px"></i><i style="height:3px"></i><i style="height:3px"></i><i style="height:3px"></i><i style="height:5px"></i><i style="height:8px"></i><i style="height:9px"></i><i style="height:8px"></i><i style="height:8px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:10px"></i><i style="height:9px"></i><i style="height:10px"></i><i style="height:12px"></i><i style="height:14px"></i><i style="height:17px"></i><i style="height:19px"></i><i style="height:22px"></i><i style="height:25px"></i><i class="p" style="height:30px"></i><i class="p" style="height:27px"></i></div>
+   <span class="btnsm">Yes, nudge me</span></div>
+ </div>
+ <div class="nav"><div>Today</div><div>Shield</div><div class="a">Progress</div><div>You</div></div>
+</div><div class="cap"><b>4 · Progress.</b> Real Android usage, milestone stickers you collect and keep, and your hard hours (only the hour is stored, on the phone).</div></div>
+
+</div>
+
+<div class="sec" id="moments"><span class="num">C</span><h2>Key moments</h2><p>The screens that decide whether people stay: the first minute, the moment a feed is blocked, when something breaks, and when they hit a milestone.</p></div>
+<div class="row">
+
+<!-- FIRST LAUNCH -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr ob">
+  <div class="stepdots"><i class="f"></i><i></i><i></i><i></i></div>
+  <span class="noodle walking" data-mood="talk" style="width:150px;height:140px;margin-top:22px"></span>
+  <h3>Hi, I'm your helper.<br>What should I guard?</h3>
+  <p>Pick what eats your time. You can change this any time.</p>
+  <div class="chips">
+   <span class="chipx on"><i class="ck"></i>Short videos</span><span class="chipx on"><i class="ck"></i>Endless feeds</span>
+   <span class="chipx"><i class="ck"></i>Late-night phone</span><span class="chipx on"><i class="ck"></i>Adult content</span>
+   <span class="chipx"><i class="ck"></i>Games</span><span class="chipx"><i class="ck"></i>News loops</span>
+  </div>
+ </div>
+ <div class="skip">No account. Nothing leaves your phone.</div>
+ <div class="primary">Continue · 3 picked</div>
+</div><div class="cap"><b>First launch.</b> The character asks one question per screen, four screens in all. No quiz, no scary score, no sign-in.</div></div>
+
+<!-- BLOCK MOMENT -->
+<div><div class="phone">
+ <div class="feedbg"></div>
+ <div class="status" style="color:#fff"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="blocksheet">
+  <div class="grab"></div>
+  <div style="display:flex;gap:10px;align-items:flex-end">
+   <span class="noodle" data-mood="calm" style="width:76px;height:72px"></span>
+   <div><h3>Shorts are closed.</h3><p style="margin-top:2px">That was feed #4 tonight.</p></div>
+  </div>
+  <p>The rest of YouTube still works. You chose this on Monday, for your evenings.</p>
+  <div class="still"><span>✓ Search</span><span>✓ Subscriptions</span><span>✓ Long videos</span></div>
+  <div class="btn2"><div class="p">Go to Subscriptions</div><div>Breathe first</div></div>
+  <div class="fine">Need it for work? <u>Open for 5 minutes</u> · costs one of 3 daily passes</div>
+ </div>
+</div><div class="cap"><b>When a feed is blocked.</b> Calm, specific and useful: what's closed, what still works, a real next step. The way out costs something (a daily pass) but is never hidden.</div></div>
+
+<!-- SOMETHING BROKE -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><div class="logo">un<i>rot</i></div><span class="tag" style="background:var(--blush)">Needs you</span></div>
+  <div class="card alert">
+   <div style="display:flex;gap:10px;align-items:center">
+    <span class="noodle" data-mood="worried" style="width:70px;height:66px"></span>
+    <div class="t">Android stopped the website filter.</div>
+   </div>
+   <div class="s">This happens after some updates or battery savers. Feeds in apps are still closed; websites aren't filtered right now.</div>
+   <div class="fixbtn">Turn it back on · 1 tap</div>
+  </div>
+  <div class="card steps">
+   <div class="r"><span class="dotst ok"></span><div class="tx"><b>Feeds in apps</b><span>Running</span></div></div>
+   <div class="r"><span class="dotst bad"></span><div class="tx"><b>Website filter</b><span>Stopped 14 minutes ago</span></div></div>
+   <div class="r"><span class="dotst ok"></span><div class="tx"><b>Daily limits</b><span>Running</span></div></div>
+  </div>
+  <div class="card" style="margin-top:12px;padding:12px 14px;font-size:12.5px;color:var(--ink2)"><b style="color:var(--ink);font:700 15px Fraunces,Georgia,serif">Stop it happening again</b><br>Samsung puts apps to sleep. Two switches fix it. <u>Show me where</u></div>
+ </div>
+ <div class="nav"><div class="a">Today</div><div>Shield</div><div>Progress</div><div>You</div></div>
+</div><div class="cap"><b>When something breaks.</b> The character is worried, not alarming. It says exactly which part stopped, what still works, and gives a one-tap fix plus a phone-specific way to prevent it.</div></div>
+
+<!-- MILESTONE -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="dim"></div>
+ <div class="confetti"><i style="left:8%;background:var(--butter);animation-delay:0s"></i><i style="left:22%;background:var(--tomato);animation-delay:.8s"></i><i style="left:40%;background:var(--sage);animation-delay:1.6s"></i><i style="left:58%;background:var(--sky);animation-delay:.4s"></i><i style="left:74%;background:var(--butter);animation-delay:2.1s"></i><i style="left:88%;background:var(--tomato);animation-delay:1.2s"></i></div>
+ <div class="card ms-sheet">
+  <span class="noodle" data-mood="proud" style="width:150px;height:130px;margin-top:-80px"></span>
+  <div class="big">14</div>
+  <h3>Two weeks with Unrot.</h3>
+  <p>You took 11 pauses and spent 4h 20m less on feeds than your first week. That time was yours.</p>
+  <div class="btn2"><div class="p">Keep the sticker</div><div>Share card</div></div>
+ </div>
+</div><div class="cap"><b>Milestone.</b> The character celebrates with real numbers. The share card shows only the day count, never apps or times.</div></div>
+
+<!-- EXPLAIN MODE -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr"><div class="top"><h2>Shield</h2><span class="act">+ Rule</span></div></div>
+ <div class="dimx"></div>
+ <div class="spot"><div class="ico" style="width:38px;height:38px;border-radius:12px;border:2px solid #1F2A23;background:#9CC8E0"></div><div style="flex:1"><b style="display:block;font-size:14.5px;color:#1F2A23">Daily limits</b><span style="font-size:11.5px;color:#4E5A50">7 apps · 45 minutes each</span></div></div>
+ <div class="card xbubble"><b>Daily limits</b><span data-say="Each app you pick gets 45 minutes a day. When time is up it closes until midnight, and I'll warn you 5 minutes before."></span>
+  <div class="acts"><span class="p">Got it</span><span>Change minutes</span><span>🔊 Read aloud</span></div></div>
+ <span class="noodle walking" data-mood="talk" style="width:96px;height:92px;position:absolute;right:22px;bottom:150px"></span>
+</div><div class="cap"><b>Explain mode.</b> Long-press anything and the character walks over, highlights it and explains it in plain words, with a button to change it right there. It can read aloud in English or Arabic.</div></div>
+
+</div>
+
+<div class="sec" id="money"><span class="num">D</span><h2>Making money, honestly</h2><p>This is the paid edition, so the paywall has to convert without tricks: blocking always works for free, Plus adds comfort and depth, and the price and trial end are in plain view. Prices are placeholders.</p></div>
+<div class="row">
+<div><div class="phone pw">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><span class="xbtn" role="button" aria-label="Close">✕</span><span class="tag">Restore</span></div>
+  <div style="display:flex;gap:10px;align-items:flex-end;margin-top:10px">
+   <span class="noodle" data-mood="happy" style="width:82px;height:80px"></span>
+   <div><h2 style="font-size:25px">Unrot Plus</h2><div style="font-size:12.5px;color:var(--ink2)">Blocking stays free. Plus makes it smarter.</div></div>
+  </div>
+  <div class="card cmp">
+   <div class="cr hd"><span></span><b>Free</b><b>Plus</b></div>
+   <div class="cr"><span>Block feeds, sites and apps</span><b class="yes">✓</b><b class="yes">✓</b></div>
+   <div class="cr"><span>Breathing pause, anywhere</span><b class="yes">✓</b><b class="yes">✓</b></div>
+   <div class="cr"><span>Daily limits</span><b>2 apps</b><b class="yes">∞</b></div>
+   <div class="cr"><span>Schedules and lights-out</span><b class="no">–</b><b class="yes">✓</b></div>
+   <div class="cr"><span>Weekly progress and hard hours</span><b class="no">–</b><b class="yes">✓</b></div>
+   <div class="cr"><span>Character outfits and stickers</span><b class="no">–</b><b class="yes">✓</b></div>
+  </div>
+  <div class="card plan sel"><span class="rb"></span><div class="pt"><b>Yearly</b><span>€19.99 a year · about €1.67 a month</span></div><div class="pp">€19.99<small>7 days free</small></div></div>
+  <div class="card plan"><span class="rb"></span><div class="pt"><b>Monthly</b><span>Cancel any time</span></div><div class="pp">€2.99<small>per month</small></div></div>
+  <div class="trial">Free until 26 Nov. We remind you 2 days before it ends.<br>Cancel in Google Play in two taps.</div>
+ </div>
+ <div class="primary" style="bottom:22px">Start 7 free days</div>
+</div><div class="cap"><b>Paywall.</b> Shown after day 3 or when a Plus feature is tapped, never during setup. The full price comes first, then the trial end date and a reminder promise. Every option fits on one screen.</div></div>
+</div>
+
+<div class="sec" id="features"><span class="num">E</span><h2>Every feature has a home</h2><p>Nothing from today's app is dropped. Wait-before-open, gray screen, locks, guardian, tools: each one has a place, shown here and in the full map below.</p></div>
+<div class="row">
+
+<!-- OPEN WAIT -->
+<div><div class="phone" style="background:var(--sage)">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr" style="text-align:center">
+  <div class="top"><span class="tag">Instagram</span><span class="tag">Wait before opening</span></div>
+  <div style="position:relative;width:220px;height:220px;margin:34px auto 0">
+   <svg viewBox="0 0 220 220" style="position:absolute;inset:0"><circle cx="110" cy="110" r="100" fill="none" stroke="#1F2A23" stroke-opacity=".18" stroke-width="10"/><circle cx="110" cy="110" r="100" fill="none" stroke="#1F2A23" stroke-width="10" stroke-linecap="round" stroke-dasharray="628" stroke-dashoffset="250" transform="rotate(-90 110 110)"/></svg>
+   <span class="noodle breathing" data-mood="calm" style="width:150px;height:140px;position:absolute;left:35px;top:36px"></span>
+  </div>
+  <div style="font:800 54px/1 Fraunces,'Iowan Old Style',Georgia,serif;margin-top:14px">12<span style="font-size:22px"> s</span></div>
+  <div style="font-size:14px;color:var(--ink2);margin-top:6px;padding:0 14px">Breathe with me. Then you decide.</div>
+  <div class="card" style="margin:16px 0 0;padding:10px 12px;font-size:12.5px;text-align:left;background:var(--paper)">Today: <b>opened 2</b> · <b>closed instead 3</b><br><span style="color:var(--muted)">Each open today adds 5 seconds, up to a minute.</span></div>
+ </div>
+ <div class="btn2" style="position:absolute;left:18px;right:18px;bottom:26px;margin:0"><div class="p">Close Instagram</div><div style="background:var(--paper);opacity:.55">Open in 12 s</div></div>
+</div><div class="cap"><b>Wait before opening (Open Wait).</b> When a chosen app opens, the character breathes with you for a few seconds. "Open" unlocks when the ring fills, and the wait grows with each open today. Nothing is blocked.</div></div>
+
+<!-- ALL RULES -->
+<div><div class="phone tight">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><h2>All rules</h2><span class="tag">Shield ›</span></div>
+  <div style="font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;color:var(--muted);margin:12px 4px 6px">CONTENT</div>
+  <div class="card rows">
+   <div class="r"><div class="tx"><b>Short videos</b><span>Shorts, Reels, TikTok feed</span></div><div class="sw"></div></div>
+   <div class="r"><div class="tx"><b>Adult words and tags</b><span>Known adult apps by name too</span></div><div class="sw"></div></div>
+   <div class="r"><div class="tx"><b>Images and video</b><span>+ Blur people · Android 14+</span></div><div class="sw off"></div></div>
+   <div class="r"><div class="tx"><b>Only browsers Unrot controls</b><span>+ Block private tabs</span></div><div class="sw"></div></div>
+  </div>
+  <div style="font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;color:var(--muted);margin:12px 4px 6px">TIME</div>
+  <div class="card rows">
+   <div class="r"><div class="tx"><b>Wait before opening</b><span>4 apps · 10 s, growing</span></div><span style="font:700 12px 'DM Sans'">›</span></div>
+   <div class="r"><div class="tx"><b>Daily limits</b><span>7 apps · 45 min each</span></div><span style="font:700 12px 'DM Sans'">›</span></div>
+   <div class="r"><div class="tx"><b>Schedule</b><span>Lights-out 22:00–07:00</span></div><span style="font:700 12px 'DM Sans'">›</span></div>
+   <div class="r"><div class="tx"><b>Gray screen</b><span>Makes feeds dull, whole phone</span></div><div class="sw off"></div></div>
+  </div>
+  <div style="font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;color:var(--muted);margin:12px 4px 6px">YOUR LISTS</div>
+  <div class="card rows"><div class="r"><div class="tx"><b>Sites · Words · Apps</b><span>12 sites · 5 words · 3 apps</span></div><span style="font:700 12px 'DM Sans'">›</span></div></div>
+ </div>
+</div><div class="cap"><b>All rules.</b> Below the Shield summary, every rule grouped by what it guards: content, time, your own lists. Each row shows its live state.</div></div>
+
+<!-- YOU -->
+<div><div class="phone tight">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><h2>You</h2><span class="noodle" data-mood="happy" style="width:50px;height:48px"></span></div>
+  <div class="card" style="margin-top:12px;padding:13px 14px"><b style="font:700 17px Fraunces,Georgia,serif">Sam</b><div style="font-size:12.5px;color:var(--ink2)">“Evenings with my family, not my feed.” · Edit</div></div>
+  <div style="font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;color:var(--muted);margin:12px 4px 6px">COMMITMENT</div>
+  <div class="card rows">
+   <div class="r"><div class="tx"><b>Protection lock</b><span>Make rules read-only for 1–30 days</span></div><span>›</span></div>
+   <div class="r"><div class="tx"><b>Guardian pairing</b><span>A friend approves changes</span></div><span>›</span></div>
+   <div class="r"><div class="tx"><b>Uninstall protection</b><span>Off · Android can uninstall</span></div><span>›</span></div>
+  </div>
+  <div style="font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;color:var(--muted);margin:12px 4px 6px">KEEP IT RUNNING</div>
+  <div class="card rows">
+   <div class="r"><div class="tx"><b>Samsung setup</b><span>2 of 4 switches done</span></div><span>›</span></div>
+   <div class="r"><div class="tx"><b>Permissions</b><span>All granted</span></div><span>›</span></div>
+  </div>
+  <div style="font:700 11px 'DM Sans',sans-serif;letter-spacing:1px;color:var(--muted);margin:12px 4px 6px">MORE</div>
+  <div class="card rows"><div class="r"><div class="tx"><b>Tools · Appearance · Help</b><span>Site test, rules file, theme, the character on/off</span></div><span>›</span></div></div>
+ </div>
+ <div class="nav"><div>Today</div><div>Shield</div><div>Progress</div><div class="a">You</div></div>
+</div><div class="cap"><b>You.</b> Your reason, your commitments (lock, guardian, uninstall protection), keeping it alive on your phone, and everything else one tap deeper.</div></div>
+
+<!-- DARK -->
+<div><div class="phone dark">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><div class="logo">un<i>rot</i></div><span class="tag ok">Shield on</span></div>
+  <div class="hello"><span class="noodle" data-mood="happy" style="width:84px;height:84px"></span>
+   <div class="card bubble"><b>Late one, Sam.</b>Lights-out lock starts in 20 minutes. Want to start winding down?</div></div>
+  <div class="card garden"><div class="k">Days with Unrot</div><div class="days">12 <span>days</span></div><div class="s" style="color:#E9DDB8">2 days to your next sticker.</div></div>
+  <div class="minis"><div class="card mini"><div class="k">Pauses today</div><div class="v">3</div></div><div class="card mini"><div class="k">Lights-out lock</div><div class="v">22:00</div></div></div>
+ </div>
+ <div class="pause"><div class="ic"><span class="noodle" data-mood="calm" style="width:34px;height:36px"></span></div><div><b>Feeling the pull?</b><span>Breathe for 30 seconds</span></div></div>
+ <div class="nav"><div class="a">Today</div><div>Shield</div><div>Progress</div><div>You</div></div>
+</div><div class="cap"><b>Dark mode.</b> Warm near-black rather than pure black, so it still feels like paper at night. The character stays pink.</div></div>
+</div>
+
+<div class="map">
+ <h3>Feature map: today's app → new home</h3>
+ <table>
+  <tr><th>Feature in the app today</th><th>Where it lives in Unrot</th></tr>
+  <tr><td>Protection status, attention and fixes</td><td>Today (status chip) · Shield summary · "Something broke" card</td></tr>
+  <tr><td>Website filter (DNS), Private DNS repair, route check, always-on VPN offer</td><td>Shield › Adult sites · fix cards on Today</td></tr>
+  <tr><td>App protection (Accessibility guard)</td><td>Setup + Shield (powers every app rule)</td></tr>
+  <tr><td>Adult words and tags, adult apps by name</td><td>All rules › Content</td></tr>
+  <tr><td>Images and video, Blur people</td><td>All rules › Content (Android 14+)</td></tr>
+  <tr><td>Short videos</td><td>Shield › Endless feeds · All rules</td></tr>
+  <tr><td>Only browsers it controls, Block private tabs</td><td>All rules › Content</td></tr>
+  <tr><td><b>Wait before opening (Open Wait)</b>, growing wait, today's counts</td><td>All rules › Time · its own screen · counts on Progress</td></tr>
+  <tr><td>Daily limits, Schedule</td><td>All rules › Time · "Lights-out" tile on Today</td></tr>
+  <tr><td>Gray screen</td><td>All rules › Time</td></tr>
+  <tr><td>Blocked domains, words, apps</td><td>All rules › Your lists · "+ Rule" button</td></tr>
+  <tr><td>Breathing pause (Home, Quick Settings, app icon)</td><td>"Feeling the pull?" button · Breathe screen</td></tr>
+  <tr><td>Block screen with reason and "what do you need?"</td><td>"Shorts are closed" sheet</td></tr>
+  <tr><td>Personal name, reason, day count, pause hours</td><td>Today · You · Progress (hard hours)</td></tr>
+  <tr><td>Protection lock, Guardian pairing, Uninstall protection</td><td>You › Commitment</td></tr>
+  <tr><td>Keep protection running (phone maker setup), Permissions</td><td>You › Keep it running</td></tr>
+  <tr><td>Check a site, Try word rules, List update, Rules file import/export, Diagnostics</td><td>You › More › Tools</td></tr>
+  <tr><td>Theme, system colors, language</td><td>You › More › Appearance</td></tr>
+  <tr><td>How it works, What can bypass it, Privacy, About, Introduction</td><td>You › More › Help · Explain mode everywhere</td></tr>
+ </table>
+</div>
+
+<div class="sec" id="states"><span class="num">F</span><h2>States most apps forget</h2><p>The first hours, a half-finished setup, time running out, bedtime and a locked shield. Each one says what is happening, why, and the one thing to do next.</p></div>
+<div class="row">
+
+<!-- DAY ONE -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><div class="logo">un<i>rot</i></div><span class="tag" style="background:var(--butter)">Setting up · 2 of 3</span></div>
+  <div class="hello"><span class="noodle" data-mood="happy" style="width:78px;height:78px"></span>
+   <div class="card bubble"><b>Day 1. Hi, Sam.</b>No numbers yet; they'll fill in as you use your phone. One step left.</div></div>
+  <div class="card" style="margin-top:14px;overflow:hidden">
+   <div class="check"><span class="cbox done">✓</span><div><b>Pick what to guard</b><span>Short videos, feeds, adult content</span></div></div>
+   <div class="check"><span class="cbox done">✓</span><div><b>Website filter</b><span>On for Wi-Fi and mobile data</span></div></div>
+   <div class="check"><span class="cbox now">3</span><div><b>Let Unrot see which app is open</b><span>Needed to close Shorts and Reels.</span><div class="why">Android calls this Accessibility. Unrot reads app names and feed screens only, on the phone.</div></div></div>
+  </div>
+  <div class="fixbtn" style="margin-top:12px">Open Android settings</div>
+  <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:10px">Skip for now · feeds stay open until this is on</div>
+ </div>
+ <div class="nav"><div class="a">Today</div><div>Shield</div><div>Progress</div><div>You</div></div>
+</div><div class="cap"><b>Day one.</b> No fake zeros or empty charts. Today becomes a short checklist until setup is done, and each permission says why, in one sentence, before Android asks.</div></div>
+
+<!-- LIMIT REACHED -->
+<div><div class="phone">
+ <div class="feedbg"></div>
+ <div class="status" style="color:#fff"><span>21:12</span><span>●●● 64%</span></div>
+ <div class="blocksheet">
+  <div class="grab"></div>
+  <div style="display:flex;gap:10px;align-items:flex-end">
+   <span class="noodle" data-mood="calm" style="width:72px;height:68px"></span>
+   <div><h3>Instagram is done for today.</h3></div>
+  </div>
+  <p>You used your 45 minutes. It opens again at midnight, in 2 h 48 min.</p>
+  <div class="card" style="margin-top:12px;padding:10px 12px;display:flex;gap:10px;font-size:12.5px"><div style="flex:1"><b style="font-size:20px;font-family:Fraunces,Georgia,serif">45m</b><br><span style="color:var(--muted)">used today</span></div><div style="flex:1"><b style="font-size:20px;font-family:Fraunces,Georgia,serif">1h 05m</b><br><span style="color:var(--muted)">your average before</span></div></div>
+  <div class="btn2"><div class="p">OK, close it</div><div>Message someone instead</div></div>
+  <div class="fine">Something urgent? <u>5 more minutes</u> · 1 of 2 extensions left today</div>
+ </div>
+</div><div class="cap"><b>Time is up.</b> You get a warning 5 minutes before, then this. It shows when the app comes back and how today compares, and offers a better next move. Extensions are limited but honest.</div></div>
+
+<!-- BEDTIME -->
+<div><div class="phone moon">
+ <div class="stars"></div>
+ <div class="status"><span>22:04</span><span>●●● 41%</span></div>
+ <div class="scr" style="text-align:center">
+  <div class="top"><span class="tag">Lights-out</span><span class="tag">until 07:00</span></div>
+  <span class="noodle" data-mood="calm" style="width:150px;height:140px;margin-top:40px"></span>
+  <div class="bigtime" style="margin-top:12px">8h 56m</div>
+  <div class="muted" style="font-size:14px;margin-top:4px">until your feeds open again</div>
+  <div class="card" style="margin-top:22px;padding:13px;text-align:left;font-size:13px;line-height:1.45">Still open: <b>Phone, Messages, Maps, Alarm, Music</b>.<br><span class="muted">Feeds, short videos and games are closed.</span></div>
+  <div class="card" style="margin-top:10px;padding:13px;text-align:left;font-size:13px">Set an alarm · Play rain sounds · Breathe</div>
+ </div>
+</div><div class="cap"><b>Bedtime (schedule).</b> A calm night screen instead of a block. It shows what still works, which matters for safety and trust, and when everything comes back.</div></div>
+
+<!-- LOCKED -->
+<div><div class="phone locked tight">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><h2>Shield</h2><span class="tag" style="background:var(--sky)">Locked</span></div>
+  <div class="card lockbar"><div class="lk">🔒</div><div><b>Rules are locked for 5 more days.</b><span>You chose this on Monday. You can add rules, but not remove them.</span></div></div>
+  <div class="card rows" style="margin-top:12px">
+   <div class="r"><div class="tx"><b>Endless feeds</b><span>Locked on</span></div><div class="sw"></div></div>
+   <div class="r"><div class="tx"><b>Daily limits</b><span>Can be made stricter</span></div><div class="sw"></div></div>
+   <div class="r"><div class="tx"><b>Adult sites and apps</b><span>Locked on</span></div><div class="sw"></div></div>
+  </div>
+  <div class="card" style="margin-top:12px;padding:12px 14px;font-size:12.5px;color:var(--ink2)"><b style="color:var(--ink);font:700 15px Fraunces,Georgia,serif">Trying to turn something off?</b><br>I can't help with that until Saturday 09:00, but a breath might. <u>Breathe now</u></div>
+ </div>
+ <div class="nav"><div>Today</div><div class="a">Shield</div><div>Progress</div><div>You</div></div>
+</div><div class="cap"><b>Protection lock on.</b> Switches dim but stay readable, the reason and end date are always visible, and you can still make things stricter.</div></div>
+</div>
+
+<div class="sec" id="outside"><span class="num">G</span><h2>Outside the app</h2><p>Where urges actually happen: in the notification shade, on the home screen, in other apps. These are standard Android parts dressed in Unrot's colors.</p></div>
+<div class="row">
+
+<!-- SHADE -->
+<div><div class="phone shade">
+ <div class="status"><span>21:40</span><span>●●● 58%</span></div>
+ <div class="qs">
+  <div class="qt on"><i></i><div>Breathe<small>Unrot</small></div></div>
+  <div class="qt"><i></i><div>Wi-Fi<small>Home</small></div></div>
+  <div class="qt"><i></i><div>Do not disturb</div></div>
+  <div class="qt"><i></i><div>Flashlight</div></div>
+ </div>
+ <div class="notif"><div class="h"><i></i>Unrot · now</div><b>5 minutes left on TikTok</b><p>It closes at 21:45. Wrap up what you're watching.</p><div class="acts"><span class="p">Close now</span><span>OK</span></div></div>
+ <div class="notif"><div class="h"><i></i>Unrot · 21:30</div><b>Your hard hours start soon</b><p>Most pauses happen after 22:00. Want lights-out early tonight?</p><div class="acts"><span class="p">Start lights-out</span><span>Not tonight</span></div></div>
+ <div class="notif"><div class="h"><i></i>Unrot · yesterday</div><b>Website filter stopped</b><p>Android turned it off after an update. Tap to turn it back on.</p></div>
+</div><div class="cap"><b>Quick Settings and notifications.</b> The Breathe tile already exists in code. Notifications are few, specific and actionable: a 5-minute warning, an opt-in hard-hours nudge, and a "filter stopped" alert. No streak guilt.</div></div>
+
+<!-- WIDGET -->
+<div><div class="phone wall">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="widget"><span class="noodle" data-mood="happy" style="width:62px;height:62px"></span><div class="d">12<span>days · 22 min feeds today</span></div><div class="b">Breathe</div></div>
+ <div class="wsmall" style="left:16px"><div style="font:700 11px 'DM Sans',sans-serif">TIKTOK</div><div style="font:800 34px Fraunces,Georgia,serif;margin-top:6px">18<span style="font-size:14px"> min</span></div><div style="font-size:11px">left today</div><div class="bar" style="height:7px;border-radius:7px;background:rgba(31,42,35,.2);margin-top:10px"><i style="display:block;height:100%;width:60%;background:#1F2A23;border-radius:7px"></i></div></div>
+ <div class="wsmall" style="right:16px;background:var(--sky)"><div style="font:700 11px 'DM Sans',sans-serif">LIGHTS-OUT</div><div style="font:800 34px Fraunces,Georgia,serif;margin-top:6px">22:00</div><div style="font-size:11px">in 12 h 19 min</div></div>
+ <div class="apps"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+</div><div class="cap"><b>Home-screen widgets.</b> One wide widget (day count and a Breathe button) and small ones for a limit or lights-out. Built with Jetpack Glance, which works back to Android 6.</div></div>
+
+<!-- ADD RULE -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr"><div class="top"><h2>Shield</h2><span class="act">+ Rule</span></div></div>
+ <div class="dim"></div>
+ <div class="sheetx">
+  <div class="grab"></div>
+  <h3 style="font:800 24px Fraunces,Georgia,serif">Add a rule</h3>
+  <div class="seg"><div class="a">Site</div><div>App</div><div>Word</div></div>
+  <div class="field">reddit.com<span class="cur"></span></div>
+  <div class="sugg"><span>+ old.reddit.com</span><span>+ i.redd.it</span><span>+ reddit app</span></div>
+  <div class="lbl2">Block</div>
+  <div class="howlong"><span class="a">Always</span><span>Lights-out</span><span>After 30 min/day</span></div>
+  <div class="card" style="margin-top:12px;padding:10px 12px;font-size:12px;color:var(--ink2)"><b style="color:var(--ink)">Preview:</b> reddit.com and its subdomains will not load in any browser on this phone.</div>
+  <div class="primary" style="position:static;margin-top:14px">Block reddit.com</div>
+ </div>
+</div><div class="cap"><b>Add a rule.</b> One sheet for sites, apps and words. It suggests the related domains and app, asks "when", and previews the result before you save. Replaces three separate list screens for the common case.</div></div>
+</div>
+
+<div class="sec" id="ds"><span class="num">H</span><h2>Design system</h2><p>The few decisions that keep every screen consistent when it is built in Compose.</p></div>
+<div class="ds">
+ <div class="dsb"><h4>Color tokens</h4>
+  <div class="tok"><span>surface / paper</span><b>#F5EFE3</b></div><div class="tok"><span>surface-2</span><b>#EDE4D3</b></div><div class="tok"><span>card</span><b>#FFFDF8</b></div>
+  <div class="tok"><span>ink (text, outlines)</span><b>#1F2A23</b></div><div class="tok"><span>ink-2 (secondary text)</span><b>#46534A</b></div>
+  <div class="tok"><span>accent / pause</span><b>#E5553A</b></div><div class="tok"><span>highlight / progress</span><b>#F4C34E</b></div>
+  <div class="tok"><span>ok / running</span><b>#9EC39A</b></div><div class="tok"><span>calm / breathe, info</span><b>#9CC8E0</b></div><div class="tok"><span>needs you</span><b>#F2A08F</b></div>
+  <div class="why">Status is never color alone: every state also has a word ("Running", "Stopped").</div></div>
+ <div class="dsb typ"><h4>Type</h4>
+  <div style="font:800 34px Fraunces,Georgia,serif">Display 34 · Fraunces</div>
+  <div style="font:700 24px Fraunces,Georgia,serif">Title 24 · Fraunces</div>
+  <div style="font:700 17px Fraunces,Georgia,serif">Card title 17 · Fraunces</div>
+  <div style="font:600 14.5px 'DM Sans',sans-serif">Row title 14.5 · DM Sans 600</div>
+  <div style="font:400 13px 'DM Sans',sans-serif;color:var(--ink2)">Body 13 · DM Sans 400</div>
+  <div style="font:700 11px 'DM Sans',sans-serif;letter-spacing:1px">LABEL 11 · CAPS</div>
+  <div class="why">Sizes are sp and follow the phone's text size; layouts are checked at 200%.</div></div>
+ <div class="dsb"><h4>Shape and depth</h4>
+  <div class="tok"><span>card radius</span><b>22 dp</b></div><div class="tok"><span>button / field radius</span><b>16 dp</b></div><div class="tok"><span>chip</span><b>pill</b></div>
+  <div class="tok"><span>outline</span><b>2 dp ink</b></div><div class="tok"><span>shadow</span><b>solid, 3×4 dp, no blur</b></div>
+  <div class="tok"><span>screen margin / gap</span><b>18 dp / 10–14 dp</b></div><div class="tok"><span>min touch target</span><b>48 dp</b></div></div>
+ <div class="dsb"><h4>Buttons</h4>
+  <div class="cmpr"><span class="bx p">Primary</span><span class="bx t">Tonal</span><span class="bx g">Outline</span><span class="bx d">Remove</span></div>
+  <div class="why" style="margin-top:10px">One primary per screen. The pause button is the only tomato surface. Destructive actions are outline-red and always confirm.</div></div>
+ <div class="dsb"><h4>Motion</h4>
+  <div class="tok"><span>tap feedback</span><b>shadow 4→1 dp, 90 ms</b></div><div class="tok"><span>sheet in / out</span><b>spring, 320 / 220 ms</b></div>
+  <div class="tok"><span>tab change</span><b>fade + 8% slide, 240 ms</b></div><div class="tok"><span>number change</span><b>count up, 400 ms</b></div>
+  <div class="tok"><span>breathing</span><b>4 s in · 4 s out</b></div>
+  <div class="why">Android "remove animations" turns all of this off; the breathing ring then steps instead of moving.</div></div>
+ <div class="dsb"><h4>Haptics and sound</h4>
+  <div class="tok"><span>switch on / off</span><b>toggle on / off</b></div><div class="tok"><span>pause starts</span><b>confirm</b></div>
+  <div class="tok"><span>each breath turn</span><b>soft tick</b></div><div class="tok"><span>milestone</span><b>confirm ×2</b></div><div class="tok"><span>blocked screen</span><b>none (no punishment)</b></div>
+  <div class="why">No sounds by default. The character's voice uses Android's own text-to-speech, off until turned on.</div></div>
+</div>
+
+<div class="sec" id="flow"><span class="num">I</span><h2>How it flows</h2><p>The main path, start to finish, and the rules every screen follows.</p></div>
+<div class="flow">
+ <div class="fbox">Install<small>no account</small></div><span class="arrow">→</span>
+ <div class="fbox">Your helper: what to guard<small>4 short screens</small></div><span class="arrow">→</span>
+ <div class="fbox">2 Android permissions<small>each explained first</small></div><span class="arrow">→</span>
+ <div class="fbox">Today<small>works fully free</small></div><span class="arrow">→</span>
+ <div class="fbox">Opening a chosen app<small>the character waits with you</small></div><span class="arrow">→</span>
+ <div class="fbox">Feed blocked<small>calm sheet + next step</small></div><span class="arrow">→</span>
+ <div class="fbox">Day 3<small>Plus offered once</small></div><span class="arrow">→</span>
+ <div class="fbox">Day 7, 14, 30…<small>milestone + sticker</small></div>
+</div>
+<div class="rules">
+ <div class="rule"><h4>One job per screen</h4><p>Every screen answers one question: how am I doing (Today), what is on (Shield), am I improving (Progress), who am I doing this for (You). Settings live under You.</p></div>
+ <div class="rule"><h4>Never lie, never shame</h4><p>Green only when it runs. Numbers only when measured. Day count never resets. No fake reviews, fake user counts or fake urgency, including on the paywall.</p></div>
+ <div class="rule"><h4>Thumb first</h4><p>The pause and primary actions sit in the bottom third. All touch targets are at least 48 dp. Destructive actions are never the filled button.</p></div>
+ <div class="rule"><h4>the character earns its place</h4><p>the character appears when it adds meaning (explain, block, break, milestone, breathe), otherwise it stays small. It can be turned off under You for a quieter app.</p></div>
+ <div class="rule"><h4>Large text never breaks a screen</h4><p>Tested at 130% text: 16 of 60 screens need more room. So on every screen the content scrolls, the main button stays pinned at the bottom, and a soft fade shows there's more. The paywall table, All rules and Progress switch to a shorter layout at large text (fewer rows, "Show all").</p></div>
+ <div class="rule"><h4>Try before you build</h4><p>The "Try it" prototype at the top runs the real order: 17 onboarding screens, then Today, the pause and the tabs. Every tap target in it is a real control in the build.</p></div>
+ <div class="rule"><h4>Accessible by default</h4><p>TalkBack reads the character's words, not "image". Animations stop with Android's "remove animations". Layouts tested at 200% text and right-to-left.</p></div>
+ <div class="rule"><h4>Private by design</h4><p>Only the hour of a pause is stored, on the phone. Share cards show the day count only. Plus is sold through Google Play; we never see payment details.</p></div>
+</div>
+
+<div class="sec" id="different"><span class="num">K</span><h2>What makes us different</h2><p>Features the competitors don't have, drawn as the moment you meet them, not as rows in a list.</p></div>
+<div class="row">
+
+<!-- IMAGE CHECK -->
+<div><div class="phone">
+ <div class="web">
+  <div class="status" style="color:#222;padding-top:15px"><span>21:40</span><span>●●● 58%</span></div>
+  <div class="bar">🔒 some-forum.com/thread/2291</div>
+  <div class="ln" style="width:70%"></div><div class="ln" style="width:85%"></div><div class="ln" style="width:55%"></div>
+  <div class="img"><div class="cover">
+   <span class="noodle" data-mood="calm" style="width:60px;height:56px"></span>
+   <b>Image covered</b><span>Checked on this phone. Nothing was sent anywhere.</span>
+   <div class="lk2"><i>It's fine, show it</i><i>Keep it covered</i></div></div></div>
+  <div class="ln" style="width:80%"></div><div class="ln" style="width:60%"></div><div class="ln" style="width:75%"></div>
+  <div class="img" style="height:120px;background:linear-gradient(135deg,#B9D3C2,#7FA88E)"></div>
+ </div>
+</div><div class="cap"><b>Images and video, checked on the phone.</b> Only the picture is covered, not the page; the rest of the site still works. One tap if it's a mistake. Android 14+, experimental, and it says so.</div></div>
+
+<!-- BLUR PEOPLE -->
+<div><div class="phone">
+ <div class="ig">
+  <div class="status" style="color:#222;padding-top:15px"><span>21:42</span><span>●●● 57%</span></div>
+  <div class="hd"><i></i>travel.daily</div>
+  <div class="post"><div class="person"></div><div class="blurchip">◐ Person blurred · faces only, on this phone</div></div>
+  <div style="padding:12px 14px;font-size:13px;color:#333">♡ 💬 ↗<br><b>travel.daily</b> Morning on the coast…</div>
+ </div>
+</div><div class="cap"><b>Blur people.</b> When a face is found in apps you chose, the person is softly blurred and the app keeps working. It's an estimate, not identity, and nothing is stored.</div></div>
+
+<!-- TELEGRAM -->
+<div><div class="phone">
+ <div class="tg">
+  <div class="status" style="color:#222;padding-top:15px;position:absolute;left:0;right:0;top:0"><span>22:10</span><span>●●● 52%</span></div>
+  <div class="hd"><span>‹</span><div class="s">hot vids</div></div>
+  <div class="chat"><i></i><div><b>Family</b><br><span style="color:#5F6368">Dinner at 8?</span></div></div>
+  <div class="chat"><i style="background:#A7D3A1"></i><div><b>Work team</b><br><span style="color:#5F6368">Slides are up</span></div></div>
+ </div>
+ <div class="blocksheet">
+  <div class="grab"></div>
+  <div style="display:flex;gap:10px;align-items:flex-end"><span class="noodle" data-mood="calm" style="width:66px;height:62px"></span><div><h3>That search is closed.</h3></div></div>
+  <p>Adult searches, search bots and adult channels are closed in Telegram. Your chats, groups and calls work as normal.</p>
+  <div class="still"><span>✓ Chats</span><span>✓ Groups</span><span>✓ Calls</span></div>
+  <div class="btn2"><div class="p">Back to my chats</div><div>Breathe first</div></div>
+ </div>
+</div><div class="cap"><b>Inside Telegram.</b> One of the hardest gaps to close. We block the search, bots and channels, not the whole app, and say exactly what still works.</div></div>
+
+<!-- WEBSITE FILTER -->
+<div><div class="phone tight">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top appbar"><span class="back" role="button" aria-label="Back to Shield">←</span><span class="bartitle">Shield</span><span class="tag" style="background:var(--blush)">Needs you</span></div>
+  <h2 style="margin-top:12px">Website filter</h2>
+  <div class="card" style="margin-top:12px;overflow:hidden">
+   <div class="r"><span class="dotst ok"></span><div class="tx"><b>Wi-Fi and mobile data</b><span>Filtering · 229k adult sites + your 12</span></div></div>
+   <div class="r"><span class="dotst ok"></span><div class="tx"><b>Safe search</b><span>Google, Bing, YouTube restricted</span></div></div>
+   <div class="r"><span class="dotst bad"></span><div class="tx"><b>Private DNS is on</b><span>Set to dns.google, which goes around the filter</span></div></div>
+  </div>
+  <div class="card alert" style="margin-top:12px">
+   <div class="t" style="font-size:17px">Fix in 2 steps</div>
+   <div class="s">1 · Open Private DNS · 2 · Choose "Off" or "Automatic". You'll come back here and we'll check it worked.</div>
+   <div class="fixbtn">Open Private DNS</div>
+  </div>
+  <div class="card mini" style="margin-top:12px"><div class="k">Blocked today</div><div class="v">148 <small>lookups · no sites are listed</small></div></div>
+ </div>
+</div><div class="cap"><b>Website filter, with repair.</b> Each part has its own status. When Private DNS bypasses the filter, it says why in plain words and checks the fix afterwards.</div></div>
+
+<!-- LOCK SETUP -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top appbar"><span class="back" role="button" aria-label="Back to You">←</span><span class="bartitle">You</span></div>
+  <h2 style="margin-top:12px">Lock your rules</h2>
+  <div class="qs2" style="margin-top:4px">For a hard stretch, make your rules read-only for a while.</div>
+  <div class="lbl2">How long</div>
+  <div class="howlong"><span>1 day</span><span>3 days</span><span class="a">7 days</span><span>30 days</span></div>
+  <div class="card" style="margin-top:12px;overflow:hidden">
+   <div class="check"><span class="cbox done">✓</span><div><b>You can still</b><span>Add rules, make limits stricter, breathe, call and message.</span></div></div>
+   <div class="check"><span class="cbox" style="background:var(--blush)">✕</span><div><b>You can't, until 26 Nov 09:00</b><span>Turn layers off, remove rules, uninstall (direct build).</span></div></div>
+  </div>
+  <div class="why" style="margin-top:8px">There is no early unlock. Android settings and a phone reset stay outside our control, and we say so.</div>
+ </div>
+ <div class="holdhint" style="bottom:118px">Hold to lock for 7 days</div>
+ <div class="holdbtn" style="bottom:40px"><i></i><span>Hold · 3 s</span></div>
+</div><div class="cap"><b>Protection lock.</b> What stays possible and what doesn't, the exact end time, and an honest limit. Held, not tapped, so it's never by accident.</div></div>
+
+<!-- GUARDIAN -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr" style="text-align:center">
+  <div class="top appbar"><span class="back" role="button" aria-label="Back to You">←</span><span class="bartitle">You</span></div>
+  <h2 style="margin-top:14px;font-size:24px">Pair with someone's laptop</h2>
+  <div class="qs2">A person you trust approves rule changes from their laptop. They never see what you browse.</div>
+  <div class="card" style="margin-top:14px;padding:12px;text-align:left">
+   <div class="check"><span class="cbox">1</span><div><b>Paste the code from their laptop</b><span>It starts with hisn://</span></div></div>
+   <div class="field" style="margin:4px 12px 8px;font-size:12.5px;color:var(--muted)">hisn://pair/…</div>
+  </div>
+  <div class="lbl2" style="text-align:center">2 · Both screens should show</div>
+  <div class="sas"><span>4</span><span>8</span><span>1</span><span>9</span><span>0</span><span>6</span></div>
+  <div class="why" style="margin-top:10px">Same six digits? Then it's really them. Copy the reply back to the laptop.</div>
+ </div>
+ <div class="primary">Digits match · copy reply</div>
+</div><div class="cap"><b>Guardian pairing.</b> The real flow (code, compare six digits, copy reply) as three clear steps, with what the guardian can and can't see.</div></div>
+</div>
+
+<div class="sec" id="details"><span class="num">L</span><h2>Detail screens</h2><p>The editors and tools behind each rule, plus the error people hit most.</p></div>
+<div class="row">
+
+<!-- SITES LIST -->
+<div><div class="phone tight">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top appbar"><span class="back" role="button" aria-label="Back to All rules">←</span><span class="bartitle">All rules</span><span class="act">+ Add</span></div>
+  <h2 style="margin-top:12px">Your blocked sites</h2>
+  <div class="search">⌕ Search 12 sites</div>
+  <div class="card" style="margin-top:12px;overflow:hidden">
+   <div class="r"><div class="tx"><b>reddit.com</b><span>+ all subdomains · always</span></div></div>
+   <div class="swipe"><div class="del">Remove</div><div class="r"><div class="tx"><b>twitch.tv</b><span>at lights-out</span></div></div></div>
+   <div class="r"><div class="tx"><b>9gag.com</b><span>always</span></div></div>
+   <div class="r"><div class="tx"><b>news.ycombinator.com</b><span>after 30 min a day</span></div></div>
+  </div>
+  <div class="lbl2">Often added with these</div>
+  <div class="sugg"><span>+ old.reddit.com</span><span>+ x.com</span><span>+ kick.com</span></div>
+  <div class="why" style="margin-top:10px">Swipe left to remove. Removing is blocked while a lock is on.</div>
+ </div>
+</div><div class="cap"><b>Sites list.</b> Search, the "when" shown on each row, swipe to remove, and suggestions. Words and apps use the same layout.</div></div>
+
+<!-- SCHEDULE -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top appbar"><span class="back" role="button" aria-label="Back to All rules">←</span><span class="bartitle">All rules</span></div>
+  <h2 style="margin-top:12px">Lights-out</h2>
+  <div class="lbl2">Days</div>
+  <div class="daysel"><span class="a">M</span><span class="a">T</span><span class="a">W</span><span class="a">T</span><span class="a">F</span><span>S</span><span>S</span></div>
+  <div class="timebox"><div><small>FROM</small><b>22:00</b></div><div><small>UNTIL</small><b>07:00</b></div></div>
+  <div class="lbl2">Close during this time</div>
+  <div class="seg"><div class="a">All feeds</div><div>Chosen apps</div><div>All but…</div></div>
+  <div class="card" style="margin-top:12px;padding:11px 13px;font-size:12.5px;color:var(--ink2)"><b style="color:var(--ink)">Always open:</b> Phone, Messages, Maps, Alarm, Music</div>
+ </div>
+ <div class="primary">Save lights-out</div>
+</div><div class="cap"><b>Schedule.</b> Days, a big time range, what closes, and what always stays open. Nothing saves until you tap Save.</div></div>
+
+<!-- LIMITS -->
+<div><div class="phone tight">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top appbar"><span class="back" role="button" aria-label="Back to All rules">←</span><span class="bartitle">All rules</span><span class="act">+ App</span></div>
+  <h2 style="margin-top:12px">Daily limits</h2>
+  <div class="qs2">Today so far, from Android's screen time.</div>
+  <div class="card" style="margin-top:12px;overflow:hidden">
+   <div class="r"><div class="tx"><b>TikTok</b><span>27 of 45 min</span><div class="useline"><i style="width:60%"></i></div></div><div class="stepper"><span>−</span><b>45m</b><span>+</span></div></div>
+   <div class="r"><div class="tx"><b>Instagram</b><span>12 of 30 min</span><div class="useline"><i style="width:40%"></i></div></div><div class="stepper"><span>−</span><b>30m</b><span>+</span></div></div>
+   <div class="r"><div class="tx"><b>YouTube</b><span>58 of 60 min</span><div class="useline"><i style="width:97%"></i></div></div><div class="stepper"><span>−</span><b>60m</b><span>+</span></div></div>
+  </div>
+  <div class="card" style="margin-top:12px;padding:11px 13px;font-size:12.5px;color:var(--ink2)">5-minute warning before each limit · 2 extensions a day</div>
+ </div>
+</div><div class="cap"><b>Daily limits.</b> Each app shows today's use against its limit, with − / + right there. During a lock, − is disabled.</div></div>
+
+<!-- OPEN WAIT SETTINGS -->
+<div><div class="phone tight">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top appbar"><span class="back" role="button" aria-label="Back to All rules">←</span><span class="bartitle">All rules</span><span class="act">+ App</span></div>
+  <h2 style="margin-top:12px">Wait before opening</h2>
+  <div class="qs2">A short breath before the apps you choose. Nothing is blocked.</div>
+  <div class="card" style="margin-top:12px;overflow:hidden">
+   <div class="r"><div class="tx"><b>Instagram</b><span>Today: opened 2 · closed instead 3</span></div></div>
+   <div class="r"><div class="tx"><b>TikTok</b><span>Today: opened 1 · closed instead 4</span></div></div>
+   <div class="r"><div class="tx"><b>Reddit</b><span>Not opened today</span></div></div>
+  </div>
+  <div class="lbl2">Wait</div>
+  <div class="howlong"><span>5 s</span><span class="a">10 s</span><span>20 s</span><span>30 s</span></div>
+  <div class="card rows" style="margin-top:12px"><div class="r"><div class="tx"><b>Longer each time</b><span>+5 s for each open today, up to a minute</span></div><div class="sw"></div></div></div>
+ </div>
+</div><div class="cap"><b>Wait before opening.</b> Apps with today's honest counts, the wait length, and the growing wait.</div></div>
+
+<!-- SITE CHECK -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top appbar"><span class="back" role="button" aria-label="Back to Tools">←</span><span class="bartitle">Tools</span></div>
+  <h2 style="margin-top:12px">Would this be blocked?</h2>
+  <div class="field">old.reddit.com<span class="cur"></span></div>
+  <div class="card result">
+   <b>Blocked</b>
+   <div class="chain">
+    <div><i>1</i>Not on the adult list</div>
+    <div><i>2</i>Matches your rule <b style="font:700 12.5px 'DM Sans'">reddit.com</b> (subdomains)</div>
+    <div><i>3</i>Active: always</div>
+   </div>
+  </div>
+  <div class="btn2"><div>Edit the rule</div><div>Check another</div></div>
+  <div class="why" style="margin-top:10px">Checked on this phone. Nothing is looked up online.</div>
+ </div>
+</div><div class="cap"><b>Check a site.</b> Explains which rule decided it, step by step, with a way to change it.</div></div>
+
+<!-- DIAGNOSTICS -->
+<div><div class="phone tight">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top appbar"><span class="back" role="button" aria-label="Back to Tools">←</span><span class="bartitle">Tools</span></div>
+  <h2 style="margin-top:12px">Is everything working?</h2>
+  <div class="card" style="margin-top:12px;overflow:hidden">
+   <div class="r"><span class="dotst ok"></span><div class="tx"><b>Website filter</b><span>Route test passed 2 min ago</span></div></div>
+   <div class="r"><span class="dotst ok"></span><div class="tx"><b>App protection</b><span>Connected</span></div></div>
+   <div class="r"><span class="dotst ok"></span><div class="tx"><b>Images and video</b><span>Sampling in 3 apps</span></div></div>
+   <div class="r"><span class="dotst bad"></span><div class="tx"><b>Battery</b><span>Samsung may put Unrot to sleep</span></div></div>
+  </div>
+  <div class="fixbtn" style="margin-top:12px">Fix battery setting</div>
+  <div class="btn2"><div>Run all tests</div><div>Copy report</div></div>
+  <div class="why" style="margin-top:8px">The report has no sites, apps or names in it.</div>
+ </div>
+</div><div class="cap"><b>Health check.</b> One list, one fix button for what's wrong, and a shareable report that contains nothing personal.</div></div>
+
+<!-- VPN ERROR -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr ob" style="padding-top:40px">
+  <span class="noodle" data-mood="worried" style="width:130px;height:120px"></span>
+  <h3 style="font-size:27px">Another VPN is on, so the website filter can't start.</h3>
+  <p>Android allows one VPN at a time. Right now it's <b>ProtonVPN</b>.</p>
+  <div class="card" style="margin-top:14px;padding:4px 0;text-align:left;width:100%">
+   <div class="check"><span class="cbox">1</span><div><b>Use our filter instead</b><span>Turn the other VPN off, then try again.</span></div></div>
+   <div class="check"><span class="cbox">2</span><div><b>Keep your VPN</b><span>Apps, feeds and images still work. Only websites aren't filtered.</span></div></div>
+  </div>
+ </div>
+ <div class="primary" style="bottom:58px">Open VPN settings</div>
+ <div class="private">Keep my VPN</div>
+</div><div class="cap"><b>VPN conflict.</b> The most common setup error: why it happens, both choices, and what still works either way.</div></div>
+</div>
+
+<div class="sec" id="learned"><span class="num">J</span><h2>What we learned from CleanPath, done our way</h2><p>Ten patterns from the recording that work, rebuilt honestly: real phone data instead of a scary score, a week view that never resets, and permission help with a picture.</p></div>
+<div class="row">
+
+<!-- GOAL CARDS -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr ob">
+  <div class="stepdots"><i class="f"></i><i></i><i></i><i></i></div>
+  <h3 style="font-size:27px;margin-top:16px">What should Unrot<br>help you with?</h3>
+  <p>Pick one or more. Each changes what's switched on.</p>
+  <div class="goals">
+   <div class="goal on"><i class="tick"></i><div class="gi">▶</div><b>Short videos</b><span>Shorts, Reels, TikTok feeds</span></div>
+   <div class="goal on"><i class="tick"></i><div class="gi">≡</div><b>Endless scrolling</b><span>Feeds that never end</span></div>
+   <div class="goal"><i class="tick"></i><div class="gi">☾</div><b>Phone at night</b><span>Lights-out from 22:00</span></div>
+   <div class="goal on"><i class="tick"></i><div class="gi">⛨</div><b>Adult content</b><span>Sites, apps and images</span></div>
+   <div class="goal"><i class="tick"></i><div class="gi">⏱</div><b>Too much time</b><span>Daily limits per app</span></div>
+   <div class="goal"><i class="tick"></i><div class="gi">◎</div><b>Focus at work</b><span>Quiet hours on weekdays</span></div>
+  </div>
+ </div>
+ <div class="primary">Continue · 3 picked</div>
+</div><div class="cap"><b>Goal cards.</b> CleanPath's 2×3 grid is quick to scan. Ours adds the line that matters ("what this switches on"), and every card maps to real rules, not just tone of voice.</div></div>
+
+<!-- STARTING POINT -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="stepdots"><i class="f"></i><i class="f"></i><i class="f"></i><i></i></div>
+  <div class="lbl2" style="margin-top:14px">Your starting point · last 7 days</div>
+  <div class="start-num">2h 34m <small>a day on feeds</small></div>
+  <div style="font-size:13px;color:var(--ink2);margin-top:4px">That's about <b style="color:var(--ink)">18 hours a week</b>, more than two working days.</div>
+  <div class="card" style="margin-top:12px;padding:12px 14px">
+   <div class="appbar"><span>TikTok</span><div><i style="width:86%"></i></div><b>1h 12m</b></div>
+   <div class="appbar"><span>Instagram</span><div><i style="width:55%"></i></div><b>46m</b></div>
+   <div class="appbar"><span>YouTube</span><div><i style="width:36%"></i></div><b>30m</b></div>
+   <div class="appbar"><span>Reddit</span><div><i style="width:10%"></i></div><b>6m</b></div>
+   <div class="src">From Android's own screen time on this phone. Nothing is uploaded.</div>
+  </div>
+  <div class="card" style="margin-top:10px;padding:12px 14px;background:var(--sage)"><b style="font:700 17px Fraunces,Georgia,serif">With a 45-minute limit</b><div style="font-size:12.5px;color:var(--ink2);margin-top:3px">you'd get back about <b style="color:var(--ink)">55 hours a month</b>. Your hardest hour is <b style="color:var(--ink)">23:00</b>.</div></div>
+ </div>
+ <div class="primary">Set my limits</div>
+</div><div class="cap"><b>Your starting point.</b> CleanPath's "95/100 severe" score is made up. Ours reads Android's real screen time after one permission, and shows hours and apps, plus what a limit would give back.</div></div>
+
+<!-- NOTIFICATION IN CONTEXT -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr ob">
+  <div class="stepdots"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i></div>
+  <span class="noodle" data-mood="talk" style="width:130px;height:120px;margin-top:22px"></span>
+  <h3 style="font-size:27px">Can I warn you first?</h3>
+  <p>Only three kinds, never ads or streak reminders:</p>
+  <div class="card" style="margin-top:14px;padding:4px 0;text-align:left;width:100%">
+   <div class="check"><span class="cbox" style="background:var(--butter)">⏱</span><div><b>5 minutes before a limit</b><span>So time-up never surprises you.</span></div></div>
+   <div class="check"><span class="cbox" style="background:var(--blush)">!</span><div><b>When protection stops</b><span>Android sometimes turns it off.</span></div></div>
+   <div class="check"><span class="cbox" style="background:var(--sky)">☾</span><div><b>Before your hard hours</b><span>Optional. Off unless you turn it on.</span></div></div>
+  </div>
+ </div>
+ <div class="skip">Android will ask next. You can say no.</div>
+ <div class="primary">Yes, allow these</div>
+</div><div class="cap"><b>Asking in context.</b> Like CleanPath, we ask after explaining the benefit. Unlike CleanPath, we say exactly which notifications you'll get and promise no streak nagging.</div></div>
+
+<!-- COACH TOUR -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><div class="logo">un<i>rot</i></div><span class="tag ok">Shield on</span></div>
+  <div class="card garden" style="margin-top:96px"><div class="k">Days with Unrot</div><div class="days">1 <span>day</span></div></div>
+ </div>
+ <div class="pause"><div class="ic"><span class="noodle" data-mood="calm" style="width:34px;height:36px"></span></div><div><b>Feeling the pull?</b><span>Breathe for 30 seconds</span></div></div>
+ <div class="coach-hole" style="left:16px;right:16px;bottom:94px;height:68px"></div>
+ <div class="coach-tip" style="bottom:182px"><b>Your way out, any time.</b>Tap here when a feed pulls at you. It's also in Quick Settings: swipe down from the top.<div class="ft"><span>2 of 3 · Skip tour</span><span class="p">Next</span></div></div>
+ <span class="noodle" data-mood="talk" style="width:80px;height:76px;position:absolute;right:22px;bottom:330px"></span>
+</div><div class="cap"><b>First-visit tour.</b> CleanPath spotlights each home element once. We do three stops (days, pause, shield), skippable, and it never comes back unless you ask.</div></div>
+
+<!-- SHOW ME WHERE -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="dim"></div>
+ <div class="sheetx" style="top:120px">
+  <div class="grab"></div>
+  <div class="lbl2" style="margin:4px 0 2px">Step 2 of 2 · Samsung</div>
+  <h3 style="font:800 24px/1.1 Fraunces,Georgia,serif">Turn on "Unrot" under Installed apps</h3>
+  <p style="font-size:13px;color:var(--ink2);margin-top:6px">In Accessibility, open <b>Installed apps</b>, tap <b>Unrot</b>, then switch it on.</p>
+  <div class="mini-phone">
+   <div class="h">‹ Installed apps</div>
+   <div class="it"><span>Bixby</span><i class="msw"></i></div>
+   <div class="it hl"><span><b>Unrot</b></span><i class="msw"></i></div>
+   <div class="it"><span>Switch Access</span><i class="msw"></i></div>
+   <div class="it"><span>TalkBack</span><i class="msw"></i></div>
+  </div>
+  <div class="stepper"><i class="f"></i><i class="f"></i></div>
+  <div class="btn2"><div class="p">Open Accessibility</div><div>Watch 20 s video</div></div>
+ </div>
+</div><div class="cap"><b>"Show me where".</b> CleanPath draws the Safari settings screen with the switch circled. We do the same for Android, per phone maker (Samsung, Xiaomi, Pixel…), so the hardest setup step is a picture, not a paragraph.</div></div>
+
+<!-- BREATHE LENGTH + ALTERNATIVES -->
+<div><div class="phone" style="background:var(--sky)">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><span class="tag">Done · 3 breaths</span><span class="xbtn" role="button" aria-label="Close">✕</span></div>
+  <div style="display:flex;gap:10px;align-items:flex-end;margin-top:14px">
+   <span class="noodle" data-mood="happy" style="width:74px;height:72px"></span>
+   <div><h2 style="font-size:25px">Nice. The pull is smaller now.</h2></div>
+  </div>
+  <div class="lbl2">Breathe again</div>
+  <div class="lens"><span class="a">30 s<small>3 breaths</small></span><span>1 min<small>7 breaths</small></span><span>3 min<small>calm down</small></span></div>
+  <div class="lbl2">Or do this instead</div>
+  <div class="alts">
+   <div class="alt">🚶<b>Walk</b>Ten minutes outside.<br><span class="go">Start 10 min</span></div>
+   <div class="alt">💧<b>Water</b>Drink a glass, slowly.<br><span class="go">Done</span></div>
+   <div class="alt">💬<b>Text someone</b>Not a feed: a person.<br><span class="go">Open Messages</span></div>
+   <div class="alt">🛏<b>Lie down</b>Phone in another room.<br><span class="go">Lights-out now</span></div>
+  </div>
+ </div>
+</div><div class="cap"><b>After breathing.</b> CleanPath's cycle slider and "more activities" grid are good ideas. Ours offers three lengths and four real alternatives, each with an action that actually does something (timer, Messages, lights-out).</div></div>
+
+<!-- TODAY WITH WEEK + TOAST -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="toast"><span class="noodle" data-mood="proud" style="width:34px;height:34px"></span><div style="flex:1"><b>Pause counted · 4 today</b><div class="pb"><i></i></div></div><span style="font-weight:700">Undo</span></div>
+ <div class="scr" style="padding-top:62px">
+  <div class="card garden"><div class="k">Days with Unrot</div><div class="days">12 <span>days</span></div>
+   <div class="week7">
+    <div><i class="g">✓</i>M</div><div><i class="g">✓</i>T</div><div><i class="o">·</i>W</div><div><i class="g">✓</i>T</div><div><i class="g">✓</i>F</div><div><i class="t">S</i>S</div><div><i class="f"></i>S</div>
+   </div>
+   <div class="s" style="margin-top:8px">Green = under your 45-minute goal. A red day doesn't reset anything.</div>
+  </div>
+  <div class="minis"><div class="card mini"><div class="k">Pauses today</div><div class="v">4</div></div><div class="card mini"><div class="k">Feeds today</div><div class="v">22<small> min</small></div></div></div>
+ </div>
+ <div class="pause"><div class="ic"><span class="noodle" data-mood="calm" style="width:34px;height:36px"></span></div><div><b>Feeling the pull?</b><span>Breathe for 30 seconds</span></div></div>
+ <div class="nav"><div class="a">Today</div><div>Shield</div><div>Progress</div><div>You</div></div>
+</div><div class="cap"><b>Week strip and feedback.</b> CleanPath's Mon–Sun dots and live-activity toast make progress felt. Our dots come from real screen time, red days never reset the count, and a pause shows a small toast with Undo.</div></div>
+
+<!-- EXPLAINER + EMPTY -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr"><div class="top"><h2>Progress</h2><span class="tag">?</span></div></div>
+ <div class="dim"></div>
+ <div class="sheetx" style="top:110px">
+  <div class="grab"></div>
+  <h3 style="font:800 24px Fraunces,Georgia,serif">How to read this page</h3>
+  <div class="card" style="margin-top:12px;overflow:hidden">
+   <div class="check"><span class="cbox" style="background:var(--tomato);color:#fff">▮</span><div><b>Feed time</b><span>Minutes in apps you marked as feeds, from Android's screen time. Today's bar is red until the day ends.</span></div></div>
+   <div class="check"><span class="cbox" style="background:var(--butter)">14</span><div><b>Stickers</b><span>One per milestone (7, 14, 30…). They're never taken away.</span></div></div>
+   <div class="check"><span class="cbox" style="background:var(--blush)">☾</span><div><b>Hard hours</b><span>When your pauses happen. Only the hour is saved, on this phone.</span></div></div>
+   <div class="check"><span class="cbox">?</span><div><b>What isn't measured</b><span>Mood, willpower, "recovery %". We don't guess those.</span></div></div>
+  </div>
+  <div class="primary" style="position:static;margin-top:14px">Got it</div>
+ </div>
+</div><div class="cap"><b>Explainer sheet.</b> CleanPath's "Understanding your journey" sheet answers "what do these numbers mean?". Ours also says what we deliberately don't measure.</div></div>
+
+</div>
+
+<div class="vs"><h3>CleanPath vs Unrot, pattern by pattern</h3>
+<table>
+<tr><th>Pattern</th><th>CleanPath (from the recording)</th><th>Unrot</th></tr>
+<tr><td>Goal picking</td><td>2×3 icon cards (0:14)</td><td>Same quick grid, and each card says what it turns on</td></tr>
+<tr><td>Diagnosis</td><td>Quiz → "95/100 severe", "relapse risk 100%" (1:00)</td><td>Real Android screen time: hours, apps, hardest hour</td></tr>
+<tr><td>Streak</td><td>Fire counter that resets to zero (0:22, 3:15)</td><td>Day count that never resets, plus a week strip from real usage</td></tr>
+<tr><td>Notification ask</td><td>"Keep this streak alive" (0:24)</td><td>Lists the 3 exact notifications, no streak nagging</td></tr>
+<tr><td>First home visit</td><td>Spotlight tour over each element (3:08–3:15)</td><td>3-stop tour, skippable, never repeats</td></tr>
+<tr><td>Setup help</td><td>Drawn Safari settings with the switch circled (3:46)</td><td>Same idea for Android, per phone maker, plus a short video</td></tr>
+<tr><td>Explainers</td><td>"Understanding your recovery journey" sheet (4:33)</td><td>"How to read this page", including what we don't measure</td></tr>
+<tr><td>Urge help</td><td>Panic button → breathing with cycle slider (4:52)</td><td>Pause button + Quick Settings tile, 3 lengths</td></tr>
+<tr><td>After the urge</td><td>"More activities" grid (6:02)</td><td>4 alternatives, each with a working action</td></tr>
+<tr><td>Feedback</td><td>Live-activity bar "+1.1%" (6:01)</td><td>Toast "Pause counted · 4 today" with Undo</td></tr>
+<tr><td>Not taken</td><td>Fake reviews, "6.9K people checked in", rating prompt before use, forced sign-in, wealth affirmations</td><td>None of these</td></tr>
+</table></div>
+
+
+<script>
+(function(){
+const INK='#1F2A23',PINK='#F6A9BC',PINK2='#FBC6D2',SHADE='#E07E98',DEEP='#B8506F',FOLD='#C25A78',LIGHT='#FFE6EC',CHEEK='#E5553A',WHITE='#FFFDF8',TONGUE='#EE7A7A',GOLD='#F4C34E';
+let uid=0;
+const mirror=d=>d.replace(/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g,(m,x,y)=>`${+(140-x).toFixed(1)} ${y}`);
+const S=(d,c,w,o,extra)=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${o?` opacity="${o}"`:''}${extra||''}/>`;
+const OUT="M70 17 C74 11 82 8 90 10 C97 8 105 12 108 19 C116 19 123 25 124 33 C131 37 134 46 131 54 C136 61 136 71 130 77 C133 85 130 95 122 99 C120 107 112 112 104 111 C97 116 86 116 79 111 C75 113 65 113 61 111 C54 116 43 116 36 111 C28 112 20 107 18 99 C10 95 7 85 10 77 C4 71 4 61 9 54 C6 46 9 37 16 33 C17 25 24 19 32 19 C35 12 43 8 50 10 C58 8 66 11 70 17Z";
+// Gyri: each fold is drawn three times (cast shade, crease, rim light) so the lobes read as rounded and soft.
+const leftFolds=[
+ "M20 36 C26 29 35 31 34 38 C33 44 41 47 47 42",
+ "M38 20 C45 15 53 19 51 25 C50 30 56 33 61 29",
+ "M12 54 C18 48 26 51 25 57 C24 62 30 65 35 61",
+ "M30 47 C34 43 40 45 40 50 C40 54 45 55 48 52",
+ "M52 36 C56 33 61 36 60 41 C59 45 62 48 65 47",
+ "M56 19 C59 16 64 17 65 21",
+ "M23 24 C27 21 32 22 32 26",
+ "M10 72 C15 68 21 71 20 76 C19 80 23 84 28 82",
+ "M12 92 C17 89 22 92 21 97",
+ "M25 102 C30 98 37 101 36 106",
+ "M45 105 C49 101 55 104 54 109",
+ "M16 44 C18 41 22 41 23 44",
+ "M41 33 C43 36 41 39 43 42"
+];
+const allFolds=leftFolds.flatMap(d=>[d,mirror(d)]);
+const fissure="M70 18 C66 27 74 34 69 43 C66 49 71 53 70 57";
+const folds=
+ `<g transform="translate(1.3 1.7)" opacity=".38">${allFolds.map(d=>S(d,DEEP,5.2)).join('')}${S(fissure,DEEP,6)}</g>`+
+ allFolds.map(d=>S(d,FOLD,2.7)).join('')+S(fissure,FOLD,3.4)+
+ `<g transform="translate(-1.2 -1.4)">${allFolds.map(d=>S(d,LIGHT,1.6,.85)).join('')}</g>`;
+// Comic hatching in the shadow side of each hemisphere.
+const hatch=[0,1,2,3,4,5].map(i=>S(`M${16+i*6} ${100+i*0.6} l5 -7`,INK,1.15,.22)).join('')+
+ [0,1,2,3,4,5].map(i=>S(`M${92+i*6} ${103-i*0.6} l5 -7`,INK,1.15,.22)).join('')+
+ [0,1,2].map(i=>S(`M${124-i*0.4} ${62+i*7} l5 -6`,INK,1.1,.2)).join('');
+const shine=S("M22 34 C27 27 35 23 43 23",'#fff',4.2,.75)+S("M83 17 C89 14 97 15 102 19",'#fff',3.6,.7)+
+ `<ellipse cx="34" cy="27" rx="2.4" ry="1.6" fill="#fff" opacity=".9" transform="rotate(-30 34 27)"/>`;
+const cerebellum=`<g><path d="M96 104 C100 98 112 98 117 104 C121 110 116 118 106 118 C98 118 93 111 96 104Z" fill="${SHADE}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>${S("M99 107 C104 105 110 105 115 107",DEEP,2)}${S("M99 112 C104 110 110 110 115 112",DEEP,2)}${S("M100 103 C104 101 109 101 112 102",LIGHT,1.4,.8)}</g>`;
+
+// Sneaker: white upper, toe cap, tomato sole, laces, heel tab, shine.
+const shoe=(x,flip)=>{const f=flip?-1:1;return `<g transform="translate(${x} 0) scale(${f} 1)">
+ <path d="M-10 128 C-10 120 -3 118 4 120 C11 121 15 126 14 131 L-9 131 C-10 131 -10 129 -10 128Z" fill="${WHITE}" stroke="${INK}" stroke-width="2.8" stroke-linejoin="round"/>
+ <path d="M7 121.5 C11 123 14 126 14 130 L8 130 C8 126 8 124 7 121.5Z" fill="#EDE6DA"/>
+ <path d="M-10 126 C-11 122 -9 119 -6 119 L-5 125Z" fill="${CHEEK}" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>
+ <path d="M-10.5 130.5 L14.5 130.5 L14.5 134.5 C14.5 136 13.5 137 12 137 L-8 137 C-10 137 -10.5 136 -10.5 134Z" fill="${CHEEK}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>
+ ${S("M-9 133.8 L13 133.8",'#fff',1,.5)}
+ ${S("M-2 122.5 L3 125.5 M1 121.5 L6 124.5 M-2 125.5 L3 122.5",INK,1.5)}
+ ${S("M-7 123 C-6 121 -4 120.5 -2 120.6",'#fff',1.6,.9)}</g>`};
+// Rubber-hose legs with striped crew socks.
+const leg=(x1,x2,cls,flip)=>`<g class="${cls}">${S(`M${x1} 109 L${x2} 127`,INK,6.4)}${S(`M${x1} 109 L${(x1*0.55+x2*0.45).toFixed(1)} 117`,PINK,3)}${S(`M${(x1*0.55+x2*0.45).toFixed(1)} 117.5 L${x2} 126`,WHITE,3.2)}${S(`M${(x1*0.4+x2*0.6).toFixed(1)} 119.5 l${flip?0.6:-0.6} 0.6`,CHEEK,3.4)}${shoe(x2,flip)}</g>`;
+const legs=leg(57,54,'n-legL',true)+leg(83,86,'n-legR',false);
+
+// Four-finger cartoon glove. Local frame: wrist at 0,0, hand reaching toward -y.
+const capsule=(pts,w)=>pts.map(([a,b,c,d])=>`<path d="M${a} ${b} L${c} ${d}" stroke-width="${w}" stroke-linecap="round"/>`).join('');
+const glove=(x,y,rot,pose)=>{
+ let fingers=[],thumb=[[3.5,-6,9.5,-9.5]],palm={rx:6.6,ry:6.2},extra='';
+ if(pose==='open')fingers=[[-3.6,-9,-8.2,-17.5],[-0.6,-11,-1.6,-20.5],[2.6,-10.5,5.4,-19]];
+ else if(pose==='point'){fingers=[[0.4,-10,0.6,-22]];thumb=[[3.6,-6,8.6,-10.5]];extra=S("M-5.6 -10.2 C-4.6 -13 -2 -13.4 -1.2 -11.2",INK,1.4,.55)+S("M-4.8 -6.5 C-3.6 -8.8 -1.4 -9 -0.6 -7.4",INK,1.3,.45)}
+ else {palm={rx:7,ry:6.6};thumb=[[4.2,-6.4,6.8,-9.2]];extra=S("M-5 -12.5 C-3.6 -14.2 -1.6 -14.2 -0.6 -12.6 C0.4 -14.2 2.6 -14.2 3.6 -12.4",INK,1.4,.6)}
+ const all=[...fingers,...thumb];
+ return `<g transform="translate(${x} ${y}) rotate(${rot})">
+  <g stroke="${INK}">${capsule(all,7.4)}</g><ellipse cx="0" cy="-8" rx="${palm.rx+1.4}" ry="${palm.ry+1.4}" fill="${INK}"/>
+  <g stroke="${WHITE}">${capsule(all,4.4)}</g><ellipse cx="0" cy="-8" rx="${palm.rx}" ry="${palm.ry}" fill="${WHITE}"/>
+  ${S("M-2.6 -5.5 L-2.4 -10 M0 -5 L0.2 -10.5 M2.6 -5.5 L2.8 -10",INK,1.1,.5)}${extra}
+  <ellipse cx="-2.6" cy="-11" rx="2" ry="1.2" fill="#fff"/>
+  <path d="M-7 -1.6 C-7 -4 7 -4 7 -1.6 L7 1.6 C7 3.6 -7 3.6 -7 1.6Z" fill="${WHITE}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+  ${S("M-6.4 0.2 C-2 1.6 2 1.6 6.4 0.2",INK,1,.4)}</g>`};
+// Arm = outlined pink noodle ending in a glove.
+const arm=(d,gx,gy,rot,pose)=>S(d,INK,6)+S(d,PINK,2.8)+glove(gx,gy,rot,pose);
+
+// Eyes: big sclera, two-tone iris, pupil, double catch-lights, heavy upper lid with two lashes.
+const eye=(x,dx=0,dy=0,lid='')=>`<g><ellipse cx="${x}" cy="71" rx="8.2" ry="9.8" fill="#fff" stroke="${INK}" stroke-width="2.4"/>
+ <ellipse cx="${x+0.6+dx}" cy="73" rx="5.4" ry="6.4" fill="#3E6B4E" transform="translate(0 ${dy})" />
+ <ellipse cx="${x+0.6+dx}" cy="75.2" rx="4.2" ry="3.4" fill="#5E9470" transform="translate(0 ${dy})"/>
+ <ellipse cx="${x+0.6+dx}" cy="73" rx="3" ry="3.7" fill="${INK}" transform="translate(0 ${dy})"/>
+ <circle cx="${x+2.6+dx}" cy="${69.6+dy}" r="2.1" fill="#fff"/><circle cx="${x-1.2+dx}" cy="${76.4+dy}" r="0.9" fill="#fff" opacity=".85"/>
+ ${S(`M${x-8.6} 69 C${x-6} 60.4 ${x+6} 60.4 ${x+8.6} 69`,INK,3.2)}
+ ${S(`M${x+(x<70?-7.6:7.6)} 64.6 l${x<70?-3:3} -2.4`,INK,1.8)}${lid}</g>`;
+const eyesOpen=`<g class="n-eyes">${eye(57)}${eye(83)}</g>`;
+// Tapered brows as filled ink shapes.
+const brow=(x,tilt)=>`<path d="M${x-7} ${57+tilt} Q${x} ${52-tilt*0.4} ${x+7} ${57-tilt} Q${x} ${54.6-tilt*0.4} ${x-7} ${57+tilt}Z" fill="${INK}" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>`;
+const brows=brow(57,0.6)+brow(83,-0.6);
+const cheeks=`<ellipse cx="42" cy="85" rx="7.5" ry="4.4" fill="${CHEEK}" opacity=".34"/><ellipse cx="98" cy="85" rx="7.5" ry="4.4" fill="${CHEEK}" opacity=".34"/>`+
+ S("M38 86.5 l2 -3.4 M41.5 86.5 l2 -3.4 M45 86.5 l2 -3.4",CHEEK,1.1,.7)+S("M94 86.5 l2 -3.4 M97.5 86.5 l2 -3.4 M101 86.5 l2 -3.4",CHEEK,1.1,.7);
+const freckles=`<circle cx="49" cy="91" r=".9" fill="${DEEP}" opacity=".6"/><circle cx="52" cy="93" r=".8" fill="${DEEP}" opacity=".5"/><circle cx="91" cy="91" r=".9" fill="${DEEP}" opacity=".6"/><circle cx="88" cy="93" r=".8" fill="${DEEP}" opacity=".5"/>`;
+const smileOpen=`<path d="M59 85.5 Q70 89 81 85.5 Q79 100 70 100 Q61 100 59 85.5Z" fill="${INK}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+ <path d="M61.6 87 Q70 89.6 78.4 87 L78 89.4 Q70 91.4 62 89.4Z" fill="#fff"/>
+ <path d="M63.5 96.5 Q70 91.6 76.5 96.5 Q73.5 99.4 70 99.4 Q66.5 99.4 63.5 96.5Z" fill="${TONGUE}"/>${S("M70 94 L70 97.4",'#B94B4B',1,.7)}
+ ${S("M57.6 84.4 Q58.4 86.6 60.4 86.6",INK,1.8)}${S("M82.4 84.4 Q81.6 86.6 79.6 86.6",INK,1.8)}`;
+const sparkle=(x,y,s)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0 -8 C1 -2 2 -1 8 0 C2 1 1 2 0 8 C-1 2 -2 1 -8 0 C-2 -1 -1 -2 0 -8Z" fill="${GOLD}" stroke="${INK}" stroke-width="${2/s}" stroke-linejoin="round"/>`;
+
+const faces={
+ happy:{f:eyesOpen+brows+smileOpen,
+  a:arm("M14 80 C6 86 4 94 7 100",7,101,180,'fist')+`<g class="n-wave">${arm("M127 81 C139 76 146 67 145 57",145,57,6,'open')}</g>`},
+ talk:{f:eyesOpen+brows+`<g class="n-mouth-talk"><path d="M61.5 85 Q70 82.6 78.5 85 Q78 98 70 98 Q62 98 61.5 85Z" fill="${INK}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><path d="M63.5 86.4 Q70 84.8 76.5 86.4 L76 88.4 Q70 87.4 64 88.4Z" fill="#fff"/><path d="M64.5 94.6 Q70 90.6 75.5 94.6 Q73 97.2 70 97.2 Q67 97.2 64.5 94.6Z" fill="${TONGUE}"/></g>`,
+  a:arm("M14 80 C6 86 4 94 7 100",7,101,180,'fist')+`<g class="n-point">${arm("M127 80 C136 78 143 73 147 67",148,66,40,'point')}</g>`},
+ calm:{f:S("M49 72 Q57 79 65 72",INK,3.2)+S("M75 72 Q83 79 91 72",INK,3.2)+S("M50 73.6 l-2.6 1.8 M90 73.6 l2.6 1.8",INK,1.7)+
+  brow(57,-0.4)+brow(83,0.4)+S("M63 88 Q70 93.6 77 88",INK,3)+S("M61.6 87.2 Q62 88.6 63.4 88.8",INK,1.6)+S("M78.4 87.2 Q78 88.6 76.6 88.8",INK,1.6),
+  a:arm("M14 80 C6 86 4 94 7 100",7,101,180,'fist')+arm("M126 80 C134 86 136 94 133 100",133,101,180,'fist')},
+ proud:{f:S("M49 74 Q57 63 65 74",INK,3.4)+S("M75 74 Q83 63 91 74",INK,3.4)+brow(57,-1.4)+brow(83,1.4)+
+  smileOpen.replace('Q79 100 70 100 Q61 100 59 85.5','Q80 103 70 103 Q60 103 59 85.5'),
+  a:arm("M13 82 C1 74 -4 63 -2 54",-2,54,-12,'open')+arm("M127 82 C139 74 144 63 142 54",142,54,12,'open')+
+  `<g class="n-spark">${sparkle(-6,30,1)}${sparkle(148,24,.8)}${sparkle(12,16,.55)}<circle cx="132" cy="36" r="1.6" fill="${GOLD}" stroke="${INK}" stroke-width="1"/></g>`},
+ worried:{f:`<g class="n-eyes">${eye(57,0.4,-1.6)}${eye(83,-0.4,-1.6)}</g>`+brow(57,-2.2)+brow(83,2.2)+
+  S("M61 92 Q64.5 88 68 91 Q71.5 94 75 90 Q77.5 88 79 90.6",INK,3)+
+  `<path d="M107 46 C102.6 53 104.4 58 108.4 58 C112.4 58 113.4 53 107 46Z" fill="#A8D2E8" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><ellipse cx="106.6" cy="54.6" rx="1.3" ry="2" fill="#fff"/>`,
+  a:arm("M14 80 C10 90 17 96 25 95",27,94,72,'fist')+arm("M126 80 C130 90 123 96 115 95",113,94,-72,'fist')},
+ dizzy:{f:`<g class="n-swirl">${S("M57 71 m-6 0 a6 6 0 1 1 6 6 a3.5 3.5 0 1 1 -3.5 -3.5",INK,2.6)}</g><g class="n-swirl">${S("M83 71 m-6 0 a6 6 0 1 1 6 6 a3.5 3.5 0 1 1 -3.5 -3.5",INK,2.6)}</g>`+
+  S("M60 90 Q65 86 70 90 Q75 94 80 90",INK,3)+`<path d="M73 91.6 Q75.6 96.6 78.4 92" fill="${TONGUE}" stroke="${INK}" stroke-width="1.6"/>`+
+  `<g class="n-spark">${sparkle(38,6,.5)}${sparkle(104,4,.45)}${sparkle(70,-2,.4)}</g>`,
+  a:arm("M14 80 C6 86 4 94 7 100",7,101,180,'fist')+arm("M126 80 C134 86 136 94 133 100",133,101,180,'fist')},
+};
+function draw(mood){
+ const m=faces[mood]||faces.happy, id='nb'+(uid++);
+ return `<svg viewBox="-12 -4 164 146" role="img" aria-label="Noodle the brain, ${mood}"><defs>
+  <clipPath id="${id}c"><path d="${OUT}"/></clipPath>
+  <radialGradient id="${id}g" cx="38%" cy="28%" r="80%"><stop offset="0" stop-color="${PINK2}"/><stop offset=".55" stop-color="${PINK}"/><stop offset="1" stop-color="${SHADE}"/></radialGradient>
+  <radialGradient id="${id}f" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="${PINK}" stop-opacity=".97"/><stop offset=".62" stop-color="${PINK}" stop-opacity=".9"/><stop offset="1" stop-color="${PINK}" stop-opacity="0"/></radialGradient>
+  <filter id="${id}t" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${uid%7}"/><feColorMatrix values="0 0 0 0 .12  0 0 0 0 .16  0 0 0 0 .14  0 0 0 -1.1 .62"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+ </defs>
+ <ellipse cx="70" cy="138" rx="38" ry="4" fill="${INK}" opacity=".14"/>
+ <g class="n-all">${legs}${cerebellum}
+  <path class="n-rim" d="${OUT}" fill="none" stroke="transparent" stroke-width="8" stroke-linejoin="round"/>
+  <path d="${OUT}" fill="${INK}" transform="translate(1.4 2)"/>
+  <path d="${OUT}" fill="url(#${id}g)"/>
+  <g clip-path="url(#${id}c)">
+   <path d="M0 88 C26 114 114 114 140 88 L140 140 L0 140Z" fill="${SHADE}" opacity=".5"/>
+   <path d="M132 30 C128 60 130 90 112 112 L140 120 L140 20Z" fill="${DEEP}" opacity=".18"/>
+   ${folds}${hatch}
+   <rect x="0" y="0" width="140" height="120" fill="#000" filter="url(#${id}t)" opacity=".5"/>
+  </g>
+  ${shine}
+  <path d="${OUT}" fill="none" stroke="${INK}" stroke-width="3.4" stroke-linejoin="round"/>
+  <ellipse cx="70" cy="80" rx="34" ry="25" fill="url(#${id}f)"/>
+  ${cheeks}${freckles}${m.f}${m.a}</g></svg>`;
+}
+document.querySelectorAll('.noodle').forEach(el=>{el.innerHTML=draw(el.dataset.mood)});
+document.querySelectorAll('[data-say]').forEach(el=>{
+ const text=el.dataset.say;let i=0;el.textContent='';
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=text;return}
+ (function tick(){el.textContent=text.slice(0,++i);if(i<text.length)setTimeout(tick,32);else setTimeout(()=>{i=0;tick()},4200)})();
+});
+})();
+</script>
+
+
+<style>
+/* ===== contrast fixes (WCAG AA) ===== */
+:root{--tomato:#B83F29;--ink2:#36413A}
+.phone{--tomato:#B83F29;--ink2:#36413A}
+.bleed{background:#C0402A}
+.onbleed{background:#FFFDF8!important;color:#1F2A23!important}
+.lbl2{color:var(--ink2)}
+.plan .pp small{color:var(--ink2)}
+.spot{background:#FFFDF8!important}
+.yes{color:#2A6E34}
+.who span{color:#2A6E34}
+body.dk .phone{--tomato:#B83F29}
+body.dk .phone .yes,body.dk .phone .who span{color:#86CC8A}
+body.dk .phone small[style*="2F7A3A"],body.dk .phone .week .v small{color:#86CC8A!important}
+body.dk .phone .lens span.a small{color:#4A453C}
+body.dk .phone .tag.ok{background:#2E4A2E;color:#DDEBD9}
+body.dk .bleed{background:#A93A25}
+body.dk .phone .bleed.sage,body.dk .bleed.sage{background:#22381F}
+.pause span{opacity:1!important}
+.pause{color:#fff!important}
+body.dk .toc a{background:#1A1814;color:#EDE6D8;border-color:#EDE6D8}
+</style>
+<script>
+(function(){
+ const b=document.body,L=document.getElementById('mLight'),D=document.getElementById('mDark');
+ function set(dark){b.classList.toggle('dk',dark);L.classList.toggle('a',!dark);D.classList.toggle('a',dark);try{localStorage.setItem('unrotMode',dark?'dark':'light')}catch(e){}}
+ L.onclick=()=>set(false);D.onclick=()=>set(true);
+ let m=null;try{m=localStorage.getItem('unrotMode')}catch(e){}
+ if(m==='dark'||location.hash==='#dark')set(true);
+})();
+</script>
+<script>
+(function(){
+ const ob=[...document.querySelectorAll('.phone[data-name]')];const N=ob.length;
+ const coreRow=document.getElementById('core').nextElementSibling;
+ const core=[...coreRow.querySelectorAll('.phone')];
+ const you=[...document.querySelectorAll('.phone')].find(p=>/<h2[^>]*>You<\/h2>/.test(p.innerHTML));
+ const app={Today:core[0],Breathe:core[1],Shield:core[2],Progress:core[3],You:you};
+ const stage=document.getElementById('stage'),title=document.getElementById('ptitle'),where=document.getElementById('pwhere'),dots=document.getElementById('pdots');
+ let i=0,mode='ob',tab='Today';
+ const names=ob.map(p=>p.dataset.name);
+ function show(node,back){stage.innerHTML='';const c=node.cloneNode(true);if(back)c.classList.add('back');stage.appendChild(c);}
+ function render(back){
+  if(mode==='ob'){show(ob[i],back);title.textContent='Onboarding';where.textContent=(i+1)+' of '+N+' · '+names[i];
+   dots.innerHTML=names.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join('');}
+  else{show(app[tab],back);title.textContent='The app';where.textContent=tab;dots.innerHTML='';}
+ }
+ function next(){if(mode==='ob'){if(i<N-1){i++;render()}else{mode='app';tab='Today';render()}}}
+ function prev(){if(mode==='ob'){if(i>0){i--;render(true)}}else if(tab==='Breathe'){tab='Today';render(true)}else{mode='ob';i=N-1;render(true)}}
+ stage.addEventListener('click',e=>{
+  const t=e.target;
+  if(t.closest('.bk')){prev();return}
+  if(mode==='ob'){
+   const multi=/picked|apps ·/.test(stage.querySelector('.primary')?.textContent||'');
+   const ap=t.closest('.appgrid .ap');if(ap){ap.classList.toggle('on');const n=stage.querySelectorAll('.appgrid .ap.on').length;const pb=stage.querySelector('.primary');if(pb)pb.textContent=n+' apps · Next';return}
+   const th=t.closest('.three span');if(th){th.parentElement.querySelectorAll('span').forEach(x=>x.classList.toggle('a',x===th));return}
+   const pr=t.closest('.presets span');if(pr){pr.parentElement.querySelectorAll('span').forEach(x=>x.classList.toggle('a',x===pr));const map={'Nights':['22:00–07:00','9 quiet hours',217,240],'+ Mornings':['22:00–09:00','11 quiet hours',265,240],'+ Work hours':['22:00–07:00 · 9–17','17 quiet hours',409,240],'None':['Off','no quiet hours',0,240]};const m=map[pr.textContent.trim()];if(m){stage.querySelector('.dial .c b').textContent=m[0];stage.querySelector('.dial .c span').textContent=m[1];stage.querySelector('.dial svg circle:nth-of-type(2)').setAttribute('stroke-dasharray',m[2]+' 578')}return}
+   const ta=t.closest('.tryapps .ap');if(ta){stage.querySelectorAll('.tryapps .ap').forEach(x=>x.classList.toggle('on',x===ta));const nm={'♪':['Feed closed','TikTok: For You is off. Search and DMs work.'],'▶':['6 s','YouTube opens after a breath.'],'◎':['Reels closed','Instagram: DMs and posts still work.']}[ta.textContent.trim()];if(nm){stage.querySelector('.sandbox b').textContent=nm[0];stage.querySelector('.sandbox > span').textContent=nm[1]}return}
+   const sw=t.closest('.alsorow .sw');if(sw){sw.classList.toggle('off');return}
+   const go=t.closest('.sw2 .go');if(go){const r=go.closest('.sw2');r.querySelector('.st').className='st ok';r.querySelector('.st').textContent='✓';go.remove();return}
+   if(t.closest('.ideas span')){const n=stage.querySelector('.notecard .n');n.firstChild.textContent=t.textContent.replace(/[“”]/g,'');return}
+   const an=t.closest('.an');
+   if(an){if(multi){an.classList.toggle('on');const n=stage.querySelectorAll('.an.on').length;const pb=stage.querySelector('.primary');if(pb)pb.textContent='Continue · '+n+' picked'}else{stage.querySelectorAll('.an').forEach(x=>x.classList.remove('on'));an.classList.add('on');setTimeout(next,260)}return}
+   const w=t.closest('.ways div');if(w){stage.querySelectorAll('.ways div').forEach(x=>x.classList.toggle('a',x===w));const card=w.parentElement.nextElementSibling;
+     if(w.textContent.includes('Without')){card.style.background='var(--blush)';card.querySelector('.waylist').innerHTML='<div class="wl bad"><i>✕</i>“Just one minute” on TikTok becomes 70.</div><div class="wl bad"><i>✕</i>Phone in bed until 1:00, tired at work.</div><div class="wl bad"><i>✕</i>Every bored moment ends in a feed.</div><div class="wl bad"><i>✕</i>Evenings go to the feed, not your family.</div>';}
+     else{card.style.background='var(--sage)';card.querySelector('.waylist').innerHTML='<div class="wl good"><i>✓</i>Shorts closed. You watch one thing you chose, then stop.</div><div class="wl good"><i>✓</i>Lights-out at 22:00. Phone charges outside the bed.</div><div class="wl good"><i>✓</i>A bored moment gets a 10-second wait, and often passes.</div><div class="wl good"><i>✓</i>Evenings with your family, not your feed.</div>';}
+     return}
+   if(t.closest('.holdring')){const h=stage.querySelector('.holdring');h.classList.add('holding');setTimeout(next,1250);return}
+   if(t.closest('.primary,.replies .r,.notnow,.private')){next();return}
+  }else{
+   const nav=t.closest('.nav div');if(nav){const k=nav.textContent.trim();if(app[k]){tab=k;render()}return}
+   if(t.closest('.pause')){tab='Breathe';render();return}
+   if(t.closest('.leave')||(tab==='Breathe'&&t.closest('.tag'))){tab='Today';render(true);return}
+  }
+ });
+ document.getElementById('pnext').onclick=()=>{if(mode==='ob')next()};
+ document.getElementById('pprev').onclick=prev;
+ document.getElementById('pstart').onclick=()=>{mode='ob';i=0;render(true)};
+ document.getElementById('papp').onclick=()=>{mode='app';tab='Today';render()};
+ render();
+})();
+</script>
+<style>
+/* ===== Dark v2: designed, not inverted ===== */
+body.dk{background:#0A0908}
+body.dk .phone{
+ --paper:#121110;--paper2:#26231F;--white:#1C1A17;--ink:#F3EEE6;--ink2:#C4BCAF;--muted:#9C9488;
+ --butter:#3A3016;--sage:#1D3121;--sky:#172A36;--blush:#3B221D;--tomato:#E2603F;--gold:#F2C14E;
+ background:var(--paper);color:var(--ink);box-shadow:0 0 0 9px #000,0 0 0 10px #2B2823,0 30px 60px -20px rgba(0,0,0,.9)}
+body.dk .phone:before{opacity:.06}
+body.dk .phone *{border-color:rgba(243,238,230,.13)}
+body.dk .phone :is(.card,.an,.goal,.chipx,.primary,.pause,.btn2 div,.widget,.wsmall,.holdbtn,.notecard,.replies .r,.fixbtn,.st2,.alt,.toast,.coach-tip,.xbubble,.spot){box-shadow:none!important}
+body.dk .phone :is(.card,.notecard,.an,.goal,.alt,.wk,.timebox div,.field,.search,.mini-phone){background-color:#1C1A17}
+body.dk .phone .card{background-image:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0))}
+/* accents */
+body.dk .phone .primary{background:var(--gold);color:#1A1610;border:0}
+body.dk .phone .pause{background:var(--tomato);color:#1A0F0C!important;border:0}
+body.dk .phone .pause span,body.dk .phone .pause b{color:#1A0F0C}
+body.dk .phone .pause .ic{background:#1C1A17;border-color:transparent}
+body.dk .phone .btn2 .p,body.dk .phone .fixbtn{background:var(--gold);color:#1A1610;border-color:transparent}
+body.dk .phone :is(.an.on,.goal.on,.chipx.on){background:#2E2614;border-color:var(--gold)}
+body.dk .phone .an.on .k,body.dk .phone .chipx.on .ck{background:var(--gold);color:#1A1610;border-color:var(--gold)}
+body.dk .phone .goal.on .tick{background:var(--gold);border-color:var(--gold)}.body.dk .phone .goal.on .tick:after{border-color:#1A1610}
+body.dk .phone :is(.three span.a,.presets span.a,.ways div.a,.seg div.a,.lens span.a,.daysel span.a,.howlong span.a){background:var(--gold);color:#1A1610;border-color:var(--gold)}
+body.dk .phone .three span.a small,body.dk .phone .lens span.a small{color:#3D3420}
+body.dk .phone .nav{background:#1C1A17}
+body.dk .phone .nav div.a{background:var(--gold);color:#1A1610}
+body.dk .phone .sw{background:var(--gold);border-color:var(--gold)}
+body.dk .phone .sw:after{background:#1A1610}
+body.dk .phone .sw.off{background:#3A3631;border-color:#3A3631}
+body.dk .phone .sw.off:after{background:#8E877C;border-color:transparent}
+body.dk .phone .tag{background:#1C1A17}
+body.dk .phone .tag.ok{background:#1D3121;color:#BFE3BC}
+body.dk .phone .garden{background:#2B2412}
+body.dk .phone .garden .days,body.dk .phone .garden .k{color:#F6D98A}
+body.dk .phone .track .line{background:#F3EEE6}
+body.dk .phone .track .st{background:#2B2412}.body.dk .phone .track .st.d{background:var(--gold);color:#1A1610}
+body.dk .phone .track .st.d{background:var(--gold);color:#1A1610;border-color:var(--gold)}
+body.dk .phone .track .fill{background:var(--gold)}
+body.dk .phone .week7 i.g{background:#244129}.body.dk .phone .week7 i.o{background:#4A2620}
+body.dk .phone .week7 i.t{background:var(--gold);color:#1A1610;box-shadow:0 0 0 3px #2B2412,0 0 0 5px var(--gold)}
+body.dk .phone .bars i{background:#2A2621}
+body.dk .phone .bars i.t,body.dk .phone .bars i.l{background:var(--tomato)}
+body.dk .phone .brainshot .bars i.h{background:var(--gold)}
+body.dk .phone .appbar div{background:#2A2621}
+body.dk .phone .hrs i{background:#F3EEE6}
+body.dk .phone .ap.on .ic{outline-color:var(--gold)}
+body.dk .phone .ap.on:after{background:var(--gold);color:#1A1610}
+body.dk .phone .ap .tm{color:#F08A6E}
+body.dk .phone .dial svg circle:nth-of-type(2){stroke:var(--gold)}
+body.dk .phone .sandbox{background:#1D3121}
+body.dk .phone .sandbox svg circle{stroke:#F3EEE6}
+body.dk .phone .sandbox .sb i.p{background:var(--gold);color:#1A1610}
+body.dk .phone .sandbox .sb i{background:#121110}
+body.dk .phone .whyline{background:#26231F}
+body.dk .phone .sw2 .go{background:var(--gold);color:#1A1610}
+body.dk .phone .notecard .cur{background:var(--gold)}
+body.dk .phone .bigapp{box-shadow:0 0 0 6px #121110,0 0 0 8px var(--gold)}
+body.dk .phone .holdring .core{background:var(--gold);color:#1A1610;box-shadow:none}
+body.dk .phone .toast{background:#F3EEE6;color:#15130F}
+body.dk .phone .bleed,body.dk .bleed{background:#7E2E1F;color:#FFF3EC}
+body.dk .bleed.sage{background:#16271A;color:#F3EEE6}
+body.dk .bleed .primary{background:var(--gold);color:#1A1610}
+body.dk .phone .result{background:#3B221D}
+body.dk .phone .alert{background:#3B221D}
+body.dk .phone .shieldhead{background:#1D3121}
+body.dk .phone .lockbar{background:#172A36}
+body.dk .phone .hard{background:#3B221D}
+body.dk .phone .wk.hard{background:#3B221D}
+body.dk .phone .breathe,body.dk .phone[style*="--sky"]{background:#13232E}
+body.dk .phone .reason{background:#1C1A17}
+body.dk .phone .bubble:after,body.dk .phone .bubble2:after{background:inherit}
+body.dk .phone .bub{background:#1C1A17}
+body.dk .phone .bub.me{background:var(--gold);color:#1A1610}
+body.dk .phone .replies .r{background:#2E2614;border-color:var(--gold)}
+body.dk .phone .mini-phone{background:#202124;color:#E8EAED}
+body.dk .phone .mini-phone .it{background:#2D2E31}
+body.dk .phone .mini-phone .it.hl{background:#3A3016;box-shadow:0 0 0 2.5px var(--gold)}
+body.dk .phone .cover{background:#1C1A17}
+body.dk .phone .blocksheet,body.dk .phone .sheetx{background:#161412;border-top-color:rgba(243,238,230,.13)}
+body.dk .phone .grab{background:#F3EEE6}
+body.dk .phone .still span{background:#1D3121;color:#CFE8CC}
+body.dk .phone .planrow em{background:#1D3121;color:#CFE8CC}
+body.dk .phone .yes{color:#8FD094}
+body.dk .phone .dim,body.dk .phone .dimx{background:rgba(0,0,0,.65)}
+body.dk .phone .coach-hole{box-shadow:0 0 0 3px var(--gold),0 0 0 2000px rgba(0,0,0,.65)}
+body.dk .phone .spot{background:#1C1A17!important;box-shadow:0 0 0 4px var(--gold)!important}
+body.dk .phone .spot b{color:#F3EEE6!important}.body.dk .phone .spot span{color:#C4BCAF!important}
+body.dk .phone .spot span{color:#C4BCAF!important}
+
+.mpsub{color:#4A4A4A}
+body.dk .phone .mpsub{color:#C9CCD1}
+body.dk .phone .chipx.on{color:#F3EEE6;background:#2E2614;border-color:var(--gold)}
+body.dk .phone :is(.widget .b,.swipe .del){color:#1A0F0C}
+body.dk .phone [style*="background:var(--tomato)"]{color:#1A0F0C!important}
+
+body.dk :is(.map,.vs,.lane,.rule,.dsb,.panel,.fbox){background:#151311;border:1px solid rgba(243,238,230,.13);box-shadow:none}
+body.dk .pills span{border:1px solid rgba(243,238,230,.18)}
+body.dk .toc{border-bottom:1px solid rgba(243,238,230,.13)}
+body.dk .toc a,body.dk .modesw,body.dk .proto .ctrl button{border:1px solid rgba(243,238,230,.22)}
+body.dk .modesw button.a,body.dk .proto .ctrl button.p{background:#F2C14E;color:#1A1610}
+
+/* ===== polish: hierarchy, app bar, type ===== */
+.appbar{gap:10px;justify-content:flex-start}
+.appbar .back{width:40px;height:40px;margin-left:-8px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 22px 'DM Sans',sans-serif}
+.appbar .bartitle{flex:1;font:600 13.5px 'DM Sans',sans-serif;color:var(--ink2)}
+.act{font:800 14px 'DM Sans',sans-serif;color:var(--ink);padding:10px 4px;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;text-decoration-color:var(--tomato)}
+.xbtn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 16px 'DM Sans',sans-serif;border:2px solid var(--ink);background:var(--white)}
+/* hierarchy: quiet containers, loud heroes */
+.phone .card{border:1.5px solid rgba(31,42,35,.22);box-shadow:none}
+.phone :is(.garden,.alert,.shieldhead,.result,.notecard,.lockbar,.hard,.status-card,.ms-sheet,.math,.bubble,.bubble2,.xbubble,.week,.reason){border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink)}
+.phone .reason{box-shadow:none;border-style:dashed}
+.phone :is(.rows,.steps,.cmp,.facts,.setup) .r,.phone .check{border-bottom-width:1.5px}
+.phone .mini{border:1.5px solid rgba(31,42,35,.22)}
+/* type scale: 5 sizes inside the phone */
+.phone .r .tx span,.phone .check span,.phone .planrow span{font-size:12.5px}
+.phone .why{font-size:12px}
+.phone .tag{font-size:12px}
+.phone .k,.phone .lbl2,.phone .act + .k{letter-spacing:.8px}
+body.dk .phone .card{border:1px solid rgba(243,238,230,.13)}
+body.dk .phone :is(.garden,.alert,.shieldhead,.result,.notecard,.lockbar,.hard,.status-card,.ms-sheet,.math,.bubble,.bubble2,.xbubble,.week){border:1px solid rgba(243,238,230,.2);box-shadow:none}
+body.dk .phone .act{color:#F3EEE6;text-decoration-color:var(--gold)}
+body.dk .phone .xbtn{background:#1C1A17;border-color:rgba(243,238,230,.2)}
+</style>
+</body>
+</html>

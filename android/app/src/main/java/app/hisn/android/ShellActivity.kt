@@ -41,9 +41,13 @@ class ShellActivity : ComponentActivity(), ShellActions {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        app.hisn.android.nativeshell.UnrotFeel.warm(this)
         enableEdgeToEdge()
         requestedTab = tabOf(intent)
+        if (intent?.getBooleanExtra("focus", false) == true) app.hisn.android.nativeshell.FocusRequest.open.value = true
         Shortcuts.sync(this)
+        runCatching { WeeklyReport.schedule(this) }
+        runCatching { DayWidget.update(this) }
         if (savedInstanceState == null) {
             val settings = try {
                 PolicyStore.get(this)
@@ -65,6 +69,7 @@ class ShellActivity : ComponentActivity(), ShellActions {
         super.onResume()
         keepLayersInStep()
         ensureDnsRunning()
+        DnsVpnService.refreshAndroidVpnSettings()
         rearmGuard()
         // The saved gray choice applies itself whenever the app is opened, guard or no guard.
         ScreenGray.reassert(this)
@@ -78,6 +83,7 @@ class ShellActivity : ComponentActivity(), ShellActions {
         } catch (unsaved: RuntimeException) {
             // The guard and the tunnel checkpoint every minute.
         }
+        LayerWatchdog.syncSchedule(this)
         super.onPause()
     }
 
@@ -85,26 +91,21 @@ class ShellActivity : ComponentActivity(), ShellActions {
         super.onNewIntent(intent)
         setIntent(intent)
         requestedTab = tabOf(intent)
+        if (intent?.getBooleanExtra("focus", false) == true) app.hisn.android.nativeshell.FocusRequest.open.value = true
         tabRequest++
     }
 
     private fun tabOf(intent: Intent?): Int =
-        (intent?.getIntExtra("page", 0) ?: 0).coerceIn(0, 2)
+        (intent?.getIntExtra("page", 0) ?: 0).coerceIn(0, if (Edition.islamic) 2 else 3)
 
     // ------------------------------------------------------------------ actions
 
     override fun requestDns() {
         // The same disclosure the introduction and the classic screen show before Android's prompt.
-        AlertDialog.Builder(this)
-            .setTitle(R.string.dns_consent_title)
-            .setMessage(
-                getString(R.string.dns_consent_short) + "\n\n" +
-                    getString(R.string.full_disclosure) + "\n\n" +
-                    getString(R.string.dns_consent_body)
-            )
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.dns_continue) { _, _ -> continueDns() }
-            .show()
+        Disclosure.show(
+            this, R.string.dns_consent_title, R.string.dns_consent_short, R.string.dns_consent_body,
+            R.string.dns_continue, ::continueDns
+        )
     }
 
     private fun continueDns() {
@@ -178,16 +179,34 @@ class ShellActivity : ComponentActivity(), ShellActions {
         else -> false
     }
 
+    override fun protectionRuntime() = app.hisn.android.nativeshell.ProtectionRuntime(
+        dns = DnsVpnService.state,
+        dnsRequested = DnsVpnService.resumeRequested(this),
+        privateDnsStrict = DnsVpnService.privateDnsStrict,
+        dnsAlwaysOn = DnsVpnService.alwaysOn,
+        dnsLockdown = DnsVpnService.lockdown,
+        dnsCheck = DnsVpnService.connectionCheck.state,
+        guardExpected = LayerWatchdog.expectsAppProtection(this),
+        guardReady = TextGuardService.connected && TextGuardService.ready,
+        visual = VisualGuard.health.shown()
+    )
+
     override fun openPermission(key: String) {
         val app = android.net.Uri.parse("package:$packageName")
         when (key) {
-            "accessibility" -> openAccessibility()
+            // Turned off inside Hisn while Android's switch stayed on: resume here, no settings trip.
+            "accessibility" -> if (Permissions.accessibility(this) && GuardPause.paused(this)) {
+                GuardPause.set(this, false)
+            } else {
+                openAccessibility()
+            }
             "dns" -> if (Permissions.dnsRunning()) {
                 openSettings(Intent(Settings.ACTION_VPN_SETTINGS))
             } else {
                 requestDns()
             }
             "usage" -> openSettings(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+            "privateDns" -> openSettings(Intent(Settings.ACTION_WIRELESS_SETTINGS))
             "overlay" -> openSettings(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, app))
             "notifications" -> if (!Compat.openNotificationSettings(this)) {
                 toast(getString(R.string.perm_settings_unavailable))
@@ -262,11 +281,40 @@ class ShellActivity : ComponentActivity(), ShellActions {
             preset = profile.preset,
             customReason = profile.reason,
             hours = hours.toList(),
-            peakStart = app.hisn.core.PauseHours.peakStart(hours)
+            peakStart = app.hisn.core.PauseHours.peakStart(hours),
+            day = day,
+            pauses = profile.pauses
         )
     }
 
     override fun openIntroduction() = openSettings(Intent(this, WelcomeActivity::class.java))
+
+    override fun openPause() = startActivity(PauseEntry.intent(this))
+
+    override fun pickScheduleApps(keepList: Boolean, selected: Set<String>, onChoose: (Set<String>) -> Unit) {
+        lookups.execute {
+            val entries = runCatching {
+                val installed = ChosenApps.list(this)
+                val visible = installed.mapTo(hashSetOf()) { it.packageName }
+                installed + selected.filterNot { it in visible }.sorted().map { ChosenApps.Entry(it, it) }
+            }.getOrNull()
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                if (entries == null) {
+                    toast(getString(R.string.policy_unavailable))
+                    return@runOnUiThread
+                }
+                AppPicker.create(
+                    this,
+                    if (keepList) R.string.schedule_keep_apps else R.string.schedule_choose_apps,
+                    R.string.schedule_use_apps, entries, selected, !keepList
+                ) { choices ->
+                    onChoose(choices)
+                    true
+                }.show()
+            }
+        }
+    }
 
     private val lookups = java.util.concurrent.Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "hisn-shell-lookup").apply { isDaemon = true }
@@ -276,6 +324,7 @@ class ShellActivity : ComponentActivity(), ShellActions {
         lookups.execute {
             var host: String? = null
             var canAdd = false
+            var blocked: Boolean? = null
             val message = try {
                 val found = app.hisn.core.SiteCheckInput.host(raw)
                 host = found
@@ -296,13 +345,14 @@ class ShellActivity : ComponentActivity(), ShellActions {
                 }
                 if (HostData.termsFailed()) lines += getString(R.string.check_site_terms_unavailable)
                 canAdd = decision.outcome == app.hisn.core.HostDecision.Outcome.NOT_LISTED
+                blocked = !canAdd
                 lines.joinToString("\n")
             } catch (invalid: app.hisn.core.SiteCheckInput.Invalid) {
                 getString(R.string.check_site_invalid)
             } catch (unavailable: RuntimeException) {
                 getString(R.string.check_site_unavailable)
             }
-            val result = app.hisn.android.nativeshell.SiteCheck(message, if (canAdd) host else null)
+            val result = app.hisn.android.nativeshell.SiteCheck(message, if (canAdd) host else null, blocked)
             runOnUiThread { if (!isFinishing && !isDestroyed) onResult(result) }
         }
     }
@@ -644,14 +694,6 @@ class ShellActivity : ComponentActivity(), ShellActions {
     }
 
     private fun confirm(title: Int, short: Int, disclosure: Int, onAccept: () -> Unit) {
-        val message = getString(short) + "\n\n" +
-            getString(R.string.full_disclosure) + "\n\n" +
-            getString(disclosure)
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.save_rules) { _, _ -> onAccept() }
-            .show()
+        Disclosure.show(this, title, short, disclosure, R.string.save_rules, onAccept)
     }
 }

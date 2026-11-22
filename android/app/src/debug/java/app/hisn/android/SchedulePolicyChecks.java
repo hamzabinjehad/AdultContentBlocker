@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import app.hisn.core.DailyAppSchedule;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -119,7 +120,7 @@ public final class SchedulePolicyChecks {
         checkSchedule(finalReload.snapshot().schedule, true, 1320, 420, apps(ONE, TWO),
                 "rejected replacement persists unchanged");
         require(finalReload.remainingMillis() > 6L * 86400000L, "Rejected changes do not end the lock");
-        expectRejected(() -> finalReload.update(finalReload.domainText(), finalReload.wordText(), apps(PERMANENT),
+        expectRejected(() -> finalReload.update(finalReload.domainText(), finalReload.wordText(), Collections.emptySet(),
                 finalReload.snapshot().scannedApps), "Permanent coverage could be removed during the lock");
         checkChosenRules(finalReload, apps(PERMANENT));
     }

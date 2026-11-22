@@ -4,30 +4,36 @@ import java.util.Arrays;
 
 /** IPv4/UDP DNS packet adapter. Fragmented packets are rejected; IPv6/UDP has its own adapter. */
 public final class Ipv4DnsPacket implements UdpDnsPacket {
-    private final byte[] request;
-    private final int headerSize;
+    private final byte[] addresses;
+    private final int clientPort;
     public final byte[] dns;
 
     @Override public byte[] getDns() { return dns; }
 
-    private Ipv4DnsPacket(byte[] request, int headerSize) {
-        this.request = request;
-        this.headerSize = headerSize;
-        this.dns = Arrays.copyOfRange(request, headerSize + 8, request.length);
+    private Ipv4DnsPacket(byte[] packet, int length, int header) {
+        addresses = Arrays.copyOfRange(packet, 12, 20);
+        clientPort = u16(packet, header);
+        dns = Arrays.copyOfRange(packet, header + 8, length);
     }
 
     public static Ipv4DnsPacket parse(byte[] packet, byte[] serverAddress) {
+        return packet == null ? null : parse(packet, packet.length, serverAddress);
+    }
+
+    /** Parses only the bytes read and owns the fields it needs after the buffer is reused. */
+    public static Ipv4DnsPacket parse(byte[] packet, int length, byte[] serverAddress) {
         if (packet == null || serverAddress == null || serverAddress.length != 4
-                || packet.length < 40 || packet.length > 1500 || (packet[0] & 0xf0) != 0x40) return null;
+                || length < 40 || length > 1500 || length > packet.length || (packet[0] & 0xf0) != 0x40) return null;
         int header = (packet[0] & 15) * 4;
-        if (header < 20 || header + 20 > packet.length || u16(packet, 2) != packet.length
+        if (header < 20 || header + 20 > length || u16(packet, 2) != length
                 || (u16(packet, 6) & 0xbfff) != 0 || packet[9] != 17
                 || checksum(packet, 0, header, 0) != 0) return null;
         for (int i = 0; i < 4; i++) if (packet[16 + i] != serverAddress[i]) return null;
-        if (u16(packet, header + 2) != 53 || u16(packet, header + 4) != packet.length - header) return null;
-        if (u16(packet, header + 6) != 0 && checksum(packet, header, packet.length - header,
-                pseudoSum(packet, packet.length - header)) != 0) return null;
-        return new Ipv4DnsPacket(packet.clone(), header);
+        int udpLength = length - header;
+        if (u16(packet, header + 2) != 53 || u16(packet, header + 4) != udpLength) return null;
+        if (u16(packet, header + 6) != 0 && checksum(packet, header, udpLength, pseudoSum(packet, udpLength)) != 0)
+            return null;
+        return new Ipv4DnsPacket(packet, length, header);
     }
 
     @Override public byte[] response(byte[] payload) {
@@ -38,10 +44,10 @@ public final class Ipv4DnsPacket implements UdpDnsPacket {
         out[0] = 0x45;
         put16(out, 2, out.length);
         out[8] = 64; out[9] = 17;
-        System.arraycopy(request, 16, out, 12, 4);
-        System.arraycopy(request, 12, out, 16, 4);
+        System.arraycopy(addresses, 4, out, 12, 4);
+        System.arraycopy(addresses, 0, out, 16, 4);
         put16(out, 20, 53);
-        put16(out, 22, u16(request, headerSize));
+        put16(out, 22, clientPort);
         put16(out, 24, payload.length + 8);
         System.arraycopy(payload, 0, out, 28, payload.length);
         put16(out, 10, checksum(out, 0, 20, 0));

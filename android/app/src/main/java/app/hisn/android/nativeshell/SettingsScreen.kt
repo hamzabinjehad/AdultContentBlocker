@@ -1,6 +1,9 @@
 package app.hisn.android.nativeshell
 
+import app.hisn.android.Edition
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Vibration
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.ui.res.stringResource
@@ -10,6 +13,7 @@ import app.hisn.android.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +27,12 @@ import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.ColorLens
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Translate
+import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.People
@@ -52,8 +61,17 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     state: HisnState,
-    onOpen: (String) -> Unit = {}
+    onOpen: (String) -> Unit = {},
+    /**
+     * Unrot splits this page in two, as the mockup draws it: the You tab keeps the person, their
+     * commitments and what keeps the app alive; "More" (one row deeper) keeps tools, appearance
+     * and help. The Islamic edition shows the whole list ([YouPart.All]).
+     */
+    part: YouPart = if (unrotEdition) YouPart.You else YouPart.All,
+    padding: PaddingValues = PaddingValues(0.dp)
 ) {
+    val you = part != YouPart.More
+    val more = part != YouPart.You
     var showThemeSheet by remember { mutableStateOf(false) }
     val themeLabel = when (state.themeMode) {
         "light" -> tr("Light")
@@ -113,9 +131,100 @@ fun SettingsScreen(
     }
 
     LazyColumn(
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
+        contentPadding = PaddingValues(
+            start = 16.dp, end = 16.dp,
+            top = padding.calculateTopPadding() + 8.dp,
+            bottom = padding.calculateBottomPadding() + 28.dp
+        ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        if (unrotEdition && you) {
+            item {
+                UnrotYouCard(
+                    summary = state.personal,
+                    onEdit = { onOpen("personal") },
+                    onWeek = { onOpen("progress") }
+                )
+            }
+        }
+        if (unrotEdition && you) {
+            item { SectionHeader(stringResource(R.string.you_commitment)) }
+            item {
+                HisnCard {
+                SettingRow(
+                    icon = Icons.Rounded.Lock,
+                    title = tr("Protection lock"),
+                    supporting = if (state.lockRemainingMillis > 0L) {
+                        stringResource(R.string.commitment_remaining, state.lockLabel)
+                    } else {
+                        tr("Not active · Make rules read-only")
+                    },
+                    onClick = { onOpen("lock") }
+                )
+                InsetDivider()
+                SettingRow(
+                    icon = Icons.Rounded.People,
+                    title = tr("Guardian pairing"),
+                    supporting = stringResource(R.string.settings_guardian_summary),
+                    onClick = { state.openGuardian() }
+                )
+                InsetDivider()
+                SettingRow(
+                    icon = Icons.Rounded.Security,
+                    title = tr("Uninstall protection"),
+                    supporting = if (BuildConfig.SELF_PROTECTION) {
+                        state.uninstallSummary.ifEmpty { tr("Direct build · Works while a protection lock is active") }
+                    } else {
+                        tr("Not in this build · Direct build only")
+                    },
+                    onClick = {
+                        if (BuildConfig.SELF_PROTECTION) state.openUninstall() else onOpen("info:uninstall")
+                    }
+                )
+                }
+            }
+            item { SectionHeader(stringResource(R.string.you_keep_running)) }
+            item {
+                HisnCard {
+                val phoneOpen = state.phone.open
+                val phoneState = if (phoneOpen == 0) {
+                    stringResource(R.string.phone_state_ready)
+                } else {
+                    stringResource(R.string.phone_state_check, phoneOpen)
+                }
+                SettingRow(
+                    icon = Icons.Rounded.BatteryChargingFull,
+                    title = stringResource(R.string.you_phone_setup, state.phone.maker.ifEmpty { "Android" }),
+                    // The title already names the maker.
+                    supporting = phoneState.replaceFirstChar { it.uppercase() },
+                    onClick = { onOpen("phone") }
+                )
+                InsetDivider()
+                SettingRow(
+                    icon = Icons.Rounded.Notifications,
+                    title = tr("Permissions"),
+                    supporting = stringResource(
+                        R.string.settings_permissions_summary,
+                        stringResource(if (state.permissions["accessibility"] == true) R.string.perm_on else R.string.perm_off),
+                        stringResource(if (state.permissions["notifications"] == true) R.string.perm_on else R.string.perm_off)
+                    ),
+                    onClick = { onOpen("permissions") }
+                )
+                }
+            }
+            item { SectionHeader(stringResource(R.string.you_more)) }
+            item {
+                HisnCard {
+                    SettingRow(
+                        icon = Icons.Rounded.Tune,
+                        title = stringResource(R.string.you_more_title),
+                        supporting = stringResource(R.string.you_more_body),
+                        onClick = { onOpen("more") }
+                    )
+                }
+            }
+        }
+        if (!unrotEdition) {
         item { SectionHeader(tr("Protection")) }
         item {
             HisnCard {
@@ -180,8 +289,13 @@ fun SettingsScreen(
             }
         }
 
-        item { SectionHeader(tr("More")) }
-        item {
+        }
+        if (more && unrotEdition) {
+            item { UnrotToolTiles(onOpen = onOpen, onReplay = { state.openIntroduction() }) }
+        }
+        if (more) {
+        if (!unrotEdition) item { SectionHeader(tr("More")) }
+        if (!unrotEdition) item {
             HisnCard {
                 SettingRow(
                     icon = Icons.Rounded.Person,
@@ -224,9 +338,43 @@ fun SettingsScreen(
                     checked = state.systemColors.on,
                     onCheckedChange = state.systemColors::set
                 )
+                if (unrotEdition) {
+                    val feelContext = androidx.compose.ui.platform.LocalContext.current
+                    var sounds by remember { mutableStateOf(UnrotFeel.soundsOn(feelContext)) }
+                    var vibration by remember { mutableStateOf(UnrotFeel.vibrationOn(feelContext)) }
+                    InsetDivider()
+                    SwitchRow(
+                        icon = Icons.AutoMirrored.Rounded.VolumeUp,
+                        title = stringResource(R.string.feel_sounds),
+                        supporting = stringResource(R.string.feel_sounds_body),
+                        checked = sounds,
+                        onCheckedChange = {
+                            sounds = it
+                            UnrotFeel.setSounds(feelContext, it)
+                            if (it) UnrotFeel.play(feelContext, FeelSound.ON)
+                        }
+                    )
+                    InsetDivider()
+                    SwitchRow(
+                        icon = Icons.Rounded.Vibration,
+                        title = stringResource(R.string.feel_vibration),
+                        supporting = stringResource(R.string.feel_vibration_body),
+                        checked = vibration,
+                        onCheckedChange = { vibration = it; UnrotFeel.setVibration(feelContext, it) }
+                    )
+                    var weekly by remember { mutableStateOf(app.hisn.android.WeeklyReport.isOn(feelContext)) }
+                    InsetDivider()
+                    SwitchRow(
+                        icon = Icons.Rounded.DateRange,
+                        title = stringResource(R.string.weekly_setting),
+                        supporting = stringResource(R.string.weekly_setting_body),
+                        checked = weekly,
+                        onCheckedChange = { weekly = it; app.hisn.android.WeeklyReport.set(feelContext, it) }
+                    )
+                }
                 InsetDivider()
                 SettingRow(
-                    icon = Icons.Rounded.Language,
+                    icon = Icons.Rounded.Translate,
                     title = tr("Language"),
                     supporting = "English · العربية",
                     onClick = { onOpen("info:language") }
@@ -234,19 +382,43 @@ fun SettingsScreen(
             }
         }
 
-        item { SectionHeader(tr("Information")) }
+        item { SectionHeader(if (unrotEdition) stringResource(R.string.tools_help) else tr("Information")) }
         item {
             HisnCard {
                 SettingRow(
                     icon = Icons.Rounded.Security,
-                    title = tr("How Hisn works"),
+                    title = tr("How ${Edition.NAME} works"),
                     supporting = tr("What it does and where it stops"),
                     onClick = { onOpen("info:how") }
                 )
                 InsetDivider()
+                if (unrotEdition) {
+                    val spreadContext = androidx.compose.ui.platform.LocalContext.current
+                    SettingRow(
+                        icon = Icons.Rounded.Star,
+                        title = stringResource(R.string.spread_rate),
+                        supporting = stringResource(R.string.spread_rate_row),
+                        onClick = { Spread.rate(spreadContext) }
+                    )
+                    InsetDivider()
+                    SettingRow(
+                        icon = Icons.Rounded.Share,
+                        title = stringResource(R.string.spread_tell),
+                        supporting = stringResource(R.string.spread_tell_row),
+                        onClick = { Spread.tellAFriend(spreadContext) }
+                    )
+                    InsetDivider()
+                    SettingRow(
+                        icon = Icons.Rounded.Lightbulb,
+                        title = stringResource(R.string.why_screen_title),
+                        supporting = stringResource(R.string.why_screen_row),
+                        onClick = { onOpen("info:why") }
+                    )
+                    InsetDivider()
+                }
                 SettingRow(
                     icon = Icons.Rounded.PrivacyTip,
-                    title = tr("What can bypass Hisn"),
+                    title = tr("What can bypass ${Edition.NAME}"),
                     supporting = tr("The limits of each layer"),
                     onClick = { onOpen("info:bypass") }
                 )
@@ -257,8 +429,8 @@ fun SettingsScreen(
                     supporting = tr("On-device matching · private screens"),
                     onClick = { onOpen("info:privacy") }
                 )
-                InsetDivider()
-                SettingRow(
+                if (!unrotEdition) InsetDivider()
+                if (!unrotEdition) SettingRow(
                     icon = Icons.Rounded.BarChart,
                     title = tr("Session diagnostics"),
                     supporting = tr("Counters and network checks"),
@@ -274,13 +446,14 @@ fun SettingsScreen(
                 InsetDivider()
                 SettingRow(
                     icon = Icons.Rounded.Security,
-                    title = tr("About Hisn"),
+                    title = tr("About ${Edition.NAME}"),
                     supporting = stringResource(R.string.settings_about_summary, BuildConfig.VERSION_NAME),
                     onClick = { onOpen("info:about") }
                 )
             }
         }
 
+        }
         item {
             Spacer(Modifier.height(4.dp))
             ReassuranceRow(
@@ -290,6 +463,8 @@ fun SettingsScreen(
         }
     }
 }
+
+enum class YouPart { All, You, More }
 
 @Composable
 private fun ThemeOption(

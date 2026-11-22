@@ -27,8 +27,11 @@ final class PersonalStore {
 
     private final SharedPreferences prefs;
 
+    private final Context appContext;
+
     PersonalStore(Context context) {
-        prefs = context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        appContext = context.getApplicationContext();
+        prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
     PersonalProfile profile() {
@@ -62,6 +65,7 @@ final class PersonalStore {
                 .putString(REASON, cleaned.reason)
                 .putLong(START_DAY, start)
                 .apply();
+        DayWidget.update(appContext);
     }
 
     /** One newly counted pause screen. A recreated or merged screen does not call this. */
@@ -75,6 +79,9 @@ final class PersonalStore {
                 .putString(PAUSE_HOURS, app.hisn.core.PauseHours.record(hours,
                         Calendar.getInstance().get(Calendar.HOUR_OF_DAY)))
                 .apply();
+        DayWidget.update(appContext);
+        // The hard hours can move with a new pause; the nudge follows them.
+        HardHoursNudge.schedule(appContext);
     }
 
     /** Pauses counted in each local hour; all zeros when none were recorded. */
@@ -86,6 +93,7 @@ final class PersonalStore {
     /** Removes the name, reason and counters. Protection rules are untouched. */
     void clear() {
         prefs.edit().clear().apply();
+        DayWidget.update(appContext);
     }
 
     /** The day number for today, or zero when the first save never happened. */

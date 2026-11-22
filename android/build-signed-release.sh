@@ -45,12 +45,13 @@ BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
 APKSIGNER="$BUILD_TOOLS/apksigner"
 
 echo "== Gates (lint, unit and core tests, strings)"
-(cd android && ./gradlew -q --no-daemon lintDebug testDebugUnitTest)
+(cd android && ./gradlew -q --no-daemon lintHisnDebug testHisnDebugUnitTest)
 (cd android && bash test-core.sh >/dev/null)
 python3 android/check-strings.py
 
 mkdir -p "$OUT/play" "$OUT/direct"
-APK=android/app/build/outputs/apk/release/app-release.apk
+# The Islamic edition (hisn flavor) is the one released today.
+APK=android/app/build/outputs/apk/hisn/release/app-hisn-release.apk
 
 check_apk() {  # $1 apk, $2 play|direct
     python3 android/check-release.py --build-tools "$BUILD_TOOLS" --expect-distribution "$2" "$1"
@@ -63,13 +64,13 @@ check_apk() {  # $1 apk, $2 play|direct
 }
 
 echo "== Play build"
-(cd android && ./gradlew -q --no-daemon clean assembleRelease bundleRelease)
+(cd android && ./gradlew -q --no-daemon clean assembleHisnRelease bundleHisnRelease)
 check_apk "$APK" play
 cp "$APK" "$OUT/play/hisn-$VERSION-play.apk"
-cp android/app/build/outputs/bundle/release/app-release.aab "$OUT/play/hisn-$VERSION-play.aab"
+cp android/app/build/outputs/bundle/hisnRelease/app-hisn-release.aab "$OUT/play/hisn-$VERSION-play.aab"
 
 echo "== Direct build"
-(cd android && ./gradlew -q --no-daemon clean assembleRelease -PhisnDistribution=direct)
+(cd android && ./gradlew -q --no-daemon clean assembleHisnRelease -PhisnDistribution=direct)
 check_apk "$APK" direct
 cp "$APK" "$OUT/direct/hisn-$VERSION-direct.apk"
 

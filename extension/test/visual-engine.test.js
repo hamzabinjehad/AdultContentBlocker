@@ -1,7 +1,7 @@
 // Exercise the canonical engine factory with model transports mocked. Numeric
 // model quality is tested separately with the real bundled engine in Helium.
 import { adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections, personDecision,
-  squareFrame, unpadFaces, visualPreferences, PERSON_MODES, validateCapture } from '../visual/decisions.js';
+  squareFrame, unpadFaces, visualPreferences, PERSON_MODES, validateCapture, needsFaceres, needsOarriaga, faceresPrediction } from '../visual/decisions.js';
 import { LocalInferenceQueue } from '../visual/queue.js';
 let checks = 0;
 const check = (ok, label) => { checks++; if (!ok) throw new Error(label); };
@@ -49,7 +49,7 @@ function harness({ explicit = false, failedFaceLoad = false, malformedFaces = fa
   } });
   const createVisualEngine = sourceFactory({ tf, Human, loadNSFW, MobileNetV2Model: {}, setWasmPaths: paths => { calls.wasmPaths.push(paths); },
     adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections, personDecision, squareFrame, unpadFaces,
-    visualPreferences, PERSON_MODES, validateCapture, LocalInferenceQueue });
+    visualPreferences, PERSON_MODES, validateCapture, needsFaceres, needsOarriaga, faceresPrediction, LocalInferenceQueue });
   return { engine: createVisualEngine({ baseURL: 'https://local.test/', backend }), calls,
     finishFaceLoad: () => finishFaceLoad() };
 }
@@ -160,7 +160,8 @@ for (const [name, probabilities, mode] of [
 for (const [mode, primary, mirrored] of [
   ['female', [.10141637,.89858365], [.85631639,.14368361]],
   ['male', [.91,.09], [.13,.87]],
-  ['female', [.1,.9], [.3,.7]],
+  // Just under OPPOSITE_CONFIDENCE (0.70 since 3337070): still too uncertain to exclude.
+  ['female', [.1,.9], [.35,.65]],
 ]) {
   const h = harness({probabilities:primary, mirroredProbabilities:mirrored});
   const result = await h.engine.inspect('conflicting-views-'+mode, capture(101,224), {inspectVisual:true,personBlur:mode});

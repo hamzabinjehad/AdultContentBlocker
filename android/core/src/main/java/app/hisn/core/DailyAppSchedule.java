@@ -3,6 +3,7 @@ package app.hisn.core;
 import java.time.DayOfWeek;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /** One explicitly chosen app restriction that repeats on chosen days of the week.
@@ -76,6 +77,19 @@ public final class DailyAppSchedule {
 
     /** An allowlist with no apps kept available is configured: it blocks everything in the window. */
     public boolean isConfigured() { return enabled && (allApps || !apps.isEmpty()); }
+
+    @Override public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof DailyAppSchedule)) return false;
+        DailyAppSchedule schedule = (DailyAppSchedule) other;
+        return enabled == schedule.enabled && startMinute == schedule.startMinute
+                && endMinute == schedule.endMinute && days == schedule.days
+                && allApps == schedule.allApps && apps.equals(schedule.apps);
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(enabled, startMinute, endMinute, apps, allApps, days);
+    }
 
     /** Whether the saved window is open now, in either mode. */
     public boolean activeAt(int localMinute, DayOfWeek day) {

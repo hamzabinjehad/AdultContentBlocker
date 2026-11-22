@@ -9,7 +9,8 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--adb", default="adb")
 parser.add_argument("--serial", required=True)
 parser.add_argument("--restore-only", action="store_true", help="Restore fixture-only additions after an interrupted run")
-parser.add_argument("--case", choices=("ordinary", "editable", "password", "word", "long", "wide", "app", "rapid", "heartbeat", "adult", "stress"))
+parser.add_argument("--case", choices=("ordinary", "editable", "password", "word", "long", "wide", "app",
+                    "rapid", "heartbeat", "adult", "stress", "split-context", "live-update", "text-updates"))
 args = parser.parse_args()
 
 
@@ -18,12 +19,29 @@ def adb(*parts):
                           capture_output=True, text=True, timeout=30).stdout
 
 
-def configure(mode):
+def fixture_report(mode):
     # Remove only the previous diagnostic status, never policy files.
     adb("shell", "run-as", "app.hisn.android", "rm", "-f", "files/hisn_guard_test_status")
     adb("shell", "am", "start", "--user", "0", "-W", "-n",
         "app.hisn.android/.GuardTestSetupActivity", "--es", "mode", mode)
-    status = adb("shell", "run-as", "app.hisn.android", "cat", "files/hisn_guard_test_status").strip()
+    deadline = time.monotonic() + 5
+    prefix = "CONNECTED " if mode == "status" else "PASS " + mode
+    while True:
+        try:
+            status = adb("shell", "run-as", "app.hisn.android", "cat", "files/hisn_guard_test_status").strip()
+        except subprocess.CalledProcessError as error:
+            if "No such file" not in error.stderr:
+                raise
+            status = ""
+        if status.startswith(prefix) or status.startswith("FAIL "):
+            return status
+        if time.monotonic() >= deadline:
+            raise RuntimeError("Fixture did not report " + mode + (": " + status if status else ""))
+        time.sleep(0.15)
+
+
+def configure(mode):
+    status = fixture_report(mode)
     if status != "PASS " + mode:
         raise RuntimeError(status)
 
@@ -34,9 +52,17 @@ def resumed():
 
 
 def status():
-    adb("shell", "am", "start", "--user", "0", "-W", "-n",
-        "app.hisn.android/.GuardTestSetupActivity", "--es", "mode", "status")
-    return adb("shell", "run-as", "app.hisn.android", "cat", "files/hisn_guard_test_status").strip()
+    return fixture_report("status")
+
+
+def text_updates():
+    fixture("stale-label-event", False)
+    initial = int(re.search(r"FAST_TEXT (\d+)", status()).group(1))
+    fixture("late-label", True)
+    final = int(re.search(r"FAST_TEXT (\d+)", status()).group(1))
+    if final <= initial:
+        raise AssertionError("A changed visible label did not exercise the event fast path")
+    print("PASS live label update restricted through the event fast path", flush=True)
 
 
 def rapid_reopen():
@@ -69,7 +95,31 @@ def heartbeat_test():
     print("PASS periodic selected-screen checks; stopped outside selected app", flush=True)
 
 
+def live_update():
+    adb("shell", "input", "keyevent", "KEYCODE_HOME")
+    configure("block-app-later")
+    adb("shell", "am", "start", "--user", "0", "-W", "-n",
+        "app.hisn.android.test/app.hisn.android.GuardFixtureActivity",
+        "-f", "0x10008000", "--es", "mode", "ordinary")
+    if "GuardFixtureActivity" not in resumed():
+        raise AssertionError("Fixture did not start before the rule changed")
+    print("PASS fixture allowed before the rule was saved", flush=True)
+    deadline = time.monotonic() + 9
+    while time.monotonic() < deadline:
+        report = adb("shell", "run-as", "app.hisn.android", "cat", "files/hisn_guard_test_status").strip()
+        if report.startswith("FAIL "):
+            raise AssertionError(report)
+        if report == "APPLIED block-app-later" and "app.hisn.android/.RestrictionActivity" in resumed():
+            print("PASS new saved rule restricted the still-open app without another screen event from the fixture", flush=True)
+            return
+        time.sleep(0.15)
+    raise AssertionError("New app rule did not restrict the static fixture: " + status())
+
+
 def fixture(mode, blocked):
+    # Start each independent case from the launcher so Android publishes a new
+    # foreground window even when the preceding case used the same activity.
+    adb("shell", "input", "keyevent", "KEYCODE_HOME")
     time.sleep(1.8)  # Respect intervention debounce between independent cases.
     adb("shell", "am", "start", "--user", "0", "-W", "-n",
         "app.hisn.android.test/app.hisn.android.GuardFixtureActivity",
@@ -99,9 +149,13 @@ else:
         configure("adult-policy-test")
         print("PASS actual APK compact-spelling/context policy and literal-rule independence", flush=True)
     # No instrumentation: it restarts the app and disconnects Android accessibility.
-    configure("setup-adult" if args.case == "adult" else "setup")
+    adult_case = args.case in ("adult", "split-context", "text-updates")
+    setup = "setup-live-app" if args.case == "live-update" else ("setup-adult" if adult_case else "setup")
+    configure(setup)
     try:
-        if args.case == "adult":
+        if args.case == "live-update":
+            live_update()
+        if adult_case:
             deadline = time.monotonic() + 12
             ready = False
             while time.monotonic() < deadline:
@@ -114,6 +168,12 @@ else:
                 time.sleep(0.25)
             if not ready:
                 raise AssertionError("Verified adult policy load timed out")
+        if args.case == "split-context":
+            fixture("split-context", False)
+            fixture("split-context-block", True)
+        if args.case == "text-updates":
+            text_updates()
+        if args.case == "adult":
             fixture("medical", False)
             fixture("protective", False)
             fixture("recovery", False)

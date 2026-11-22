@@ -8,7 +8,7 @@ import java.util.Map;
 /** Reuses the last verdict for an unchanged selected-window frame.
  *
  * <p>The visual guard still takes one capture to know the frame did not change, but it does not
- * need to run the model again for the same coarse signature. Only a signature and an allow/block
+ * need to run the model again for the same pixel fingerprint. Only a fingerprint and an allow/block
  * word are retained; no pixels, URL or text. Entries expire after {@link #TTL_MILLIS}, are bounded
  * per selected window, and are cleared on a window change. A cached block is still checked against
  * the live window before it acts, like any other frame decision.</p>
@@ -35,13 +35,13 @@ public final class VisualVerdictCache {
     /**
      * A cache key over every pixel of the downscaled frame, not the 16 x 16 grid the cadence uses.
      * The grid can miss a thumbnail that loads between its sample points, and a reused "allow"
-     * would then skip the model for up to {@link #TTL_MILLIS}. Low colour bits are ignored like the
-     * cadence signature, so dithering still hits the cache; any real change misses it.
+     * would then skip the model for up to {@link #TTL_MILLIS}. Every RGB bit can affect the model,
+     * so even a subtle image change requires a fresh verdict.
      */
     public static long fingerprint(int[] pixels, int width) {
         long hash = 0xCBF29CE484222325L;
         hash = (hash ^ width) * 0x100000001B3L;
-        for (int pixel : pixels) hash = (hash ^ (pixel & 0xF0F0F0)) * 0x100000001B3L;
+        for (int pixel : pixels) hash = (hash ^ (pixel & 0xFFFFFF)) * 0x100000001B3L;
         return hash;
     }
 

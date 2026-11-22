@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { nearMiss, centreCrop, strongBlock, padSquare, agrees, CROP_FRACTION } from '../../android/app/src/main/assets/visual/region.js';
 
 // nearMiss is a bounded closer look, not a lower block threshold.
@@ -55,4 +56,48 @@ assert.equal(agrees({ scores: { Porn: 0.02, Hentai: 0.01 } }), false);
 assert.equal(agrees({ scores: { Porn: 0.25, Hentai: 0.05 } }), true);
 assert.equal(agrees({ scores: { Porn: 0.80, Hentai: 0.00 } }), true);
 assert.equal(agrees(null), true);
-console.log('region crop tests passed');
+
+// Exercise the actual Android bridge with predictable model scores. The bundled
+// engine skips faces after its first adult hit; the bridge may later clear that hit.
+const bridgeURL = new URL('../app/src/main/assets/visual/android.js', import.meta.url);
+const stubEngine = 'data:text/javascript,export const createVisualEngine = () => globalThis.testEngine';
+const bridge = (await readFile(bridgeURL, 'utf8'))
+  .replace("'./engine.bundle.js'", JSON.stringify(stubEngine))
+  .replace("'./region.js'", JSON.stringify(new URL('region.js', bridgeURL).href));
+const calls = [], answers = [];
+let modelAnswers;
+globalThis.window = {};
+globalThis.location = { href: 'https://hisn.invalid/visual/android.html?person=all' };
+globalThis.HisnResult = { result: (id, answer) => answers.push([id, answer]) };
+globalThis.testEngine = {
+  async prepare() {},
+  status: () => ({ state: 'ready', backend: 'wasm' }),
+  async inspect(id, capture, preferences) {
+    assert.equal(id, capture.id);
+    calls.push(preferences);
+    return modelAnswers.shift();
+  },
+};
+await import('data:text/javascript;base64,' + Buffer.from(bridge).toString('base64'));
+assert.deepEqual(answers.shift(), ['load', 'ready:wasm']);
+
+function modelAnswer(block, porn, persons) {
+  return { state: 'ready', adult: { inspected: true, block, scores: { Porn: porn, Hentai: 0 } }, persons };
+}
+
+for (const [shape, face, expected] of [
+  [modelAnswer(false, 0.05), { state: 'ready', persons: { blur: true } }, { v: 'allow', p: true, s: false }],
+  [modelAnswer(false, 0.05), { state: 'unknown' }, 'unknown'],
+  [modelAnswer(true, 0.93), null, { v: 'block', p: false, s: true }],
+]) {
+  modelAnswers = [modelAnswer(true, 0.94, { state: 'not-inspected' }), shape];
+  if (face) modelAnswers.push(face);
+  calls.length = 0;
+  await window.hisnInspect('frame', 10, 20, Buffer.alloc(10 * 20 * 4).toString('base64'));
+  const [id, answer] = answers.shift();
+  assert.equal(id, 'frame');
+  assert.deepEqual(answer === 'unknown' ? answer : JSON.parse(answer), expected);
+  assert.equal(calls.length, face ? 3 : 2);
+  if (face) assert.deepEqual([calls[2].inspectVisual, calls[2].personBlur], [false, 'all']);
+}
+console.log('region crop and Android visual bridge tests passed');

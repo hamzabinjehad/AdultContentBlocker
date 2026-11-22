@@ -3,7 +3,6 @@ package app.hisn.android;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,7 +20,6 @@ import android.widget.TextView;
 import app.hisn.core.PauseTally;
 import app.hisn.core.PersonalProfile;
 
-import java.time.LocalDate;
 
 /**
  * Shows a reason category, never captured text, matched words or browsing history, then a short
@@ -33,7 +31,6 @@ import java.time.LocalDate;
  * exit on finishing the exercise.
  */
 public final class RestrictionActivity extends Activity {
-    private static final String PAUSE_PREFS = "pause";
     private static final long BREATH_IN_MS = 4000, BREATH_OUT_MS = 6000;
     private static final int BREATH_CYCLES = 3;
     private static final int[] REMINDERS = {R.string.pause_reminder_1, R.string.pause_reminder_2,
@@ -58,6 +55,7 @@ public final class RestrictionActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         voluntary = getIntent().getBooleanExtra("voluntary", false);
+        if (state == null && !voluntary) StepIns.record(this, StepIns.ADULT);
         personal = new PersonalStore(this);
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
         int side = Ui.sidePadding(this);
@@ -102,6 +100,7 @@ public final class RestrictionActivity extends Activity {
         column.addView(body, bodyParams);
 
         addPersonalReason(column);
+        addReminder(column);
         addPause(column, state == null);
 
         scroll.setOnApplyWindowInsetsListener((view, insets) -> {
@@ -166,20 +165,51 @@ public final class RestrictionActivity extends Activity {
         column.addView(panel, Ui.margins(this, 18, 0));
     }
 
-    private void addPause(LinearLayout page, boolean count) {
-        // Counting is a day and a number only. A recreated screen (rotation) is the same pause.
-        SharedPreferences prefs = getSharedPreferences(PAUSE_PREFS, MODE_PRIVATE);
-        long storedDay = prefs.getLong("day", -1);
-        int storedCount = prefs.getInt("count", 0);
-        PauseTally tally = PauseTally.record(storedDay, storedCount,
-                prefs.getLong("at", 0), LocalDate.now().toEpochDay(), System.currentTimeMillis());
-        if (count) {
-            prefs.edit().putLong("day", tally.day).putInt("count", tally.count)
-                    .putLong("at", tally.at).apply();
-            // The dashboard total follows a real new pause only: a rotation, a merged
-            // re-open or a clock moved backwards cannot inflate it.
-            if (tally.day != storedDay || tally.count != storedCount) personal.recordPause();
+    /**
+     * One reminder from the edition's pack: Qur'an, hadith or Ibn al-Qayyim in the Islamic
+     * edition, a plain prompt in the general one. About the gaze after an image or word block,
+     * about time otherwise. Missing pack: nothing is added.
+     */
+    private void addReminder(LinearLayout column) {
+        boolean gaze = !voluntary && (getIntent().getBooleanExtra("visual", false)
+                || getIntent().getBooleanExtra("word", false));
+        app.hisn.android.nativeshell.Reminder reminder = app.hisn.android.nativeshell.Reminders.INSTANCE.pick(
+                this, gaze ? app.hisn.android.nativeshell.Reminders.TOPIC_GAZE
+                        : app.hisn.android.nativeshell.Reminders.TOPIC_TIME, System.nanoTime());
+        if (reminder == null) return;
+        boolean arabicPhone = "ar".equals(java.util.Locale.getDefault().getLanguage());
+        boolean showArabic = reminder.getAlwaysArabic() || arabicPhone;
+        String main = showArabic ? reminder.getAr() : reminder.getEn();
+        String kind = reminder.getKind();
+        if (app.hisn.android.nativeshell.Reminder.KIND_QURAN.equals(kind)) main = "\uFD3F" + main + "\uFD3E";
+        else if (reminder.getAlwaysArabic()) main = "\u00AB" + main + "\u00BB";
+
+        LinearLayout panel = Ui.softPanel(this);
+        panel.setPadding(Ui.dp(this, 18), Ui.dp(this, 14), Ui.dp(this, 18), Ui.dp(this, 14));
+        TextView words = Ui.text(this, main, 18, R.color.text_primary);
+        words.setLineSpacing(Ui.dp(this, 6), 1.2f);
+        if (showArabic) {
+            words.setTextLocale(new java.util.Locale("ar"));
+            words.setTextDirection(android.view.View.TEXT_DIRECTION_RTL);
         }
+        panel.addView(words);
+        if (showArabic && !arabicPhone) {
+            TextView meaning = Ui.text(this, reminder.getEn(), 14, R.color.text_secondary);
+            meaning.setLineSpacing(Ui.dp(this, 3), 1.15f);
+            meaning.setPadding(0, Ui.dp(this, 8), 0, 0);
+            panel.addView(meaning);
+        }
+        String source = arabicPhone ? reminder.getSourceAr() : reminder.getSourceEn();
+        if (!source.isEmpty()) {
+            TextView from = Ui.text(this, source, 13, R.color.text_secondary);
+            from.setPadding(0, Ui.dp(this, 8), 0, 0);
+            panel.addView(from);
+        }
+        column.addView(panel, Ui.margins(this, 18, 0));
+    }
+
+    private void addPause(LinearLayout page, boolean count) {
+        PauseTally tally = PauseCount.record(this, count);
 
         LinearLayout breath = new LinearLayout(this);
         breath.setOrientation(LinearLayout.VERTICAL);
@@ -255,7 +285,14 @@ public final class RestrictionActivity extends Activity {
                 voluntary ? Ui.ButtonKind.GHOST : Ui.ButtonKind.PRIMARY);
         page.addView(home, Ui.margins(this, 22, 0));
         home.setOnClickListener(view -> {
-            if (voluntary) finish(); else goHome();
+            if (!voluntary) { goHome(); return; }
+            // Opened from the launcher or Quick Settings, nothing of Hisn is underneath: the
+            // button says "Back to Hisn", so it opens Hisn rather than dropping to the home screen.
+            if (isTaskRoot()) {
+                startActivity(new Intent(this, ShellActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+            }
+            finish();
         });
 
         reflectionPanel = new LinearLayout(this);

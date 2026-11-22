@@ -26,6 +26,19 @@ public final class Ipv6DnsPacketTest {
         Ipv6DnsPacket parsed = Ipv6DnsPacket.parse(packet(query), SERVER);
         if (parsed == null || !java.util.Arrays.equals(parsed.dns, query)) throw new AssertionError("IPv6 UDP payload extraction");
         byte[] reply = parsed.response(query);
+        byte[] request = packet(query);
+        byte[] scratch = java.util.Arrays.copyOf(request, 1501);
+        java.util.Arrays.fill(scratch, request.length, scratch.length, (byte) -1);
+        Ipv6DnsPacket buffered = Ipv6DnsPacket.parse(scratch, request.length, SERVER);
+        if (buffered == null || Ipv6DnsPacket.parse(scratch, request.length - 1, SERVER) != null
+                || Ipv6DnsPacket.parse(scratch, request.length + 1, SERVER) != null) {
+            throw new AssertionError("IPv6 UDP did not respect the read length");
+        }
+        java.util.Arrays.fill(scratch, (byte) 0);
+        if (!java.util.Arrays.equals(buffered.dns, query)
+                || !java.util.Arrays.equals(buffered.response(query), reply)) {
+            throw new AssertionError("IPv6 UDP retained the scratch buffer");
+        }
         if (reply[0] != 0x60 || reply[6] != 17 || reply[7] != 64 || reply[40] != 0 || reply[41] != 53
                 || !java.util.Arrays.equals(java.util.Arrays.copyOfRange(reply, 8, 24), SERVER)
                 || !java.util.Arrays.equals(java.util.Arrays.copyOfRange(reply, 24, 40), APP)

@@ -20,12 +20,14 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.TextView;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
+import app.hisn.core.DailyAppSchedule;
 import app.hisn.core.GuardWindows;
 import app.hisn.core.InspectionHealth;
 import app.hisn.core.PolicyReceipt;
@@ -71,7 +73,7 @@ public final class TextGuardService extends AccessibilityService {
     static volatile long repeatHoldOffs;
     /** Debug-only timing of the last full tree scan, in milliseconds. */
     static volatile long lastInspectionMillis;
-    /** Word/adult matches made from the accessibility event itself, before a tree walk. */
+    /** Word/adult matches made from a current event source before a tree walk. */
     static volatile long fastTextInterventions;
     /** Feedback interrupts do not stop protection; used by the harmless live regression. */
     static volatile long feedbackInterrupts;
@@ -81,6 +83,8 @@ public final class TextGuardService extends AccessibilityService {
     private static final long SCAN_TIMEOUT_MILLIS = 20000;
     /** While the signed adult vocabulary is still loading, retry the text pass quickly. */
     private static final long ADULT_LOAD_RETRY_MILLIS = 250;
+    private static final int EVENT_TEXT_LIMIT = 8192;
+    private static final long EVENT_TEXT_MAX_AGE_MILLIS = 500;
     /** After a word or image block, reopening the same app within this period returns Home again. */
     static final long BLOCK_HOLD_MILLIS = 60000;
 
@@ -126,6 +130,8 @@ public final class TextGuardService extends AccessibilityService {
     private String inspectedKey;
     private final Runnable inspect = this::inspectWindow;
     private final Runnable discover = this::inspectCurrentSelectedWindow;
+    private final Runnable guardRulesChanged = this::inspectAfterRuleChange;
+    private PolicyStore watchedRules;
     private final Runnable checkpoint = this::checkpointCommitment;
     private android.database.ContentObserver grayWatch;
     private final Runnable selfCheck = this::checkSelfProtection;
@@ -136,9 +142,13 @@ public final class TextGuardService extends AccessibilityService {
     };
     private boolean pendingWordReason;
     private boolean pendingScheduleReason;
+    /** The block screen should name the person's own focus session, not a rule. */
+    private boolean pendingFocusReason;
     private boolean pendingLimitReason;
     private boolean pendingVisualReason;
     private boolean pendingShortVideoReason;
+    /** The package the block screen names ("Reels are closed"); null when not known. */
+    private String pendingBlockedApp;
     /** Set by a selected app's event; cleared only after a tree scan actually ran. */
     private boolean textDirty = true;
     private long lastTextScanAt;
@@ -169,11 +179,13 @@ public final class TextGuardService extends AccessibilityService {
     private int waitOverlayFallbacks;
     private final Runnable showRestriction = () -> {
         try {
-            startActivity(new Intent(this, RestrictionActivity.class)
+            startActivity(new Intent(this, Edition.islamic ? RestrictionActivity.class : BlockActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                     .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason)
+                    .putExtra("focus", pendingFocusReason)
                     .putExtra("limit", pendingLimitReason)
-                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason));
+                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason)
+                    .putExtra("app", pendingBlockedApp));
         } catch (RuntimeException unavailable) {
             recordInspection(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "restriction-screen-unavailable";
@@ -255,10 +267,13 @@ public final class TextGuardService extends AccessibilityService {
             AdultNamedApps.init(this);
             browserApps.clear();
             browserOnlyOn = BrowserOnlyStore.on(this);
+            privateTabsOn = PrivateTabsStore.on(this);
             // Gray is applied now and restored the moment Settings or another app switches it off.
             ScreenGray.reassert(this);
             if (grayWatch == null) grayWatch = ScreenGray.watch(this, () -> ScreenGray.reassert(this));
-            if (PolicyStore.get(this).snapshot().adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
+            watchedRules = PolicyStore.get(this);
+            watchedRules.watchGuardRules(handler, guardRulesChanged);
+            if (watchedRules.snapshot().adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
             textDirty = true;
             ready = true;
             // Keeps the boot shield's pre-unlock copy current. A running
@@ -286,6 +301,22 @@ public final class TextGuardService extends AccessibilityService {
         return new VisualGuard(this, window -> intervene(window.app, window.id, window.active, false, false, true, false, false));
     }
 
+    private void inspectAfterRuleChange() {
+        if (!ready || !connected || destroyed) return;
+        // Old observations cannot certify new rules, even when the same window stays on screen.
+        scanGeneration++;
+        inspectedKey = null;
+        textDirty = true;
+        limitUsed.clear();
+        pendingPackage = null;
+        inspectPending = false;
+        handler.removeCallbacks(inspect);
+        handler.removeCallbacks(heartbeat);
+        handler.removeCallbacks(discover);
+        if (visual != null) visual.windowChanged();
+        inspectCurrentSelectedWindow();
+    }
+
     /** Saves commitment progress once a minute so a restart loses little counted time. */
     private void checkpointCommitment() {
         try { PolicyStore.get(this).checkpoint(); } catch (RuntimeException unsaved) { /* Retry next minute. */ }
@@ -301,8 +332,8 @@ public final class TextGuardService extends AccessibilityService {
         if (excluded == null || inspectPending) return;
         try {
             PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
-            if (!rules.schedule.isConfigured() && !rules.timeLimits.configured()) return;
-            List<GuardWindows.Window> windows = selectedWindows(this, excluded, app -> isSelected(rules, app));
+            if (!rules.schedule.isConfigured() && !rules.timeLimits.configured() && !FocusSession.active(this)) return;
+            List<GuardWindows.Window> windows = selectedWindows(this, excluded, selection(rules));
             if (windows == null || windows.isEmpty()) return;
             pendingPackage = windows.get(0).app;
             rootRetries = 5;
@@ -318,10 +349,10 @@ public final class TextGuardService extends AccessibilityService {
      * from the app itself. Metadata only until a selected app's window is found. */
     private void inspectCurrentSelectedWindow() {
         discoverPending = false;
-        if (excluded == null || inspectPending) return;
+        if (excluded == null || inspectPending || GuardPause.paused(this)) return;
         try {
             PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
-            List<GuardWindows.Window> windows = selectedWindows(this, excluded, app -> isSelected(rules, app));
+            List<GuardWindows.Window> windows = selectedWindows(this, excluded, selection(rules));
             if (windows == null || windows.isEmpty() || GuardWindows.key(windows).equals(inspectedKey)) return;
             pendingPackage = windows.get(0).app;
             textDirty = true;
@@ -342,7 +373,7 @@ public final class TextGuardService extends AccessibilityService {
         List<GuardWindows.Window> all = new ArrayList<>();
         for (AccessibilityWindowInfo window : service.getWindows()) {
             boolean application = window.getType() == AccessibilityWindowInfo.TYPE_APPLICATION;
-            AccessibilityNodeInfo root = application ? window.getRoot() : null;
+            AccessibilityNodeInfo root = application ? metadataRoot(window) : null;
             try {
                 all.add(new GuardWindows.Window(window.getId(), packageOf(root), application, window.isActive(),
                         window.isFocused(), Compat.inPictureInPicture(window)));
@@ -350,13 +381,22 @@ public final class TextGuardService extends AccessibilityService {
         }
         if (all.isEmpty()) {
             // No window list from Android: only the active window, as before 0.5.5.
-            AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            AccessibilityNodeInfo root = metadataRoot(service);
             if (root == null) return null;
             try {
                 all.add(new GuardWindows.Window(root.getWindowId(), packageOf(root), true, true, true, false));
             } finally { root.recycle(); }
         }
         return GuardWindows.select(all, selected, excluded);
+    }
+
+    /** A package and window ID check needs no batched descendants. */
+    private static AccessibilityNodeInfo metadataRoot(AccessibilityWindowInfo window) {
+        return Build.VERSION.SDK_INT >= 33 ? window.getRoot(0) : window.getRoot();
+    }
+
+    private static AccessibilityNodeInfo metadataRoot(AccessibilityService service) {
+        return Build.VERSION.SDK_INT >= 33 ? service.getRootInActiveWindow(0) : service.getRootInActiveWindow();
     }
 
     /** That window's root, only while it still belongs to the same app; the caller releases it. */
@@ -393,7 +433,11 @@ public final class TextGuardService extends AccessibilityService {
         // in feeds and videos are constant; the frame gate still requires the same app and
         // window and a fresh sample before acting.
         if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            if (visual != null) visual.windowChanged();
+            // A cover can emit a window-state event from our own package. It does not
+            // change the sampled application or break its two-capture confirmation.
+            if (visual != null && !android.text.TextUtils.equals(getPackageName(), event.getPackageName())) {
+                visual.windowChanged();
+            }
             // A scan of the previous screen must not decide for the new one.
             scanGeneration++;
         }
@@ -409,6 +453,7 @@ public final class TextGuardService extends AccessibilityService {
         CharSequence pkg = event.getPackageName();
         if (pkg == null) return;
         String name = pkg.toString();
+        boolean newWindow = event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
         // Read before the selection filter below, which needs it to let a browser's events in.
         privateTabsOn = PrivateTabsStore.on(this);
         browserOnlyOn = BrowserOnlyStore.on(this);
@@ -434,6 +479,9 @@ public final class TextGuardService extends AccessibilityService {
                 && OpenWaitOverlay.leftBy(name, getPackageName())) {
             OpenWaitOverlay.hide(this);
         }
+        // App protection turned off inside Hisn: the service stays enabled but enforces nothing.
+        // Self-protection above has its own switch and keeps running.
+        if (GuardPause.paused(this)) return;
         if (excluded == null) return;
         if (excluded.contains(name)) {
             // Background/stale events from Settings, the launcher or our own
@@ -444,7 +492,6 @@ public final class TextGuardService extends AccessibilityService {
         // Wait before opening: a chosen app coming to the front gets the breath screen first.
         // A blocked app still meets its block after "Open"; the wait never lets anything through.
         try {
-            boolean newWindow = event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
             if (name.equals(OpenWaitOverlay.getApp())) return;
             if (OpenWaitStore.onAppEvent(this, name, newWindow)) {
                 long now = SystemClock.elapsedRealtime();
@@ -458,20 +505,27 @@ public final class TextGuardService extends AccessibilityService {
         } catch (RuntimeException unavailable) {
             // The wait is a courtesy; a failure here must never stop the checks below.
         }
-        if (name.equals(heldPackage) && SystemClock.elapsedRealtime() < heldUntil
-                && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            holdEnforcements++;
-            pendingPackage = name;
-            intervene(name, event.getWindowId(), true, heldWord, false, heldVisual, false, true);
+        if (newWindow && name.equals(heldPackage) && SystemClock.elapsedRealtime() < heldUntil
+                && activeWindowForPackage(name, event.getWindowId()) != null) {
+            enforceHeldWindow(name, event.getWindowId());
             return;
         }
         try {
             PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
-            if (!isSelected(rules, name)) return;
-            // The event itself often carries the label that just appeared. Matching it before a
-            // tree walk turns a visible word into a block immediately; the full scan below is the
-            // fallback for text the event does not carry.
-            if (quickTextMatch(rules, name, event)) {
+            if (!isSelected(rules, name, null)) return;
+            if (newWindow && blocksWholeApp(rules, name)) {
+                GuardWindows.Window target = activeWindow(name, event.getWindowId());
+                if (target != null) {
+                    recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
+                    if (intervene(name, target.id, true, false, false, false, false, false)) return;
+                }
+            }
+            boolean labelChanged = eventCarriesText(event)
+                    || (event.getContentChangeTypes() & (AccessibilityEvent.CONTENT_CHANGE_TYPE_TEXT
+                        | AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION)) != 0;
+            // A label update can act before the walk when its source is still visible.
+            if (labelChanged && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+                    && quickTextMatch(rules, name, event)) {
                 // A queued event from a window the person already left is not evidence. Only the
                 // selected window in use may act before the walk; anything else waits for it.
                 GuardWindows.Window target = activeWindow(name, event.getWindowId());
@@ -493,16 +547,14 @@ public final class TextGuardService extends AccessibilityService {
             // A video frame or animation carries no text. Re-reading the whole tree for every one
             // of those would make the guard compete with the app; the forced pass every few seconds
             // still covers text that appears without a text-bearing event.
-            textDirty |= eventCarriesText(event)
-                    || event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
-                    || event.getEventType() == AccessibilityEvent.TYPE_VIEW_SCROLLED;
+            textDirty |= labelChanged || newWindow || event.getEventType() == AccessibilityEvent.TYPE_VIEW_SCROLLED;
             // Scrolling or changing content in a selected window brings the next image sample forward.
             if (visual != null && rules.visualEnabled && scans(rules, name)) visual.activity();
             pendingPackage = name;
             inspectionOutcome = "scheduled";
             handler.removeCallbacks(heartbeat);
             // Continuous feeds must not keep postponing the same pending inspection.
-            if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            if (newWindow) {
                 handler.removeCallbacks(inspect);
                 rootRetries = 5;
                 inspectPending = true;
@@ -521,11 +573,15 @@ public final class TextGuardService extends AccessibilityService {
 
     private void inspectWindow() {
         inspectPending = false;
+        // Paused in Hisn: no inspection, so the heartbeat that this reschedules stops too.
+        if (GuardPause.paused(this)) return;
         String name = pendingPackage;
         if (name == null || excluded.contains(name)) return;
+        FocusSession.load(this);
         try {
             PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
-            List<GuardWindows.Window> windows = selectedWindows(this, excluded, app -> isSelected(rules, app));
+            LocalDateTime local = rules.schedule.isConfigured() ? LocalDateTime.now() : null;
+            List<GuardWindows.Window> windows = selectedWindows(this, excluded, app -> isSelected(rules, app, local));
             inspectedKey = windows == null ? null : GuardWindows.key(windows);
             if (windows == null) {
                 inspectionOutcome = "no-root";
@@ -546,6 +602,15 @@ public final class TextGuardService extends AccessibilityService {
             // A window acted on moments ago and still on screen though not in use is left for now,
             // so other selected windows are still checked and Home is not pressed in a loop.
             long now = SystemClock.elapsedRealtime();
+            if (heldPackage != null && now < heldUntil) {
+                for (GuardWindows.Window window : windows) {
+                    if (window.active && heldPackage.equals(window.app)) {
+                        // Window events may arrive before Android publishes the new root.
+                        enforceHeldWindow(window.app, window.id);
+                        return;
+                    }
+                }
+            }
             List<GuardWindows.Window> held = new ArrayList<>();
             for (GuardWindows.Window window : windows) {
                 if (repeat.wait(window.app, window.id, window.active, now) > 0) held.add(window);
@@ -559,10 +624,7 @@ public final class TextGuardService extends AccessibilityService {
             }
             // Blocked, scheduled and nothing-to-read decisions are complete inspections too.
             for (GuardWindows.Window window : windows) {
-                if (rules.blockedApps.contains(window.app)
-                        || app.hisn.core.AdultApps.blocks(rules.adultWordsEnabled, window.app)
-                        || (rules.adultWordsEnabled && AdultNamedApps.flagged(window.app))
-                        || blocksBrowser(this, window.app)) {
+                if (blocksWholeApp(rules, window.app)) {
                     recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
                     intervene(window.app, window.id, window.active, false, false, false, false, false);
                     return;
@@ -575,19 +637,25 @@ public final class TextGuardService extends AccessibilityService {
                     return;
                 }
             }
-            java.time.LocalTime local = java.time.LocalTime.now();
-            int minute = local.getHour() * 60 + local.getMinute();
-            java.time.DayOfWeek day = java.time.LocalDate.now().getDayOfWeek();
             List<GuardWindows.Window> scanned = new ArrayList<>();
             boolean scheduledOnScreen = false;
             for (GuardWindows.Window window : windows) {
-                if (rules.schedule.blocks(window.app, minute, day)) {
+                if (FocusSession.blocks(window.app)) {
+                    recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
+                    if (intervene(window.app, window.id, window.active, false, false, false, false, false)) {
+                        pendingFocusReason = true;
+                    }
+                    return;
+                }
+            }
+            for (GuardWindows.Window window : windows) {
+                if (local != null && rules.schedule.blocks(window.app, minuteOfDay(local), local.getDayOfWeek())) {
                     recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
                     intervene(window.app, window.id, window.active, false, true, false, false, false);
                     return;
                 }
                 if (scans(rules, window.app) && rules.hasWordProtection()) scanned.add(window);
-                scheduledOnScreen |= rules.schedule.selects(window.app, minute, day);
+                scheduledOnScreen |= local != null && selectsSchedule(rules.schedule, window.app, local);
             }
             boolean shortVideoOnScreen = false;
             if (rules.shortVideoEnabled) {
@@ -595,14 +663,14 @@ public final class TextGuardService extends AccessibilityService {
                     if (!ShortVideoSurfaces.watches(window.app)) continue;
                     shortVideoOnScreen = true;
                     if (ShortVideoSurfaces.wholeApp(window.app)) {
-                        interveneShortVideo(true);
+                        interveneShortVideo(true, window.app);
                         return;
                     }
                     AccessibilityNodeInfo surface = windowRoot(this, window);
                     if (surface == null) continue;
                     try {
                         if (showsShortVideo(surface, window.app)) {
-                            interveneShortVideo(false);
+                            interveneShortVideo(false, window.app);
                             return;
                         }
                     } finally { surface.recycle(); }
@@ -829,7 +897,7 @@ public final class TextGuardService extends AccessibilityService {
         if (scanId != activeScan) return; // A newer scan, or an interrupt, replaced this one.
         clearScanTimeout();
         activeScan = 0;
-        if (destroyed) return;
+        if (destroyed || GuardPause.paused(this)) return;
         inspectedScreens += screens;
         if (generation != scanGeneration) {
             // The screen changed while it was being read; its decision cannot be applied.
@@ -855,7 +923,7 @@ public final class TextGuardService extends AccessibilityService {
             // A positive match is a complete decision even when a checkpoint stopped the walk.
             try {
                 PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
-                List<GuardWindows.Window> current = selectedWindows(this, excluded, app -> isSelected(rules, app));
+                List<GuardWindows.Window> current = selectedWindows(this, excluded, selection(rules));
                 if (current == null || GuardWindows.find(current, window.id, window.app) == null) {
                     textDirty = true;
                     scheduleHeartbeat(250);
@@ -917,14 +985,45 @@ public final class TextGuardService extends AccessibilityService {
         handler.postDelayed(heartbeat, 5000);
     }
 
+    private void enforceHeldWindow(String app, int window) {
+        holdEnforcements++;
+        intervene(app, window, true, heldWord, false, heldVisual, false, true);
+    }
+
     /** The selected, active window with this id and app, or null when the event is stale. */
     private GuardWindows.Window activeWindow(String app, int id) {
         try {
             PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
-            List<GuardWindows.Window> windows = selectedWindows(this, excluded,
-                    packageName -> isSelected(rules, packageName));
-            GuardWindows.Window window = windows == null ? null : GuardWindows.find(windows, id, app);
-            return window != null && window.active ? window : null;
+            if (excluded.contains(app) || !isSelected(rules, app, null)) return null;
+            return activeWindowForPackage(app, id);
+        } catch (RuntimeException unavailable) {
+            return null;
+        }
+    }
+
+    /** A held app's delayed event must not send the new foreground window Home. */
+    private GuardWindows.Window activeWindowForPackage(String app, int id) {
+        try {
+            List<AccessibilityWindowInfo> windows = getWindows();
+            for (AccessibilityWindowInfo window : windows) {
+                if (window.getId() != id) continue;
+                if (window.getType() != AccessibilityWindowInfo.TYPE_APPLICATION || !window.isActive()) return null;
+                AccessibilityNodeInfo root = metadataRoot(window);
+                try {
+                    if (!app.equals(packageOf(root))) return null;
+                    return new GuardWindows.Window(id, app, true, true, window.isFocused(), Compat.inPictureInPicture(window));
+                } finally {
+                    if (root != null) root.recycle();
+                }
+            }
+            if (!windows.isEmpty()) return null;
+            AccessibilityNodeInfo root = metadataRoot(this);
+            try {
+                if (root == null || root.getWindowId() != id || !app.equals(packageOf(root))) return null;
+                return new GuardWindows.Window(id, app, true, true, true, false);
+            } finally {
+                if (root != null) root.recycle();
+            }
         } catch (RuntimeException unavailable) {
             return null;
         }
@@ -940,91 +1039,67 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     /**
-     * Checks the label(s) the accessibility event already carries, before any tree walk. This is
-     * the same local matching as the full scan, on a bounded, transient copy that is discarded
-     * here. The event's source is only asked whether it is visible; no screen state is retained.
+     * Checks the updated label on a visible leaf before the tree walk. The event payload can
+     * outlive the label that triggered it. A container can also repeat a private descendant's
+     * text, so containers wait until the worker has inspected their children.
      */
     private boolean quickTextMatch(PolicyStore.Snapshot rules, String name, AccessibilityEvent event) {
-        if (!scans(rules, name) || !rules.hasWordProtection()) return false;
-        if (event.isPassword()) return false;
-        StringBuilder text = new StringBuilder();
-        java.util.List<CharSequence> lines = event.getText();
-        if (lines != null) {
-            for (CharSequence line : lines) {
-                if (line == null) continue;
-                if (text.length() + line.length() > 8192) break;
-                text.append(line).append('\n');
-            }
-        }
-        CharSequence description = event.getContentDescription();
-        if (description != null && text.length() + description.length() <= 8192) text.append(description);
-        // A content-change event from a node that is already gone or scrolled off screen is not
-        // evidence. No source means the event still names its window, as for a window state change.
+        if (!scans(rules, name) || !rules.hasWordProtection() || event.isPassword()
+                || SystemClock.uptimeMillis() - event.getEventTime() > EVENT_TEXT_MAX_AGE_MILLIS) return false;
+        String label;
         AccessibilityNodeInfo source = null;
         try {
-            source = event.getSource();
-            if (source != null) {
-                CharSequence type = source.getClassName();
-                if (source.isPassword() || source.isEditable()
-                        || (type != null && type.toString().contains("EditText"))) return false;
-                if (!source.isVisibleToUser()) return false;
-                // Some apps put the changed label only on the source node, not in the event list.
-                CharSequence sourceText = source.getText();
-                if (sourceText != null && text.length() + sourceText.length() <= 8192) text.append('\n').append(sourceText);
-                CharSequence sourceDescription = source.getContentDescription();
-                if (sourceDescription != null && text.length() + sourceDescription.length() <= 8192)
-                    text.append('\n').append(sourceDescription);
-            }
+            source = Build.VERSION.SDK_INT >= 33 ? event.getSource(0) : event.getSource();
+            if (source == null || source.getWindowId() != event.getWindowId()
+                    || !name.equals(packageOf(source)) || !source.isVisibleToUser()
+                    || isPrivateNode(source) || source.getChildCount() != 0) return false;
+            CharSequence text = source.getText();
+            if (text == null || text.length() == 0) text = source.getContentDescription();
+            if (text == null || text.length() == 0 || text.length() >= EVENT_TEXT_LIMIT) return false;
+            label = text.toString();
         } catch (RuntimeException unavailable) {
             return false;
         } finally { if (source != null) source.recycle(); }
-        if (text.length() == 0) return false;
-        String sample = text.toString();
-        if (!rules.adultWordsEnabled) return !rules.words.matches(sample).isEmpty();
+        if (!rules.words.isEmpty() && rules.words.hasMatch(label)) return true;
+        if (!rules.adultWordsEnabled) return false;
         AdultPolicyAssets.ensureLoaded(this);
-        return matchesPromotion(rules, AdultPolicyAssets.policy(), sample);
-    }
-
-    /** A verdict that is safe before the whole screen has been read: a literal rule, or adult
-     * promotion with a clear signal. A bare "Porn" label waits for the complete sample. */
-    private static boolean matchesPromotion(PolicyStore.Snapshot rules, app.hisn.core.AdultTextPolicy adult,
-            String text) {
-        if (text.isEmpty()) return false;
-        if (!rules.words.matches(text).isEmpty()) return true;
-        return rules.adultWordsEnabled && adult != null && adult.blocksPromotion(text);
+        app.hisn.core.AdultTextPolicy adult = AdultPolicyAssets.policy();
+        if (adult == null) return false;
+        VisibleTextSample sample = new VisibleTextSample(true);
+        sample.append(label);
+        return adult.screen().blocksDecisiveLine(sample);
     }
 
     /**
      * The checkpoints and final verdict of one window's tree walk. The sample grows a line at a
-     * time, so each checkpoint reads only what arrived since the last one: the adult policy
-     * normalizes every line once ({@link app.hisn.core.AdultTextPolicy.ScreenScan}) and the
-     * custom words see the new lines plus the previous last line. Re-reading the whole sample
-     * at each of up to 32 checkpoints made a large screen quadratic. The final verdict still
-     * reads the complete sample, exactly as before.
+     * time. The adult policy evaluates each label once, and the literal checkpoint
+     * searches the new lines plus the previous last line. The final literal check can
+     * also find phrases that span several checkpoint boundaries.
      */
     private static final class ScreenCheck implements LabelScan.Check {
         private final PolicyStore.Snapshot rules;
         private final app.hisn.core.AdultTextPolicy.ScreenScan screen;
         private int wordsFrom;
+        private boolean literalMatch;
 
         ScreenCheck(PolicyStore.Snapshot rules, app.hisn.core.AdultTextPolicy adult) {
             this.rules = rules;
             this.screen = rules.adultWordsEnabled && adult != null ? adult.screen() : null;
         }
 
-        /** A verdict that is safe before the whole screen has been read; see matchesPromotion. */
+        /** Stop only for a verdict that will hold when the full sample is checked. */
         @Override public boolean stop(VisibleTextSample sample, int visited) {
             if (!rules.words.isEmpty()) {
-                boolean hit = !rules.words.matches(sample.textFrom(wordsFrom)).isEmpty();
+                literalMatch = rules.words.hasMatch(sample.textFrom(wordsFrom));
                 wordsFrom = sample.lastLineStart();
-                if (hit) return true;
+                if (literalMatch) return true;
             }
-            return screen != null && screen.blocksPromotion(sample);
+            return screen != null && screen.blocksDecisiveLine(sample);
         }
 
         boolean matches(VisibleTextSample sample) {
             if (sample.isEmpty()) return false;
-            if (!rules.words.matches(sample.text()).isEmpty()) return true;
+            if (literalMatch || (!rules.words.isEmpty() && rules.words.hasMatch(sample.text()))) return true;
             // Each label is judged alone, so a medical/news label elsewhere in the UI never
             // exempts an unrelated adult-promotion label; it only stops a bare term such as a
             // "Porn" tag chip from blocking by itself. Custom rules remain independent.
@@ -1090,13 +1165,26 @@ public final class TextGuardService extends AccessibilityService {
         return app.hisn.core.ControlledBrowsers.blocks(browserOnlyOn, name, browserOnlyOn && isBrowser(name));
     }
 
-    private static boolean isSelected(PolicyStore.Snapshot rules, String name) {
+    private boolean blocksWholeApp(PolicyStore.Snapshot rules, String name) {
+        return rules.blockedApps.contains(name)
+                || app.hisn.core.AdultApps.blocks(rules.adultWordsEnabled, name)
+                || (rules.adultWordsEnabled && AdultNamedApps.flagged(name))
+                || blocksBrowser(this, name);
+    }
+
+    private static Predicate<String> selection(PolicyStore.Snapshot rules) {
+        LocalDateTime now = rules.schedule.isConfigured() ? LocalDateTime.now() : null;
+        return app -> isSelected(rules, app, now);
+    }
+
+    private static boolean isSelected(PolicyStore.Snapshot rules, String name, LocalDateTime now) {
         return rules.blockedApps.contains(name) || scans(rules, name)
                 || app.hisn.core.AdultApps.blocks(rules.adultWordsEnabled, name)
                 || (rules.adultWordsEnabled && AdultNamedApps.flagged(name))
                 || browserOnlyOn && isBrowser(name)
                 || rules.timeLimits.monitored(name)
-                || rules.schedule.selects(name, minuteOfDay(), dayOfWeek())
+                || selectsSchedule(rules.schedule, name, now)
+                || FocusSession.blocks(name)
                 || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name))
                 || (privateTabsOn && PrivateBrowsing.watches(name))
                 || app.hisn.core.TelegramSearch.watches(rules.adultWordsEnabled, name);
@@ -1124,13 +1212,14 @@ public final class TextGuardService extends AccessibilityService {
         return rules.timeLimits.exceeded(app, used);
     }
 
-    private static int minuteOfDay() {
-        java.time.LocalTime now = java.time.LocalTime.now();
-        return now.getHour() * 60 + now.getMinute();
+    private static boolean selectsSchedule(DailyAppSchedule schedule, String app, LocalDateTime now) {
+        if (!schedule.targets(app)) return false;
+        LocalDateTime local = now == null ? LocalDateTime.now() : now;
+        return schedule.selects(app, minuteOfDay(local), local.getDayOfWeek());
     }
 
-    private static java.time.DayOfWeek dayOfWeek() {
-        return java.time.LocalDate.now().getDayOfWeek();
+    private static int minuteOfDay(LocalDateTime now) {
+        return now.getHour() * 60 + now.getMinute();
     }
 
     /** A visible private-tab marker, found by its view ID; no page text or address is read. */
@@ -1277,9 +1366,11 @@ public final class TextGuardService extends AccessibilityService {
         lastIntervention = now;
         pendingWordReason = true;
         pendingScheduleReason = false;
+        pendingFocusReason = false;
         pendingLimitReason = false;
         pendingVisualReason = false;
         pendingShortVideoReason = false;
+        pendingBlockedApp = null;
         handler.removeCallbacks(showRestriction);
         handler.postDelayed(showRestriction, 350);
     }
@@ -1319,7 +1410,7 @@ public final class TextGuardService extends AccessibilityService {
      * Leave a short-video feed. Inside YouTube or Instagram, BACK leaves Shorts or Reels and
      * keeps the rest of the app usable; a whole short-video app goes HOME like any blocked app.
      */
-    private void interveneShortVideo(boolean wholeApp) {
+    private void interveneShortVideo(boolean wholeApp, String app) {
         long now = SystemClock.elapsedRealtime();
         inspectionOutcome = "short-video-intervention";
         shortVideoInterventions++;
@@ -1336,9 +1427,11 @@ public final class TextGuardService extends AccessibilityService {
         lastIntervention = now;
         pendingWordReason = false;
         pendingScheduleReason = false;
+        pendingFocusReason = false;
         pendingLimitReason = false;
         pendingVisualReason = false;
         pendingShortVideoReason = true;
+        pendingBlockedApp = app;
         handler.removeCallbacks(showRestriction);
         handler.postDelayed(showRestriction, 350);
     }
@@ -1529,15 +1622,17 @@ public final class TextGuardService extends AccessibilityService {
         return false;
     }
 
+    private static boolean isPrivateNode(AccessibilityNodeInfo node) {
+        CharSequence type = node.getClassName();
+        return node.isPassword() || node.isEditable() || (type != null && type.toString().contains("EditText"));
+    }
+
     /** Leaf labels, plus a card or button's own label when nothing inside it has text or an
      * input field (rule and tests in core {@link LabelScan}). Counts the nodes it obtains, so the
      * windows inspected together share one budget. */
     private static final class Nodes implements LabelScan.Tree<AccessibilityNodeInfo> {
         int obtained = 1; // The root.
-        @Override public boolean isPrivate(AccessibilityNodeInfo node) {
-            CharSequence type = node.getClassName();
-            return node.isPassword() || node.isEditable() || (type != null && type.toString().contains("EditText"));
-        }
+        @Override public boolean isPrivate(AccessibilityNodeInfo node) { return isPrivateNode(node); }
         @Override public boolean isVisible(AccessibilityNodeInfo node) { return node.isVisibleToUser(); }
         @Override public int childCount(AccessibilityNodeInfo node) { return node.getChildCount(); }
         @Override public AccessibilityNodeInfo child(AccessibilityNodeInfo node, int index) {
@@ -1594,9 +1689,11 @@ public final class TextGuardService extends AccessibilityService {
         lastIntervention = now;
         pendingWordReason = word;
         pendingScheduleReason = schedule;
+        pendingFocusReason = false;
         pendingLimitReason = limit;
         pendingVisualReason = visualReason;
         pendingShortVideoReason = false;
+        pendingBlockedApp = app;
         handler.removeCallbacks(showRestriction);
         // HOME is asynchronous. Launching immediately lets its pending task
         // transition cover the explanation screen on Samsung Android 16.
@@ -1651,6 +1748,10 @@ public final class TextGuardService extends AccessibilityService {
 
     /** Release inspection work only when Android actually disconnects or destroys the service. */
     private void stopGuardChecks() {
+        if (watchedRules != null) {
+            watchedRules.unwatchGuardRules(guardRulesChanged);
+            watchedRules = null;
+        }
         clearScanTimeout();
         activeScan = 0;
         scanGeneration++;

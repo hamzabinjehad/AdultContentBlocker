@@ -60,6 +60,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             testAdultCommitment();
             testVisualCommitment();
             testPolicyRevision();
+            testGuardRuleNotifications();
             testCommitmentMutations();
             testTimeLimits();
             testUninstallGuard();
@@ -75,7 +76,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!sample.isPartial() || sample.text().length() > 32768)
                 throw new AssertionError("Inspection budget failed");
             results.putString("stream", "\nPASS: verified APK seed loaded " + seed.domainCount
-                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, daily time limits, commitment, policy-version and copy-recovery, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation, seed-age checks, and signed fixture generation adoption and rollback passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
+                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, daily time limits, commitment, policy-version and copy-recovery, guard-rule notifications, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation, seed-age checks, and signed fixture generation adoption and rollback passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringBuilder detail = new StringBuilder();
@@ -143,6 +144,55 @@ public final class CoreDeviceTestRunner extends Instrumentation {
                     || !recovered.snapshot().domains.blockedRules().contains("second.example"))
                 throw new AssertionError("Copy recovery lost the policy version");
         } finally { forget(context, name); }
+    }
+
+    private void testGuardRuleNotifications() {
+        String name = "hisn_guard_watch_test_" + java.util.UUID.randomUUID();
+        android.content.Context context = getTargetContext();
+        PolicyStore store = new PolicyStore(context, name);
+        android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
+        java.util.concurrent.atomic.AtomicInteger changes = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.concurrent.atomic.AtomicReference<PolicyStore.Snapshot> received =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        Runnable refresh = () -> {
+            changes.incrementAndGet();
+            received.set(store.snapshot());
+        };
+        String exampleApp = "com.example.blocked";
+        try {
+            store.watchGuardRules(main, refresh);
+            store.update("guard-test.example", "", Collections.emptySet(), Collections.emptySet());
+            store.checkpoint();
+            waitForIdleSync();
+            if (changes.get() != 0) throw new AssertionError("DNS-only saves or checkpoints woke the guard");
+
+            runOnMainSync(() -> {
+                store.update("guard-test.example", "", Collections.singleton(exampleApp), Collections.emptySet());
+                store.updateVisual(true);
+            });
+            waitForIdleSync();
+            PolicyStore.Snapshot newest = received.get();
+            if (changes.get() != 1 || newest == null || !newest.visualEnabled
+                    || !newest.blockedApps.contains(exampleApp) || newest.revision != store.policyRevision()) {
+                throw new AssertionError("Queued updates did not deliver the final saved guard rules once");
+            }
+
+            store.startCommitment(1);
+            refused(() -> store.updateVisual(false), "watched visual setting during lock");
+            waitForIdleSync();
+            if (changes.get() != 1) throw new AssertionError("A refused change woke the guard");
+
+            runOnMainSync(() -> {
+                store.updateFromGuardian("guard-test.example", "fixture word",
+                        Collections.singleton(exampleApp), Collections.emptySet());
+                store.unwatchGuardRules(refresh);
+            });
+            waitForIdleSync();
+            if (changes.get() != 1) throw new AssertionError("A removed watcher still received a queued update");
+        } finally {
+            store.unwatchGuardRules(refresh);
+            forget(context, name);
+        }
     }
 
     /** Every saved-rule editor is refused at the store boundary during a commitment,
@@ -281,11 +331,15 @@ public final class CoreDeviceTestRunner extends Instrumentation {
         android.content.Context context = getTargetContext();
         Long age = SeedFreshness.ageDays(BuildConfig.DOMAIN_SEED_BUILT, System.currentTimeMillis());
         if (age == null || age < 0) throw new AssertionError("Bundled seed age is unreadable or negative");
-        boolean keep = PolicyStore.get(context).uninstallLock();
+        PolicyStore store = PolicyStore.get(context);
         java.util.Set<LayerWatch.Layer> expected = LayerWatchdog.expected(context);
-        boolean accessibility = BuildConfig.SELF_PROTECTION && keep;
+        boolean removalGuard = BuildConfig.SELF_PROTECTION && (store.uninstallLock()
+                || store.installLock() || app.hisn.core.ProtectionLock.locked(store.remainingMillis()));
+        boolean accessibility = removalGuard || store.snapshot().hasConfiguredAppProtection()
+                || PrivateTabsStore.on(context) || BrowserOnlyStore.on(context)
+                || !OpenWaitStore.apps(context).isEmpty();
         if (expected.contains(LayerWatch.Layer.ACCESSIBILITY) != accessibility)
-            throw new AssertionError("Watchdog accessibility expectation disagrees with the keep switch");
+            throw new AssertionError("Watchdog accessibility expectation disagrees with saved rules");
         if (expected.contains(LayerWatch.Layer.DNS) != DnsVpnService.resumeRequested(context))
             throw new AssertionError("Watchdog DNS expectation disagrees with the resume flag");
         if (LayerWatchdog.running() == null) throw new AssertionError("Watchdog running set is null");

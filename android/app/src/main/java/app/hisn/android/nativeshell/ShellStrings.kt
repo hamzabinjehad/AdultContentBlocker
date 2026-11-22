@@ -1,5 +1,7 @@
 package app.hisn.android.nativeshell
 
+import app.hisn.android.Edition
+
 /**
  * Arabic for the shell's Rules and Settings tabs, keyed by the English text. The detail editors
  * are not covered yet. Moving all of this into string resources is still open; until then
@@ -9,7 +11,7 @@ fun tr(english: String): String =
     if (java.util.Locale.getDefault().language == "ar") ArabicShell[english] ?: english else english
 
 private val ArabicShell: Map<String, String> = mapOf(
-    "Choose what Hisn blocks or checks. Every rule below is saved on this phone." to "اختر ما يحظره حصن أو يفحصه. كل قاعدة أدناه محفوظة على هذا الهاتف.",
+    "Choose what ${Edition.NAME} blocks or checks. Every rule below is saved on this phone." to "اختر ما يحظره ${Edition.NAME_AR} أو يفحصه. كل قاعدة أدناه محفوظة على هذا الهاتف.",
     "Built-in checks" to "الفحوص المضمّنة",
     "Each layer is independent and can be turned off." to "كل طبقة مستقلة ويمكن إيقافها.",
     "Adult tags" to "الوسوم الإباحية",
@@ -17,11 +19,7 @@ private val ArabicShell: Map<String, String> = mapOf(
     "These apps call themselves adult, by their name or their website. Allow one only if it was flagged by mistake." to "هذه التطبيقات تصف نفسها بأنها إباحية، باسمها أو بموقعها. اسمح بأحدها فقط إن كان قد حُجب خطأً.",
     "Allow" to "السماح بـ",
     "Done" to "تم",
-    "Make Hisn's VPN always-on" to "اجعل VPN حصن يعمل دائمًا",
-    "If Android stops the VPN, sites are no longer filtered. In Settings › VPN › Hisn, turn on Always-on VPN and Block connections without VPN." to "إذا أوقف أندرويد VPN فلن تُرشَّح المواقع بعد ذلك. في الإعدادات › VPN › حصن، فعّل VPN الدائم وحظر الاتصالات بدون VPN.",
-    "A second space is not protected" to "مساحة ثانية غير محمية",
-    "Secure Folder or another profile runs its own apps. Hisn does not see them. Remove it, or install Hisn inside it too." to "المجلد الآمن أو ملف شخصي آخر يشغّل تطبيقاته الخاصة ولا يراها حصن. احذفه أو ثبّت حصن داخله أيضًا.",
-    "Only browsers Hisn controls" to "المتصفحات التي يتحكم بها حصن فقط",
+    "Only browsers ${Edition.NAME} controls" to "المتصفحات التي يتحكم بها ${Edition.NAME_AR} فقط",
     "On · Needs App protection to block other browsers" to "مفعّل · يحتاج حماية التطبيقات لحجب المتصفحات الأخرى",
     "On · Other browsers are blocked; Chrome stays" to "مفعّل · المتصفحات الأخرى محجوبة، ويبقى Chrome",
     "Off · Every browser can be used" to "متوقف · يمكن استخدام أي متصفح",
@@ -84,9 +82,9 @@ private val ArabicShell: Map<String, String> = mapOf(
     "Match your wallpaper on Android 12+" to "طابق خلفيتك على أندرويد 12 وما بعده",
     "Language" to "اللغة",
     "Information" to "معلومات",
-    "How Hisn works" to "كيف يعمل حصن",
+    "How ${Edition.NAME} works" to "كيف يعمل ${Edition.NAME_AR}",
     "What it does and where it stops" to "ما يفعله وأين يتوقف",
-    "What can bypass Hisn" to "ما يمكن أن يتجاوز حصن",
+    "What can bypass ${Edition.NAME}" to "ما يمكن أن يتجاوز ${Edition.NAME_AR}",
     "The limits of each layer" to "حدود كل طبقة",
     "Privacy" to "الخصوصية",
     "On-device matching · private screens" to "مطابقة على الجهاز · شاشات خاصة",
@@ -94,7 +92,7 @@ private val ArabicShell: Map<String, String> = mapOf(
     "Counters and network checks" to "العدّادات وفحوص الشبكة",
     "Try word rules" to "جرّب قواعد الكلمات",
     "Test a rule locally" to "اختبر قاعدة محليًا",
-    "About Hisn" to "عن حصن",
+    "About ${Edition.NAME}" to "عن ${Edition.NAME_AR}",
     "No account, no cloud, no browsing log." to "لا حساب، لا سحابة، لا سجل تصفح.",
     "Android only lets an app switch Color correction › Grayscale with a permission a computer grants once. Run this on the connected computer:" to "لا يسمح أندرويد لتطبيق بتبديل تصحيح الألوان › التدرّج الرمادي إلا بإذن يمنحه الحاسوب مرة واحدة. شغّل هذا الأمر على الحاسوب المتصل:",
     "Lookups blocked" to "عمليات بحث محظورة",
@@ -170,7 +168,7 @@ private val ArabicShell: Map<String, String> = mapOf(
     "On · Adult tags and image checks read every app" to "مفعّل · تقرأ فحوص الوسوم والصور كل التطبيقات",
     "Off · Checks read only the apps you chose (%1\$d)" to "متوقف · تقرأ الفحوص التطبيقات التي اخترتها فقط (%1\$d)",
     "Check every app?" to "فحص كل التطبيقات؟",
-    "Hisn will read on-screen text, and sample images when image checks are on, in every app instead of only the ones you chose. Nothing leaves this phone. System screens, the launcher, the phone app, keyboards and password fields are skipped. Expect more battery use and more mistaken blocks. While a protection lock is active this cannot be turned off." to "سيقرأ حصن النص الظاهر على الشاشة، ويفحص عيّنات من الصور إذا كان فحص الصور مفعّلًا، في كل التطبيقات بدلًا من التطبيقات التي اخترتها فقط. لا شيء يغادر هذا الهاتف. تُستثنى شاشات النظام والشاشة الرئيسية وتطبيق الهاتف ولوحات المفاتيح وحقول كلمات المرور. توقّع استهلاكًا أكبر للبطارية وحظرًا خاطئًا أكثر. لا يمكن إيقاف هذا الخيار ما دام قفل الحماية مفعّلًا.",
+    "${Edition.NAME} will read on-screen text, and sample images when image checks are on, in every app instead of only the ones you chose. Nothing leaves this phone. System screens, the launcher, the phone app, keyboards and password fields are skipped. Expect more battery use and more mistaken blocks. While a protection lock is active this cannot be turned off." to "سيقرأ ${Edition.NAME_AR} النص الظاهر على الشاشة، ويفحص عيّنات من الصور إذا كان فحص الصور مفعّلًا، في كل التطبيقات بدلًا من التطبيقات التي اخترتها فقط. لا شيء يغادر هذا الهاتف. تُستثنى شاشات النظام والشاشة الرئيسية وتطبيق الهاتف ولوحات المفاتيح وحقول كلمات المرور. توقّع استهلاكًا أكبر للبطارية وحظرًا خاطئًا أكثر. لا يمكن إيقاف هذا الخيار ما دام قفل الحماية مفعّلًا.",
     "Turn on" to "تفعيل",
     "On · Waiting for Android's permission, then it applies by itself" to "مفعّلة · بانتظار إذن أندرويد، ثم تُطبَّق تلقائيًا"
 )

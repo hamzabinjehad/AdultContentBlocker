@@ -44,10 +44,17 @@ public final class LabelScan {
         Parent(CharSequence label, Parent outer) { this.label = label; this.outer = outer; }
     }
 
-    private static final class Queued<N> {
-        final N node;
+    /** Retain the parent until its children are needed in breadth-first order. */
+    private static final class Children<N> {
+        final N parent;
         final Parent owner;
-        Queued(N node, Parent owner) { this.node = node; this.owner = owner; }
+        final int count;
+        int next;
+        Children(N parent, Parent owner, int count) {
+            this.parent = parent;
+            this.owner = owner;
+            this.count = count;
+        }
     }
 
     /** Called during a scan with the labels read so far; true stops the scan for an immediate
@@ -71,24 +78,35 @@ public final class LabelScan {
     /** The same scan, with a checkpoint that may stop it early when the labels read so far match. */
     public static <N> VisibleTextSample sample(Tree<N> tree, N root, int budget, Check check) {
         budget = Math.max(1, Math.min(NODE_BUDGET, budget));
-        ArrayDeque<Queued<N>> queue = new ArrayDeque<>();
-        queue.add(new Queued<>(root, null));
+        ArrayDeque<Children<N>> queue = new ArrayDeque<>();
+        N node = root;
+        Parent owner = null;
         VisibleTextSample text = new VisibleTextSample(true);
         List<Parent> parents = new ArrayList<>();
         int visited = 0, scheduled = 1, held = 0;
         try {
-            while (!queue.isEmpty() && visited++ < budget && !text.isFull()) {
-                Queued<N> item = queue.removeFirst();
-                N node = item.node;
+            while ((node != null || !queue.isEmpty()) && !text.isFull()) {
+                if (node == null) {
+                    Children<N> children = queue.getFirst();
+                    owner = children.owner;
+                    node = tree.child(children.parent, children.next++);
+                    if (children.next == children.count) tree.release(queue.removeFirst().parent);
+                    if (node == null) {
+                        text.markPartial();
+                        ruleOut(owner);
+                        continue;
+                    }
+                }
+                visited++;
+                boolean queued = false;
                 try {
                     // A private node also rules out every enclosing parent: its label may repeat the input.
-                    if (tree.isPrivate(node)) { ruleOut(item.owner); continue; }
+                    if (tree.isPrivate(node)) { ruleOut(owner); continue; }
                     // An invisible container is not opened, so it may hide an input whose value an
                     // enclosing label repeats: it rules out every enclosing parent.
-                    if (!tree.isVisible(node)) { if (tree.childCount(node) > 0) ruleOut(item.owner); continue; }
+                    if (!tree.isVisible(node)) { if (tree.childCount(node) > 0) ruleOut(owner); continue; }
                     int count = tree.childCount(node);
                     if (count > 0) {
-                        Parent owner = item.owner;
                         CharSequence label = tree.text(node);
                         if (!hasText(label)) label = tree.description(node);
                         if (hasText(label)) {
@@ -97,29 +115,37 @@ public final class LabelScan {
                                 parents.add(owner = new Parent(label, owner));
                             } else { text.markPartial(); ruleOut(owner); } // Skipped, but still text inside.
                         }
-                        for (int i = 0; i < count; i++) {
-                            if (scheduled >= budget) { text.markPartial(); ruleOut(owner); break; }
-                            scheduled++;
-                            N child = tree.child(node, i);
-                            if (child != null) queue.addLast(new Queued<>(child, owner));
-                            else { text.markPartial(); ruleOut(owner); }
+                        int available = Math.min(count, budget - scheduled);
+                        if (available < count) {
+                            text.markPartial();
+                            ruleOut(owner);
+                        }
+                        if (available > 0) {
+                            queue.addLast(new Children<>(node, owner, available));
+                            scheduled += available;
+                            queued = true;
                         }
                     } else {
                         CharSequence value = tree.text(node);
                         if (value == null || value.length() == 0) value = tree.description(node);
-                        if (hasText(value)) ruleOut(item.owner);
+                        if (hasText(value)) ruleOut(owner);
                         text.append(value);
                     }
-                } finally { tree.release(node); }
+                } finally {
+                    N current = node;
+                    node = null;
+                    if (!queued) tree.release(current);
+                }
                 if (check != null && visited % CHECK_INTERVAL == 0 && !text.isEmpty()
                         && check.stop(text, visited)) break;
             }
         } finally {
+            if (node != null) tree.release(node);
             if (!queue.isEmpty()) text.markPartial();
             while (!queue.isEmpty()) {
-                Queued<N> item = queue.removeFirst();
-                ruleOut(item.owner);
-                tree.release(item.node);
+                Children<N> children = queue.removeFirst();
+                ruleOut(children.owner);
+                tree.release(children.parent);
             }
         }
         // Breadth-first order lists every parent before the ones inside it, so a backward pass

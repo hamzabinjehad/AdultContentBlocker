@@ -32,6 +32,12 @@ allow	medical	Free sexual health education and addiction recovery support
 allow	medical	شاهد التربية الجنسية
 allow	recovery	Watch porn addiction recovery resources
 allow	recovery	Watch p.o.r.n addiction recovery resources
+allow	recovery	Watch how to quit porn
+allow	recovery	Watch our guide to stop watching porn
+allow	recovery	Download a free guide to quitting porn
+allow	recovery	Free confidential help to quit pornography
+allow	protective	Free guide to parental controls and blocking pornography
+block	recovery-context	Watch free porn videos plus recovery resources
 allow	recovery	علاج ادمان الاباحيه
 allow	protective	Download a free porn blocker
 allow	protective	Download a free pornography blocker

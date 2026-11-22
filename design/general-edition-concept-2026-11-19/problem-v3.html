@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Problem Pages v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600..800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F5EFE3;--paper2:#EDE4D3;--ink:#1F2A23;--ink2:#46534A;--muted:#7A8277;--butter:#F4C34E;--tomato:#E5553A;--sage:#9EC39A;--sagedk:#3F6B45;--sky:#9CC8E0;--blush:#F2A08F;--lilac:#C9C3EA;--white:#FFFDF8;--line:#1F2A231F}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#D9D2C3;font-family:'DM Sans',sans-serif;color:var(--ink);padding:28px 16px 40px}
+.head{max-width:1500px;margin:0 auto 22px}.head h1{font:700 32px Fraunces,Georgia,serif}.head p{color:var(--ink2);font-size:14px;max-width:980px;margin-top:8px;line-height:1.5}
+.row{display:flex;gap:22px;justify-content:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;align-items:center}
+.cap{font-size:13px;color:var(--ink2);text-align:center;margin-top:12px;max-width:320px;line-height:1.45}.cap b{color:var(--ink)}
+.phone{width:340px;height:736px;border-radius:46px;position:relative;overflow:hidden;box-shadow:0 0 0 9px #1F2A23,0 26px 50px -18px rgba(31,42,35,.55)}
+.status{display:flex;justify-content:space-between;padding:15px 28px 0;font:700 12px 'DM Sans';opacity:.55}
+.bar{display:flex;align-items:center;gap:10px;padding:16px 20px 0}
+.bar .b{font-size:18px}.prog{flex:1;height:6px;border-radius:9px;background:#1F2A231A}.prog i{display:block;height:100%;border-radius:9px;background:var(--ink)}
+.pct{font:700 13px 'DM Sans'}.q{width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font:800 12px 'DM Sans';display:flex;align-items:center;justify-content:center}
+.pad{padding:18px 22px 0}
+.eye{font:700 10.5px 'DM Sans';letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+h2{font:700 27px/1.1 Fraunces,Georgia,serif;margin-top:6px;letter-spacing:-.3px}h2 em{font-style:normal;color:var(--tomato)}
+.lead{font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.4}
+.pill{position:absolute;left:20px;right:20px;bottom:26px;background:var(--ink);color:var(--white);font:700 15px 'DM Sans';padding:8px 8px 8px 22px;border-radius:40px;display:flex;justify-content:space-between;align-items:center}
+.pill span:last-child{width:40px;height:40px;border-radius:50%;background:var(--white);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:18px}
+.wc{background:var(--white);border:1px solid var(--line);border-radius:18px}
+/* page 1 */
+.hero1{margin-top:16px;padding:16px;text-align:center}
+.vs{display:flex;align-items:flex-end;justify-content:center;gap:22px;height:150px;margin-top:6px}
+.vs div{width:78px;border-radius:14px 14px 6px 6px;display:flex;align-items:flex-start;justify-content:center;padding-top:8px;font:800 18px Fraunces,Georgia,serif}
+.vsl{display:flex;justify-content:center;gap:22px;margin-top:6px;font:700 11px 'DM Sans';color:var(--muted)}.vsl span{width:78px}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.fact{padding:10px 8px;text-align:center}.fact b{display:block;font:800 20px Fraunces,Georgia,serif;color:var(--tomato)}.fact span{font-size:10.5px;color:var(--ink2);line-height:1.25;display:block;margin-top:2px}
+/* page 2 */
+.costs{margin-top:14px;display:flex;flex-direction:column;gap:9px}
+.cost{display:flex;gap:12px;padding:12px;align-items:center}
+.ill{width:58px;height:58px;border-radius:16px;flex:none;display:flex;align-items:center;justify-content:center;position:relative}
+.cost b{font:700 15px Fraunces,Georgia,serif;display:block}.cost .yo{font:700 11px 'DM Sans';color:#B83F29}.cost p{font-size:11.5px;color:var(--ink2);line-height:1.3;margin-top:2px}
+.src{font:700 9.5px 'DM Sans';color:var(--muted);margin-top:3px;display:block}
+.hope{margin-top:10px;display:flex;gap:8px;align-items:center;font:600 12px 'DM Sans';color:var(--sagedk)}
+/* page 3 */
+.stage{margin-top:14px;height:208px;border-radius:22px;background:#1F2A23;position:relative;overflow:hidden}
+.phonemini{position:absolute;left:24px;top:22px;width:92px;height:164px;border-radius:16px;border:3px solid #F3ECDF;overflow:hidden;background:#2B2A45}
+.strip{display:flex;flex-direction:column;gap:6px;padding:6px;animation:up 3s linear infinite}.strip i{height:30px;border-radius:6px;background:#F3ECDF22}.strip i:nth-child(4n){background:#F4C34E}
+@keyframes up{from{transform:translateY(0)}to{transform:translateY(-72px)}}
+.callouts{position:absolute;left:132px;right:14px;top:18px;display:flex;flex-direction:column;gap:9px}
+.co{color:#F3ECDF;font-size:11.5px;line-height:1.3}.co b{display:block;font:700 13.5px Fraunces,Georgia,serif;color:#F4C34E}
+.pause{margin-top:10px;padding:12px 14px;display:flex;gap:12px;align-items:center}
+.ring{width:52px;height:52px;border-radius:50%;background:conic-gradient(#F4C34E 0 72%,#1F2A2314 0);display:flex;align-items:center;justify-content:center;flex:none}.ring i{width:40px;height:40px;border-radius:50%;background:var(--white);display:flex;align-items:center;justify-content:center;font:800 14px Fraunces,Georgia,serif;font-style:normal}
+.notyou{margin-top:10px;font:700 15px/1.3 Fraunces,Georgia,serif;text-align:center}
+/* page 4 */
+.fixes{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.fix{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.ft{width:40px;height:40px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;font-size:17px}
+.fix b{display:block;font:700 13.5px 'DM Sans'}.fix span{font-size:11px;color:var(--ink2)}
+.fix .for{font:700 10.5px 'DM Sans';color:#B83F29}
+.sw{margin-left:auto;width:42px;height:24px;border-radius:99px;background:var(--ink);position:relative;flex:none}.sw:after{content:"";position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--white)}
+.aim{margin-top:10px;padding:12px 14px;border-radius:18px;background:#24402A;color:#F3ECDF;display:flex;gap:12px;align-items:center}
+.aim .ab{display:flex;align-items:flex-end;gap:5px;height:46px}.aim .ab i{width:18px;border-radius:5px 5px 2px 2px;display:block}
+.notes{max-width:1500px;margin:34px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.notes .card{background:var(--white);border:2px solid var(--ink);border-radius:18px;box-shadow:3px 4px 0 var(--ink);padding:16px 18px;font-size:13.5px;line-height:1.5}.notes h3{font:700 17px Fraunces,Georgia,serif;margin-bottom:6px}
+</style></head><body>
+<div class="head"><h1>Problem pages v3: the app's own look</h1>
+<p>Same story, better made. The four pages now look like the rest of setup: a soft colour wash per page, the progress bar with % and "?", a big serif headline, light cards and the dark pill button. Each page leads with <b>one big picture</b> (bars, a feed that scrolls by itself, a countdown ring) and keeps the words short. Sources sit as small grey lines, there to check but never in the way.</p></div>
+<div class="row">
+ <!-- 1 -->
+ <div class="col"><div class="phone" style="background:linear-gradient(180deg,#F8D9CF 0%,#F5EFE3 42%)">
+  <div class="status"><span>9:41</span><span>●●● ▮</span></div>
+  <div class="bar"><span class="b">←</span><div class="prog"><i style="width:40%"></i></div><span class="pct">40%</span><span class="q">?</span></div>
+  <div class="pad">
+   <div class="eye">What your phone shows</div>
+   <h2>Sam, you guessed 2 hours. <em>It's 3 h 10.</em></h2>
+   <div class="wc hero1">
+    <div class="vs"><div style="height:62%;background:var(--paper2)">2 h</div><div style="height:100%;background:var(--tomato);color:#fff">3 h 10</div></div>
+    <div class="vsl"><span>Your guess</span><span>Android</span></div>
+   </div>
+   <div class="facts">
+    <div class="wc fact"><b>71×</b><span>opens a day</span></div>
+    <div class="wc fact"><b>4 h</b><span>longest scroll</span></div>
+    <div class="wc fact"><b>00:40</b><span>usual last scroll</span></div>
+   </div>
+   <div class="lead" style="margin-top:12px">Last 7 days, read on this phone. No score, no quiz.</div>
+  </div>
+  <div class="pill"><span>What does it cost me?</span><span>→</span></div>
+ </div><div class="cap"><b>1 · Your numbers.</b> One big picture: your guess next to Android's bar. Under it, three numbers in red. Nothing else.</div></div>
+
+ <!-- 2 -->
+ <div class="col"><div class="phone" style="background:linear-gradient(180deg,#E6DFF6 0%,#F5EFE3 42%)">
+  <div class="status"><span>9:41</span><span>●●● ▮</span></div>
+  <div class="bar"><span class="b">←</span><div class="prog"><i style="width:44%"></i></div><span class="pct">44%</span><span class="q">?</span></div>
+  <div class="pad">
+   <div class="eye">What it costs you</div>
+   <h2>It doesn't just take time. <em>It takes from you.</em></h2>
+   <div class="costs">
+    <div class="wc cost"><div class="ill" style="background:#DCEBF4"><svg width="38" height="38" viewBox="0 0 38 38"><circle cx="19" cy="19" r="14" fill="none" stroke="#1F2A23" stroke-width="2.5" stroke-dasharray="4 4"/><circle cx="19" cy="19" r="5" fill="#E5553A"/></svg></div><div><b>Focus</b><div class="yo">71 opens a day</div><p>Constant switching is linked to weaker attention.</p><span class="src">Ophir et al., PNAS 2009</span></div></div>
+    <div class="wc cost"><div class="ill" style="background:#E6DFF6"><svg width="38" height="38" viewBox="0 0 38 38"><path d="M24 6a14 14 0 1 0 8 25A12 12 0 0 1 24 6z" fill="#2B2A45"/><circle cx="29" cy="10" r="2" fill="#F4C34E"/></svg></div><div><b>Sleep</b><div class="yo">Last scroll 00:40 · "tired"</div><p>Late screens are linked to later, shorter sleep.</p><span class="src">Hale &amp; Guan, Sleep Med Rev 2015</span></div></div>
+    <div class="wc cost"><div class="ill" style="background:#FBE3DD"><svg width="38" height="38" viewBox="0 0 38 38"><path d="M9 24a7 7 0 0 1 2-13 9 9 0 0 1 17 3 6 6 0 0 1-1 12H11" fill="#fff" stroke="#1F2A23" stroke-width="2.5" stroke-linejoin="round"/><path d="M14 30l-2 4M20 30l-2 4M26 30l-2 4" stroke="#9CC8E0" stroke-width="2.5" stroke-linecap="round"/></svg></div><div><b>Mood</b><div class="yo">"Behind on things"</div><p>30 min a day of social media lowered low mood within 3 weeks.</p><span class="src">Hunt et al., 2018, trial</span></div></div>
+   </div>
+   <div class="hope"><span style="font-size:16px">↗</span>All three recover as the habit eases.</div>
+  </div>
+  <div class="pill"><span>Why is it so hard?</span><span>→</span></div>
+ </div><div class="cap"><b>2 · What it costs you.</b> Three drawn icons (focus target, moon, rain cloud) with your number or words in red. One line each, with a grey source. It ends on recovery, not fear. If adult content was picked, a fourth card about compulsive use is added (WHO ICD-11).</div></div>
+
+ <!-- 3 -->
+ <div class="col"><div class="phone" style="background:linear-gradient(180deg,#FBEBC0 0%,#F5EFE3 42%)">
+  <div class="status"><span>9:41</span><span>●●● ▮</span></div>
+  <div class="bar"><span class="b">←</span><div class="prog"><i style="width:48%"></i></div><span class="pct">48%</span><span class="q">?</span></div>
+  <div class="pad">
+   <div class="eye">Why it's hard</div>
+   <h2>It's not willpower. <em>It's design.</em></h2>
+   <div class="stage">
+    <div class="phonemini"><div class="strip"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div class="callouts">
+     <div class="co"><b>No bottom</b>Nothing tells you to stop.</div>
+     <div class="co"><b>Maybe the next one</b>A great post every few keeps the thumb going.</div>
+     <div class="co"><b>Always there</b>One tap away, all day.</div>
+    </div>
+   </div>
+   <div class="wc pause"><div class="ring"><i>10</i></div><div style="font-size:12.5px;line-height:1.35"><b style="font:700 14px Fraunces,Georgia,serif;display:block">A pause breaks it</b>A short breath first led to 57% fewer opens.<span class="src">Grüning et al., PNAS 2023</span></div></div>
+   <div class="notyou">So Unrot changes the feeds, not you.</div>
+  </div>
+  <div class="pill"><span>Show me my fixes</span><span>→</span></div>
+ </div><div class="cap"><b>3 · Why it's hard.</b> One dark "stage": a little phone whose feed scrolls by itself, with three short reasons beside it. Then the countdown ring for the one fact that matters: a pause works.</div></div>
+
+ <!-- 4 -->
+ <div class="col"><div class="phone" style="background:linear-gradient(180deg,#D3E6CF 0%,#F5EFE3 42%)">
+  <div class="status"><span>9:41</span><span>●●● ▮</span></div>
+  <div class="bar"><span class="b">←</span><div class="prog"><i style="width:52%"></i></div><span class="pct">52%</span><span class="q">?</span></div>
+  <div class="pad">
+   <div class="eye">Your fixes</div>
+   <h2>One fix for <em style="color:var(--sagedk)">each problem</em>.</h2>
+   <div class="fixes">
+    <div class="wc fix"><div class="ft" style="background:var(--sky)">❚❚</div><div><span class="for">For 71 opens</span><b>Wait before opening</b><span>Snapchat, TikTok</span></div><span class="sw"></span></div>
+    <div class="wc fix"><div class="ft" style="background:var(--butter)">▤</div><div><span class="for">For the 4 h scroll</span><b>Close the feeds</b><span>Chats and search still work</span></div><span class="sw"></span></div>
+    <div class="wc fix"><div class="ft" style="background:var(--lilac)">☾</div><div><span class="for">For 00:40 nights</span><b>Quiet hours 23:00–07:00</b><span>Feed apps sleep</span></div><span class="sw"></span></div>
+    <div class="wc fix"><div class="ft" style="background:var(--sage)">⛨</div><div><span class="for">You asked</span><b>Adult content blocked</b><span>Every browser, always</span></div><span class="sw"></span></div>
+   </div>
+   <div class="aim"><div class="ab"><i style="height:46px;background:#E5553A"></i><i style="height:23px;background:#9EC39A"></i></div><div><div style="font:700 10px 'DM Sans';letter-spacing:.08em;text-transform:uppercase;color:#C9D9C5">The aim</div><div style="font:700 16px/1.2 Fraunces,Georgia,serif">3 h 10 → 1 h 35 a day</div><div style="font-size:11px;opacity:.8">4 days a year back · Today will show it</div></div></div>
+  </div>
+  <div class="pill"><span>Make it live</span><span>→</span></div>
+ </div><div class="cap"><b>4 · Your fixes.</b> Each fix says which problem it answers ("For 71 opens"), with a real switch. The aim sits in a small green panel and changes as switches go off.</div></div>
+</div>
+<div class="notes">
+ <div class="card"><h3>Matches setup</h3>Same header, colours, type and button as the 22 setup steps already built, so the four pages slot in after "Your real starting point" without a seam.</div>
+ <div class="card"><h3>Less to read</h3>Headlines under 8 words. One line per card. Numbers carry the message, and sources are small and grey, checkable but never in the way.</div>
+ <div class="card"><h3>Motion</h3>Bars grow on page 1, cards rise in on page 2, the feed scrolls by itself on page 3, and switches tick with a sound on page 4. All of it stops with "Remove animations".</div>
+</div>
+</body></html>

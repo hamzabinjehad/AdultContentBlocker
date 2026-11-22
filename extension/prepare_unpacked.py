@@ -28,6 +28,10 @@ SOURCE = Path(__file__).resolve().parent
 SKIP_DIRECTORIES = {"test", "eval", "keys", "scripts", "dist", "__MACOSX", "node_modules"}
 SKIP_FILES = {"package.sh", "check_package.py", "prepare_unpacked.py", "id_rsa", "id_ed25519"}
 VISUAL_BUILD_FILES = {"visual/engine.js", "visual/build.mjs", "visual/package.json", "visual/pnpm-lock.yaml"}
+# Built and pinned with the engine, but only the Android app uses FaceRes (people women/men
+# settings). The browser extension keeps the 64x64 classifier and does not ship these 7 MB.
+ANDROID_ONLY_VISUAL = {"visual/models/faceres.json", "visual/models/faceres.bin",
+                       "visual/notices/hse-facerec-Apache-2.0.txt"}
 SKIP_SUFFIXES = {".py", ".pyc", ".sh", ".pem", ".key", ".p12", ".pfx", ".crx", ".zip",
                  ".mobileprovision", ".provisionprofile"}
 REQUIRED_DYNAMIC = ("content/feed.js", "content/scan.js", "content/short-video.js", "content/social-media.css", "seed/terms.json")
@@ -86,7 +90,7 @@ def _inventory(source: Path, prefix="") -> list[str]:
         if _skip(entry, directory):
             continue
         relative = f"{prefix}/{entry.name}" if prefix else entry.name
-        if relative in VISUAL_BUILD_FILES:
+        if relative in VISUAL_BUILD_FILES or relative in ANDROID_ONLY_VISUAL:
             continue
         if directory:
             files.extend(_inventory(entry, relative))

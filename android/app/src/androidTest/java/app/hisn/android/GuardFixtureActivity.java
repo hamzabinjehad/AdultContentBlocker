@@ -3,6 +3,7 @@ package app.hisn.android;
 import android.app.Activity;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.accessibility.AccessibilityEvent;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -28,10 +29,31 @@ public final class GuardFixtureActivity extends Activity {
         getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            layout.setOnApplyWindowInsetsListener((view, insets) -> {
+                android.graphics.Insets bars = insets.getInsets(android.view.WindowInsets.Type.systemBars()
+                        | android.view.WindowInsets.Type.displayCutout());
+                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                return insets;
+            });
+        }
         TextView title = new TextView(this);
         title.setText("Hisn harmless protection test");
         layout.addView(title);
         String mode = getIntent().getStringExtra("mode");
+        if ("visual-face".equals(mode)) {
+            android.widget.ImageView portrait = new android.widget.ImageView(this);
+            portrait.setBackgroundColor(android.graphics.Color.BLACK);
+            portrait.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+            portrait.setContentDescription("Public-domain astronaut portrait");
+            try (java.io.InputStream image = getAssets().open("astronaut.png")) {
+                portrait.setImageBitmap(android.graphics.BitmapFactory.decodeStream(image));
+            } catch (java.io.IOException unavailable) {
+                throw new IllegalStateException("Portrait fixture missing", unavailable);
+            }
+            setContentView(portrait);
+            return;
+        }
         if ("visual-normal".equals(mode) || "visual-video".equals(mode) || "visual-secure".equals(mode)) {
             if ("visual-secure".equals(mode)) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
             final boolean moving = "visual-video".equals(mode);
@@ -56,6 +78,18 @@ public final class GuardFixtureActivity extends Activity {
             input.setShowSoftInputOnFocus(false);
             layout.addView(input);
             input.requestFocus();
+        } else if ("split-context".equals(mode) || "split-context-block".equals(mode)) {
+            int height = Math.max(1, Math.round(6 * getResources().getDisplayMetrics().density));
+            for (int i = 0; i < 112; i++) {
+                TextView label = new TextView(this);
+                if (i == 0) label.setText("Watch");
+                else if (i == 1) label.setText("Porn");
+                else if (i == 90) label.setText("Addiction recovery resources");
+                else if (i == 104 && "split-context-block".equals(mode)) label.setText("Watch free porn videos");
+                else label.setText("ordinary");
+                label.setTextSize(3);
+                layout.addView(label, new LinearLayout.LayoutParams(-1, height));
+            }
         } else if ("wide".equals(mode)) {
             int height = Math.max(1, Math.round(6 * getResources().getDisplayMetrics().density));
             for (int i = 0; i < 80; i++) {
@@ -82,6 +116,17 @@ public final class GuardFixtureActivity extends Activity {
                 StringBuilder text = new StringBuilder();
                 for (int i = 0; i < 400; i++) text.append("ordinary ");
                 label.setText(text.append(WORD));
+            } else if ("stale-label-event".equals(mode) || "late-label".equals(mode)) {
+                label.setText("A harmless ordinary page.");
+                label.postDelayed(() -> {
+                    if (!label.isShown()) return;
+                    String candidate = "Watch free porn videos";
+                    if ("late-label".equals(mode)) label.setText(candidate);
+                    AccessibilityEvent update = AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+                    update.setContentChangeTypes(AccessibilityEvent.CONTENT_CHANGE_TYPE_TEXT);
+                    update.getText().add(candidate);
+                    label.sendAccessibilityEventUnchecked(update);
+                }, 700);
             } else if ("adult-en".equals(mode)) label.setText("Watch free porn videos");
             else if ("adult-ar".equals(mode)) label.setText("تحميل محتوى إباحي مجانا");
             else if ("medical".equals(mode)) label.setText("Free sexual health education and addiction recovery support");

@@ -116,22 +116,53 @@ fun systemReduceMotion(context: Context): Boolean {
  * a picker ticks. [LocalHapticFeedback] maps these to `HapticFeedbackConstants`, so the system's own
  * haptic setting still decides whether anything happens.
  */
-class HisnHaptics internal constructor(private val haptics: HapticFeedback) {
-    fun toggle(on: Boolean) = haptics.performHapticFeedback(
-        if (on) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff
+class HisnHaptics internal constructor(
+    private val haptics: HapticFeedback,
+    private val context: Context? = null,
+    private val view: android.view.View? = null
+) {
+    private fun feel(type: HapticFeedbackType, sound: FeelSound?) {
+        val ctx = context
+        if (ctx == null || UnrotFeel.vibrationOn(ctx)) haptics.performHapticFeedback(type)
+        if (ctx != null && sound != null) UnrotFeel.play(ctx, sound)
+    }
+
+    fun toggle(on: Boolean) = feel(
+        if (on) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff,
+        if (on) FeelSound.ON else FeelSound.OFF
     )
 
-    fun confirm() = haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-    fun reject() = haptics.performHapticFeedback(HapticFeedbackType.Reject)
-    fun tick() = haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-    fun nav() = haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
-    fun edge() = haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+    fun confirm() = feel(HapticFeedbackType.Confirm, FeelSound.CONFIRM)
+    fun reject() = feel(HapticFeedbackType.Reject, FeelSound.REJECT)
+    fun tick() = feel(HapticFeedbackType.SegmentTick, FeelSound.TICK)
+    fun nav() = feel(HapticFeedbackType.VirtualKey, FeelSound.TAP)
+    fun edge() = feel(HapticFeedbackType.GestureThresholdActivate, FeelSound.TICK)
+
+    /** A plain tap on a card or row that opens something. */
+    fun tap() = feel(HapticFeedbackType.SegmentTick, FeelSound.TAP)
+
+    /** A tick with no sound, for things that fire many times in a row (breath steps, sliders). */
+    fun quietTick() = feel(HapticFeedbackType.SegmentTick, null)
+
+    /** A milestone reached or a pause finished: a chime and a three-beat vibration. */
+    fun celebrate() {
+        val ctx = context
+        val v = view
+        if (v != null) UnrotFeel.celebrate(v) else if (ctx == null || UnrotFeel.vibrationOn(ctx)) {
+            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+        }
+        if (ctx != null) UnrotFeel.play(ctx, FeelSound.CELEBRATE)
+    }
+
+    fun sound(sound: FeelSound) { context?.let { UnrotFeel.play(it, sound) } }
 }
 
 @Composable
 fun rememberHisnHaptics(): HisnHaptics {
     val feedback = LocalHapticFeedback.current
-    return remember(feedback) { HisnHaptics(feedback) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val view = androidx.compose.ui.platform.LocalView.current
+    return remember(feedback, context, view) { HisnHaptics(feedback, context, view) }
 }
 
 /**

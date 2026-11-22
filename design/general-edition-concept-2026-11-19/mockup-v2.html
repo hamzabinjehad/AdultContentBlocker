@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unrot with Pip</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..800,100&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F5EFE3; --paper2:#EDE4D3; --ink:#1F2A23; --ink2:#46534A; --muted:#7A8277;
+  --butter:#F4C34E; --tomato:#E5553A; --sage:#9EC39A; --sky:#9CC8E0; --blush:#F2A08F; --white:#FFFDF8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#D9D2C3;font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);padding:30px 16px 40px}
+.head{max-width:1460px;margin:0 auto 26px;display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap}
+.head h1{font:700 34px/1.05 Fraunces,serif;letter-spacing:-.5px}
+.head p{color:var(--ink2);font-size:14px;max-width:620px}
+.row{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+.cap{font-size:13px;color:var(--ink2);text-align:center;margin-top:12px;max-width:330px;line-height:1.45}
+.cap b{color:var(--ink)}
+.phone{width:340px;height:736px;border-radius:46px;background:var(--paper);position:relative;overflow:hidden;
+  box-shadow:0 0 0 9px #1F2A23,0 26px 50px -18px rgba(31,42,35,.55)}
+/* paper grain */
+.phone:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:radial-gradient(rgba(31,42,35,.07) 1px,transparent 1.2px);background-size:5px 5px}
+.status{display:flex;justify-content:space-between;padding:15px 28px 0;font:700 12px 'DM Sans';position:relative}
+.scr{padding:10px 18px 0;position:relative}
+.top{display:flex;justify-content:space-between;align-items:center}
+.logo{font:800 25px Fraunces,serif;letter-spacing:-.8px}
+.logo i{font-style:normal;color:var(--tomato)}
+.tag{font:700 11px 'DM Sans';padding:6px 11px;border-radius:999px;border:2px solid var(--ink);background:var(--white)}
+.tag.ok{background:var(--sage)}
+.card{background:var(--white);border:2px solid var(--ink);border-radius:22px;box-shadow:3px 4px 0 var(--ink)}
+h2{font:700 27px/1.08 Fraunces,serif;letter-spacing:-.4px}
+.serif{font-family:Fraunces,serif}
+/* today */
+.hello{margin-top:12px;display:flex;gap:10px;align-items:flex-end}
+.bubble{position:relative;flex:1;padding:12px 14px;font-size:14px;line-height:1.35}
+.bubble:after{content:"";position:absolute;left:-9px;bottom:16px;width:14px;height:14px;background:var(--white);border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg)}
+.bubble b{font:700 17px Fraunces,serif;display:block;margin-bottom:2px}
+.garden{margin-top:14px;padding:14px 16px 12px;background:var(--butter)}
+.garden .k{font:700 11px 'DM Sans';letter-spacing:1px;text-transform:uppercase}
+.days{font:800 58px/0.95 Fraunces,serif;letter-spacing:-2px;margin-top:4px}
+.days span{font-size:20px;letter-spacing:0;font-weight:600}
+.track{margin-top:10px;position:relative;height:30px}
+.track .line{position:absolute;left:4px;right:4px;top:14px;height:3px;background:var(--ink);border-radius:3px;opacity:.25}
+.track .fill{position:absolute;left:4px;top:14px;height:3px;background:var(--ink);border-radius:3px}
+.track .st{position:absolute;top:5px;width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);background:var(--butter);font:700 9px 'DM Sans';display:flex;align-items:center;justify-content:center}
+.track .st.d{background:var(--ink);color:var(--butter)}
+.track .st.n{background:var(--white)}
+.garden .s{font-size:12.5px;margin-top:2px;color:var(--ink2)}
+.minis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.mini{padding:12px 13px}
+.mini .k{font-size:11.5px;color:var(--muted);font-weight:600}
+.mini .v{font:700 26px Fraunces,serif;margin-top:2px}
+.mini .v small{font:500 12px 'DM Sans';color:var(--muted)}
+.squig{display:block;margin-top:6px}
+.pause{position:absolute;left:18px;right:18px;bottom:96px;height:64px;border-radius:20px;background:var(--tomato);border:2px solid var(--ink);box-shadow:3px 4px 0 var(--ink);
+  display:flex;align-items:center;gap:12px;padding:0 10px 0 8px;color:var(--white)}
+.pause .ic{width:46px;height:46px;border-radius:14px;background:var(--white);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center}
+.pause b{font:700 17px Fraunces,serif;display:block}
+.pause span{font-size:11.5px;opacity:.9}
+.nav{position:absolute;left:14px;right:14px;bottom:18px;height:62px;border-radius:22px;background:var(--white);border:2px solid var(--ink);display:flex;justify-content:space-around;align-items:center}
+.nav div{font:700 11px 'DM Sans';color:var(--muted);padding:8px 12px;border-radius:14px}
+.nav div.a{background:var(--ink);color:var(--paper)}
+/* breathe */
+.breathe{background:var(--sky)}
+.breathe .scr{text-align:center}
+.pipbig{margin:42px auto 0;width:230px;height:230px;position:relative}
+.pipbig .halo{position:absolute;inset:-6px;border-radius:50%;border:2px dashed var(--ink);opacity:.35}
+.pipbig svg{width:100%;height:100%;animation:breathe 8s ease-in-out infinite;transform-origin:50% 70%}
+@keyframes breathe{0%,100%{transform:scale(.86)}45%,55%{transform:scale(1.04)}}
+@media (prefers-reduced-motion:reduce){.pipbig svg{animation:none}}
+.bt{font:700 40px Fraunces,serif;margin-top:22px;letter-spacing:-.6px}
+.bs{font-size:14px;color:var(--ink2);margin-top:4px}
+.counts{display:flex;justify-content:center;gap:8px;margin-top:16px}
+.counts i{width:12px;height:12px;border-radius:50%;border:2px solid var(--ink)}.counts i.f{background:var(--ink)}
+.reason{margin:22px 4px 0;padding:13px 15px;text-align:left;background:var(--white)}
+.reason .k{font:700 10.5px 'DM Sans';letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.reason .q{font:600 18px/1.25 Fraunces,serif;margin-top:4px}
+.leave{position:absolute;left:18px;right:18px;bottom:26px;height:54px;border-radius:18px;border:2px solid var(--ink);background:transparent;display:flex;align-items:center;justify-content:center;font:700 14px 'DM Sans'}
+/* shield */
+.shieldhead{margin-top:14px;padding:16px;background:var(--sage);display:flex;gap:12px;align-items:center}
+.shieldhead .t{font:700 21px/1.1 Fraunces,serif}
+.shieldhead .s{font-size:12px;color:var(--ink2);margin-top:4px}
+.rows{margin-top:14px;overflow:hidden}
+.r{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:2px solid var(--paper2)}
+.r:last-child{border-bottom:none}
+.r .ico{width:38px;height:38px;border-radius:12px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center}
+.r .tx{flex:1}.r .tx b{display:block;font-size:14.5px}.r .tx span{font-size:11.5px;color:var(--muted)}
+.sw{width:46px;height:28px;border-radius:99px;border:2px solid var(--ink);background:var(--ink);position:relative}
+.sw:after{content:"";position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:var(--butter)}
+.sw.off{background:var(--paper2)}.sw.off:after{left:2px;right:auto;background:var(--white);border:2px solid var(--ink);top:2px;width:16px;height:16px}
+.addrow{margin-top:12px;display:flex;gap:10px}
+.addrow div{flex:1;padding:12px;text-align:center;font:700 13px 'DM Sans'}
+/* progress */
+.week{margin-top:14px;padding:14px}
+.week .k{font-size:11.5px;color:var(--muted);font-weight:600}
+.week .v{font:700 28px Fraunces,serif}.week .v small{font:600 12px 'DM Sans';color:#2F7A3A}
+.bars{display:flex;gap:8px;align-items:flex-end;height:110px;margin-top:10px}
+.bars div{flex:1;text-align:center;font:700 10px 'DM Sans';color:var(--muted)}
+.bars i{display:block;border:2px solid var(--ink);border-radius:9px 9px 4px 4px;background:var(--paper2);margin-bottom:5px}
+.bars i.t{background:var(--tomato)}
+.stickers{display:flex;gap:9px;margin-top:14px}
+.st2{flex:1;height:96px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;font:700 15px Fraunces,serif;position:relative}
+.st2 span{font:600 9.5px 'DM Sans';color:var(--muted)}
+.st2.lock{background:var(--paper2);box-shadow:none;border-style:dashed}
+.st2.lock .lk{font:800 26px Fraunces,serif;color:var(--muted);position:absolute;top:16px}
+.hard{margin-top:14px;padding:13px 14px;background:var(--blush)}
+.hard b{font:700 16px Fraunces,serif}.hard p{font-size:12px;color:var(--ink2);margin-top:3px}
+.hrs{display:flex;gap:2px;align-items:flex-end;height:30px;margin-top:8px}
+.hrs i{flex:1;background:var(--ink);opacity:.22;border-radius:2px}.hrs i.p{opacity:1}
+.btnsm{display:inline-block;margin-top:9px;font:700 12px 'DM Sans';padding:7px 12px;border-radius:12px;border:2px solid var(--ink);background:var(--white)}
+.sheet{max-width:1460px;margin:34px auto 0;display:grid;grid-template-columns:1.2fr 1fr;gap:22px}
+.panel{background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:20px 22px;box-shadow:4px 5px 0 var(--ink)}
+.panel h3{font:700 22px Fraunces,serif;margin-bottom:10px}
+.moods{display:flex;gap:16px;flex-wrap:wrap}
+.mood{text-align:center;font:600 12px 'DM Sans';color:var(--ink2)}
+.mood svg{width:96px;height:96px;display:block;margin-bottom:4px}
+.panel li{font-size:13.5px;line-height:1.55;margin-left:18px;color:var(--ink2)}
+.panel li b{color:var(--ink)}
+.sw8{display:flex;gap:8px;margin-top:12px}.sw8 div{flex:1;height:44px;border-radius:12px;border:2px solid var(--ink);font:700 9.5px 'DM Sans';display:flex;align-items:flex-end;padding:4px 6px}
+@media (max-width:900px){.sheet{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- Pip, hand-drawn. One body, swappable faces and arms. -->
+<svg width="0" height="0" style="position:absolute">
+ <defs>
+  <g id="pip-body">
+   <path d="M60 30 C66 18 74 10 84 8" fill="none" stroke="#1F2A23" stroke-width="3.2" stroke-linecap="round"/>
+   <path d="M70 15 C76 3 92 1 99 6 C93 17 79 20 70 15Z" fill="#9EC39A" stroke="#1F2A23" stroke-width="3" stroke-linejoin="round"/>
+   <path d="M64 20 C56 10 44 11 40 17 C48 25 58 25 64 20Z" fill="#B9D7B0" stroke="#1F2A23" stroke-width="3" stroke-linejoin="round"/>
+   <path d="M60 28 C89 27 106 50 105 76 C104 101 86 113 60 113 C33 113 15 101 15 76 C14 51 31 29 60 28Z" fill="#F4C34E" stroke="#1F2A23" stroke-width="3.4" stroke-linejoin="round"/>
+   <path d="M36 50 C42 41 52 37 60 37" fill="none" stroke="#FFF3C9" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+   <ellipse cx="38" cy="83" rx="7.5" ry="4.5" fill="#E5553A" opacity=".45"/>
+   <ellipse cx="82" cy="83" rx="7.5" ry="4.5" fill="#E5553A" opacity=".45"/>
+   <path d="M44 112 C44 117 52 118 52 113" fill="#1F2A23" stroke="#1F2A23" stroke-width="3" stroke-linecap="round"/>
+   <path d="M68 113 C68 118 76 117 76 112" fill="#1F2A23" stroke="#1F2A23" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <g id="face-happy">
+   <circle cx="46" cy="70" r="5" fill="#1F2A23"/><circle cx="74" cy="70" r="5" fill="#1F2A23"/>
+   <circle cx="47.8" cy="68.2" r="1.6" fill="#fff"/><circle cx="75.8" cy="68.2" r="1.6" fill="#fff"/>
+   <path d="M52 84 Q60 92 68 84" fill="none" stroke="#1F2A23" stroke-width="3.2" stroke-linecap="round"/>
+  </g>
+  <g id="face-calm">
+   <path d="M40 71 Q46 75 52 71" fill="none" stroke="#1F2A23" stroke-width="3.2" stroke-linecap="round"/>
+   <path d="M68 71 Q74 75 80 71" fill="none" stroke="#1F2A23" stroke-width="3.2" stroke-linecap="round"/>
+   <ellipse cx="60" cy="87" rx="5" ry="4" fill="#1F2A23"/>
+  </g>
+  <g id="face-proud">
+   <path d="M40 72 Q46 64 52 72" fill="none" stroke="#1F2A23" stroke-width="3.2" stroke-linecap="round"/>
+   <path d="M68 72 Q74 64 80 72" fill="none" stroke="#1F2A23" stroke-width="3.2" stroke-linecap="round"/>
+   <path d="M50 82 Q60 96 70 82 Z" fill="#1F2A23" stroke="#1F2A23" stroke-width="2.5" stroke-linejoin="round"/>
+   <path d="M54 88 Q60 92 66 88" fill="none" stroke="#E5553A" stroke-width="3" stroke-linecap="round"/>
+   <path d="M17 70 C8 60 6 48 10 42" fill="none" stroke="#1F2A23" stroke-width="3.4" stroke-linecap="round"/>
+   <path d="M103 70 C112 60 114 48 110 42" fill="none" stroke="#1F2A23" stroke-width="3.4" stroke-linecap="round"/>
+  </g>
+  <g id="face-dizzy">
+   <path d="M41 66 L51 74 M51 66 L41 74" stroke="#1F2A23" stroke-width="3" stroke-linecap="round"/>
+   <path d="M69 66 L79 74 M79 66 L69 74" stroke="#1F2A23" stroke-width="3" stroke-linecap="round"/>
+   <path d="M50 87 Q55 83 60 87 Q65 91 70 87" fill="none" stroke="#1F2A23" stroke-width="3" stroke-linecap="round"/>
+  </g>
+ </defs>
+</svg>
+
+<div class="head">
+ <div><h1>Unrot, with Pip</h1></div>
+ <p>Concept v2, picture only, nothing built yet. Warm paper, ink outlines, a soft serif and a hand-drawn character instead of dark neon glow. Every number is something the app really measures. The Islamic edition is not touched.</p>
+</div>
+
+<div class="row">
+
+<!-- TODAY -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><div class="logo">un<i>rot</i></div><span class="tag ok">Shield on</span></div>
+  <div class="hello">
+   <svg width="78" height="80" viewBox="0 0 120 122"><use href="#pip-body"/><use href="#face-happy"/></svg>
+   <div class="card bubble"><b>Evening, Sam.</b>22 min on feeds today. That's half your usual. Nice.</div>
+  </div>
+  <div class="card garden">
+   <div class="k">Days with Unrot</div>
+   <div class="days">12 <span>days</span></div>
+   <div class="track"><div class="line"></div><div class="fill" style="width:41%"></div>
+    <div class="st d" style="left:0">1</div><div class="st d" style="left:24%">7</div><div class="st n" style="left:44%">14</div><div class="st" style="left:67%">30</div><div class="st" style="left:89%">60</div></div>
+   <div class="s">2 days until Pip grows a new leaf. Never resets.</div>
+  </div>
+  <div class="minis">
+   <div class="card mini"><div class="k">Pauses today</div><div class="v">3 <small>kept</small></div>
+    <svg class="squig" width="120" height="10"><path d="M2 6 q6 -6 12 0 t12 0 t12 0 t12 0 t12 0" fill="none" stroke="#9EC39A" stroke-width="3" stroke-linecap="round"/></svg></div>
+   <div class="card mini"><div class="k">Lights-out lock</div><div class="v">22:00</div>
+    <svg class="squig" width="120" height="10"><path d="M2 6 q6 -6 12 0 t12 0 t12 0 t12 0 t12 0" fill="none" stroke="#9CC8E0" stroke-width="3" stroke-linecap="round"/></svg></div>
+  </div>
+  <div class="card reason" style="margin:12px 0 0;transform:rotate(-1.2deg);background:var(--paper2)"><div class="k">Why you're doing this</div><div class="q">“Evenings with my family, not my feed.”</div></div>
+ </div>
+ <div class="pause"><div class="ic"><svg width="34" height="34" viewBox="0 0 120 122"><use href="#pip-body"/><use href="#face-calm"/></svg></div>
+  <div><b>Feeling the pull?</b><span>Breathe with Pip for 30 seconds</span></div></div>
+ <div class="nav"><div class="a">Today</div><div>Shield</div><div>Progress</div><div>You</div></div>
+</div><div class="cap"><b>1 · Today.</b> Pip talks in plain words about real numbers. Days grow like a plant and never reset. The pause sits right above your thumb.</div></div>
+
+<!-- BREATHE -->
+<div><div class="phone breathe">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><span class="tag">Breath 2 of 3</span><span class="tag">Close</span></div>
+  <div class="pipbig"><div class="halo"></div><svg viewBox="0 0 120 122"><use href="#pip-body"/><use href="#face-calm"/></svg></div>
+  <div class="bt">Breathe in…</div>
+  <div class="bs">Pip fills up with you. The pull fades in minutes.</div>
+  <div class="counts"><i class="f"></i><i class="f"></i><i></i></div>
+  <div class="card reason"><div class="k">You said</div><div class="q">“Evenings with my family, not my feed.”</div></div>
+ </div>
+ <div class="leave">Back to what I was doing</div>
+</div><div class="cap"><b>2 · Breathe.</b> Pip swells on the in-breath and shrinks on the out-breath (animated here). It opens from Home, Quick Settings or the app icon.</div></div>
+
+<!-- SHIELD -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><h2>Shield</h2><span class="tag">+ Rule</span></div>
+  <div class="card shieldhead">
+   <svg width="64" height="66" viewBox="0 0 120 122"><use href="#pip-body"/><use href="#face-happy"/></svg>
+   <div><div class="t">Everything you turned on is running.</div><div class="s">Checked 2 minutes ago · 148 blocked today</div></div>
+  </div>
+  <div class="card rows">
+   <div class="r"><div class="ico" style="background:var(--butter)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h12" stroke="#1F2A23" stroke-width="2.6" stroke-linecap="round"/></svg></div><div class="tx"><b>Endless feeds</b><span>Shorts, Reels, TikTok · 3 apps</span></div><div class="sw"></div></div>
+   <div class="r"><div class="ico" style="background:var(--sky)"><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#1F2A23" stroke-width="2.6"/><path d="M12 7v5l3 2" stroke="#1F2A23" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg></div><div class="tx"><b>Daily limits</b><span>7 apps · 45 minutes each</span></div><div class="sw"></div></div>
+   <div class="r"><div class="ico" style="background:var(--blush)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" fill="none" stroke="#1F2A23" stroke-width="2.6" stroke-linejoin="round"/></svg></div><div class="tx"><b>Adult sites and apps</b><span>229k sites on the list</span></div><div class="sw"></div></div>
+   <div class="r"><div class="ico" style="background:var(--paper2)"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3" fill="none" stroke="#1F2A23" stroke-width="2.6"/><circle cx="9" cy="10" r="1.8" fill="#1F2A23"/><path d="M5 17l5-4 3 2 3-3 4 4" fill="none" stroke="#1F2A23" stroke-width="2.2" stroke-linejoin="round"/></svg></div><div class="tx"><b>Images and video</b><span>Needs Android 14</span></div><div class="sw off"></div></div>
+  </div>
+  <div class="addrow"><div class="card">Block a site</div><div class="card">Lock for a week</div></div>
+ </div>
+ <div class="nav"><div>Today</div><div class="a">Shield</div><div>Progress</div><div>You</div></div>
+</div><div class="cap"><b>3 · Shield.</b> Status in a full sentence, never green unless it really runs. One switch per layer, two common actions underneath.</div></div>
+
+<!-- PROGRESS -->
+<div><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 82%</span></div>
+ <div class="scr">
+  <div class="top"><h2>Progress</h2><span class="tag">This week</span></div>
+  <div class="card week"><div class="k">Time on feeds</div><div class="v">3h 10m <small>▼ 36% vs last week</small></div>
+   <div class="bars"><div><i style="height:78px"></i>M</div><div><i style="height:64px"></i>T</div><div><i style="height:57px"></i>W</div><div><i style="height:40px"></i>T</div><div><i style="height:33px"></i>F</div><div><i style="height:25px"></i>S</div><div><i class="t" style="height:16px"></i>S</div></div></div>
+  <div class="stickers">
+   <div class="card st2"><svg width="52" height="54" viewBox="0 0 120 122"><use href="#pip-body"/><use href="#face-proud"/></svg>7<span>first week</span></div>
+   <div class="card st2 lock"><div class="lk">14</div><span>in 2 days</span></div>
+   <div class="card st2 lock"><div class="lk">30</div><span>a month</span></div>
+   <div class="card st2 lock"><div class="lk">90</div><span>a season</span></div>
+  </div>
+  <div class="card hard"><b>Your hard hours: 22:00–01:00</b><p>Most of your pauses happen then. Want a gentle nudge at 21:45?</p>
+   <div class="hrs"><i style="height:5px"></i><i style="height:4px"></i><i style="height:3px"></i><i style="height:3px"></i><i style="height:3px"></i><i style="height:3px"></i><i style="height:5px"></i><i style="height:8px"></i><i style="height:9px"></i><i style="height:8px"></i><i style="height:8px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:10px"></i><i style="height:9px"></i><i style="height:10px"></i><i style="height:12px"></i><i style="height:14px"></i><i style="height:17px"></i><i style="height:19px"></i><i style="height:22px"></i><i style="height:25px"></i><i class="p" style="height:30px"></i><i class="p" style="height:27px"></i></div>
+   <span class="btnsm">Yes, nudge me</span></div>
+ </div>
+ <div class="nav"><div>Today</div><div>Shield</div><div class="a">Progress</div><div>You</div></div>
+</div><div class="cap"><b>4 · Progress.</b> Real Android usage, milestone stickers you collect and keep, and your hard hours (only the hour is stored, on the phone).</div></div>
+
+</div>
+
+<div class="sheet">
+ <div class="panel"><h3>Meet Pip</h3>
+  <div class="moods">
+   <div class="mood"><svg viewBox="0 0 120 122"><use href="#pip-body"/><use href="#face-happy"/></svg>Hello</div>
+   <div class="mood"><svg viewBox="0 0 120 122"><use href="#pip-body"/><use href="#face-calm"/></svg>Breathing</div>
+   <div class="mood"><svg viewBox="0 0 120 122"><use href="#pip-body"/><use href="#face-proud"/></svg>Milestone</div>
+   <div class="mood"><svg viewBox="0 0 120 122"><use href="#pip-body"/><use href="#face-dizzy"/></svg>Lots of feed today</div>
+  </div>
+  <ul style="margin-top:12px">
+   <li><b>A seed that grows.</b> One new leaf per milestone, so the character literally shows the days you kept.</li>
+   <li><b>Kind, never guilt.</b> "Dizzy" only describes today's feed time; Pip never wilts, cries or loses leaves.</li>
+   <li><b>Built for motion.</b> Drawn as simple vector parts (body, sprout, face, arms), ready for Rive or Lottie: blink, breathe, wave, grow.</li>
+  </ul>
+ </div>
+ <div class="panel"><h3>Why it won't feel like AI</h3>
+  <ul>
+   <li><b>No glow, no gradients, no glassmorphism.</b> Flat paper colors, ink outlines and solid offset shadows, like a printed sticker.</li>
+   <li><b>A real typeface voice.</b> Fraunces (soft serif) for headings, DM Sans for text.</li>
+   <li><b>Plain, specific words.</b> "22 min on feeds today", not "Unlock your potential".</li>
+   <li><b>Hand-made character.</b> One consistent mascot with its own rules, not stock 3D renders.</li>
+  </ul>
+  <div class="sw8"><div style="background:#F5EFE3">Paper</div><div style="background:#1F2A23;color:#F5EFE3">Ink</div><div style="background:#F4C34E">Butter</div><div style="background:#E5553A;color:#fff">Tomato</div><div style="background:#9EC39A">Sage</div><div style="background:#9CC8E0">Sky</div></div>
+ </div>
+</div>
+</body>
+</html>

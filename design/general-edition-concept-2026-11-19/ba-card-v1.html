@@ -1,0 +1,88 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Before After Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..800,100&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F5EFE3;--paper2:#EDE4D3;--ink:#1F2A23;--ink2:#46534A;--muted:#7A8277;--butter:#F4C34E;--tomato:#E5553A;--sage:#9EC39A;--sagedk:#3F6B45;--white:#FFFDF8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#D9D2C3;font-family:'DM Sans',sans-serif;color:var(--ink);padding:30px 16px 40px}
+.head{max-width:1200px;margin:0 auto 24px}.head h1{font:700 32px Fraunces,Georgia,serif}.head p{color:var(--ink2);font-size:14px;max-width:820px;margin-top:8px;line-height:1.5}
+.row{display:flex;gap:30px;justify-content:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;align-items:center}
+.cap{font-size:13px;color:var(--ink2);text-align:center;margin-top:12px;max-width:320px;line-height:1.45}.cap b{color:var(--ink)}
+.card9{width:324px;height:576px;border-radius:22px;position:relative;overflow:hidden;box-shadow:0 22px 44px -18px rgba(31,42,35,.6);border:2px solid var(--ink)}
+.lbl{font:700 10.5px 'DM Sans';letter-spacing:.09em;text-transform:uppercase}
+.brand{font:800 24px Fraunces,Georgia,serif;letter-spacing:-.6px}.brand i{font-style:normal;color:var(--tomato)}
+.foot{position:absolute;left:22px;right:22px;bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.foot small{font:600 10.5px 'DM Sans';text-align:right;line-height:1.35}
+.qr{width:38px;height:38px;border:2px solid currentColor;border-radius:6px;background:repeating-conic-gradient(currentColor 0 25%,transparent 0 50%) 0 0/9px 9px}
+/* A */
+.A{background:var(--paper);padding:24px 22px}
+.A .big{font:800 46px/0.95 Fraunces,Georgia,serif;letter-spacing:-1.5px;margin-top:12px}
+.A .big span{color:var(--sagedk)}
+.r{margin-top:16px}.rh{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.chip{font:700 11px 'DM Sans';padding:3px 9px;border-radius:99px;background:var(--sage);border:2px solid var(--ink)}
+.pair{display:flex;align-items:center;gap:8px;margin-top:6px}.pl{width:44px;font:700 10px 'DM Sans';color:var(--muted)}
+.pb{height:24px;border-radius:8px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:flex-end;padding-right:8px}
+.pb em{font:800 13px Fraunces,Georgia,serif;font-style:normal}
+.pb.old{background:repeating-linear-gradient(135deg,#F2C7BC 0 6px,#F7DDD5 6px 12px);color:#8A3A28}.pb.new{background:var(--sage)}
+/* B */
+.B{background:linear-gradient(170deg,#24402A,#16130E);color:#F3ECDF;padding:26px 22px}
+.B .big{font:800 40px/1 Fraunces,Georgia,serif;letter-spacing:-1px;margin-top:12px}
+.day{margin-top:22px}.day .t{display:flex;justify-content:space-between;align-items:baseline}.day .t b{font:800 22px Fraunces,Georgia,serif}
+.strip{display:flex;align-items:flex-end;gap:3px;height:70px;margin-top:8px;border-bottom:2px solid #F3ECDF55;padding-bottom:2px}.strip i{flex:1;border-radius:3px 3px 0 0;display:block}
+.ax{display:flex;justify-content:space-between;font:700 9.5px 'DM Sans';opacity:.6;margin-top:4px}
+.moon{display:inline-block;margin-top:14px;padding:8px 12px;border-radius:12px;background:#F3ECDF14;border:1.5px solid #F3ECDF44;font-size:12.5px}
+/* C */
+.C{display:grid;grid-template-rows:1fr 1fr}
+.half{padding:22px;position:relative}.half.b4{background:#EDE4D3;color:#7A8277}.half.nw{background:var(--sage);border-top:2.5px solid var(--ink)}
+.half .n{font:800 64px/1 Fraunces,Georgia,serif;letter-spacing:-2px;margin-top:8px}.half.b4 .n{text-decoration:line-through;text-decoration-thickness:3px}
+.half .s{font:600 12px 'DM Sans';margin-top:6px}
+.badge{position:absolute;right:20px;top:-30px;width:60px;height:60px;border-radius:50%;background:var(--butter);border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;flex-direction:column;font:800 17px/1 Fraunces,Georgia,serif;color:var(--ink);box-shadow:2px 3px 0 var(--ink);transform:rotate(-8deg)}
+.badge small{font:700 8px 'DM Sans';margin-top:2px}
+.minis{display:flex;gap:14px;margin-top:14px;font:600 11.5px 'DM Sans'}.minis b{display:block;font:800 18px Fraunces,Georgia,serif}
+.sq{width:324px;height:324px}
+.opts{max-width:1200px;margin:30px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.opts div{background:var(--white);border:2px solid var(--ink);border-radius:20px;box-shadow:3px 4px 0 var(--ink);padding:14px 16px;font-size:13.5px;line-height:1.5}.opts h3{font:700 16px Fraunces,Georgia,serif;margin-bottom:4px}
+</style></head><body>
+<div class="head"><h1>Before / After card: three directions</h1><p>The card people post. Each one leads with a single headline in plain words, shows the change so it reads in a second (bars, hours or one big number), and ends with the app name, a QR code and the link, so anyone who sees it can get the app. App names stay off unless you switch them on.</p></div>
+<div class="row">
+ <div class="col"><div class="card9 A">
+   <div style="display:flex;justify-content:space-between;align-items:center"><div class="brand">un<i>rot</i></div><span class="lbl" style="color:var(--muted)">12 days in</span></div>
+   <div class="big">Half the<br>scrolling. <span>Same me.</span></div>
+   <div class="r"><div class="rh"><b>Feeds a day</b><span class="chip">−45%</span></div>
+<div class="pair"><span class="pl">Before</span><div class="pb old" style="width:100%"><em>3 h 10</em></div></div>
+<div class="pair"><span class="pl">Now</span><div class="pb new" style="width:55%"><em>1 h 45</em></div></div></div><div class="r"><div class="rh"><b>Opens a day</b><span class="chip">−33</span></div>
+<div class="pair"><span class="pl">Before</span><div class="pb old" style="width:100%"><em>71</em></div></div>
+<div class="pair"><span class="pl">Now</span><div class="pb new" style="width:54%"><em>38</em></div></div></div><div class="r"><div class="rh"><b>Last scroll</b><span class="chip">1 h 50 earlier</span></div>
+<div class="pair"><span class="pl">Before</span><div class="pb old" style="width:100%"><em>00:40</em></div></div>
+<div class="pair"><span class="pl">Now</span><div class="pb new" style="width:60%"><em>22:50</em></div></div></div>
+   <div class="foot" style="color:var(--ink)"><div class="qr"></div><small>Take your time back<br><b>get it · link</b></small></div>
+ </div><div class="cap"><b>A · Rows.</b> Every measure gets two bars, before (hatched red) and now (green), plus a chip with the change. Clear enough to read in a story at a glance, and the three rows follow your goals.</div></div>
+
+ <div class="col"><div class="card9 B">
+   <div style="display:flex;justify-content:space-between;align-items:center"><div class="brand" style="color:#F3ECDF">un<i>rot</i></div><span class="lbl" style="opacity:.7">My day, then and now</span></div>
+   <div class="big">My evenings<br>are back.</div>
+   <div class="day"><div class="t"><span class="lbl" style="color:#F2A08F">Before</span><b style="color:#F2A08F">3 h 10</b></div><div class="strip"><i style="height:6px;background:#E5553A"></i><i style="height:4px;background:#E5553A"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:33px;background:#E5553A"></i><i style="height:39px;background:#E5553A"></i><i style="height:19px;background:#E5553A"></i><i style="height:19px;background:#E5553A"></i><i style="height:26px;background:#E5553A"></i><i style="height:33px;background:#E5553A"></i><i style="height:26px;background:#E5553A"></i><i style="height:19px;background:#E5553A"></i><i style="height:26px;background:#E5553A"></i><i style="height:33px;background:#E5553A"></i><i style="height:39px;background:#E5553A"></i><i style="height:46px;background:#E5553A"></i><i style="height:52px;background:#E5553A"></i><i style="height:59px;background:#E5553A"></i><i style="height:66px;background:#E5553A"></i><i style="height:66px;background:#E5553A"></i><i style="height:52px;background:#E5553A"></i></div></div>
+   <div class="day"><div class="t"><span class="lbl" style="color:#9EC39A">Now</span><b style="color:#9EC39A">1 h 45</b></div><div class="strip"><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:6px;background:#9EC39A"></i><i style="height:19px;background:#9EC39A"></i><i style="height:26px;background:#9EC39A"></i><i style="height:33px;background:#9EC39A"></i><i style="height:19px;background:#9EC39A"></i><i style="height:19px;background:#9EC39A"></i><i style="height:26px;background:#9EC39A"></i><i style="height:26px;background:#9EC39A"></i><i style="height:33px;background:#9EC39A"></i><i style="height:26px;background:#9EC39A"></i><i style="height:19px;background:#9EC39A"></i><i style="height:19px;background:#9EC39A"></i><i style="height:6px;background:#9EC39A"></i><i style="height:4px;background:#1F2A2318"></i><i style="height:4px;background:#1F2A2318"></i></div><div class="ax"><span>midnight</span><span>6</span><span>noon</span><span>18</span><span>midnight</span></div></div>
+   <div class="moon">☾ No feeds after 22:50 · was 00:40</div>
+   <div class="foot" style="color:#F3ECDF"><div class="qr"></div><small>Take your time back<br><b>get it · link</b></small></div>
+ </div><div class="cap"><b>B · My day, then and now.</b> Two 24-hour strips show <b>where</b> the scrolling left your day: the red evening wall is gone. The headline is written from it ("My evenings are back"), and it's the most personal of the three.</div></div>
+
+ <div class="col"><div class="card9 C">
+   <div class="half b4"><div style="display:flex;justify-content:space-between;align-items:center"><div class="brand" style="color:var(--ink)">un<i>rot</i></div><span class="lbl">Before</span></div><div class="n" style="margin-top:44px">3 h 10</div><div class="s">a day in feeds · 71 opens · last scroll 00:40</div></div>
+   <div class="half nw"><div class="badge">−45%<small>12 DAYS</small></div><span class="lbl" style="color:var(--ink)">Now</span><div class="n" style="color:var(--ink)">1 h 45</div>
+     <div class="minis" style="color:var(--ink)"><div><b>38</b>opens</div><div><b>22:50</b>last scroll</div><div><b>17 h</b>given back</div></div>
+     <div class="foot" style="color:var(--ink)"><div class="qr"></div><small>Take your time back<br><b>get it · link</b></small></div></div>
+ </div><div class="cap"><b>C · Split.</b> Top half: the old you, crossed out and greyed. Bottom half: now, in green, with the change stamped as a sticker where the halves meet. Boldest in a feed; one number does the talking.</div></div>
+</div>
+<div class="row" style="margin-top:34px">
+ <div class="col"><div class="card9 C sq" style="grid-template-rows:1fr 1fr">
+   <div class="half b4" style="padding:16px 18px"><div style="display:flex;justify-content:space-between;align-items:center"><div class="brand" style="color:var(--ink);font-size:20px">un<i>rot</i></div><span class="lbl">Before</span></div><div class="n" style="font-size:48px;margin-top:6px">3 h 10</div></div>
+   <div class="half nw" style="padding:16px 18px"><div class="badge" style="top:-28px;width:54px;height:54px;font-size:15px">−45%<small>12 DAYS</small></div><span class="lbl" style="color:var(--ink)">Now</span><div class="n" style="font-size:48px;color:var(--ink)">1 h 45</div><div style="position:absolute;right:16px;bottom:12px;font:700 10px 'DM Sans';color:var(--ink)">get it · link</div></div>
+ </div><div class="cap"><b>Each also comes square</b> (C shown) for WhatsApp, X and posts. The layout reflows; the headline and the link always stay.</div></div>
+</div>
+<div class="opts">
+ <div><h3>Headline written for you</h3>Picked from your real change, never invented: "Half the scrolling", "My evenings are back" (when the evening drop is biggest), "Mornings are mine" (first scroll much later), or your own words if you typed them.</div>
+ <div><h3>Only true numbers</h3>Every number on the card comes from Android's record of your days. With under a week of history, the card waits and says why, rather than showing a shaky "−80%".</div>
+ <div><h3>Gets people in</h3>A small QR code and a short link sit on every card. Someone who sees your story can scan it and land on the app's page. A personal invite code can ride on the link later.</div>
+</div>
+</body></html>

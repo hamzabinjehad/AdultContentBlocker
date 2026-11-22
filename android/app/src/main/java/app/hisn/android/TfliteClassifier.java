@@ -14,13 +14,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /** Native TFLite copy of the bundled NSFWJS MobileNetV2, adult inspection only.
@@ -51,6 +51,10 @@ final class TfliteClassifier implements VisualRuntime {
     private final Consumer<String> loaded;
     /** One 224×224 float input buffer, reused on the single worker and zeroed after each frame. */
     private final ByteBuffer input = ByteBuffer.allocateDirect(SIZE * SIZE * 3 * 4).order(ByteOrder.nativeOrder());
+    private final FloatBuffer inputFloats = input.asFloatBuffer();
+    private final int[] sourceX = new int[SIZE];
+    private final float[] fractionX = new float[SIZE];
+    private static final float[] ZEROS = new float[SIZE * SIZE * 3];
     private final float[][] output = new float[1][5];
     private volatile Interpreter interpreter;
     private volatile boolean ready, closed;
@@ -99,18 +103,46 @@ final class TfliteClassifier implements VisualRuntime {
     }
 
     @Override public void inspect(Bitmap frame, Consumer<VisualResult> result) {
+        inspect(frame, null, result);
+    }
+
+    /** screen is the uncropped input when frame is a picture isolated by the guard. */
+    void inspect(Bitmap frame, Bitmap screen, Consumer<VisualResult> result) {
         if (!ready || closed) { result.accept(new VisualResult("unknown", false)); return; }
         int width = frame.getWidth(), height = frame.getHeight();
-        int[] source = new int[width * height];
-        frame.getPixels(source, 0, width, 0, 0, width, height);
+        int[] source = pixels(frame);
+        int[] context = screen == null ? null : pixels(screen);
+        int screenWidth = screen == null ? 0 : screen.getWidth();
+        int screenHeight = screen == null ? 0 : screen.getHeight();
         worker.execute(() -> {
             VisualResult value;
-            try { value = classify(source, width, height); }
+            try {
+                value = classify(source, width, height);
+                if (context != null && "block".equals(value.verdict)) {
+                    float[] surrounding = scores(context, screenWidth, screenHeight,
+                            0, 0, screenWidth, screenHeight, false);
+                    if (surrounding == null) value = new VisualResult("unknown", false);
+                    else value = new VisualResult(surrounding[3] + surrounding[1] >= AGREE_SUM
+                            ? "block" : "allow", false);
+                }
+            }
             catch (Throwable unavailable) { value = new VisualResult("unknown", false); }
-            finally { Arrays.fill(source, 0); }
+            finally {
+                Arrays.fill(source, 0);
+                if (context != null) Arrays.fill(context, 0);
+                inputFloats.clear();
+                inputFloats.put(ZEROS);
+            }
             final VisualResult answer = value;
             main.post(() -> { if (!closed) result.accept(answer); });
         });
+    }
+
+    private static int[] pixels(Bitmap bitmap) {
+        int width = bitmap.getWidth(), height = bitmap.getHeight();
+        int[] pixels = new int[width * height];
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+        return pixels;
     }
 
     /** Same rule as the WebView path (decisions.js adultDecision and region.js nearMiss): a full
@@ -159,40 +191,41 @@ final class TfliteClassifier implements VisualRuntime {
         int drawWidth = keepShape ? Math.max(1, Math.round(SIZE * regionWidth / (float) longer)) : SIZE;
         int drawHeight = keepShape ? Math.max(1, Math.round(SIZE * regionHeight / (float) longer)) : SIZE;
         int offsetX = (SIZE - drawWidth) / 2, offsetY = (SIZE - drawHeight) / 2;
-        input.rewind();
+        for (int x = 0; x < drawWidth; x++) {
+            float sx = left + (drawWidth < 2 ? 0 : x * (regionWidth - 1) / (drawWidth - 1f));
+            sourceX[x] = (int) sx;
+            fractionX[x] = sx - sourceX[x];
+        }
+        inputFloats.clear();
         for (int y = 0; y < SIZE; y++) {
             int dy = y - offsetY;
+            boolean paddedRow = dy < 0 || dy >= drawHeight;
             float sy = top + (drawHeight < 2 ? 0 : dy * (regionHeight - 1) / (drawHeight - 1f));
-            int y0 = Math.max(top, Math.min((int) sy, height - 1)), y1 = Math.min(y0 + 1, height - 1);
+            int y0 = Math.max(top, Math.min((int) sy, height - 1));
+            int row0 = y0 * width, row1 = Math.min(y0 + 1, height - 1) * width;
             float fy = Math.max(0, sy - y0);
             for (int x = 0; x < SIZE; x++) {
                 int dx = x - offsetX;
-                if (dy < 0 || dy >= drawHeight || dx < 0 || dx >= drawWidth) {
-                    input.putFloat(0.5f); input.putFloat(0.5f); input.putFloat(0.5f);
+                if (paddedRow || dx < 0 || dx >= drawWidth) {
+                    inputFloats.put(0.5f);
+                    inputFloats.put(0.5f);
+                    inputFloats.put(0.5f);
                     continue;
                 }
-                float sx = left + (drawWidth < 2 ? 0 : dx * (regionWidth - 1) / (drawWidth - 1f));
-                int x0 = (int) sx, x1 = Math.min(x0 + 1, width - 1);
-                float fx = sx - x0;
-                int p00 = source[y0 * width + x0], p10 = source[y0 * width + x1];
-                int p01 = source[y1 * width + x0], p11 = source[y1 * width + x1];
-                input.putFloat(channel(p00, p10, p01, p11, fx, fy, 16));
-                input.putFloat(channel(p00, p10, p01, p11, fx, fy, 8));
-                input.putFloat(channel(p00, p10, p01, p11, fx, fy, 0));
+                int x0 = sourceX[dx], x1 = Math.min(x0 + 1, width - 1);
+                float fx = fractionX[dx];
+                int p00 = source[row0 + x0], p10 = source[row0 + x1];
+                int p01 = source[row1 + x0], p11 = source[row1 + x1];
+                inputFloats.put(channel(p00, p10, p01, p11, fx, fy, 16));
+                inputFloats.put(channel(p00, p10, p01, p11, fx, fy, 8));
+                inputFloats.put(channel(p00, p10, p01, p11, fx, fy, 0));
             }
         }
         input.rewind();
         Interpreter current = interpreter;
         if (current == null) return null;
-        try {
-            current.run(input, output);
-            return output[0].clone();
-        } finally {
-            // The frame is transient; leave no normalized value in the reusable buffer. The
-            // caller clears the source pixels once every region has been read.
-            input.rewind();
-            for (int i = 0; i < SIZE * SIZE * 3; i++) input.putFloat(i * 4, 0);
-        }
+        current.run(input, output);
+        return output[0].clone();
     }
 
     private static float channel(int p00, int p10, int p01, int p11, float fx, float fy, int shift) {
@@ -225,18 +258,15 @@ final class TfliteClassifier implements VisualRuntime {
 
     @Override public String actualBackend() { return BACKEND; }
 
-    @Override public void close() {
+    @Override public synchronized void close() {
+        if (closed) return;
         closed = true;
         ready = false;
+        worker.execute(() -> {
+            Interpreter current = interpreter;
+            interpreter = null;
+            if (current != null) current.close();
+        });
         worker.shutdown();
-        new Thread(() -> {
-            try { worker.awaitTermination(5, TimeUnit.SECONDS); }
-            catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
-            finally {
-                Interpreter current = interpreter;
-                interpreter = null;
-                if (current != null) current.close();
-            }
-        }, "hisn-tflite-close").start();
     }
 }

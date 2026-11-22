@@ -86,8 +86,32 @@ public final class PersonalProfileTest {
         check(PersonalProfile.nextPauseCount(PersonalProfile.MAX_PAUSES)
                 == PersonalProfile.MAX_PAUSES, "pause count stays capped");
 
+        check(PersonalProfile.nextMilestone(0) == 0, "no milestone before the count starts");
+        check(PersonalProfile.nextMilestone(-4) == 0, "damaged day has no milestone");
+        check(PersonalProfile.nextMilestone(1) == 7, "first week first");
+        check(PersonalProfile.nextMilestone(6) == 7, "day before a week");
+        check(PersonalProfile.nextMilestone(7) == 14, "a reached milestone moves on");
+        check(PersonalProfile.nextMilestone(29) == 30, "thirty days");
+        check(PersonalProfile.nextMilestone(364) == 365, "one year");
+        check(PersonalProfile.nextMilestone(365) == 730, "then every year");
+        check(PersonalProfile.nextMilestone(800) == 1095, "third year");
+        check(PersonalProfile.nextMilestone(PersonalProfile.MAX_DAY_NUMBER)
+                == PersonalProfile.MAX_DAY_NUMBER, "milestone stays capped");
+        check(PersonalProfile.lastMilestone(6) == 0, "nothing reached in the first week");
+        check(PersonalProfile.lastMilestone(7) == 7, "week reached");
+        check(PersonalProfile.lastMilestone(100) == 90, "ninety reached");
+        check(PersonalProfile.lastMilestone(731) == 730, "second year reached");
+        check(PersonalProfile.milestoneProgress(0) == 0f, "no progress before the start");
+        check(PersonalProfile.milestoneProgress(1) > 0f, "day one shows a sliver");
+        check(Math.abs(PersonalProfile.milestoneProgress(7) - 0f) < 0.0001f,
+                "a new stretch starts at zero");
+        check(Math.abs(PersonalProfile.milestoneProgress(22) - 0.5f) < 0.0001f,
+                "halfway from 14 to 30");
+        check(PersonalProfile.milestoneProgress(PersonalProfile.MAX_DAY_NUMBER) <= 1f,
+                "progress never passes one");
+
         System.out.println("PersonalProfile tests passed (cleaning, bounds, presets, greetings, "
-                + "day numbers and pause counts)");
+                + "day numbers, milestones and pause counts)");
     }
 
     private static String repeat(char value, int count) {

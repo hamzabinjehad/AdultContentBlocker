@@ -123,3 +123,14 @@ fun AppIcon(packageName: String, size: Dp = 40.dp) {
         )
     }
 }
+
+
+private val SocialPackages: Set<String> by lazy { app.hisn.core.SocialApps.common().map { it.packageName }.toSet() }
+
+/**
+ * Apps people most often want to slow down: short-video feeds and the common social apps. Pickers
+ * list them right after the person's own choices, so they never have to scroll past Calendar and
+ * Camera to find TikTok when usage access is off.
+ */
+fun isUsualPick(packageName: String): Boolean =
+    app.hisn.core.SetupPlan.hasFeed(packageName) || packageName in SocialPackages

@@ -51,8 +51,10 @@ class PhoneSetupTest {
     )
 
     private fun openPhone(actions: FakeShellActions): FakeShellActions {
-        rule.showShell(actions, tab = 2)
-        rule.onNode(hasText("Keep protection running") and hasClickAction())
+        rule.showShell(actions, tab = SettingsTab)
+        // Unrot names the row after the maker ("Xiaomi setup"), under "Keep it running".
+        val row = if (unrotEdition) "${actions.phoneState.maker} setup" else "Keep protection running"
+        rule.onNode(hasText(row) and hasClickAction())
             .performScrollTo().performClick()
         rule.waitForIdle()
         return actions
@@ -69,7 +71,7 @@ class PhoneSetupTest {
         rule.onNodeWithText("Samsung SM-G990B2").assertIsDisplayed()
         rule.onNodeWithText("Samsung").assertIsDisplayed()
         rule.onNode(hasText("Battery") and hasClickAction()).assertIsDisplayed().performClick()
-        rule.onNode(hasText("Keep Hisn in Recents")).performScrollTo().assertIsDisplayed()
+        rule.onNode(hasText("Keep ${app.hisn.android.Edition.NAME} in Recents")).performScrollTo().assertIsDisplayed()
         // Samsung has no autostart screen in the app's guide; a row there would be invented.
         rule.onNodeWithText("Autostart").assertDoesNotExist()
         assertEquals(listOf("openPhoneSetting:battery"), actions.calls)
@@ -88,7 +90,7 @@ class PhoneSetupTest {
             }
             openPhone(actions)
             rule.onNodeWithText("Autostart").assertIsDisplayed()
-            rule.onNode(hasText("Keep Hisn in Recents")).performScrollTo().assertIsDisplayed()
+            rule.onNode(hasText("Keep ${app.hisn.android.Edition.NAME} in Recents")).performScrollTo().assertIsDisplayed()
             rule.onNodeWithContentDescription("Confirm Autostart").performClick()
             rule.waitForIdle()
             rule.onNodeWithContentDescription("Confirm Autostart").assertIsOn()
@@ -129,7 +131,7 @@ class PhoneSetupTest {
         rule.onNodeWithText("Nothing").assertIsDisplayed()
         rule.onNodeWithText("Phone checks done").assertIsDisplayed()
         rule.onNodeWithText("Autostart").assertDoesNotExist()
-        rule.onNodeWithText("Keep Hisn in Recents").assertDoesNotExist()
+        rule.onNodeWithText("Keep ${app.hisn.android.Edition.NAME} in Recents").assertDoesNotExist()
     }
 
     @Test fun homeOffersThePhoneFixWhenAndroidRestrictsTheBattery() {
@@ -139,8 +141,9 @@ class PhoneSetupTest {
                 battery = false, background = true
             )
         }
-        rule.showShell(actions, tab = 0)
-        rule.onNode(hasText("Xiaomi may pause Hisn") and hasClickAction())
+        // The phone card sits with the protection: Hisn's home, Unrot's Shield tab.
+        rule.showShell(actions, tab = if (unrotEdition) 1 else 0)
+        rule.onNode(hasText("Xiaomi may pause ${app.hisn.android.Edition.NAME}") and hasClickAction())
             .performScrollTo().assertIsDisplayed().performClick()
         rule.waitForIdle()
         rule.onNodeWithText("Xiaomi 23122PCD1G").assertIsDisplayed()

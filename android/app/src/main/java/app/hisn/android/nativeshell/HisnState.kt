@@ -13,6 +13,9 @@ import app.hisn.android.R
 import app.hisn.core.DailyAppSchedule
 import app.hisn.core.DeviceFamily
 import app.hisn.core.PolicyChangeError
+import app.hisn.core.SiteCheckInput
+import app.hisn.core.VisualHealth
+import app.hisn.core.WordMatcher
 
 /**
  * What the native screens can do to the real app. Implemented by the activity, which owns the
@@ -62,6 +65,8 @@ interface ShellActions {
     fun clearPersonal()
 
     fun openIntroduction()
+    /** The voluntary breathing pause: nothing is blocked, the person simply asked for a moment. */
+    fun openPause()
 
     /** Explains a hostname decision off the main thread; the callback runs on the main thread. */
     fun checkSite(raw: String, onResult: (SiteCheck) -> Unit)
@@ -76,10 +81,30 @@ interface ShellActions {
 
     /** Shows the route-check disclosure, then asks the running tunnel to check itself. */
     fun confirmNetworkCheck()
+
+    fun pickScheduleApps(keepList: Boolean, selected: Set<String>, onChoose: (Set<String>) -> Unit)
+
+    fun protectionRuntime(): ProtectionRuntime
+}
+
+/** Live service facts, kept separate from the user's saved switches. */
+data class ProtectionRuntime(
+    val dns: DnsVpnService.State = DnsVpnService.State.OFF,
+    val dnsRequested: Boolean = false,
+    val privateDnsStrict: Boolean = false,
+    val dnsAlwaysOn: Boolean? = null,
+    val dnsLockdown: Boolean? = null,
+    val dnsCheck: DnsVpnService.CheckState = DnsVpnService.CheckState.IDLE,
+    val guardExpected: Boolean = false,
+    val guardReady: Boolean = false,
+    val visual: VisualHealth.State = VisualHealth.State.OFF
+) {
+    val dnsAttached: Boolean get() = dns == DnsVpnService.State.RUNNING || dns == DnsVpnService.State.DEGRADED
+    val dnsReady: Boolean get() = dns == DnsVpnService.State.RUNNING && !privateDnsStrict && dnsLockdown != true
 }
 
 /** One hostname decision as display text; [host] is set only when it may be added as a rule. */
-data class SiteCheck(val message: String, val host: String? = null)
+data class SiteCheck(val message: String, val host: String? = null, val blocked: Boolean? = null)
 
 /**
  * What this phone's maker does to background apps, as the setup screen shows it.
@@ -123,7 +148,10 @@ data class PersonalSummary(
     val preset: String = "",
     val customReason: String = "",
     val hours: List<Int> = List(24) { 0 },
-    val peakStart: Int = -1
+    val peakStart: Int = -1,
+    /** "Day N with Hisn", or zero before the first save. Never reset by a pause or a block. */
+    val day: Int = 0,
+    val pauses: Int = 0
 ) {
     val empty: Boolean get() = greeting.isEmpty() && reason.isEmpty() && hours.sum() == 0
 }
@@ -159,28 +187,10 @@ class HisnState(private val context: Context, private val actions: ShellActions)
 
     private fun store(): PolicyStore? = runCatching { PolicyStore.get(context) }.getOrNull()
 
-    /** Same check the classic activity uses, without reaching into its package-private helper. */
-    private fun accessibilityGranted(): Boolean = runCatching {
-        val manager = context.getSystemService(android.view.accessibility.AccessibilityManager::class.java)
-        if (manager != null) {
-            for (info in manager.getEnabledAccessibilityServiceList(
-                    android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK)) {
-                val service = info.resolveInfo?.serviceInfo ?: continue
-                if (context.packageName == service.packageName &&
-                    app.hisn.android.TextGuardService::class.java.name == service.name) return true
-            }
-        }
-        val saved = android.provider.Settings.Secure.getString(
-            context.contentResolver,
-            android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        )
-        saved?.contains("${context.packageName}/${app.hisn.android.TextGuardService::class.java.name}") == true
-    }.getOrDefault(false)
-
     private fun snapshot(): PolicyStore.Snapshot? =
         runCatching { store()?.snapshot() }.getOrNull()
 
-    private fun locked(): Boolean = runCatching {
+    internal fun locked(): Boolean = runCatching {
         (store()?.remainingMillis() ?: 0L) > 0L
     }.getOrDefault(false)
 
@@ -214,13 +224,15 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         private set
     var permissions: Map<String, Boolean> by mutableStateOf(emptyMap())
         private set
-    var dnsState: DnsVpnService.State by mutableStateOf(DnsVpnService.state)
+    var runtime: ProtectionRuntime by mutableStateOf(ProtectionRuntime())
         private set
+    val dnsState get() = runtime.dns
+    val check get() = runtime.dnsCheck
+    /** App protection turned off inside Hisn while Android's accessibility switch stays on. */
+    var guardPaused: Boolean by mutableStateOf(false)
+        private set
+    val guardReady get() = runtime.guardReady && permissions["accessibility"] == true && !guardPaused
     var dnsDomains: Int by mutableStateOf(DnsVpnService.domains)
-        private set
-    var guardConnected: Boolean by mutableStateOf(app.hisn.android.TextGuardService.connected)
-        private set
-    var check: DnsVpnService.CheckState by mutableStateOf(DnsVpnService.connectionCheck.state)
         private set
 
     var personal: PersonalSummary by mutableStateOf(PersonalSummary())
@@ -241,6 +253,7 @@ class HisnState(private val context: Context, private val actions: ShellActions)
     fun openUninstall() = actions.openUninstall { refreshAll() }
 
     fun openIntroduction() = actions.openIntroduction()
+    fun openPause() = actions.openPause()
     fun openPhoneSetting(key: String) = actions.openPhoneSetting(key)
 
     /**
@@ -276,16 +289,24 @@ class HisnState(private val context: Context, private val actions: ShellActions)
     }
     fun confirmNetworkCheck() = actions.confirmNetworkCheck()
 
+    fun fixDns() {
+        when {
+            runtime.dnsAttached && runtime.dnsLockdown == true -> openPhoneSetting("vpn")
+            runtime.dnsAttached && runtime.privateDnsStrict -> openPermission("privateDns")
+            runtime.dnsAttached -> if (check != DnsVpnService.CheckState.CHECKING) confirmNetworkCheck()
+            dnsState != DnsVpnService.State.STARTING -> dns.set(true)
+        }
+    }
+
     private fun refreshStatus() {
         lockRemainingMillis = readRemaining()
         lockLabel = if (lockRemainingMillis > 0L) actions.remainingLabel(lockRemainingMillis) else ""
         hasRestrictions = snapshot()?.hasConfiguredRestrictions() == true
         val next = PERMISSIONS.associateWith { key -> runCatching { actions.permission(key) }.getOrDefault(false) }
         if (next != permissions) permissions = next
-        dnsState = DnsVpnService.state
+        runtime = runCatching { actions.protectionRuntime() }.getOrDefault(ProtectionRuntime())
+        guardPaused = app.hisn.android.GuardPause.paused(context)
         dnsDomains = DnsVpnService.domains
-        guardConnected = app.hisn.android.TextGuardService.connected
-        check = DnsVpnService.connectionCheck.state
         blockedLookups = DnsVpnService.blocked.get()
         val summary = runCatching { actions.personal() }.getOrDefault(PersonalSummary())
         if (summary != personal) personal = summary
@@ -306,13 +327,24 @@ class HisnState(private val context: Context, private val actions: ShellActions)
 
     // Protection layers.
     val dns = LayerSwitch(
-        read = { DnsVpnService.state != DnsVpnService.State.OFF },
+        read = { runtime.dnsRequested || runtime.dnsAttached || dnsState == DnsVpnService.State.STARTING },
         write = { on -> if (on) actions.requestDns() else actions.stopDns() }
     )
 
+    // Off pauses App protection inside Hisn; Android's accessibility switch is left alone, so
+    // nobody is sent to the phone's settings to turn it off. On resumes at once when Android's
+    // switch is still on, and opens the phone's settings only when it is not.
     val apps = LayerSwitch(
-        read = { accessibilityGranted() },
-        write = { actions.openAccessibility() }
+        read = { permissions["accessibility"] == true && !guardPaused },
+        write = { on ->
+            if (!on) {
+                if (!app.hisn.android.GuardPause.set(context, true)) refuseLocked()
+            } else {
+                app.hisn.android.GuardPause.set(context, false)
+                if (permissions["accessibility"] != true) actions.openAccessibility()
+            }
+            refreshAll()
+        }
     )
 
     val tags = LayerSwitch(
@@ -345,18 +377,32 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         write = { on ->
             // Turning it on only adds coverage, so a lock allows it; turning it off is refused.
             if (!on && locked()) refuseLocked() else {
-                runCatching {
-                    val store = store() ?: return@runCatching
-                    val rules = store.snapshot()
+                editRules { store, rules ->
+                    if (app.hisn.core.ScanScope.all(rules.scannedApps) == on) return@editRules false
                     store.update(
                         store.domainText(), store.wordText(), rules.blockedApps,
                         app.hisn.core.ScanScope.with(rules.scannedApps, on), rules.adultWordsEnabled
                     )
-                }.onFailure { refuse(it) }
-                refreshAll()
+                    true
+                }
             }
         }
     )
+
+    /**
+     * Adds the phone's browsers to the apps the word and image checks read: where adult pages
+     * open, at a fraction of the battery of "every app". Only adds, so a lock allows it.
+     */
+    fun scanBrowsers(): Boolean {
+        val browsers = app.hisn.android.ChosenApps.browsers(context).map { it.packageName }.toSet()
+        if (browsers.isEmpty()) return false
+        return editRules { store, rules ->
+            if (rules.scannedApps.containsAll(browsers)) return@editRules false
+            store.update(store.domainText(), store.wordText(), rules.blockedApps, rules.scannedApps + browsers,
+                rules.adultWordsEnabled)
+            true
+        }
+    }
 
     /** Apps chosen by name for the checks, not counting the every-app scope. */
     var scannedCount: Int by mutableStateOf(0)
@@ -376,18 +422,20 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         private set
 
     // Custom rules.
-    val schedule = LayerSwitch(
-        read = { snapshot()?.schedule?.enabled == true },
-        write = { on ->
-            val current = snapshot()?.schedule ?: return@LayerSwitch
-            writeSchedule(
-                DailyAppSchedule(
-                    on, current.startMinute, current.endMinute, current.apps,
-                    current.allApps, current.days
-                )
-            )
+    var appSchedule: DailyAppSchedule by mutableStateOf(snapshot()?.schedule ?: DailyAppSchedule.disabled())
+        private set
+
+    fun saveSchedule(expected: DailyAppSchedule, edited: DailyAppSchedule): Boolean = editRules { store, rules ->
+        if (rules.schedule != expected) {
+            actions.toast(context.getString(R.string.schedule_changed))
+            return@editRules false
         }
-    )
+        if (rules.schedule != edited) store.updateSchedule(edited)
+        true
+    }
+
+    fun pickScheduleApps(keepList: Boolean, selected: Set<String>, onChoose: (Set<String>) -> Unit) =
+        actions.pickScheduleApps(keepList, selected, onChoose)
 
     val limit = LayerSwitch(
         read = { snapshot()?.timeLimits?.configured() == true },
@@ -409,35 +457,11 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         prefs.edit().putString("ui.theme", mode).apply()
     }
 
-    /** Monday-first day indices, as the sample's chips label them. */
-    var scheduleDays: Set<Int> by mutableStateOf(savedDays())
-        private set
-
-    private fun savedDays(): Set<Int> {
-        val mask = snapshot()?.schedule?.days ?: DailyAppSchedule.ALL_DAYS
-        return (0..6).filter { (mask and (1 shl it)) != 0 }.toSet()
-    }
-
-    fun updateScheduleDays(days: Set<Int>) {
-        if (scheduleDays == days) return
-        if (locked()) { refuseLocked(); return }
-        val mask = days.fold(0) { acc, day -> acc or (1 shl day.coerceIn(0, 6)) }
-        if (mask == 0) return
-        val current = snapshot()?.schedule ?: return
-        writeSchedule(
-            DailyAppSchedule(
-                current.enabled, current.startMinute, current.endMinute, current.apps,
-                current.allApps, mask
-            )
-        )
-        scheduleDays = days
-    }
-
     /** Daily limit per app, in minutes, keyed by package name. */
     val appLimits = mutableStateMapOf<String, Int>().apply { putAll(savedLimits()) }
 
-    private fun savedLimits(): Map<String, Int> {
-        val limits = snapshot()?.timeLimits ?: return emptyMap()
+    private fun savedLimits(rules: PolicyStore.Snapshot? = snapshot()): Map<String, Int> {
+        val limits = rules?.timeLimits ?: return emptyMap()
         return limits.apps().mapNotNull { pkg ->
             limits.minutesFor(pkg)?.let { pkg to it }
         }.toMap()
@@ -445,24 +469,17 @@ class HisnState(private val context: Context, private val actions: ShellActions)
 
     fun appLimit(packageName: String): Int? = appLimits[packageName]
 
-    fun setAppLimit(packageName: String, minutes: Int) {
-        if (locked()) { refuseLocked(); return }
+    fun setAppLimit(packageName: String, minutes: Int): Boolean = editRules { store, rules ->
         val clamped = minutes.coerceIn(MIN_MINUTES, MAX_MINUTES)
-        if (appLimits[packageName] == clamped) return
-        val next = savedLimits().toMutableMap()
-        next[packageName] = clamped
-        writeLimits(AppTimeLimit(next))
-        appLimits[packageName] = clamped
-        limit.refresh()
+        if (rules.timeLimits.minutesFor(packageName) == clamped) return@editRules false
+        store.updateTimeLimits(AppTimeLimit(savedLimits(rules) + (packageName to clamped)))
+        true
     }
 
-    fun removeAppLimit(packageName: String) {
-        if (locked()) { refuseLocked(); return }
-        val next = savedLimits().toMutableMap()
-        next.remove(packageName)
-        writeLimits(AppTimeLimit(next))
-        appLimits.remove(packageName)
-        limit.refresh()
+    fun removeAppLimit(packageName: String): Boolean = editRules { store, rules ->
+        if (rules.timeLimits.minutesFor(packageName) == null) return@editRules false
+        store.updateTimeLimits(AppTimeLimit(savedLimits(rules) - packageName))
+        true
     }
 
     // Custom lists.
@@ -474,59 +491,46 @@ class HisnState(private val context: Context, private val actions: ShellActions)
     private fun savedWords(): List<String> = snapshot()?.words?.configuredRules()?.sorted() ?: emptyList()
     private fun savedApps(): List<String> = snapshot()?.blockedApps?.sorted() ?: emptyList()
 
-    fun addDomain(domain: String) {
-        val clean = domain.trim().lowercase()
-            .removePrefix("http://").removePrefix("https://")
-            .substringBefore('/').substringBefore('?').substringBefore('#')
-        if (clean.isBlank() || clean.contains(' ')) return
-        if (locked()) { refuseLocked(); return }
-        if (domains.contains(clean)) return
-        writeLists(domains = domains + clean)
-        // The write reloads the list from the store, so the entry is normally there already; adding
-        // it again unguarded put it in twice and crashed the editor on its duplicate key.
-        if (!domains.contains(clean)) domains.add(clean)
+    fun addDomain(input: String): Boolean {
+        val canonical = runCatching { SiteCheckInput.ruleHost(input) }.getOrElse { refuse(it); return false }
+        return setDomain(canonical, blocked = true)
     }
 
-    fun removeDomain(domain: String) {
-        if (locked()) { refuseLocked(); return }
-        if (!domains.remove(domain)) return
-        writeLists(domains = domains.toList())
+    fun removeDomain(domain: String): Boolean = setDomain(domain, blocked = false)
+
+    private fun setDomain(domain: String, blocked: Boolean): Boolean = editRules { store, rules ->
+        val current = rules.domains.blockedRules()
+        if ((domain in current) == blocked) return@editRules false
+        val next = if (blocked) current + domain else current - domain
+        store.update(next.joinToString("\n"), store.wordText(), rules.blockedApps, rules.scannedApps)
+        true
     }
 
-    fun addWord(word: String) {
-        val clean = word.trim()
-        if (clean.isBlank()) return
-        if (locked()) { refuseLocked(); return }
-        if (words.contains(clean)) return
-        writeLists(words = words + clean)
-        if (!words.contains(clean)) words.add(clean)
+    fun addWord(input: String): Boolean {
+        val canonical = runCatching { WordMatcher.canonicalRule(input.trim()) }.getOrElse { refuse(it); return false }
+        return setWord(canonical, blocked = true)
     }
 
-    fun removeWord(word: String) {
-        if (locked()) { refuseLocked(); return }
-        if (!words.remove(word)) return
-        writeLists(words = words.toList())
+    fun removeWord(word: String): Boolean = setWord(word, blocked = false)
+
+    private fun setWord(word: String, blocked: Boolean): Boolean = editRules { store, rules ->
+        val current = rules.words.configuredRules()
+        if ((word in current) == blocked) return@editRules false
+        val next = if (blocked) current + word else current - word
+        store.update(store.domainText(), next.joinToString("\n"), rules.blockedApps, rules.scannedApps)
+        true
     }
 
     fun isAppBlocked(packageName: String): Boolean = blockedApps.contains(packageName)
 
     fun setAppBlocked(packageName: String, blocked: Boolean) {
-        if (locked()) { refuseLocked(); return }
-        val changed = if (blocked) {
-            if (blockedApps.contains(packageName)) false else blockedApps.add(packageName)
-        } else {
-            blockedApps.remove(packageName)
+        editRules { store, rules ->
+            val current = rules.blockedApps
+            if ((packageName in current) == blocked) return@editRules false
+            val next = if (blocked) current + packageName else current - packageName
+            store.update(store.domainText(), store.wordText(), next, rules.scannedApps)
+            true
         }
-        if (changed) writeLists(apps = blockedApps.toList())
-    }
-
-    /** True when a chosen layer is not actually running; the hero offers the attention list. */
-    fun needsAttention(): Boolean {
-        val rules = snapshot() ?: return true
-        val networkOff = DnsVpnService.state == DnsVpnService.State.ERROR
-        val guardMissing = rules.hasWordProtection() || rules.visualEnabled ||
-            rules.blockedApps.isNotEmpty()
-        return networkOff || (guardMissing && !accessibilityGranted())
     }
 
     fun refreshAll() {
@@ -542,9 +546,8 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         images.refresh()
         shortVideos.refresh()
         gray.refresh()
-        schedule.refresh()
+        appSchedule = snapshot()?.schedule ?: DailyAppSchedule.disabled()
         limit.refresh()
-        scheduleDays = savedDays()
         syncMap(appLimits, savedLimits())
         sync(domains, savedDomains())
         sync(words, savedWords())
@@ -554,23 +557,16 @@ class HisnState(private val context: Context, private val actions: ShellActions)
     // ------------------------------------------------------------------ writes
 
     private fun writeAdult(on: Boolean) {
-        runCatching {
-            val store = store() ?: return
-            val rules = store.snapshot()
+        editRules { store, rules ->
+            if (rules.adultWordsEnabled == on) return@editRules false
             store.update(store.domainText(), store.wordText(), rules.blockedApps,
                 rules.scannedApps, on)
-        }.onFailure { refuse(it) }
-        refreshAll()
+            true
+        }
     }
 
     private fun writeImages(on: Boolean) {
         runCatching { store()?.updateVisual(on) }.onFailure { refuse(it) }
-        refreshAll()
-    }
-
-    private fun writeSchedule(schedule: DailyAppSchedule) {
-        if (locked()) { refuseLocked(); return }
-        runCatching { store()?.updateSchedule(schedule) }.onFailure { refuse(it) }
         refreshAll()
     }
 
@@ -580,32 +576,32 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         refreshAll()
     }
 
-    private fun writeLists(
-        domains: List<String>? = null,
-        words: List<String>? = null,
-        apps: List<String>? = null
-    ) {
-        if (locked()) { refuseLocked(); return }
-        runCatching {
-            val store = store() ?: return
-            val rules = store.snapshot()
-            store.update(
-                domains?.joinToString("\n") ?: store.domainText(),
-                words?.joinToString("\n") ?: store.wordText(),
-                (apps ?: rules.blockedApps).toSet(),
-                rules.scannedApps,
-                rules.adultWordsEnabled
-            )
-        }.onFailure { refuse(it) }
+    /** Applies a delta to the store's latest rules and only displays what it saved. */
+    private fun editRules(change: (PolicyStore, PolicyStore.Snapshot) -> Boolean): Boolean {
+        val store = store()
+        if (store == null) {
+            actions.toast(context.getString(R.string.policy_unavailable))
+            refreshAll()
+            return false
+        }
+        val changed = runCatching {
+            synchronized(store) { change(store, store.snapshot()) }
+        }.getOrElse { failure ->
+            refuse(failure)
+            false
+        }
         refreshAll()
+        return changed
     }
 
     private fun <T> sync(target: MutableCollection<T>, source: Collection<T>) {
+        if (target == source) return
         target.clear()
         target.addAll(source)
     }
 
     private fun <K, V> syncMap(target: MutableMap<K, V>, source: Map<K, V>) {
+        if (target == source) return
         target.clear()
         target.putAll(source)
     }

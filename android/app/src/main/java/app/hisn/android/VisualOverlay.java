@@ -45,13 +45,13 @@ final class VisualOverlay implements AutoCloseable {
 
     boolean shown() { return shown; }
 
-    /** Shows or refreshes a face cover. */
-    void show(Bitmap frame) {
-        show(frame, R.string.person_overlay_title, R.string.person_overlay_body,
+    /** Shows or refreshes a face cover using an already reduced snapshot. */
+    void show(Bitmap colors) {
+        show(colors, R.string.person_overlay_title, R.string.person_overlay_body,
                 R.string.person_overlay_hint);
     }
 
-    /** A native fast pre-check found a face; the full result will refine this cover. */
+    /** Cover mode is waiting for the first model to load. */
     void showChecking() {
         show(null, R.string.person_checking_title, R.string.person_checking_body,
                 R.string.person_checking_hint);
@@ -66,17 +66,12 @@ final class VisualOverlay implements AutoCloseable {
     /** A protected/private window cannot be inspected; cover it rather than expose pixels. */
     void showProtected(Allow allow) {
         this.allow = allow;
-        if (snapshot != null && snapshotView != null) {
-            snapshotView.setImageDrawable(null);
-            snapshot.recycle();
-            snapshot = null;
-        }
         show(null, R.string.protected_overlay_title, R.string.protected_overlay_body,
                 R.string.protected_overlay_hint);
         if (safeButton != null) safeButton.setVisibility(View.VISIBLE);
     }
 
-    private void show(Bitmap frame, int title, int body, int hint) {
+    private void show(Bitmap colors, int title, int body, int hint) {
         if (windows == null) return;
         if (root == null) build();
         if (safeButton != null) safeButton.setVisibility(View.GONE);
@@ -85,19 +80,10 @@ final class VisualOverlay implements AutoCloseable {
         hintView.setText(hint);
         // Screen readers hear what this cover is for, not a fixed face-cover label.
         root.setContentDescription(service.getString(title) + ". " + service.getString(body));
-        if (frame != null) {
-            Bitmap smaller = blur(frame);
-            if (smaller != null) {
-                Bitmap previous = snapshot;
-                snapshot = smaller;
-                snapshotView.setImageBitmap(smaller);
-                snapshotView.setVisibility(View.VISIBLE);
-                if (previous != null && previous != smaller) previous.recycle();
-            }
-        } else {
-            snapshotView.setImageDrawable(null);
-            snapshotView.setVisibility(View.INVISIBLE);
-        }
+        recycle();
+        if (colors != null) snapshot = colors.copy(Bitmap.Config.ARGB_8888, false);
+        snapshotView.setImageBitmap(snapshot);
+        snapshotView.setVisibility(snapshot == null ? View.INVISIBLE : View.VISIBLE);
         if (!shown) {
             try {
                 windows.addView(root, params());
@@ -128,14 +114,15 @@ final class VisualOverlay implements AutoCloseable {
     }
 
     /** A 10-pixel long-edge copy is colors only at full screen: no face or clothing survives. */
-    private static Bitmap blur(Bitmap frame) {
+    static Bitmap blur(Bitmap frame) {
         try {
             int width = frame.getWidth(), height = frame.getHeight();
             if (width < 1 || height < 1) return null;
-            double scale = 10.0 / Math.max(width, height);
+            double scale = Math.min(1.0, 10.0 / Math.max(width, height));
             int w = Math.max(1, (int) Math.round(width * scale));
             int h = Math.max(1, (int) Math.round(height * scale));
-            return Bitmap.createScaledBitmap(frame, w, h, false);
+            Bitmap smaller = Bitmap.createScaledBitmap(frame, w, h, false);
+            return smaller == frame ? frame.copy(Bitmap.Config.ARGB_8888, false) : smaller;
         } catch (RuntimeException | OutOfMemoryError unavailable) {
             return null;
         }

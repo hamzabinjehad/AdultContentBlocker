@@ -1,6 +1,7 @@
 package app.hisn.core;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -16,9 +17,9 @@ final class DnsReplyGuard {
         if (cursor > reply.length) throw invalid();
         int count = u16(reply, 6) + u16(reply, 8) + u16(reply, 10);
         if (count > 256) throw invalid();
-        Map<String, String> aliases = new HashMap<>();
-        Map<String, String> subtrees = new HashMap<>();
-        Map<String, Set<String>> services = new HashMap<>();
+        Map<String, String> aliases = Collections.emptyMap();
+        Map<String, String> subtrees = Collections.emptyMap();
+        Map<String, Set<String>> services = Collections.emptyMap();
         for (int i = 0; i < count; i++) {
             Name owner = name(reply, cursor);
             cursor = owner.end;
@@ -32,6 +33,8 @@ final class DnsReplyGuard {
             if (clazz == 1 && (type == 5 || type == 39)) {
                 Name target = name(reply, cursor);
                 if (target.end != end || target.value.isEmpty() || owner.value.isEmpty()) throw invalid();
+                if (type == 39 && subtrees.isEmpty()) subtrees = new HashMap<>();
+                if (type == 5 && aliases.isEmpty()) aliases = new HashMap<>();
                 Map<String, String> map = type == 39 ? subtrees : aliases;
                 String old = map.put(owner.value, target.value);
                 if (old != null && !old.equals(target.value)) throw invalid();
@@ -40,6 +43,7 @@ final class DnsReplyGuard {
                 Name target = name(reply, cursor + 2);
                 if (target.end > end) throw invalid();
                 if (u16(reply, cursor) == 0 && !target.value.isEmpty()) {
+                    if (aliases.isEmpty()) aliases = new HashMap<>();
                     String old = aliases.put(owner.value, target.value);
                     if (old != null && !old.equals(target.value)) throw invalid();
                 } else if (u16(reply, cursor) > 0 && !target.value.isEmpty()
@@ -47,6 +51,7 @@ final class DnsReplyGuard {
                     // ServiceMode can supply connection hints before any A/AAAA lookup of
                     // TargetName. Check every alternative, not just AliasMode (priority 0).
                     // A root or equal TargetName means this owner, already checked below.
+                    if (services.isEmpty()) services = new HashMap<>();
                     services.computeIfAbsent(owner.value, ignored -> new HashSet<>()).add(target.value);
                 }
             } else if (clazz == 1 && ((type == 1 && length != 4) || (type == 28 && length != 16))) {
@@ -55,6 +60,11 @@ final class DnsReplyGuard {
             cursor = end;
         }
         if (cursor != reply.length) throw invalid();
+        // An ordinary address reply has no chain to walk. Check the question against
+        // current rules anyway because the policy may have changed during the lookup.
+        if (aliases.isEmpty() && subtrees.isEmpty() && services.isEmpty()) {
+            return rules.evaluate(question.value) == DomainPolicy.Decision.BLOCK;
+        }
         return blocksChain(question.value, aliases, subtrees, services, rules);
     }
 

@@ -13,6 +13,9 @@ public final class LayerWatchTest {
         check(LayerWatch.expected(true, true, false)
                         .equals(EnumSet.of(LayerWatch.Layer.ACCESSIBILITY)),
                 "keep-installed did not expect accessibility");
+        check(LayerWatch.expected(false, false, true, false)
+                        .equals(EnumSet.of(LayerWatch.Layer.ACCESSIBILITY)),
+                "configured app protection did not expect accessibility on the Play build");
         check(LayerWatch.expected(false, false, true)
                         .equals(EnumSet.of(LayerWatch.Layer.DNS)),
                 "DNS request did not expect DNS");
