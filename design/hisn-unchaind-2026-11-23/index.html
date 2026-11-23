@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <title>Hisn Prototype</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Outfit:wght@400;500;600;700&family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Outfit:wght@400;500;600;700&family=Amiri:wght@400;700&family=Amiri+Quran&family=Noto+Naskh+Arabic:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: a working phone prototype on the left, a look switcher, screen list and notes on the right;
    below it the same screen in all three looks side by side, then the design system.
@@ -332,13 +332,252 @@ textarea.field { resize: none; font-size: 15px; }
 .homehd .logo { color: var(--pri); }
 .app[data-look="layl"] .homehd .logo { color: var(--acc); }
 .looks .lg { font-size: 14px; }
+
+/* Arabic look */
+.app[dir="rtl"] { font-family: "IBM Plex Sans Arabic", var(--ar); line-height: 1.6; }
+.app[dir="rtl"] .t1, .app[dir="rtl"] .t2, .app[dir="rtl"] .t3, .app[dir="rtl"] .daysbig b, .app[dir="rtl"] .daysbig span, .app[dir="rtl"] .breath b, .app[dir="rtl"] .tile b, .app[dir="rtl"] .gauge b, .app[dir="rtl"] .ring b, .app[dir="rtl"] .notebody, .app[dir="rtl"] .huge { font-family: "Noto Naskh Arabic", "Amiri", serif; font-weight: 700; letter-spacing: 0; }
+.app[dir="rtl"] .t1 { line-height: 1.35; } .app[dir="rtl"] .t2 { line-height: 1.4; } .app[dir="rtl"] .t3 { line-height: 1.45; }
+.app[dir="rtl"] .quran { font-family: "Amiri Quran", "Amiri", serif; line-height: 2.1; }
+.app[dir="rtl"] .k, .app[dir="rtl"] .task small, .app[dir="rtl"] .tile small, .app[dir="rtl"] .rounds button { letter-spacing: 0; text-transform: none; font-size: 12px; }
+.app[dir="rtl"] .list b { letter-spacing: 0; }
+.app[dir="rtl"] .btn { font-weight: 700; font-size: 16.5px; }
+.app[dir="rtl"] .sub { font-size: 14.5px; line-height: 1.65; }
+.app[dir="rtl"] .opt { font-size: 16px; }
+.app[dir="rtl"] .daysbig b { font-size: 92px; line-height: 1; }
+.app[dir="rtl"] .hold::before { inset: 0 0 0 auto; }
+.rounds { grid-template-columns: repeat(4, 1fr) !important; }
+.dhlist { display: grid; gap: 6px; }
+.dhitem { font: inherit; color: inherit; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 14px; background: var(--card); border: 1.5px solid transparent; cursor: pointer; font-size: 14px; }
+.dhitem.on { border-color: var(--pri); } .app[data-look="layl"] .dhitem.on { border-color: var(--acc); }
+.dhitem.done { opacity: .6; } .dhitem.done span::after { content: " ✓"; color: #2fb36b; }
+.dhitem span { font-variant-numeric: tabular-nums; color: var(--sub); }
+.dhtext { padding: 4px 6px; }
+.bead { font: inherit; width: 150px; height: 150px; border-radius: 50%; margin: 0 auto; border: 0; cursor: pointer; background: radial-gradient(circle at 35% 30%, #fff, var(--card) 60%); box-shadow: 0 14px 36px rgba(0,0,0,.18), inset 0 -6px 14px rgba(0,0,0,.06); display: grid; place-content: center; justify-items: center; color: var(--ink); transition: transform .08s; }
+.bead:active { transform: scale(.94); }
+.bead img { width: 54px; height: 54px; object-fit: contain; }
+.bead b { font-family: var(--display); font-size: 34px; font-weight: 400; line-height: 1; }
+.app[dir="rtl"] .bead b { font-family: "Noto Naskh Arabic", serif; font-weight: 700; }
+.bead small { color: var(--sub); font-size: 12px; }
+
+.pline { font-size: 12.5px; color: var(--sub); text-align: center; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.pline b { color: var(--pri); } .app[data-look="layl"] .pline b { color: var(--acc); }
+.toast2 { position: absolute; left: 14px; right: 14px; top: 40px; z-index: 20; display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 16px; background: var(--deep); color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.25); transform: translateY(-120%); opacity: 0; transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .35s; --logo-hole: var(--deep); }
+.toast2.in { transform: none; opacity: 1; }
+.toast2 b { display: block; font-size: 14px; } .toast2 span { font-size: 12.5px; opacity: .8; }
+.wbig { border-radius: 26px; padding: 16px; background: rgba(15,20,30,.55); backdrop-filter: blur(14px); color: #fff; display: grid; gap: 4px; --logo-hole: #1b2230; }
+.wk { font-size: 12px; opacity: .8; } .wnum { font-family: var(--display); font-size: 54px; line-height: 1; }
+.app[dir="rtl"] .wnum { font-family: "Noto Naskh Arabic", serif; font-weight: 700; }
+.wstrip { display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-radius: 22px; background: #e5484d; color: #fff; cursor: pointer; --logo-hole: #e5484d; }
+.wstrip span { margin-inline-start: auto; font-size: 12px; opacity: .85; }
+.homegrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 14px; padding: 8px 6px; }
+.homegrid i { aspect-ratio: 1; border-radius: 16px; background: rgba(255,255,255,.35); backdrop-filter: blur(6px); }
+.homegrid.dock2 { background: rgba(255,255,255,.18); border-radius: 26px; padding: 12px; }
+
+.chapbar { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: var(--pri); }
+.chapbar.light, .scr.deep .chapbar { color: #fff; }
+.app[data-look="layl"] .chapbar { color: var(--acc); }
+.segs4 { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.segs4 i { height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; display: block; }
+.chapbar.light .segs4 i, .scr.deep .segs4 i { background: rgba(255,255,255,.25); }
+.segs4 b { display: block; height: 100%; background: currentColor; border-radius: 99px; transition: width .4s; }
+.mbrowser { background: var(--card); border-radius: 18px; box-shadow: 0 8px 24px rgba(0,0,0,.1); overflow: hidden; min-height: 170px; display: grid; align-content: start; }
+.mbrowser.big { min-height: 220px; }
+.murl { display: flex; gap: 6px; align-items: center; margin: 10px; padding: 8px 12px; border-radius: 12px; background: var(--soft); font-size: 13px; color: var(--sub); direction: ltr; }
+.mpage { display: grid; gap: 8px; padding: 6px 14px 14px; }
+.mpage i { height: 12px; border-radius: 6px; background: var(--soft); display: block; } .mpage i:nth-child(2) { width: 70%; } .mpage i:nth-child(3) { height: 70px; }
+.mbrowser.closed { background: var(--deep); color: #fff; place-content: center; justify-items: center; gap: 6px; padding: 24px; text-align: center; }
+.mbrowser.closed span { font-size: 12px; opacity: .75; }
+.caret { width: 2px; height: 14px; background: var(--pri); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.ubar { display: grid; grid-template-columns: 74px 1fr 46px; gap: 8px; align-items: center; font-size: 12.5px; }
+.ubar i { height: 8px; border-radius: 99px; background: linear-gradient(90deg, #e5484d var(--w), var(--line) var(--w)); }
+.app[dir="rtl"] .ubar i { background: linear-gradient(270deg, #e5484d var(--w), var(--line) var(--w)); }
+.ubar b { text-align: end; font-weight: 600; }
+.pick { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.pick button { font: inherit; color: var(--ink); display: flex; gap: 8px; align-items: center; padding: 10px; border-radius: 16px; background: var(--card); border: 1.5px solid transparent; box-shadow: 0 3px 10px rgba(0,0,0,.05); cursor: pointer; font-size: 13.5px; text-align: start; }
+.pick button.on { border-color: var(--pri); background: var(--chip); font-weight: 600; } .app[data-look="layl"] .pick button.on { border-color: var(--acc); }
+.pick img { width: 34px; height: 34px; object-fit: contain; flex: none; }
+.tick { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; margin-inline-start: auto; color: transparent; flex: none; }
+.tick.on { background: var(--pri); border-color: var(--pri); color: var(--priInk); } .app[data-look="layl"] .tick.on { background: var(--acc); border-color: var(--acc); }
+.req { font-style: normal; font-size: 10.5px; padding: 1px 7px; border-radius: 99px; background: #fff3df; color: #8a5a08; margin-inline-start: 4px; }
+.list button .grow { flex: 1; }
+.myline { font-family: var(--display); font-size: 17px; text-align: center; padding: 10px 14px; border-radius: 16px; background: rgba(255,255,255,.6); }
+.app[dir="rtl"] .myline { font-family: "Noto Naskh Arabic", serif; font-weight: 700; }
+.app[data-look="layl"] .myline { background: rgba(255,255,255,.08); }
+#film, #gallery { display: grid; gap: 14px; }
+.filmh { font-size: 17px; margin-top: 8px; }
+.strip { display: flex; gap: 14px; overflow-x: auto; padding: 4px 2px 14px; scroll-snap-type: x proximity; }
+.fm { margin: 0; display: grid; gap: 6px; width: 170px; flex: none; scroll-snap-align: start; }
+.fm .mini { width: 170px; border-width: 5px; border-radius: 22px; cursor: pointer; }
+.fm .mini:hover { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fm figcaption { font-size: 12.5px; color: var(--muted); line-height: 1.3; }
+.fm figcaption b { display: block; color: var(--fg); font-size: 13.5px; }
+.feat { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+.fcard { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.fcard h3 { margin-bottom: 4px; }
+.fcard button { font: inherit; font-size: 14px; text-align: start; background: transparent; border: 0; border-bottom: 1px solid var(--line); padding: 8px 2px; color: var(--fg); cursor: pointer; }
+.fcard button:last-child { border-bottom: 0; } .fcard button:hover { color: var(--accent); }
+table.st td:first-child { font-family: var(--display); font-size: 16px; color: var(--fg); }
+table.st td:nth-child(2) { font-weight: 400; color: var(--muted); }
+
+.wis { border-radius: 16px; padding: 14px 16px; background: var(--card); border-inline-start: 3px solid var(--acc); display: grid; gap: 6px; box-shadow: 0 3px 12px rgba(40,20,70,.05); }
+.app[data-look="layl"] .wis { box-shadow: none; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); border-inline-end: 1px solid var(--line); }
+.wisar { font-family: "Noto Naskh Arabic", "Amiri", serif; font-size: 17px; line-height: 1.85; direction: rtl; text-align: right; color: var(--ink); }
+.wisen { font-size: 13px; color: var(--sub); line-height: 1.5; }
+.wissrc { font-size: 11.5px; color: var(--acc); font-weight: 600; }
+.wis.onhelp { background: rgba(255,255,255,.7); color: #2a1628; } .wis.onhelp .wisar { color: #2a1628; font-size: 15.5px; }
+.app[data-look="layl"] .wis.onhelp { background: rgba(255,255,255,.08); } .app[data-look="layl"] .wis.onhelp .wisar { color: #f6e3ea; }
+.wis.ondeep, .wis.onland { background: rgba(255,255,255,.12); border-inline-start-color: #fff; box-shadow: none; } .wis.ondeep .wisar, .wis.onland .wisar { color: #fff; } .wis.ondeep .wisen, .wis.onland .wisen, .wis.ondeep .wissrc, .wis.onland .wissrc { color: rgba(255,255,255,.8); }
+.scr.land.fade .wis.onland { background: var(--card); } .scr.land.fade .wis.onland .wisar { color: var(--ink); } .scr.land.fade .wis.onland .wisen { color: var(--sub); } .scr.land.fade .wis.onland .wissrc { color: var(--acc); }
+.fruit { cursor: pointer; border: 1.5px dashed var(--acc); }
+.wtabs button { font-size: 12.5px; padding: 7px 11px; }
+.wiscard { gap: 10px; } .wiscard .wis { box-shadow: none; padding: 4px 12px; background: transparent; }
+/* round 9: tazkiya library */
+.seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--chip); }
+.seg3 button { font: inherit; font-size: 13.5px; padding: 9px 4px; border: 0; border-radius: 10px; background: transparent; color: var(--sub); cursor: pointer; }
+.seg3 button.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 2px 8px rgba(40,20,70,.08); }
+.iqsearch { display: flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 16px; background: var(--card); border: 1.5px solid var(--line); color: var(--sub); }
+.iqsearch .field { border: 0; background: transparent; padding: 13px 0; font-size: 15px; }
+.iqsearch .field:focus { outline: none; }
+.iqtopics { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -4px; padding: 2px 4px 6px; }
+.iqtopics button { white-space: nowrap; flex: none; }
+.iqtopics small { opacity: .6; font-size: 11px; margin-inline-start: 3px; }
+.iqlist { display: grid; gap: 12px; }
+.iq .iqt { white-space: normal; }
+.iq .iqt.clamp { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.iqmore { justify-self: start; font: inherit; font-size: 13px; font-weight: 600; color: var(--pri); background: none; border: 0; padding: 0; cursor: pointer; }
+.app[data-look="layl"] .iqmore { color: var(--acc); }
+.iqfoot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.iqact { display: flex; gap: 2px; flex: none; }
+.iqb { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 99px; border: 0; background: transparent; color: var(--sub); cursor: pointer; text-decoration: none; }
+.iqb:hover { background: var(--chip); }
+.iqb.on { color: #d2526b; }
+.iqb.on svg { fill: currentColor; }
+.iqtags { display: flex; gap: 6px; flex-wrap: wrap; }
+.iqtags span { font-size: 11px; padding: 3px 8px; border-radius: 99px; background: var(--chip); color: var(--sub); }
+.wis.flat { box-shadow: none; background: transparent; padding: 4px 0 0; border: 0; }
+.empty { padding: 40px 10px; display: grid; gap: 6px; }
+.sharecard { border-radius: 26px; padding: 30px 24px 22px; background: radial-gradient(120% 80% at 50% 0%, #3b2c6b, #1b1433 70%); color: #fff; display: grid; gap: 16px; box-shadow: 0 20px 40px rgba(27,20,51,.3); --logo-hole: #1b1433; }
+.sharecard .wisar { color: #fff; font-size: 19px; line-height: 2; text-align: center; }
+.sharecard .sclogo { justify-self: center; opacity: .9; }
+.scsrc { text-align: center; font-size: 12.5px; color: #d9c98f; letter-spacing: .02em; }
+/* round 10: home, calendar, tab bar */
+.tour.tourtop { justify-content: flex-start; padding-top: 110px; }
+.tour.tourtop .lab { display: none; }
+.app { --ringbg: rgba(43,26,94,.12); }
+.app[data-look="madinah"] { --ringbg: rgba(15,77,58,.14); }
+.app[data-look="layl"] { --ringbg: rgba(233,196,106,.16); }
+.home2 { padding-top: 0; gap: 14px; }
+.hero { position: relative; margin: 0 -20px; padding: 46px 20px 18px; display: grid; gap: 10px; justify-items: center; background: linear-gradient(180deg, transparent 55%, var(--sky) 100%), var(--bgimg) center 78% / cover no-repeat; min-height: 430px; align-content: start; }
+.hero .homehd { width: 100%; }
+.hero .homehd b { display: block; font-size: 16px; }
+.hero .homehd small { display: block; font-size: 12px; color: var(--sub); }
+.ringbox { position: relative; width: 210px; height: 210px; border: 0; background: transparent; padding: 0; cursor: pointer; color: inherit; margin-top: 4px; }
+.hring { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hring circle:last-child { transition: stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1); }
+.rin { position: absolute; inset: 22px; border-radius: 50%; display: grid; place-content: center; justify-items: center; gap: 2px; background: color-mix(in srgb, var(--card) 72%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(20,10,40,.12); }
+.rin small { font-size: 11px; color: var(--sub); font-weight: 600; }
+.rin .daysbig b { font-size: 72px; }
+.rin .timer { box-shadow: none; background: transparent; padding: 0; font-size: 12px; }
+.herosub { font-size: 13px; color: var(--ink); background: color-mix(in srgb, var(--card) 60%, transparent); backdrop-filter: blur(8px); padding: 6px 12px; border-radius: 99px; }
+.herosub b { color: var(--acc); }
+.shieldchip { font: inherit; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 99px; border: 0; cursor: pointer; background: #e3f5ea; color: #1f7a45; }
+.shieldchip.warn { background: #fdeccd; color: #8a5a00; }
+.app[data-look="layl"] .shieldchip { background: rgba(47,179,107,.18); color: #8be0ae; }
+.app[data-look="layl"] .shieldchip.warn { background: rgba(233,196,106,.18); color: var(--acc); }
+.week { font: inherit; color: inherit; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; border: 0; background: var(--card); border-radius: 18px; padding: 10px 8px; box-shadow: 0 4px 16px rgba(40,20,70,.06); cursor: pointer; margin-top: -8px; }
+.wd { display: grid; justify-items: center; gap: 5px; font-size: 11px; color: var(--sub); }
+.wd i { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); color: var(--sub); }
+.wd.ok i { background: linear-gradient(160deg, #f3d38a, #c8862f); color: #3a2200; }
+.wd.pol i { background: var(--card); color: #c8862f; box-shadow: inset 0 0 0 2px #e2b04f; }
+.wd.no i { background: var(--line); }
+.wd.today small { color: var(--ink); font-weight: 700; }
+.wd.today i { outline: 2px solid var(--pri); outline-offset: 2px; }
+.app[data-look="layl"] .wd.today i { outline-color: var(--acc); }
+.prow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.pp { font: inherit; color: var(--sub); border: 0; background: var(--soft); border-radius: 14px; padding: 8px 2px; display: grid; justify-items: center; gap: 2px; cursor: pointer; font-size: 11px; }
+.pp i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--line); background: var(--card); color: #fff; }
+.pp b { font-size: 12px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.pp.ok i { background: #2fb36b; border-color: #2fb36b; }
+.pp.nx { background: var(--chip); color: var(--pri); font-weight: 700; box-shadow: inset 0 0 0 1.5px var(--pri); }
+.app[data-look="layl"] .pp.nx { color: var(--acc); box-shadow: inset 0 0 0 1.5px var(--acc); }
+.pcard .pline { margin-top: 0; }
+.today { gap: 4px; }
+.tprog { flex: 1; height: 6px; border-radius: 99px; background: var(--soft); margin: 0 10px; overflow: hidden; }
+.tprog i { display: block; height: 100%; background: #2fb36b; border-radius: 99px; transition: width .5s; }
+.trow { font: inherit; color: inherit; display: flex; align-items: center; gap: 10px; padding: 8px 2px; border: 0; background: transparent; text-align: start; cursor: pointer; border-top: 1px solid var(--line); }
+.trow:first-of-type { border-top: 0; }
+.trow b { display: block; font-size: 14.5px; }
+.trow small { display: block; font-size: 12px; color: var(--sub); }
+.trow .ico3d.xs { width: 34px; height: 34px; }
+.tchk { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 1.8px solid var(--line); display: grid; place-items: center; color: #fff; }
+.trow.ok .tchk { background: #2fb36b; border-color: #2fb36b; }
+.trow.ok b { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--sub) 60%, transparent); color: var(--sub); }
+.minibtn.ghost { background: var(--soft); color: var(--ink); }
+.vref { background: rgba(255,255,255,.15); padding: 3px 8px; border-radius: 99px; }
+.tgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tgrid button { font: inherit; color: inherit; text-align: start; border: 0; background: var(--card); border-radius: 18px; padding: 12px 14px; display: grid; gap: 2px; cursor: pointer; box-shadow: 0 4px 16px rgba(40,20,70,.06); }
+.tgrid .ico3d.xs { width: 40px; height: 40px; align-self: start; margin-bottom: 4px; }
+.tgrid b { font-size: 14px; } .tgrid small { font-size: 12px; color: var(--sub); }
+.tabbar { position: sticky; bottom: -24px; margin: 6px -20px -24px; padding: 8px 10px 14px; display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line); z-index: 4; flex-shrink: 0; }
+.tabbar button { font: inherit; font-size: 10.5px; font-weight: 600; color: var(--sub); border: 0; background: transparent; display: grid; justify-items: center; gap: 3px; cursor: pointer; padding: 4px 0; }
+.tabbar button.on { color: var(--pri); }
+.app[data-look="layl"] .tabbar button.on { color: var(--acc); }
+.tabhelp i { width: 54px; height: 54px; margin-top: -26px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(160deg, #f06a6a, #d64545); color: #fff; box-shadow: 0 8px 20px rgba(214,69,69,.4), 0 0 0 5px var(--sky); }
+.tabhelp span { color: #d64545; }
+/* calendar */
+.seg2 { grid-template-columns: 1fr 1fr; }
+.cnav { display: flex; align-items: center; justify-content: space-between; }
+.cnav .back:disabled { opacity: .3; cursor: default; }
+.back.flip svg { transform: scaleX(-1); }
+.app[dir="rtl"] .back.flip svg { transform: none; }
+.cstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cstats div { background: var(--card); border-radius: 16px; padding: 10px 8px; text-align: center; display: grid; box-shadow: 0 3px 12px rgba(40,20,70,.05); }
+.cstats b { font-family: var(--display); font-weight: 400; font-size: 26px; line-height: 1.1; }
+.app[dir="rtl"] .cstats b { font-family: var(--qu, var(--display)); }
+.cstats small { font-size: 11px; color: var(--sub); }
+.cgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cgrid .dw { text-align: center; font-size: 11px; color: var(--sub); font-weight: 700; padding-bottom: 2px; }
+.cgrid .dw.fri { color: var(--acc); }
+.cd { position: relative; font: inherit; color: var(--ink); aspect-ratio: 1 / 1.08; border: 0; border-radius: 12px; background: var(--soft); display: grid; place-content: center; justify-items: center; gap: 0; cursor: pointer; padding: 0; transition: transform .12s; }
+.cd b { font-size: 14px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cd small { font-size: 9px; opacity: .65; line-height: 1; }
+.cd.ok { background: linear-gradient(160deg, #f6dc9c, #d89c40); color: #3a2200; }
+.cd.pol { background: var(--card); color: #8a5a00; box-shadow: inset 0 0 0 2px #e2b04f; }
+.cd.no { background: var(--line); color: var(--sub); }
+.cd.future, .cd.none { background: transparent; color: var(--sub); opacity: .5; cursor: default; box-shadow: inset 0 0 0 1px var(--line); }
+.cd.fri:not(.future):not(.none) { box-shadow: inset 0 -3px 0 rgba(255,255,255,.55); }
+.cd.today { outline: 2.5px solid var(--pri); outline-offset: 2px; }
+.app[data-look="layl"] .cd.today { outline-color: var(--acc); }
+.cd.sel { transform: scale(1.08); box-shadow: 0 6px 16px rgba(40,20,70,.25); z-index: 1; }
+.cd u { position: absolute; top: 4px; inset-inline-end: 4px; width: 5px; height: 5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px #c8862f; }
+.cd em { position: absolute; bottom: 3px; width: 14px; height: 3px; border-radius: 3px; background: var(--pri); }
+.cd.ok em { background: #3a2200; }
+.legend3 { display: flex; flex-wrap: wrap; gap: 6px 12px; justify-content: center; font-size: 11.5px; color: var(--sub); }
+.legend3 span { display: inline-flex; align-items: center; gap: 5px; }
+.legend3 i { width: 12px; height: 12px; border-radius: 4px; background: var(--soft); }
+.legend3 i.ok { background: linear-gradient(160deg, #f6dc9c, #d89c40); } .legend3 i.pol { box-shadow: inset 0 0 0 2px #e2b04f; background: var(--card); } .legend3 i.no { background: var(--line); }
+.legend3 u { width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px #c8862f; }
+.legend3 em { width: 12px; height: 3px; border-radius: 3px; background: var(--pri); }
+.ygrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ym > span small { font-weight: 500; color: var(--sub); font-size: 10.5px; }
+.mgrid { gap: 3px !important; }
+.mc { border-radius: 3px !important; }
+.ym { font: inherit; color: inherit; border: 0; background: var(--card); border-radius: 14px; padding: 8px; display: grid; gap: 5px; cursor: pointer; box-shadow: 0 3px 12px rgba(40,20,70,.05); }
+.ym:disabled { opacity: .45; cursor: default; }
+.ym.cur { box-shadow: inset 0 0 0 2px var(--pri); }
+.ym > span { font-size: 11.5px; font-weight: 700; }
+.mgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.mgrid span, .mc { aspect-ratio: 1; border-radius: 2px; display: block; }
+.mc { background: var(--soft); }
+.mc.ok { background: #d89c40; } .mc.pol { background: #f0cf7e; } .mc.no { background: #b7b0c4; } .mc.future { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
 </style>
 
 <div class="wrap">
   <section>
     <div class="eyebrow">Hisn · Islamic edition · design direction · 23 November 2026</div>
     <h1>Hisn, in Unchaind's design language</h1>
-    <p class="lede">Not a copy of our general edition. This is Unchaind's own visual system: an airy sky, a layered landscape at the bottom, serif headlines, white numbered cards, glossy 3D objects, a deep pill button and a red help bar. It is made Islamic, and the screens are Hisn's. Tap through the phone. It works: answer the quiz, hold to promise, start Help now, breathe, make du'a. Switch the look on the right; the same screen in all three looks is below.</p>
+    <p class="lede">Not a copy of our general edition. New: 39 sayings from Ibn al-Qayyim (al-Jawāb al-Kāfī, al-Fawāʾid, Ighātha) and Tazkiyat al-Nufūs, each read in the book with its page, placed where they help (Help now, a closed page, coming back, reflection, time) and gathered on a scholars' page. Also: an onboarding built from the best of Unchaind, CleanPath, Opal, Unrot and our general app, in four chapters, with a filmstrip of every step, a gallery of every screen and a features map further down. The app opens in Arabic, right to left, on every screen (English is one tap away), with Naskh titles, Amiri Quran for verses, Arabic numerals and Hijri dates first. New in earlier rounds: the general app's protection layers as real screens, notes on the calendar, three logo options, repainted objects, Arabic for the core path, and motion. This is Unchaind's own visual system: an airy sky, a layered landscape at the bottom, serif headlines, white numbered cards, glossy 3D objects, a deep pill button and a red help bar. It is made Islamic, and the screens are Hisn's. Tap through the phone. It works: answer the quiz, hold to promise, start Help now, breathe, make du'a. Switch the look on the right; the same screen in all three looks is below.</p>
     <div class="took">
       <div><b>Sky and land</b><span>Soft sky above, layered hills below, as on Unchaind's quiz. Ours has a small distant mosque.</span></div>
       <div><b>Serif headlines</b><span>A warm serif for every title, a clean sans for everything else.</span></div>
@@ -364,9 +603,13 @@ textarea.field { resize: none; font-size: 15px; }
           <button data-logo="niche" aria-pressed="false"><span class="lg">Niche</span></button>
           <button data-logo="star" aria-pressed="false"><span class="lg">Star</span></button>
         </div>
+        <div class="looks" role="group" aria-label="Address">
+          <button data-gender="0" aria-pressed="true" style="font-family:var(--ar)">أخ</button>
+          <button data-gender="1" aria-pressed="false" style="font-family:var(--ar)">أخت</button>
+        </div>
         <div class="looks" role="group" aria-label="Language">
-          <button data-lang="en" aria-pressed="true">English</button>
-          <button data-lang="ar" aria-pressed="false" style="font-family:var(--ar)">العربية</button>
+          <button data-lang="en" aria-pressed="false">English</button>
+          <button data-lang="ar" aria-pressed="true" style="font-family:var(--ar)">العربية</button>
         </div>
         <div class="note" id="note"></div>
         <div class="jump" id="jump"></div>
@@ -378,6 +621,39 @@ textarea.field { resize: none; font-size: 15px; }
   <section>
     <h2>This screen in all three looks</h2>
     <div class="compare" id="compare"></div>
+  </section>
+
+
+  <section>
+    <h2>Onboarding: five apps, the best of each</h2>
+    <p class="lede">Unchaind, CleanPath and Unrot were captured on the owner's iPhone, Opal on the owner's Samsung, and our general app is read from its code (28 steps in four chapters). Each row is what that app does best and what Hisn takes.</p>
+    <div class="map"><table class="st">
+      <thead><tr><th>App</th><th>Its onboarding</th><th>Best idea</th><th>Hisn takes</th><th>Hisn leaves</th></tr></thead>
+      <tbody>
+      <tr><td>Unchaind</td><td>Verse, welcome, 14-question quiz, "calculating", 37% result, 5 harm slides, 6 benefits, goals, 5 pledges, rating, quit date, paywall, tour. 89 screens.</td><td>Faith as the reason; a verse under each pledge</td><td>Verse splash, numbered quiz cards, deep slides with one object, goals, five held pledges, the tour</td><td>Invented result, shame slides, sexual questions, paywall</td></tr>
+      <tr><td>CleanPath</td><td>"Map your path" in 2 minutes, why you're here, streak intro, notifications in context, 13-question score, results, harms, how we help, reviews, 90-day path, paywall, login, name, tour.</td><td>One question a screen and a picture of the exact Android setting</td><td>Notifications asked right after showing why; the picture guide for each switch</td><td>"95/100 severe", fake reviews, login after paying</td></tr>
+      <tr><td>Opal</td><td>One sentence a screen, "tap to continue", a short chat, permissions as switches, "how it works" in three taps, a suggested block list, a held commitment, then a hard paywall.</td><td>Explaining the product with your own story before asking anything</td><td>The one-line opening, "How it works" in three frames, switches with one line of why, suggestions from real usage</td><td>"15 years of your life", account first, no-exit paywall</td></tr>
+      <tr><td>Unrot (iOS)</td><td>Mascot, name, a chat with your brain, "how do you want to spend the time", hours scrolled maths, feelings after scrolling, rating, notifications, fingerprint hold, a 4-week plan, two paths, paywall.</td><td>Asking what you'll do instead, and naming the weeks</td><td>The Instead picker (Islamic and physical), the plan in four named parts</td><td>Coins, guessed "106 days a year", fake rating</td></tr>
+      <tr><td>Our general app</td><td>Four chapters with a segmented bar: You, Why it's hard, What helps, Your plan. Demo, name, age, goals, when, feel, real usage, cost, tricks, helps, Instead, apps, a live try, quiet hours, your note, plan, switches, notifications, a test block, hold.</td><td>Real numbers from Android, a live test, your own reason</td><td>The four chapters and bar, real usage, your line for hard minutes, "Try it now"</td><td>Nothing: it is the base</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Hisn's onboarding, chapter by chapter</h2>
+    <p class="lede">25 screens in four chapters, in the order a person meets them. Everything here is also in the phone above; tap any frame to open it there.</p>
+    <div id="film"></div>
+  </section>
+
+  <section>
+    <h2>Every other screen</h2>
+    <div id="gallery"></div>
+  </section>
+
+  <section>
+    <h2>Features</h2>
+    <p class="lede">Everything Hisn does, grouped. Tap a feature to open its screen in the phone.</p>
+    <div class="feat" id="feat"></div>
   </section>
 
   <section>
@@ -398,6 +674,7 @@ textarea.field { resize: none; font-size: 15px; }
   </section>
 </div>
 
+<script src="iq.js"></script>
 <script>
 /* ---------------- icons (line) ---------------- */
 const L = {
@@ -448,7 +725,7 @@ const slides = [
 ];
 
 const S = {
-  splash: { g: 'First run', n: 'Splash', from: 'Unchaind 1', note: 'Unchaind opens on a Bible verse and its logo. Hisn opens on the gaze verse and a lantern.', h: () => `<div class="scr land fade" data-tap="welcome"><div class="grow"></div>${logo(92, 'ink')}<div class="t2 c" style="letter-spacing:.02em">Hisn</div><div class="quran">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ</div><div class="qsrc">"Tell the believing men to lower their gaze." · 24:30</div><div class="grow"></div><div class="grow"></div><div class="sub c" style="color:#fff">Tap to continue</div></div>` },
+  splash: { g: 'First run', n: 'Splash', from: 'Unchaind 1', note: 'Unchaind opens on a Bible verse and its flat logo. Hisn opens on its own flat mark and the gaze verse. Try the three logo options beside the phone: Gate, Niche and Star.', h: () => `<div class="scr land fade" data-tap="welcome"><div class="grow"></div>${logo(92, 'ink')}<div class="t2 c" style="letter-spacing:.02em">Hisn</div><div class="quran">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ</div><div class="qsrc">"Tell the believing men to lower their gaze." · 24:30</div><div class="grow"></div><div class="grow"></div><div class="sub c" style="color:#fff">Tap to continue</div></div>` },
   welcome: { g: 'First run', n: 'Welcome', from: 'Unchaind 2', note: 'Same deep welcome with three pills. The pills are promises Hisn can keep, and there is no sign-in link because there is no account.', h: () => `<div class="scr deep land"><div style="height:30px"></div>${logo(64, 'light')}<div class="sub c">Welcome to</div><div class="t1 c" style="font-size:44px">Hisn</div><div class="sub c">Allah has given you a way to guard your gaze and your heart. We're here to help you take it.</div><div class="grow"></div><div class="chipz" style="justify-content:center;flex-direction:column;align-items:center">${['Closes adult content on this phone', 'Help in the hard minute', 'Nearer to Allah, every day'].map(t => `<span style="background:rgba(255,255,255,.14);padding:8px 14px;border-radius:99px;font-size:14px">${t}</span>`).join('')}</div><div style="height:12px"></div><button class="btn white" data-go="q0">Start the quiz →</button><div class="sub c" style="font-size:12px">No account. Nothing leaves your phone.</div></div>` },
   q0: { g: 'First run', n: 'Quiz', from: 'Unchaind 3–15', note: 'Unchaind\'s quiz look exactly: progress and percent at the top, numbered white cards, the landscape below, "your answers are anonymous". Hisn asks four to seven questions, and every answer changes a setting.', h: () => quiz(0) },
   q1: { g: 'First run', n: 'Quiz 2', hide: 1, h: () => quiz(1) }, q2: { g: 'First run', n: 'Quiz 3', hide: 1, h: () => quiz(2) }, q3: { g: 'First run', n: 'Quiz 4', hide: 1, h: () => quiz(3) },
@@ -466,10 +743,10 @@ const S = {
   support: { g: 'Help now', n: 'Don\'t fall yet', from: 'Unchaind 83', note: 'Unchaind: "Wait… don\'t fall yet" with two choices, talk to a companion or take control. Hisn\'s companion is a real person you chose, not an AI.', h: () => `<div class="scr help"><div class="row" style="justify-content:space-between"><button class="back" data-go="help">${li('back')}</button><b>Get support</b><button class="back" data-go="home">${li('x')}</button></div><div class="t1 c" style="font-size:28px">Wait… you haven't fallen yet</div><div class="sub c">How do you want to get through this minute? You have the strength for it.</div><button class="choice" data-go="breathe">${ic('misbaha', 'xs').replace('xs', 'sm')}<b>Breathe with dhikr</b><span class="sub">Three slow breaths with astaghfirullāh. 30 seconds.</span></button><button class="choice" data-go="companion">${ic('olive', 'sm')}<b>Call Ahmad</b><span class="sub">Your companion. He only knows you asked for help.</span></button><div class="grow"></div></div>` },
   breathe: { g: 'Help now', n: 'Breathe', from: 'Unchaind 84', note: 'Unchaind\'s "Take control" with a breathing exercise, then "continue to prayer". Hisn puts dhikr on each out-breath. It really runs: three rounds.', h: () => `<div class="scr help"><div class="row" style="justify-content:space-between"><button class="back" data-go="support">${li('back')}</button><b>Take control</b><button class="back" data-go="home">${li('x')}</button></div><div class="t2 c">Let's pause together</div><div class="sub c">Urges pass; your promise stays. Breathe with the circle.</div><div class="breath" id="breath"><i></i><b id="bword">Breathe in</b></div><div class="quran" id="bdhikr" style="font-size:26px">أَسْتَغْفِرُ ٱللَّٰهَ</div><div class="sub c" id="bround">Round 1 of 3</div><div class="grow"></div><button class="btn" data-go="pray">Continue to prayer →</button></div>` },
   pray: { g: 'Help now', n: 'Continue to prayer', from: 'Unchaind 84', note: 'Where Unchaind continues to prayer, Hisn gives the steps: wuḍūʾ, two rakʿahs, a du\'a for steadfastness, then the Instead list from our current app.', h: () => `<div class="scr land fade"><div class="row"><button class="back" data-go="breathe">${li('back')}</button><b class="grow c">It passed</b><button class="back" data-go="home">${li('x')}</button></div><div class="t2 c">One more step makes it stay passed</div><div class="card"><div class="row">${ic('ibrik', 'xs')}<div><b>Make wuḍūʾ</b><div class="sub">Water and a fresh start</div></div></div></div><div class="card"><div class="row">${ic('rug', 'xs')}<div><b>Pray two rakʿahs</b><div class="sub">Hisn stays quiet for 10 minutes</div></div></div></div><div class="card"><div class="row">${ic('hands', 'xs')}<div><b>Say a du'a</b><div class="ar sub" style="font-size:15px">يا مقلّب القلوب ثبّت قلبي على دينك</div></div></div></div><div class="grow"></div><button class="btn white" data-go="home">Done, back home</button></div>` },
-  slip: { g: 'Help now', n: 'I slipped', from: 'Unchaind 82', note: 'Unchaind: "It\'s okay, tomorrow is a new day", then the streak shows 0 days. Hisn: what Allah says, three steps back, and your total nights kept.', h: () => `<div class="scr help"><div class="row" style="justify-content:space-between"><button class="back" data-go="help">${li('back')}</button><b>Come back</b><button class="back" data-go="home">${li('x')}</button></div><div class="t1 c" style="font-size:28px">The door is still open</div><div class="quran" style="font-size:20px">لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ ۚ إِنَّ ٱللَّهَ يَغْفِرُ ٱلذُّنُوبَ جَمِيعًا</div><div class="qsrc">"Despair not of the mercy of Allah, Who forgiveth all sins." · 39:53</div><div class="helpcard c"><div class="k" style="color:inherit;opacity:.7">Nights of light, kept</div><div class="t1">41</div><div class="sub">Nothing is wiped. Tonight counts from now.</div></div><div class="helpcard"><b>Three steps back</b><div class="sub">1 · Istighfār, meant from the heart<br>2 · Wuḍūʾ and two rakʿahs of tawbah (Abū Dāwūd 1521)<br>3 · One change: close the door it came through</div></div><div class="grow"></div><button class="btn" data-go="home">${li('check')} I'm coming back</button></div>` },
-  progress: { g: 'Progress', n: 'Progress', from: 'Unchaind 61–64', note: 'Unchaind\'s gauge, "Unchaind says", calendar and milestones. The risk score is gone; days are gold when clean and white-gold when you turned back in time.', h: () => `<div class="scr"><div class="row"><button class="back" data-go="home">${li('back')}</button><div class="t3 grow c">Your progress</div><span style="width:28px"></span></div><div class="gauge"><svg viewBox="0 0 210 120"><path d="M20 110a85 85 0 0 1 170 0" fill="none" stroke="var(--line)" stroke-width="12" stroke-linecap="round"/><path d="M20 110a85 85 0 0 1 170 0" fill="none" stroke="var(--pri)" stroke-width="12" stroke-linecap="round" stroke-dasharray="267" stroke-dashoffset="${267 * (1 - 9 / 40)}"/></svg><div><b>23%</b><span class="sub">9 of 40 nights</span></div></div><div class="card"><div class="row">${logo(22, 'ink')}<b>Hisn says</b></div><div class="sub">Nine nights. You turned back twice within minutes this week. Your best nights follow ʿIshāʾ prayed at the masjid.</div></div><div class="row" style="justify-content:space-between"><div class="t3">Your calendar</div><span class="sub">Jumādā II</span></div><div class="cal">${['S','M','T','W','T','F','S'].map(d => `<span>${d}</span>`).join('')}${['ok','ok','pol','ok','no','ok','ok','ok','pol','ok','ok','ok','ok','ok today'].map((c, i) => `<span><i class="${c}">${i + 10}</i></span>`).join('')}</div><div class="t3">Milestones</div>${[['First week', '7 nights', 1], ['Bright lamp', '14 nights', 0], ['Forty nights', '40 nights', 0]].map(([a, b, ok]) => `<div class="card mile ${ok ? '' : 'lock'}"><div><div class="k">${ok ? 'Reached' : 'Next'}</div><b>${a}</b><div class="sub">${b}</div>${ok ? '' : '<div class="bar" style="margin-top:6px"><i style="width:64%"></i></div>'}</div><img src="img/ic-medal.png" alt=""></div>`).join('')}<div class="tiles"><div class="tile"><small>Kept out · private</small><b>27</b><span class="sub">adult pages</span></div><div class="tile"><small>Given back</small><b>38 h</b><span class="sub">from feeds</span></div></div></div>` },
+  slip: { g: 'Help now', n: 'I slipped', from: 'Unchaind 82', note: 'Unchaind: "It\'s okay, tomorrow is a new day", then the streak shows 0 days. Hisn: what Allah says, three steps back, and your total nights kept.', h: () => `<div class="scr help"><div class="row" style="justify-content:space-between"><button class="back" data-go="help">${li('back')}</button><b>Come back</b><button class="back" data-go="home">${li('x')}</button></div><div class="t1 c" style="font-size:28px">The door is still open</div><div class="quran" style="font-size:20px">لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ ۚ إِنَّ ٱللَّهَ يَغْفِرُ ٱلذُّنُوبَ جَمِيعًا</div><div class="qsrc">"Despair not of the mercy of Allah, Who forgiveth all sins." · 39:53</div><div class="helpcard c"><div class="k" style="color:inherit;opacity:.7">Nights of light, kept</div><div class="t1">41</div><div class="sub">Nothing is wiped. Tonight counts from now.</div></div><div class="helpcard"><b>Three steps back</b><div class="sub">1 · Istighfār, meant from the heart<br>2 · Wuḍūʾ and two rakʿahs of tawbah (Abū Dāwūd 1521)<br>3 · One change: close the door it came through</div></div><div class="grow"></div><button class="btn" data-slip>${li('check')} I'm coming back</button></div>` },
+  progress: { g: 'Progress', n: 'Progress', from: 'Unchaind 61–64', note: 'Unchaind\'s gauge, "Unchaind says", calendar and milestones. The risk score is gone; days are gold when clean and white-gold when you turned back in time.', h: () => `<div class="scr"><div class="row"><button class="back" data-go="home">${li('back')}</button><div class="t3 grow c">Your progress</div><span style="width:28px"></span></div><div class="gauge"><svg viewBox="0 0 210 120"><path d="M20 110a85 85 0 0 1 170 0" fill="none" stroke="var(--line)" stroke-width="12" stroke-linecap="round"/><path d="M20 110a85 85 0 0 1 170 0" fill="none" stroke="var(--pri)" stroke-width="12" stroke-linecap="round" stroke-dasharray="267" stroke-dashoffset="${267 * (1 - 9 / 40)}"/></svg><div><b>23%</b><span class="sub">9 of 40 nights</span></div></div><div class="card"><div class="row">${logo(22, 'ink')}<b>Hisn says</b></div><div class="sub">Nine nights. You turned back twice within minutes this week. Your best nights follow ʿIshāʾ prayed at the masjid.</div></div><div class="row" style="justify-content:space-between"><div class="t3">Your calendar</div><span class="sub">Jumādā II</span></div><div class="cal">${DOW().map(d => `<span>${d}</span>`).join('')}${['ok','ok','pol','ok','no','ok','ok','ok','pol','ok','ok','ok','ok','ok today'].map((c, i) => `<span><i class="${c}">${i + 10}</i></span>`).join('')}</div><div class="t3">Milestones</div>${[['First week', '7 nights', 1], ['Bright lamp', '14 nights', 0], ['Forty nights', '40 nights', 0]].map(([a, b, ok]) => `<div class="card mile ${ok ? '' : 'lock'}"><div><div class="k">${ok ? 'Reached' : 'Next'}</div><b>${a}</b><div class="sub">${b}</div>${ok ? '' : '<div class="bar" style="margin-top:6px"><i style="width:64%"></i></div>'}</div><img src="img/ic-medal.png" alt=""></div>`).join('')}<div class="tiles"><div class="tile"><small>Kept out · private</small><b>27</b><span class="sub">adult pages</span></div><div class="tile"><small>Given back</small><b>38 h</b><span class="sub">from feeds</span></div></div></div>` },
   reflect: { g: 'Daily', n: 'Daily reflection', from: 'Unchaind 68–70', note: 'Unchaind\'s ten-point ratings for five areas, made Islamic. Tap the numbers. Answers stay on the phone and draw the progress chart.', h: () => `<div class="scr"><div class="row"><button class="back" data-go="home">${li('back')}</button><div class="t3 grow c">Monday, 12 Jumādā II</div><span style="width:28px"></span></div><div class="t3">How were these today?</div>${[['', 'Prayer', 'Did you pray on time today?'], ['', 'Gaze', 'How well did you guard your eyes?'], ['', 'Qur\'an and dhikr', 'Did you read or remember Allah?'], ['', 'Calm', 'How settled did you feel?'], ['', 'Energy', 'How was your energy?']].map(([e, a, b], r) => `<div class="card"><b>${e} ${a}</b><div class="sub">${b}</div><div class="scale10">${Array.from({length: 10}, (_, i) => `<button data-rate="${r}:${i + 1}" class="${st.rate[r] === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('')}</div></div>`).join('')}<button class="btn" data-done="ref">→ Save reflection</button></div>` },
-  read: { g: 'Daily', n: 'Today\'s reading', from: 'Unchaind 71, 79', note: 'Unchaind\'s reading summary and Bible reader. Hisn: a short summary, the verses in Arabic and English with sources, and "mark as read".', h: () => `<div class="scr"><div class="row"><button class="back" data-go="home">${li('back')}</button><div class="t3 grow c">Lowering the gaze · 3/7</div><span class="sub">Aa</span></div><div class="card"><div class="row">${ic('quran', 'xs')}<b>In short</b></div><div class="sub">The command comes before the reward: lower the gaze, then "that is purer for them". Your part is the lowering; the purity is the gift.</div><div class="row sub" style="gap:16px;font-size:12px"><span>⏱ 4 min</span><span>an-Nūr 30–31</span></div></div><div class="quran">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ وَيَحْفَظُوا۟ فُرُوجَهُمْ ۚ ذَٰلِكَ أَزْكَىٰ لَهُمْ ۗ إِنَّ ٱللَّهَ خَبِيرٌۢ بِمَا يَصْنَعُونَ</div><div class="sub"><b>30</b> Tell the believing men to lower their gaze and be modest. That is purer for them. Lo! Allah is aware of what they do.</div><div class="quran">وَقُل لِّلْمُؤْمِنَٰتِ يَغْضُضْنَ مِنْ أَبْصَٰرِهِنَّ وَيَحْفَظْنَ فُرُوجَهُنَّ</div><div class="sub"><b>31</b> And tell the believing women to lower their gaze and be modest…</div><div class="grow"></div><button class="btn" data-done="read">${li('check')} Mark as read</button></div>` },
+  read: { g: 'Daily', n: 'Today\'s reading', from: 'Unchaind 71, 79', note: 'Unchaind\'s reading summary and Bible reader. Hisn: a short summary, the verses in Arabic and English with sources, and "mark as read".', h: () => `<div class="scr"><div class="row"><button class="back" data-go="home">${li('back')}</button><div class="t3 grow c">Lowering the gaze · 3/7</div><span class="sub">Aa</span></div><div class="card"><div class="row">${ic('quran', 'xs')}<b>In short</b></div><div class="sub">The command comes before the reward: lower the gaze, then "that is purer for them". Your part is the lowering; the purity is the gift.</div><div class="row sub" style="gap:16px;font-size:12px"><span>4 min</span><span>an-Nūr 30–31</span></div></div><div class="quran">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ وَيَحْفَظُوا۟ فُرُوجَهُمْ ۚ ذَٰلِكَ أَزْكَىٰ لَهُمْ ۗ إِنَّ ٱللَّهَ خَبِيرٌۢ بِمَا يَصْنَعُونَ</div><div class="sub"><b>30</b> Tell the believing men to lower their gaze and be modest. That is purer for them. Lo! Allah is aware of what they do.</div><div class="quran">وَقُل لِّلْمُؤْمِنَٰتِ يَغْضُضْنَ مِنْ أَبْصَٰرِهِنَّ وَيَحْفَظْنَ فُرُوجَهُنَّ</div><div class="sub"><b>31</b> And tell the believing women to lower their gaze and be modest…</div><div class="grow"></div><button class="btn" data-done="read">${li('check')} Mark as read</button></div>` },
   shield: { g: 'Tools', n: 'Shield', from: 'Unchaind 77–78', note: 'Unchaind\'s "Adult content filter" with one big switch. Hisn keeps that switch and lists the layers underneath, so every protection from our current app is here. Tap the switch.', h: () => `<div class="scr"><div class="row"><button class="back" data-go="home">${li('back')}</button><div class="t3 grow c">Content shield</div><span style="width:28px"></span></div>${ic('shield', 'sm')}<div class="t3 c">Adult content filter</div><div class="sub c">Closes adult sites, words and images in every app and browser on this phone.</div><div class="blocker ${st.blocker ? '' : 'off'}"><span class="icn" style="background:${st.blocker ? '#e6f7ec' : 'var(--soft)'};color:${st.blocker ? '#2a9d55' : 'var(--sub)'}">${li('shield')}</span><div class="grow"><b>${st.blocker ? 'SHIELD ON' : 'SHIELD OFF'}</b><div class="sub" style="font-size:12px">${st.blocker ? '395k adult sites · 4.8k words · images checked' : 'Nothing is being blocked'}</div></div><button class="switch ${st.blocker ? '' : 'off'}" data-toggle-blocker aria-label="Shield"></button></div><div class="list">${[['globe', 'Adult sites', 'DNS filter, all apps'], ['list', 'Adult words', 'In 9 apps'], ['target', 'Images', 'Checked on this phone'], ['hour', 'Feeds and apps', 'Open Wait, limits, Shorts closed'], ['lock', 'Lock', 'Until 1 Ramaḍān']].map(([i, a, b]) => `<button><span class="icn">${li(i)}</span><span><b>${a}</b><small>${b}</small></span><span class="chev">${li('chev', 16)}</span></button>`).join('')}</div></div>` },
   tools: { g: 'Tools', n: 'Every tool', from: 'Our current app', note: 'All the tools of our current Android app, listed in Unchaind\'s toolbox style. Nothing is lost; only the look changes.', h: () => `<div class="scr"><div class="row"><button class="back" data-go="home">${li('back')}</button><div class="t3 grow c">Your toolbox</div><span style="width:28px"></span></div><div class="k">For right now</div><div class="list">${[['wind', 'Breathe with dhikr', '30 seconds'], ['target', 'Focus', 'Close feeds for a set time; pauses for prayer'], ['pen', 'My notes', 'What you wrote for hard minutes'], ['heart', 'Instead', 'Wuḍūʾ, a page of Qur\'an, a walk']].map(([i, a, b]) => `<button><span class="icn">${li(i)}</span><span><b>${a}</b><small>${b}</small></span><span class="chev">${li('chev', 16)}</span></button>`).join('')}</div><div class="k">Your rules</div><div class="list">${[['hour', 'Open Wait', 'A pause with dhikr before chosen apps'], ['moon', 'Quiet nights', 'After ʿIshāʾ until Fajr'], ['gray', 'Gray screen', 'At night'], ['timer', 'Daily limits', 'Per app'], ['lock', 'Lock', 'Rules can\'t be loosened'], ['people', 'Guardian', 'A paired laptop can add rules']].map(([i, a, b]) => `<button><span class="icn">${li(i)}</span><span><b>${a}</b><small>${b}</small></span><span class="chev">${li('chev', 16)}</span></button>`).join('')}</div><div class="k">Phone</div><div class="list">${[['widget', 'Home-screen widget', 'Added in one tap on Android'], ['pulse', 'Health check', 'Is every layer running?']].map(([i, a, b]) => `<button><span class="icn">${li(i)}</span><span><b>${a}</b><small>${b}</small></span><span class="chev">${li('chev', 16)}</span></button>`).join('')}</div></div>` },
   settings: { g: 'Tools', n: 'Settings', from: 'Unchaind 85–89', note: 'Unchaind\'s grouped settings cards. No account or sync; prayer times, translation and ṣadaqa instead.', h: () => `<div class="scr"><div class="row"><button class="back" data-go="home">${li('back')}</button><div class="t3 grow c">Settings</div><span style="width:28px"></span></div><div class="card"><div class="t3">You</div><div class="row"><span class="icn">${li('user')}</span><div class="grow"><b>Yusuf</b><div class="sub">Since 13 Rabīʿ II · goal 40 nights</div></div></div><div class="chipz">${['Pray on time', 'Lower my gaze', 'Nearer to Allah'].map(t => `<button class="on" style="font-size:12px;padding:6px 10px">${t}</button>`).join('')}</div></div><div class="card"><div class="t3">Prayer</div><div class="row"><span class="icn">${li('clock')}</span><div class="grow"><b>Prayer times</b><div class="sub">Amsterdam · MWL · calculated on this phone</div></div></div><div class="row"><span class="icn">${li('book')}</span><div class="grow"><b>Qur'an translation</b><div class="sub">Pickthall · or Arabic only</div></div></div></div><div class="card"><div class="t3">Notifications</div><div class="row"><span class="icn">${li('bell')}</span><div class="grow"><b>Evening reflection</b><div class="sub">21:30</div></div><button class="switch" aria-label="Reflection reminder"></button></div><div class="row"><span class="icn">${li('moon')}</span><div class="grow"><b>Before each prayer</b><div class="sub">10 minutes</div></div><button class="switch" aria-label="Prayer reminder"></button></div></div><div class="card"><div class="row"><span class="icn">${li('heart')}</span><div class="grow"><b>Give ṣadaqa</b><div class="sub">Hisn is free and open source</div></div></div></div></div>` },
@@ -488,7 +765,7 @@ function home() {
   const t = st.tasks;
   return `<div class="scr" id="homescr"><div class="homehd">${logo(30, 'ink')}<b>As-salāmu ʿalaykum, ${st.name}</b><button class="avatar" data-go="settings" aria-label="Settings">${li('user', 18)}</button></div>
   <div class="since"><div class="k">Nights of light since 13 Rabīʿ II</div><div class="daysbig"><b>${N(9)}</b><span>nights</span></div><div class="timer"><i></i><span id="tick">15:28:04</span></div></div>
-  <div class="rounds"><button data-go="dua"><span class="icn"><img src="img/ic-hands.png" alt=""></span>Du'a wall</button><button data-go="progress"><span class="icn"><img src="img/ic-medal.png" alt=""></span>Progress</button><button data-go="read"><span class="icn"><img src="img/ic-quran.png" alt=""></span>Qur'an</button></div>
+  <div class="rounds"><button data-go="adhkar"><span class="icn"><img src="img/ic-misbaha.png" alt=""></span>Adhkār</button><button data-go="dua"><span class="icn"><img src="img/ic-hands.png" alt=""></span>Du'a wall</button><button data-go="progress"><span class="icn"><img src="img/ic-medal.png" alt=""></span>Progress</button><button data-go="read"><span class="icn"><img src="img/ic-quran.png" alt=""></span>Qur'an</button></div>
   <div><div class="bar"><i style="width:22.5%"></i></div><div class="sub c" style="font-size:12px;margin-top:6px">9 of 40 nights to your first milestone</div></div>
   <div class="card" style="padding:10px"><div class="prayers">${[['Fajr', '06:12'], ['Dhuhr', '12:24'], ['ʿAṣr', '14:31'], ['Maghrib', '16:43'], ['ʿIshāʾ', '18:12']].map(([n, tm], i) => `<div class="${i === 3 ? 'nx' : i < 3 ? 'dn' : ''}">${n}<b>${tm}</b></div>`).join('')}</div></div>
   <div class="tasks"><button class="task ${t.ref ? 'done' : ''}" data-go="reflect">${li('pen')}<b>${t.ref ? 'Reflection done' : 'You haven\'t reflected tonight'}</b><small>One minute to look back and stay strong</small></button><button class="task ${t.read ? 'done' : ''}" data-go="read">${li('book')}<b>${t.read ? 'Today\'s reading done' : 'Finish today\'s reading'}</b><small>An-Nūr 30–31 · 4 min</small></button></div>
@@ -507,7 +784,7 @@ const tourSteps = [
 ];
 function tour() {
   const s = tourSteps[st.tour - 1];
-  return `<div class="tour"><div class="ring" style="${s.r}"></div><div class="lab" style="top:52px;left:24px">${s.t}</div><div class="t2" style="color:#fff">${s.t}</div><div style="opacity:.85">${s.b}</div><div class="dots">${tourSteps.map((_, k) => `<i class="${k === st.tour - 1 ? 'on' : ''}" style="background:#fff"></i>`).join('')}</div><button class="btn" style="background:#6c5ce7" data-tour-next>${st.tour < 3 ? 'Next' : 'Start'}</button><button class="btn ghost" style="color:#fff" data-tour-skip>Skip</button></div>`;
+  return `<div class="tour ${st.tour === 3 ? 'tourtop' : ''}"><div class="ring" style="${s.r}"></div><div class="lab" style="top:52px;left:24px">${s.t}</div><div class="t2" style="color:#fff">${s.t}</div><div style="opacity:.85">${s.b}</div><div class="dots">${tourSteps.map((_, k) => `<i class="${k === st.tour - 1 ? 'on' : ''}" style="background:#fff"></i>`).join('')}</div><button class="btn" style="background:#6c5ce7" data-tour-next>${st.tour < 3 ? 'Next' : 'Start'}</button><button class="btn ghost" style="color:#fff" data-tour-skip>Skip</button></div>`;
 }
 
 /* ---------------- round 2: language, new screens, Arabic core path ---------------- */
@@ -519,7 +796,7 @@ const ic2 = (n, cls = '') => `<img class="ico3d ${cls}" src="img/ic-${n}.png" al
 const arNote = '<span class="arbadge">عربي</span>';
 
 Object.assign(S, {
-  name: { g: 'First run', n: 'Your name', from: 'Unchaind 15', note: 'Unchaind asks your first name at the end of the quiz. Hisn uses it to speak to you, and keeps it on the phone.', h: () => `<div class="scr land fade"><div class="qtop"><button class="back" data-go="q3">${li('back')}</button><div class="bar grow"><i style="width:100%"></i></div><span>100%</span></div><div style="height:6px"></div><div class="t2">Last, a little about you</div><div class="sub">What should Hisn call you?</div><input class="field" id="nameIn" value="${st.name}" aria-label="First name" maxlength="25"><div class="grow"></div><button class="btn" data-name>Finish the quiz →</button><div class="anon">Your answers stay on this phone</div></div>` },
+  name: { g: 'First run', n: 'Your name', from: 'Unchaind 15', note: 'Unchaind asks your first name at the end of the quiz. Hisn uses it to speak to you, and keeps it on the phone.', h: () => `<div class="scr land fade"><div class="qtop"><button class="back" data-go="q3">${li('back')}</button><div class="bar grow"><i style="width:100%"></i></div><span>100%</span></div><div style="height:6px"></div><div class="t2">Last, a little about you</div><div class="sub">What should Hisn call you?</div><input class="field" id="nameIn" value="${AR() ? nm(st.name) : st.name}" aria-label="First name" maxlength="25"><div class="grow"></div><button class="btn" data-name>Finish the quiz →</button><div class="anon">Your answers stay on this phone</div></div>` },
   notify: { g: 'First run', n: 'Reminders', from: 'Unchaind 19', note: 'Unchaind shows three sample notifications before it asks. So does Hisn, with Fajr, the verse and the evening reflection.', h: () => `<div class="scr land fade"><div class="stack">${[['Fajr in 10 minutes', 'Start the day with the one who keeps you.', 'now'], ['Verse for today', 'أَلَمْ يَعْلَم بِأَنَّ ٱللَّهَ يَرَىٰ · 96:14', '07:00'], ['Seven nights', 'A full week, alḥamdulillāh. Tap to see it.', 'yesterday']].map(([a, b, t], i) => `<div class="noti" style="--i:${i}"><span class="appico">${logo(20, 'light')}</span><div class="grow"><b>${a}</b><div>${b}</div></div><small>${t}</small></div>`).join('')}</div><div class="t1 c" style="font-size:28px">Let us help you stay strong </div><div class="card"><div class="row"><span class="icn">${li('bell')}</span><div class="grow"><b>Prayer and reflection reminders</b><div class="sub">Gentle, never more than four a day</div></div><button class="switch" aria-label="Reminders"></button></div></div><div class="grow"></div><button class="btn" data-go="s0">Yes, remind me</button><button class="btn ghost" style="color:#fff" data-go="s0">Later</button></div>` },
   blocked: { g: 'Moments', n: 'A page was closed', from: 'Hisn only', note: 'The moment the whole app exists for. Unchaind has no screen for it. Calm, one object, one line, and the choice to turn back within 10 minutes.', h: () => `<div class="scr deep land"><div style="height:30px"></div>${ic2('shield')}<div class="t1 c" style="font-size:28px">${T('Hisn closed this page', 'أغلق حصن هذه الصفحة')}</div><div class="sub c">${T('Lower your gaze for a moment. Nothing about it was saved.', 'غُضّ بصرك لحظة. لم يُحفظ شيء عمّا ظهر.')}</div><div class="quran" style="font-size:22px">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ</div><div class="pillrow"><span>${li('clock', 16)} ${T('Turn back within', 'ارجع خلال')} <b id="blk">${N('9:42')}</b></span></div><div class="sub c" style="font-size:13px">${T('Breathe with astaghfirullāh now and today is marked "turned back in time" on your calendar.', 'تنفّس مع الاستغفار الآن، فيُعلَّم يومك في التقويم «رجوع في وقته».')}</div><div class="grow"></div><button class="btn white" data-go="breathe">${T('Breathe with dhikr', 'تنفّس مع الذكر')}</button><button class="btn ghost" style="color:#fff" data-go="home">${T('Back to home', 'العودة إلى الرئيسية')}</button></div>` },
   milestone: { g: 'Moments', n: 'Milestone', from: 'Unchaind 64', note: 'Unchaind unlocks milestones quietly in a list. Hisn celebrates the night it happens, and the share card shows only nights, never anything about adult content.', h: () => `<div class="scr land fade" id="mscr"><div class="row"><span></span><button class="back" style="margin-inline-start:auto" data-go="home">${li('x')}</button></div><div class="grow"></div>${ic2('medal')}<div class="k c">${T('Milestone reached', 'بلغتَ محطة')}</div><div class="t1 c">${T('Your first week', 'أسبوعك الأول')}</div><div class="sub c">${T(N(7) + ' nights of light. Alḥamdulillāh.', N(7) + ' ليالٍ من النور. الحمد لله.')}</div><div class="sharecard"><div class="row">${logo(22, 'ink')}<b>Hisn</b></div><div class="t2">${N(7)} ${T('nights of light', 'ليالٍ من النور')}</div><div class="quran" style="font-size:18px">وَمَن يَتَّقِ ٱللَّهَ يَجْعَل لَّهُۥ مَخْرَجًا</div></div><div class="grow"></div><button class="btn white">${T('Share the card', 'شارك البطاقة')}</button><button class="btn ghost" style="color:#fff" data-go="home">${T('Continue', 'متابعة')}</button></div>` },
@@ -533,9 +810,9 @@ const homeEn = S.home.h;
 S.home.h = () => AR() ? homeAr() : homeEn();
 function homeAr() {
   const t = st.tasks;
-  return `<div class="scr" id="homescr"><div class="homehd">${logo(30, 'ink')}<b>السلام عليكم يا ${st.name === 'Yusuf' ? 'يوسف' : st.name}</b><button class="avatar" data-go="settings" aria-label="الإعدادات">${li('user', 18)}</button></div>
+  return `<div class="scr" id="homescr"><div class="homehd">${logo(30, 'ink')}<b>السلام عليكم يا ${nm(st.name)}</b><button class="avatar" data-go="settings" aria-label="الإعدادات">${li('user', 18)}</button></div>
   <div class="since"><div class="k">ليالٍ من النور منذ ١٣ ربيع الآخر</div><div class="daysbig"><b id="days">${N(9)}</b><span>ليالٍ</span></div><div class="timer"><i></i><span id="tick">١٥:٢٨:٠٤</span></div></div>
-  <div class="rounds"><button data-go="dua"><span class="icn"><img src="img/ic-hands.png" alt=""></span>جدار الدعاء</button><button data-go="progress"><span class="icn"><img src="img/ic-medal.png" alt=""></span>التقدّم</button><button data-go="read"><span class="icn"><img src="img/ic-quran.png" alt=""></span>المصحف</button></div>
+  <div class="rounds"><button data-go="adhkar"><span class="icn"><img src="img/ic-misbaha.png" alt=""></span>الأذكار</button><button data-go="dua"><span class="icn"><img src="img/ic-hands.png" alt=""></span>جدار الدعاء</button><button data-go="progress"><span class="icn"><img src="img/ic-medal.png" alt=""></span>التقدّم</button><button data-go="read"><span class="icn"><img src="img/ic-quran.png" alt=""></span>المصحف</button></div>
   <div><div class="bar"><i style="width:22.5%"></i></div><div class="sub c" style="font-size:12px;margin-top:6px">٩ من ٤٠ ليلة حتى أول محطة</div></div>
   <div class="card" style="padding:10px"><div class="prayers">${[['الفجر', '٠٦:١٢'], ['الظهر', '١٢:٢٤'], ['العصر', '١٤:٣١'], ['المغرب', '١٦:٤٣'], ['العشاء', '١٨:١٢']].map(([n, tm], i) => `<div class="${i === 3 ? 'nx' : i < 3 ? 'dn' : ''}">${n}<b>${tm}</b></div>`).join('')}</div></div>
   <div class="tasks"><button class="task ${t.ref ? 'done' : ''}" data-go="reflect">${li('pen')}<b>${t.ref ? 'تمّت المحاسبة' : 'لم تحاسب نفسك الليلة'}</b><small>دقيقة تنظر فيها إلى يومك</small></button><button class="task ${t.read ? 'done' : ''}" data-go="read">${li('book')}<b>${t.read ? 'تمّ ورد اليوم' : 'أكمل ورد اليوم'}</b><small>النور ٣٠–٣١ · ٤ دقائق</small></button></div>
@@ -551,7 +828,7 @@ S.help.h = () => !AR() ? helpEn() : `<div class="scr help"><div class="row" styl
 S.support.h = () => !AR() ? supportEn() : `<div class="scr help"><div class="row" style="justify-content:space-between"><button class="back" data-go="help">${li('back')}</button><b>اطلب العون</b><button class="back" data-go="home">${li('x')}</button></div><div class="t1 c" style="font-size:30px">انتظر… لم تسقط بعد</div><div class="sub c">كيف تريد أن تتجاوز هذه الدقيقة؟ عندك القوّة لذلك.</div><button class="choice" data-go="breathe">${ic('misbaha', 'sm')}<b>تنفّس مع الذكر</b><span class="sub">ثلاثة أنفاس هادئة مع الاستغفار. ٣٠ ثانية.</span></button><button class="choice" data-go="companion">${ic('olive', 'sm')}<b>اتصل بأحمد</b><span class="sub">رفيقك. لا يعرف إلا أنك طلبت العون.</span></button><div class="grow"></div></div>`;
 S.breathe.h = () => !AR() ? breatheEn() : `<div class="scr help"><div class="row" style="justify-content:space-between"><button class="back" data-go="support">${li('back')}</button><b>تمالك نفسك</b><button class="back" data-go="home">${li('x')}</button></div><div class="t2 c">لنتوقّف معًا</div><div class="sub c">الرغبة تمضي، ووعدك يبقى. تنفّس مع الدائرة.</div><div class="breath" id="breath"><i></i><b id="bword">شهيق</b></div><div class="quran" id="bdhikr" style="font-size:26px">أَسْتَغْفِرُ ٱللَّٰهَ</div><div class="sub c" id="bround">الجولة ١ من ٣</div><div class="grow"></div><button class="btn" data-go="pray">تابع إلى الصلاة</button></div>`;
 S.pray.h = () => !AR() ? prayEn() : `<div class="scr land fade"><div class="row"><button class="back" data-go="breathe">${li('back')}</button><b class="grow c">مضت</b><button class="back" data-go="home">${li('x')}</button></div><div class="t2 c">خطوة أخرى تجعلها تمضي حقًّا</div><div class="card"><div class="row">${ic('ibrik', 'xs')}<div><b>توضّأ</b><div class="sub">ماء وبداية جديدة</div></div></div></div><div class="card"><div class="row">${ic('rug', 'xs')}<div><b>صلِّ ركعتين</b><div class="sub">يبقى حصن هادئًا ١٠ دقائق</div></div></div></div><div class="card"><div class="row">${ic('hands', 'xs')}<div><b>ادعُ</b><div class="sub" style="font-size:15px">يا مقلّب القلوب ثبّت قلبي على دينك</div></div></div></div><div class="grow"></div><button class="btn white" data-go="home">تمّ، العودة إلى الرئيسية</button></div>`;
-S.slip.h = () => !AR() ? slipEn() : `<div class="scr help"><div class="row" style="justify-content:space-between"><button class="back" data-go="help">${li('back')}</button><b>عُد</b><button class="back" data-go="home">${li('x')}</button></div><div class="t1 c" style="font-size:30px">الباب ما زال مفتوحًا</div><div class="quran" style="font-size:20px">لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ ۚ إِنَّ ٱللَّهَ يَغْفِرُ ٱلذُّنُوبَ جَمِيعًا</div><div class="qsrc">الزمر ٥٣</div><div class="helpcard c"><div class="k" style="color:inherit;opacity:.7">ليالٍ من النور، محفوظة</div><div class="t1">٤١</div><div class="sub">لا يُمحى شيء. الليلة تُحسب من الآن.</div></div><div class="helpcard"><b>ثلاث خطوات للعودة</b><div class="sub">١ · استغفار من القلب<br>٢ · وضوء وركعتا توبة (أبو داود ١٥٢١)<br>٣ · تغيير واحد: أغلق الباب الذي جاء منه</div></div><div class="grow"></div><button class="btn" data-go="home">${li('check')} سأعود</button></div>`;
+S.slip.h = () => !AR() ? slipEn() : `<div class="scr help"><div class="row" style="justify-content:space-between"><button class="back" data-go="help">${li('back')}</button><b>عُد</b><button class="back" data-go="home">${li('x')}</button></div><div class="t1 c" style="font-size:30px">الباب ما زال مفتوحًا</div><div class="quran" style="font-size:20px">لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ ۚ إِنَّ ٱللَّهَ يَغْفِرُ ٱلذُّنُوبَ جَمِيعًا</div><div class="qsrc">الزمر ٥٣</div><div class="helpcard c"><div class="k" style="color:inherit;opacity:.7">ليالٍ من النور، محفوظة</div><div class="t1">٤١</div><div class="sub">لا يُمحى شيء. الليلة تُحسب من الآن.</div></div><div class="helpcard"><b>ثلاث خطوات للعودة</b><div class="sub">١ · استغفار من القلب<br>٢ · وضوء وركعتا توبة (أبو داود ١٥٢١)<br>٣ · تغيير واحد: أغلق الباب الذي جاء منه</div></div><div class="grow"></div><button class="btn" data-slip>${li('check')} سأعود</button></div>`;
 ['home', 'help', 'support', 'breathe', 'pray', 'slip', 'blocked', 'milestone', 'wait'].forEach(k => S[k].ar = 1);
 
 /* tools: make Focus, Open Wait and Guardian open their screens */
@@ -570,6 +847,7 @@ Object.assign(L, {
   file: '<path d="M6 3h9l4 4v14H6zM14 3v5h5"/>',
   battery: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 11v2M6 10v4"/>',
   layers: '<path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>',
+  chart: '<path d="M4 20V11M10 20V5M16 20v-6M21 20H3"/>',
 });
 st.layers = { sites: true, words: true, images: false, apps: true, lock: true };
 st.safe = true; st.alwaysOn = false; st.blurMode = 0; st.checked = null; st.setupStep = 2;
@@ -588,7 +866,7 @@ const head = (title, backTo) => `<div class="row"><button class="back" data-go="
 const amber = (txt, go, btn = 'Fix') => `<div class="warnrow"><span>${li('alert', 18)}</span><div class="grow">${txt}</div>${go ? `<button class="minibtn" data-go="${go}">${btn}</button>` : ''}</div>`;
 
 Object.assign(S, {
-  setup: { g: 'Protection', n: 'Setup guide', from: 'Unchaind 19 + our setup', note: 'Our app\'s setup steps, one at a time like Unchaind\'s Safari guide: a picture of the Android switch to tap, then "Open settings". The order matches the general app.', h: () => {
+  setup: { g: 'First run', n: 'Setup guide', from: 'Unchaind 19 + our setup', note: 'Our app\'s setup steps, one at a time like Unchaind\'s Safari guide: a picture of the Android switch to tap, then "Open settings". The order matches the general app.', h: () => {
     const steps = [['shield', 'App protection', 'Lets Hisn read words and close apps you choose', 'Settings › Accessibility › Hisn'], ['wifi', 'Website filter', 'Android asks to allow Hisn\'s local VPN', 'A system dialog: tap OK'], ['key', 'Always-on VPN', 'So the filter can\'t be switched off quietly', 'Settings › Network › VPN › Hisn › Always-on'], ['battery', 'Battery', 'So Android doesn\'t stop Hisn at night', 'Settings › Apps › Hisn › Battery › Unrestricted'], ['bell', 'Notifications', 'For prayer reminders and spot alerts', 'A system dialog: tap Allow']];
     const i = st.setupStep, s = steps[i];
     return `<div class="scr">${head('Set up protection', 'free')}<div class="bar"><i style="width:${(i + 1) * 20}%"></i></div><div class="sub c" style="font-weight:700">Step ${i + 1} of 5</div>${ic('shield', 'sm')}<div class="t2 c">${s[1]}</div><div class="sub c">${s[2]}</div><div class="mock"><div class="mockbar">${s[3]}</div><div class="mockrow"><span class="row" style="gap:8px"><span class="appico">${logo(18, 'light')}</span><b>Hisn</b></span><span class="switch hl"></span></div><div class="mockrow dim2"><span>Other app</span><span class="switch off"></span></div></div><div class="list">${steps.map(([ico, a], k) => `<button data-step="${k}"><span class="icn" style="${k < i ? 'background:#e6f7ec;color:#2a9d55' : ''}">${li(k < i ? 'check' : ico)}</span><span><b>${a}</b><small>${k < i ? 'Done' : k === i ? 'Now' : 'Next'}</small></span></button>`).join('')}</div><button class="btn" data-step-next>${i < 4 ? 'Open settings' : 'Finish'}</button><button class="btn ghost" data-go="home">Later</button></div>`;
@@ -611,7 +889,7 @@ Object.assign(S, {
   calendar: { g: 'Progress', n: 'Calendar and notes', from: 'Unchaind 63 + My notes', note: 'Your notes live on the calendar. A small mark under a day means you wrote something. Tap any day to read its note, its reflection and what pulled at you. Today has a box to write tonight\'s note; save it and the mark appears.', h: () => {
     const d = st.sel, n = st.notes[d], state = dayState(d);
     const label = { ok: 'Night of light', pol: 'Turned back in time', no: 'Came back after a slip', future: 'Not yet' }[state];
-    return `<div class="scr">${head('Your calendar', 'progress')}<div class="row" style="justify-content:space-between"><span class="back">${li('back', 16)}</span><div class="c"><b>November 2026</b><div class="sub" style="font-size:12px">Jumādā I – II 1448</div></div><span class="back">${li('chev', 16)}</span></div><div class="cal big">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(x => `<span>${x}</span>`).join('')}${Array.from({length: 30}, (_, i) => { const day = i + 1, s = dayState(day); return `<span><button class="dbtn ${s} ${day === 23 ? 'today' : ''} ${day === d ? 'sel' : ''}" data-day="${day}" ${s === 'future' ? 'disabled' : ''}>${day}</button><em class="${st.notes[day]?.note ? 'has' : ''}"></em></span>`; }).join('')}</div><div class="legend2"><span><i class="ok"></i>Clean</span><span><i class="pol"></i>Turned back</span><span><i class="no"></i>Slip</span><span><em class="has"></em>Note</span></div>
+    return `<div class="scr">${head('Your calendar', 'progress')}<div class="row" style="justify-content:space-between"><span class="back">${li('back', 16)}</span><div class="c"><b>November 2026</b><div class="sub" style="font-size:12px">Jumādā I – II 1448</div></div><span class="back">${li('chev', 16)}</span></div><div class="cal big">${DOW().map(x => `<span>${x}</span>`).join('')}${Array.from({length: 30}, (_, i) => { const day = i + 1, s = dayState(day); return `<span><button class="dbtn ${s} ${day === 23 ? 'today' : ''} ${day === d ? 'sel' : ''}" data-day="${day}" ${s === 'future' ? 'disabled' : ''}>${day}</button><em class="${st.notes[day]?.note ? 'has' : ''}"></em></span>`; }).join('')}</div><div class="legend2"><span><i class="ok"></i>Clean</span><span><i class="pol"></i>Turned back</span><span><i class="no"></i>Slip</span><span><em class="has"></em>Note</span></div>
     <div class="card daycard"><div class="row"><div class="grow"><b>${d === 23 ? 'Today' : (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][(d - 1) % 7] + ' ' + d + ' November')}</b><div class="sub">${label}</div></div><span class="pill ${state}">${{ ok: 'Clean', pol: 'In time', no: 'Slip', future: '' }[state]}</span></div>
     ${n?.note ? `<div class="notebody">“${n.note}”</div>` : d === 23 ? `<textarea class="field" id="todayNote" rows="3" placeholder="What happened today? What helped?" aria-label="Tonight's note"></textarea><button class="btn" data-savenote>Save to today</button>` : '<div class="sub">No note this day.</div>'}
     ${n?.r ? `<div class="minibars">${['Prayer', 'Gaze', 'Qurʾān', 'Calm', 'Energy'].map((x, i) => `<div><span>${x}</span><i style="--v:${n.r[i] * 10}%"></i><b>${n.r[i]}</b></div>`).join('')}</div>` : ''}
@@ -633,23 +911,442 @@ S.reflect.h = () => refEn().replace('<button class="btn" data-done="ref">→ Sav
 const toolsEn2 = S.tools.h;
 S.tools.h = () => toolsEn2().replace('<button><span class="icn">' + li('pen'), '<button data-go="calendar"><span class="icn">' + li('pen')).replace('What you wrote for hard minutes', 'On your calendar, one per day');
 
-{ const ORDER = ['splash','welcome','q0','q1','q2','q3','name','told','notify','s0','s1','s2','goals','begin','pledge','plan','free','setup','home','dua','blocked','blockedapp','milestone','wait','focus','companion','help','support','breathe','pray','slip','shield','l_sites','l_sites_fix','l_words','l_images','l_apps','l_lock','lists','health','progress','calendar','reflect','read','tools','settings'];
+/* ---------------- round 4: Arabic everywhere ---------------- */
+const DICT = {
+"Hisn": "حِصن", "\"Tell the believing men to lower their gaze.\" · 24:30": "سورة النور · ٣٠", "Tap to continue": "اضغط للمتابعة",
+"Welcome to": "أهلًا بك في", "Allah has given you a way to guard your gaze and your heart. We're here to help you take it.": "جعل الله لك سبيلًا تحفظ به بصرك وقلبك، ونحن هنا لنُعينك عليه.",
+"Closes adult content on this phone": "يحجب المحتوى الإباحي على هاتفك", "Help in the hard minute": "عونٌ في اللحظة الصعبة", "Nearer to Allah, every day": "أقرب إلى الله كل يوم",
+"Start the quiz →": "ابدأ الأسئلة ←", "No account. Nothing leaves your phone.": "بلا حساب. لا يخرج شيء من هاتفك.",
+"What do you want to guard?": "ماذا تريد أن تحفظ؟", "Choose all that fit.": "اختر كل ما ينطبق عليك.", "My gaze: adult content": "بصري: المحتوى الإباحي",
+"My time: Shorts, Reels, feeds": "وقتي: المقاطع القصيرة والتمرير", "My prayers: the phone at ṣalāh": "صلاتي: الهاتف وقت الصلاة", "My nights: scrolling in bed": "لياليَّ: التمرير في الفراش",
+"Continue →": "متابعة ←", "Your answers stay on this phone": "إجاباتك تبقى على هاتفك", "When is it hardest?": "متى يكون الأمر أصعب؟",
+"Late at night, alone": "في آخر الليل، وحدي", "After a hard day": "بعد يوم متعب", "When I'm bored": "حين أشعر بالملل", "I'm not sure yet": "لست متأكدًا بعد",
+"How are your five prayers right now?": "كيف حال صلواتك الخمس الآن؟", "No judgement. This only sets your reminders.": "لا لوم هنا. هذا يضبط تذكيراتك فقط.",
+"All five, mostly on time": "الخمس، وغالبًا في وقتها", "Most of them": "معظمها", "A few": "بعضها", "I want to start again": "أريد أن أبدأ من جديد",
+"How should Hisn speak to you?": "كيف يخاطبك حصن؟", "Arabic changes with this.": "تتغيّر صيغة الخطاب بحسب اختيارك.", "As a brother · أخي": "بصيغة المذكّر · أخي",
+"As a sister · أختي": "بصيغة المؤنّث · أختي", "Neutral": "صيغة محايدة", "Last, a little about you": "وأخيرًا، قليلٌ عنك", "What should Hisn call you?": "بماذا يناديك حصن؟",
+"Finish the quiz →": "أنهِ الأسئلة ←", "First name": "الاسم الأول", "Analysis done": "اكتمل التحليل",
+"Nights are hardest": "الليل أصعب الأوقات", "Feeds go quiet after ʿIshāʾ, until Fajr": "تهدأ المقاطع بعد العشاء حتى الفجر", "Most prayers, not all": "معظم الصلوات، لا كلها",
+"A gentle reminder 10 minutes before each": "تذكير لطيف قبل كل صلاة بعشر دقائق", "Your gaze and your time": "بصرك ووقتك",
+"Adult sites, words and images, plus Shorts and Reels": "المواقع والكلمات والصور الإباحية، والمقاطع القصيرة", "You may feel far from Allah after": "قد تشعر بالبعد عن الله بعدها",
+"A way back is always one tap away": "طريق العودة على بُعد لمسة دائمًا", "That's right →": "هذا صحيح ←", "Fajr in 10 minutes": "الفجر بعد ١٠ دقائق",
+"Start the day with the one who keeps you.": "ابدأ يومك مع من يحفظك.", "now": "الآن", "Verse for today": "آية اليوم", "Seven nights": "سبع ليالٍ",
+"A full week, alḥamdulillāh. Tap to see it.": "أسبوع كامل، الحمد لله. اضغط لتراه.", "yesterday": "أمس", "Let us help you stay strong": "دعنا نُعِنك على الثبات",
+"Prayer and reflection reminders": "تذكير بالصلاة والمحاسبة", "Gentle, never more than four a day": "لطيفة، ولا تزيد على أربعة في اليوم", "Yes, remind me": "نعم، ذكّرني",
+"Later": "لاحقًا", "Reminders": "التذكيرات", "It never starts with the worst step": "لا يبدأ الأمر بأسوأ خطوة",
+"A feed, then a search, then a page. The Qur'an warns about footsteps for a reason. Hisn closes the first doors.": "مقطع، ثم بحث، ثم صفحة. ولهذا حذّر القرآن من الخطوات. وحصن يغلق الأبواب الأولى.",
+"Next →": "التالي ←", "The gaze comes first": "النظر أولًا",
+"The command to lower the gaze comes before the command to guard yourself. What you don't look at, you don't chase.": "جاء الأمر بغضّ البصر قبل الأمر بحفظ الفرج. وما لا تنظر إليه لا تلهث وراءه.",
+"The door is never closed": "الباب لا يُغلق أبدًا", "However many times it happened, Allah forgives all sins for the one who turns back. That is where Hisn starts.": "مهما تكرّر الأمر، فإن الله يغفر الذنوب جميعًا لمن رجع إليه. ومن هنا يبدأ حصن.",
+"Follow your goals": "حدّد أهدافك", "Every path is different. Choose what you want to work on.": "لكلٍّ طريقه. اختر ما تريد أن تعمل عليه.", "Pray on time": "الصلاة في وقتها",
+"Lower my gaze": "غضّ بصري", "Qur'an every day": "القرآن كل يوم", "Nearer to Allah": "القرب من الله", "A stronger marriage": "زواج أقوى", "Better with family": "علاقة أطيب مع الأهل",
+"Focus": "التركيز", "More energy": "طاقة أكبر", "Sleep before midnight": "النوم قبل منتصف الليل", "Fast Mondays and Thursdays": "صيام الاثنين والخميس", "Choose my goals →": "اعتمد أهدافي ←",
+"Five short promises, to Allah and to yourself. Each one has a verse.": "خمسة عهود قصيرة، مع الله ومع نفسك، ومع كل عهد آية.", "Make my promises →": "أعطِ عهودي ←",
+"Will you seek Allah's help, and not only your own strength?": "هل تستعين بالله، لا بقوّتك وحدها؟", "Thee (alone) we worship; Thee (alone) we ask for help. · 1:5": "سورة الفاتحة · ٥",
+"Hold to promise": "اضغط مطوّلًا لتعاهد", "not now": "ليس الآن", "Will you guard your eyes and your heart from what leads to it?": "هل تحفظ عينيك وقلبك مما يقود إليه؟",
+"Tell the believing men to lower their gaze. · 24:30": "سورة النور · ٣٠", "previous": "السابق", "Will you stop at the first step, not the last?": "هل تتوقّف عند الخطوة الأولى، لا الأخيرة؟",
+"Follow not the footsteps of the devil. · 24:21": "سورة النور · ٢١", "Do you believe Allah will make a way out for you?": "هل توقن أن الله سيجعل لك مخرجًا؟",
+"Whosoever keepeth his duty to Allah, Allah will appoint a way out for him. · 65:2": "سورة الطلاق · ٢", "If you fall, will you remember Allah and come back?": "إن سقطت، هل تذكر الله وتعود؟",
+"…remember Allah and implore forgiveness for their sins. · 3:135": "سورة آل عمران · ١٣٥", "If every night is clean": "إن صفت كل ليلة", "2 January 2027": "٢٣ رجب ١٤٤٨",
+"40 nights of light · slips don't reset the plan": "٤٠ ليلة من النور · الزلّة لا تُعيد الخطة من الصفر", "Close the doors": "أغلق الأبواب", "Walls up, quiet nights": "الأسوار قائمة، والليالي هادئة",
+"Fill the time": "املأ الوقت", "Your Instead list": "قائمة البدائل", "Build the habit": "ابنِ العادة", "Fajr and one page a day": "الفجر وصفحة كل يوم", "Steady": "الثبات",
+"Your first milestone medal": "أول وسام لك", "Begin →": "لنبدأ ←", "Hisn is free": "حصن مجاني",
+"No account, no ads, no subscription. The code is open. If it helps you, you can give ṣadaqa later from your profile.": "بلا حساب ولا إعلانات ولا اشتراك، والشيفرة مفتوحة. وإن نفعك فبإمكانك أن تتصدّق لاحقًا من صفحتك.",
+"Set up protection →": "إعداد الحماية ←", "Set up protection": "إعداد الحماية", "App protection": "حماية التطبيقات", "Lets Hisn read words and close apps you choose": "تتيح لحصن قراءة الكلمات وإغلاق ما تختاره من تطبيقات",
+"Settings › Accessibility › Hisn": "الإعدادات ‹ تسهيل الاستخدام ‹ حصن", "Other app": "تطبيق آخر", "Now": "الآن", "Website filter": "مرشّح المواقع", "Next": "التالي",
+"Always-on VPN": "الشبكة الافتراضية الدائمة", "Battery": "البطارية", "Notifications": "الإشعارات", "Open settings": "افتح الإعدادات", "Android asks to allow Hisn's local VPN": "يطلب أندرويد السماح بشبكة حصن المحلية",
+"A system dialog: tap OK": "نافذة من النظام: اضغط «موافق»", "Done": "تمّ", "So the filter can't be switched off quietly": "حتى لا يُطفأ المرشّح خِلسة",
+"Settings › Network › VPN › Hisn › Always-on": "الإعدادات ‹ الشبكة ‹ VPN ‹ حصن ‹ دائم التشغيل", "So Android doesn't stop Hisn at night": "حتى لا يوقف أندرويد حصنًا في الليل",
+"Settings › Apps › Hisn › Battery › Unrestricted": "الإعدادات ‹ التطبيقات ‹ حصن ‹ البطارية ‹ غير مقيّد", "For prayer reminders and spot alerts": "لتذكير الصلاة وتنبيهات الحجب",
+"A system dialog: tap Allow": "نافذة من النظام: اضغط «سماح»", "Finish": "إنهاء", "Du'a wall": "جدار الدعاء", "For you": "لك", "Staying strong": "الثبات", "Coming back": "العودة", "Marriage": "الزواج",
+"A brother · 2 h": "أخ · قبل ساعتين", "Day 12. Please make du'a I hold on through exams.": "اليوم الثاني عشر. ادعوا لي أن أثبت في أيام الامتحانات.", "A sister · 5 h": "أخت · قبل ٥ ساعات",
+"I came back after a long time away. Du'a that I stay.": "عدتُ بعد غياب طويل. ادعوا لي بالثبات.", "A brother · 9 h": "أخ · قبل ٩ ساعات", "Pray for my marriage. I want to be better for her.": "ادعوا لزواجي، أريد أن أكون خيرًا لها.",
+"Ask for du'a": "اطلب الدعاء", "Anonymous. No comments, no profiles.": "بلا أسماء ولا تعليقات ولا ملفات شخصية.", "Reels are closed": "المقاطع القصيرة مغلقة",
+"Instagram stays open for messages. You chose this on day 1.": "يبقى إنستغرام مفتوحًا للرسائل. اخترتَ هذا في يومك الأول.", "Given back this week": "ما استعدته هذا الأسبوع", "6 h 40": "٦ س ٤٠ د",
+"Before Hisn: 3 h 45 a day · yesterday 2 h 12": "قبل حصن: ٣ س ٤٥ د يوميًا · أمس ٢ س ١٢ د", "Back to messages": "العودة إلى الرسائل", "Do something instead": "افعل شيئًا آخر", "left": "متبقٍّ",
+"Revise for the exam": "مراجعة الامتحان", "Instagram, YouTube and TikTok are closed. Calls and messages still come through.": "إنستغرام ويوتيوب وتيك توك مغلقة، والمكالمات والرسائل تصلك.",
+"Maghrib at 16:43": "المغرب ١٦:٤٣", "Focus pauses for the prayer, then resumes": "يتوقّف التركيز للصلاة ثم يُستأنف", "End early": "إنهاء مبكر", "A companion on the way": "رفيقٌ في الطريق",
+"Choose one brother or sister you trust. The Prophet ﷺ said a person is upon the way of his close friend.": "اختر أخًا أو أختًا تثق به. قال النبي ﷺ: «الرجلُ على دينِ خليلِه».", "Abū Dāwūd 4833": "رواه أبو داود ٤٨٣٣",
+"They see": "يرى", "Your nights of light, and when you tap \"Call\"": "ليالي نورك، ووقت ضغطك «اتصل»", "They never see": "لا يرى أبدًا", "What was blocked, your notes or your reflections": "ما حُجب، ولا ملاحظاتك، ولا محاسباتك",
+"Invite Ahmad": "ادعُ أحمد", "Content shield": "درع المحتوى", "Adult content filter": "مرشّح المحتوى الإباحي",
+"Closes adult sites, words and images in every app and browser on this phone. Matching happens here; nothing is uploaded.": "يحجب المواقع والكلمات والصور الإباحية في كل تطبيق ومتصفح على هاتفك. يجري الفحص هنا، ولا يُرفع شيء.",
+"SHIELD ON": "الدرع يعمل", "SHIELD OFF": "الدرع متوقف", "Show": "عرض", "Websites": "المواقع", "DNS filter · 395k adult sites · SafeSearch": "مرشّح DNS · ٣٩٥ ألف موقع · البحث الآمن",
+"DNS filter · 395k adult sites": "مرشّح DNS · ٣٩٥ ألف موقع", "Words in apps": "الكلمات في التطبيقات", "In 9 apps · Telegram searches closed": "في ٩ تطبيقات · بحث تيليجرام مغلق",
+"Images and video": "الصور والفيديو", "Off · Android 14+": "متوقف · أندرويد ١٤ فما فوق", "Checked on this phone · people blurred": "تُفحص على هاتفك · تُطمس صور الناس",
+"Apps and feeds": "التطبيقات والمقاطع", "Shorts and Reels closed · 2 apps blocked": "المقاطع القصيرة مغلقة · تطبيقان محجوبان", "Protection lock": "قفل الحماية",
+"Until 1 Ramaḍān · uninstall guarded": "حتى ١ رمضان · الحذف محميّ", "Your lists": "قوائمك", "Your own sites and words": "مواقعك وكلماتك الخاصة", "Check a website": "افحص موقعًا",
+"Would Hisn block it?": "هل يحجبه حصن؟", "Health check": "فحص السلامة", "Is every layer running?": "هل تعمل كل الطبقات؟",
+"Running · 395,312 adult sites · list v42": "يعمل · ٣٩٥٬٣١٢ موقعًا محجوبًا · القائمة ٤٢", "Off · no site is filtered": "متوقف · لا يُحجب أي موقع",
+"Blocked today: 6 · checked on this phone, no browsing log": "حُجب اليوم: ٦ · الفحص على هاتفك، بلا سجلّ تصفّح", "Force SafeSearch": "فرض البحث الآمن",
+"Google, Bing, DuckDuckGo, YouTube": "جوجل، بينج، DuckDuckGo، يوتيوب", "Always-on VPN is off. Another VPN or a tap in settings can stop the filter.": "الشبكة الدائمة متوقفة، وقد يوقف تطبيقٌ آخر أو لمسةٌ في الإعدادات المرشّحَ.",
+"On. The filter can't be switched off quietly.": "تعمل. لا يمكن إطفاء المرشّح خِلسة.", "Turn on": "شغّلها", "Check": "افحص", "Only the site name is checked, not the page.": "يُفحص اسم الموقع فقط، لا الصفحة.",
+"SafeSearch": "البحث الآمن", "Website": "الموقع", "Blocked by the built-in list.": "محجوب في القائمة المدمجة.", "Blocked by your own list.": "محجوب في قائمتك الخاصة.",
+"Not on any list. That is not a promise about the page.": "ليس في أي قائمة، وهذا ليس ضمانًا للصفحة.", "Enter a site name like example.com.": "اكتب اسم موقع مثل example.com.",
+"Add to my blocked sites": "أضفه إلى مواقعي المحجوبة", "Keep the filter on": "أبقِ المرشّح يعمل",
+"Android can keep Hisn's filter running and block connections without it. Hisn can't switch this for you; it takes three taps.": "يستطيع أندرويد إبقاء مرشّح حصن يعمل وحجب الاتصال من دونه. لا يستطيع حصن تفعيل ذلك عنك، وتكفيك ثلاث لمسات.",
+"Settings › Network › VPN › Hisn": "الإعدادات ‹ الشبكة ‹ VPN ‹ حصن", "Block connections without VPN": "حظر الاتصال دون VPN", "I turned it on": "فعّلتُها",
+"Adult words": "الكلمات الإباحية", "4,812 words and phrases · on this phone": "٤٬٨١٢ كلمة وعبارة · على هاتفك", "Checked in 9 apps": "تُفحص في ٩ تطبيقات", "+ Add": "+ إضافة",
+"Adult searches, search bots and adult channels are closed. Normal chats stay open.": "البحث الإباحي وبوتات البحث والقنوات الإباحية مغلقة، والمحادثات العادية مفتوحة.",
+"Brave address bar": "شريط العنوان في Brave", "Hisn reads what you type in Brave's bar, so a typed adult address closes before it loads.": "يقرأ حصن ما تكتبه في شريط Brave، فيُغلَق العنوان الإباحي قبل أن يُفتح.",
+"Keyboards, password fields and system screens are always skipped.": "لوحات المفاتيح وحقول كلمات المرور وشاشات النظام مستثناة دائمًا.", "Image checks": "فحص الصور", "Off": "متوقف",
+"On · sampled windows, classified on this phone": "يعمل · عيّنات من الشاشة تُصنَّف على هاتفك", "Needs Android 14 or newer. Uses more battery.": "يتطلّب أندرويد ١٤ أو أحدث، ويستهلك بطارية أكثر.",
+"When a person is detected": "عند ظهور صورة شخص", "Blur people": "اطمس الأشخاص", "Cover the screen": "غطِّ الشاشة", "Only adult images": "الإباحية فقط", "Hisn hid this screen": "أخفى حصن هذه الشاشة",
+"Scroll on or go back": "تابع التمرير أو ارجع", "A street in Fez at dusk · 2,140 likes": "شارع في فاس عند الغروب · ٢٬١٤٠ إعجابًا", "Nothing leaves the phone. Screens are sampled, not recorded.": "لا يخرج شيء من الهاتف، تُفحص عيّنات ولا تُسجَّل الشاشة.",
+"App rules": "قواعد التطبيقات", "On": "يعمل", "Feeds closed inside apps": "مقاطع مغلقة داخل التطبيقات", "YouTube Shorts": "يوتيوب شورتس", "Closed · YouTube stays open": "مغلقة · يبقى يوتيوب مفتوحًا",
+"Instagram Reels": "ريلز إنستغرام", "Closed · messages stay open": "مغلقة · الرسائل مفتوحة", "TikTok": "تيك توك", "Open Wait · 10 s with dhikr": "انتظار الفتح · ١٠ ثوانٍ مع الذكر",
+"Blocked apps": "تطبيقات محجوبة", "Browsers without protection": "متصفحات بلا حماية", "Opera can open web links and no Hisn layer covers it.": "متصفح Opera يفتح الروابط ولا تغطيه أي طبقة من حصن.",
+"Block Opera": "احجب Opera", "Keep only Chrome": "أبقِ Chrome وحده", "Locked until 1 Ramaḍān": "مقفل حتى ١ رمضان", "Lock your rules": "أقفل قواعدك",
+"While it runs, no rule can be loosened, the filter stays on, and uninstalling Hisn is blocked. Rules can still be made stricter.": "ما دام القفل قائمًا فلا تخفيف لأي قاعدة، ويبقى المرشّح يعمل، ويُمنع حذف حصن. ويمكنك التشديد دائمًا.",
+"Time left": "الوقت المتبقي", "87 days": "٨٧ يومًا", "Uninstall protection": "الحماية من الحذف", "On while the lock runs": "تعمل ما دام القفل قائمًا", "Second space": "المساحة الثانية",
+"A second user or work profile is not covered. Hisn warns when one runs.": "المستخدم الثاني أو ملف العمل غير مشمول، وينبّهك حصن عند تشغيله.", "Guardian": "الوليّ",
+"A paired laptop can add rules, never remove them": "يضيف حاسوبٌ مقترن قواعد، ولا يستطيع حذفها", "The lock can't be ended early. That is the point of it.": "لا يمكن إنهاء القفل مبكرًا، وهذا هو المقصود منه.",
+"Until Fajr": "حتى الفجر", "7 days": "٧ أيام", "40 days": "٤٠ يومًا", "Until Ramaḍān": "حتى رمضان", "Hold to lock": "اضغط مطوّلًا للقفل",
+"Blocked sites": "مواقع محجوبة", "Words": "كلمات", "Always allowed": "مسموحة دائمًا", "Subdomains too": "مع النطاقات الفرعية", "Add": "أضف", "Import": "استيراد", "Export": "تصدير",
+"Hidden from screenshots while open.": "مخفية عن لقطات الشاشة ما دامت مفتوحة.", "Add a site": "أضف موقعًا", "Protection needs attention": "الحماية تحتاجك", "Everything is running": "كل شيء يعمل",
+"Checked a minute ago": "فُحص قبل دقيقة", "Connected": "متصل", "Running": "يعمل", "Stopped": "متوقف", "Fix": "أصلح", "Fix it": "أصلحها", "Unrestricted": "غير مقيّد", "None found": "لا يوجد",
+"Android can stop services. Hisn checks every 15 minutes and tells you.": "قد يوقف أندرويد الخدمات، ويفحص حصن كل ١٥ دقيقة ويخبرك.", "Your progress": "تقدّمك", "9 of 40 nights": "٩ من ٤٠ ليلة",
+"Hisn says": "يقول حصن", "Nine nights. You turned back twice within minutes this week. Your best nights follow ʿIshāʾ prayed at the masjid.": "تسع ليالٍ. رجعتَ مرتين خلال دقائق هذا الأسبوع، وأفضل لياليك بعد صلاة العشاء في المسجد.",
+"Your calendar": "تقويمك", "Notes →": "الملاحظات ←", "Milestones": "المحطات", "Reached": "بلغتها", "First week": "الأسبوع الأول", "7 nights": "٧ ليالٍ", "Bright lamp": "المصباح المضيء",
+"14 nights": "١٤ ليلة", "Forty nights": "أربعون ليلة", "40 nights": "٤٠ ليلة", "Kept out · private": "ما حُجب · خاص", "adult pages": "صفحة إباحية", "Given back": "ما استعدته", "38 h": "٣٨ ساعة",
+"from feeds": "من المقاطع", "November 2026": "جمادى الأولى – الآخرة ١٤٤٨", "Jumādā I – II 1448": "نوفمبر ٢٠٢٦", "Clean": "صافية", "Turned back": "رجوع", "Slip": "زلّة", "Note": "ملاحظة",
+"Today": "اليوم", "Night of light": "ليلة نور", "Turned back in time": "رجوع في وقته", "Came back after a slip": "عودة بعد زلّة", "Not yet": "لم يأتِ بعد", "In time": "في وقته",
+"No note this day.": "لا ملاحظة في هذا اليوم.", "Save to today": "احفظ في اليوم", "What happened today? What helped?": "ماذا حدث اليوم؟ وما الذي أعانك؟", "Tonight's note": "ملاحظة الليلة",
+"“First night. Phone charged in the kitchen, slept fine.”": "«الليلة الأولى. تركتُ الهاتف يشحن في المطبخ ونمت جيدًا.»",
+"“A page came up in Chrome. Breathed, made wuḍūʾ. It passed.”": "«ظهرت صفحة في كروم. تنفّستُ وتوضّأت، فمضت.»",
+"“Prayed ʿIshāʾ at the masjid. Best day so far.”": "«صلّيت العشاء في المسجد. أفضل يوم حتى الآن.»",
+"“Late scrolling again. Turned it off at 23:10.”": "«تمرير متأخر مرة أخرى. أطفأته الساعة ٢٣:١٠.»",
+"“Read an-Nūr 30–31 with the summary. One page of Qurʾān after Fajr.”": "«قرأت النور ٣٠–٣١ مع الخلاصة، وصفحة من القرآن بعد الفجر.»",
+"Tired": "تعب", "Bored": "ملل", "Alone": "وحدة", "Stress": "ضغط", "Qurʾān": "القرآن",
+"Monday, 12 Jumādā II": "الاثنين، ١٢ جمادى الآخرة", "How were these today?": "كيف كانت هذه اليوم؟", "Prayer": "الصلاة", "Did you pray on time today?": "هل صلّيت في الوقت اليوم؟",
+"Gaze": "البصر", "How well did you guard your eyes?": "كيف حفظت بصرك؟", "Qur'an and dhikr": "القرآن والذكر", "Did you read or remember Allah?": "هل قرأت أو ذكرت الله؟", "Calm": "السكينة",
+"How settled did you feel?": "كم شعرت بالطمأنينة؟", "Energy": "الطاقة", "How was your energy?": "كيف كانت طاقتك؟", "A note for tonight": "ملاحظة الليلة", "It goes on today in your calendar.": "تُحفظ على يوم اليوم في تقويمك.",
+"→ Save reflection and note": "احفظ المحاسبة والملاحظة", "What helped today?": "ما الذي أعانك اليوم؟", "Note for tonight": "ملاحظة الليلة", "Lowering the gaze · 3/7": "غضّ البصر · ٣ من ٧", "Aa": "خط",
+"In short": "باختصار", "The command comes before the reward: lower the gaze, then \"that is purer for them\". Your part is the lowering; the purity is the gift.": "جاء الأمر قبل الثمرة: غضّ البصر، ثم ﴿ذَٰلِكَ أَزْكَىٰ لَهُمْ﴾. عليك الغضّ، والزكاة هبةٌ من الله.",
+"4 min": "٤ دقائق", "an-Nūr 30–31": "النور ٣٠–٣١", "Tell the believing men to lower their gaze and be modest. That is purer for them. Lo! Allah is aware of what they do.": "",
+"And tell the believing women to lower their gaze and be modest…": "", "Mark as read": "تمّت القراءة", "Your toolbox": "أدواتك", "For right now": "للحظة الحاضرة",
+"Breathe with dhikr": "تنفّس مع الذكر", "30 seconds": "٣٠ ثانية", "Close feeds for a set time; pauses for prayer": "أغلق المقاطع لمدة محددة، ويتوقف للصلاة", "My notes": "ملاحظاتي",
+"On your calendar, one per day": "على تقويمك، ملاحظة لكل يوم", "Instead": "البدائل", "Wuḍūʾ, a page of Qur'an, a walk": "وضوء، صفحة من القرآن، مشي", "Your rules": "قواعدك", "Open Wait": "انتظار الفتح",
+"A pause with dhikr before chosen apps": "وقفة مع الذكر قبل التطبيقات المختارة", "Quiet nights": "الليالي الهادئة", "After ʿIshāʾ until Fajr": "من العشاء إلى الفجر", "Gray screen": "الشاشة الرمادية",
+"At night": "في الليل", "Daily limits": "الحدود اليومية", "Per app": "لكل تطبيق", "Lock": "القفل", "Rules can't be loosened": "لا تخفيف للقواعد", "A paired laptop can add rules": "حاسوب مقترن يضيف قواعد",
+"Phone": "الهاتف", "Home-screen widget": "أداة الشاشة الرئيسية", "Added in one tap on Android": "تُضاف بلمسة واحدة في أندرويد", "Settings": "الإعدادات", "You": "أنت", "Yusuf": "يوسف", "Maryam": "مريم",
+"Since 13 Rabīʿ II · goal 40 nights": "منذ ١٣ ربيع الآخر · الهدف ٤٠ ليلة", "Prayer times": "مواقيت الصلاة", "Amsterdam · MWL · calculated on this phone": "أمستردام · رابطة العالم الإسلامي · تُحسب على هاتفك",
+"Qur'an translation": "ترجمة معاني القرآن", "Pickthall · or Arabic only": "العربية فقط · أو ترجمة Pickthall", "Evening reflection": "محاسبة المساء", "Before each prayer": "قبل كل صلاة", "10 minutes": "١٠ دقائق",
+"Give ṣadaqa": "تصدّق", "Hisn is free and open source": "حصن مجاني ومفتوح المصدر", "Reflection reminder": "تذكير المحاسبة", "Prayer reminder": "تذكير الصلاة",
+"Your nights of light": "ليالي نورك", "Every clean night counts. A slip never wipes them.": "كل ليلة صافية تُحسب، والزلّة لا تمحوها.", "Help now, always here": "العون هنا دائمًا",
+"In a hard minute, one tap: your promise, dhikr, then prayer.": "في اللحظة الصعبة لمسة واحدة: عهدك، ثم الذكر، ثم الصلاة.", "Today, in three steps": "يومك في ثلاث خطوات",
+"An intention, a short reading, a one-minute reflection.": "نيّة، وورد قصير، ومحاسبة في دقيقة.", "Start": "ابدأ", "Skip": "تخطَّ",
+"Focus": "التركيز", "Companion": "الرفيق", "Health": "السلامة", "Morning adhkār": "أذكار الصباح",
+};
+const RX = [
+  [/^Promise (\d) \/ 5$/, 'العهد $1 من ٥'], [/^Step (\d) of 5$/, 'الخطوة $1 من ٥'], [/^I made du'a · (\d+)$/, 'دعوتُ · $1'],
+  [/^(\d) of 5 layers on$/, '$1 من ٥ طبقات تعمل'], [/^1 thing needs you$/, 'أمر واحد يحتاجك'], [/^(\d) things need you$/, '$1 أمور تحتاجك'], [/^(\d) of (\d) need you$/, '$1 من $2 تحتاجك'],
+  [/^(.+), this is what you told us, and what Hisn will do\.$/, (m, n) => `يا ${nm(n)}، هذا ما أخبرتنا به، وهذا ما سيفعله حصن.`],
+  [/^(.+), today is a new beginning$/, (m, n) => `يا ${nm(n)}، اليوم بداية جديدة`], [/^(.+), here is your plan$/, (m, n) => `يا ${nm(n)}، هذه خطتك`],
+  [/^As-salāmu ʿalaykum, (.+)$/, (m, n) => `السلام عليكم يا ${nm(n)}`],
+  [/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat) (\d+) November$/, (m, d, n) => `${{Sun: 'الأحد', Mon: 'الاثنين', Tue: 'الثلاثاء', Wed: 'الأربعاء', Thu: 'الخميس', Fri: 'الجمعة', Sat: 'السبت'}[d]} ${n} نوفمبر`],
+  [/^(\d) things? off: (.+)$/, (m, n) => `${n} من الطبقات متوقفة`],
+];
+const nm = (n) => n === 'Yusuf' ? 'يوسف' : n === 'Maryam' ? 'مريم' : n;
+const AD = (s) => s.replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]).replace(/%/g, '٪');
+function arabize(root) {
+  if (!AR()) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const nodes = []; let n;
+  while (n = w.nextNode()) nodes.push(n);
+  nodes.forEach(n => {
+    if (n.parentElement && n.parentElement.closest('.quran, .field, textarea, .keep')) return;
+    const raw = n.nodeValue, t = raw.replace(/‍/g, '').trim(); if (!t) return;
+    let out = DICT[t];
+    if (out === undefined) { for (const [re, to] of RX) { if (re.test(t)) { out = t.replace(re, to); break; } } }
+    if (out === undefined) out = t;
+    out = out.replace(/→/g, '←');
+    if (!/[A-Za-z]/.test(out)) out = AD(out);
+    if (out !== t) n.nodeValue = raw.replace(t, out);
+  });
+  root.querySelectorAll('[placeholder],[aria-label]').forEach(e => ['placeholder', 'aria-label'].forEach(a => { const v = e.getAttribute(a); if (v && DICT[v] !== undefined) e.setAttribute(a, DICT[v]); }));
+}
+const DOW = () => AR() ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+/* morning adhkār with a tasbīḥ counter */
+st.dh = [0, 0, 0]; st.dhi = 0;
+const ADHKAR = [
+  { t: T => T('The three Quls', 'المعوّذات'), ar: 'قُلْ هُوَ ٱللَّهُ أَحَدٌ · قُلْ أَعُوذُ بِرَبِّ ٱلْفَلَقِ · قُلْ أَعُوذُ بِرَبِّ ٱلنَّاسِ', n: 3, src: ['Abū Dāwūd 5082', 'أبو داود ٥٠٨٢'] },
+  { t: T => T('Glory and praise', 'التسبيح'), ar: 'سُبْحَانَ ٱللَّهِ وَبِحَمْدِهِ', n: 100, src: ['Muslim 2692', 'مسلم ٢٦٩٢'] },
+  { t: T => T('The master of seeking forgiveness', 'سيّد الاستغفار'), ar: 'ٱللَّهُمَّ أَنْتَ رَبِّي لَا إِلَٰهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَىٰ عَهْدِكَ وَوَعْدِكَ مَا ٱسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ لَكَ بِذَنْبِي فَٱغْفِرْ لِي، فَإِنَّهُ لَا يَغْفِرُ ٱلذُّنُوبَ إِلَّا أَنْتَ', n: 1, src: ['Bukhārī 6306', 'البخاري ٦٣٠٦'] },
+];
+S.adhkar = { g: 'Daily', n: 'Morning adhkār', ar: 1, from: 'Hisn only', note: 'A morning adhkār set with a real tasbīḥ counter: tap the big bead to count. Three adhkār with sound sources. When all are done, today\'s first task is ticked and the home shows it.', h: () => {
+  const i = st.dhi, a = ADHKAR[i], c = st.dh[i], all = st.dh.every((v, k) => v >= ADHKAR[k].n);
+  return `<div class="scr land fade">${head(T('Morning adhkār', 'أذكار الصباح'), 'home')}<div class="dhlist">${ADHKAR.map((x, k) => `<button class="dhitem ${k === i ? 'on' : ''} ${st.dh[k] >= x.n ? 'done' : ''}" data-dhi="${k}"><b>${x.t(T)}</b><span>${N(Math.min(st.dh[k], x.n))}/${N(x.n)}</span></button>`).join('')}</div>
+  <div class="quran dhtext" style="font-size:${a.ar.length > 60 ? 19 : 26}px">${a.ar}</div><div class="qsrc">${T(a.src[0], a.src[1])}</div><div class="grow"></div>
+  ${all ? `<div class="t2 c">${T('All done. Alḥamdulillāh.', 'تمّت الأذكار. الحمد لله.')}</div><button class="btn" data-go="home">${T('Back home', 'العودة إلى الرئيسية')}</button>` : `<button class="bead" data-bead aria-label="${T('Count', 'سبّح')}"><img src="img/ic-misbaha.png" alt=""><b>${N(c)}</b><small>${T('of', 'من')} ${N(a.n)}</small></button><div class="sub c" style="color:inherit">${T('Tap the bead to count', 'اضغط على الحبّة لتعدّ')}</div>`}</div>`;
+} };
+
+/* ---------------- round 5: gendered Arabic, live prayer, stateful flows, evening adhkār, widget, text size ---------------- */
+st.q4 = 0; st.fs = 1; st.fromBlocked = false; st.dhSet = 'm'; st.dhE = [0, 0, 0];
+const FEM = [
+  ['جعل الله لك سبيلًا تحفظ به بصرك وقلبك، ونحن هنا لنُعينك عليه.', 'جعل الله لكِ سبيلًا تحفظين به بصركِ وقلبكِ، ونحن هنا لنُعينكِ عليه.'],
+  ['اضغط للمتابعة', 'اضغطي للمتابعة'], ['يا يوسف', 'يا مريم'], ['السلام عليكم يا يوسف', 'السلام عليكم يا مريم'],
+  ['هذا ما أخبرتنا به', 'هذا ما أخبرتِنا به'], ['هذه خطتك', 'هذه خطتكِ'], ['قد تشعر بالبعد عن الله بعدها', 'قد تشعرين بالبعد عن الله بعدها'],
+  ['حدّد أهدافك', 'حدّدي أهدافكِ'], ['اختر ما تريد أن تعمل عليه.', 'اختاري ما تريدين أن تعملي عليه.'], ['ابدأ يومك مع من يحفظك.', 'ابدئي يومكِ مع من يحفظكِ.'],
+  ['خمسة عهود قصيرة، مع الله ومع نفسك، ومع كل عهد آية.', 'خمسة عهود قصيرة، مع الله ومع نفسكِ، ومع كل عهد آية.'],
+  ['هل تستعين بالله، لا بقوّتك وحدها؟', 'هل تستعينين بالله، لا بقوّتكِ وحدها؟'], ['هل تحفظ عينيك وقلبك مما يقود إليه؟', 'هل تحفظين عينيكِ وقلبكِ مما يقود إليه؟'],
+  ['هل تتوقّف عند الخطوة الأولى، لا الأخيرة؟', 'هل تتوقّفين عند الخطوة الأولى، لا الأخيرة؟'], ['هل توقن أن الله سيجعل لك مخرجًا؟', 'هل توقنين أن الله سيجعل لكِ مخرجًا؟'],
+  ['إن سقطت، هل تذكر الله وتعود؟', 'إن سقطتِ، هل تذكرين الله وتعودين؟'], ['اضغط مطوّلًا لتعاهد', 'اضغطي مطوّلًا لتعاهدي'],
+  ['لم تحاسب نفسك الليلة', 'لم تحاسبي نفسكِ الليلة'], ['دقيقة تنظر فيها إلى يومك', 'دقيقة تنظرين فيها إلى يومكِ'], ['أكمل ورد اليوم', 'أكملي ورد اليوم'],
+  ['اطلب الدعاء وادعُ لغيرك', 'اطلبي الدعاء وادعي لغيركِ'], ['اقرأ مع ملاحظاتك على هذا الهاتف', 'اقرئي مع ملاحظاتكِ على هذا الهاتف'],
+  ['عاهدتَ الله، وهو قريب', 'عاهدتِ الله، وهو قريب'], ['ما عاهدتَ عليه:', 'ما عاهدتِ عليه:'], ['وعدتَ', 'وعدتِ'],
+  ['انتظر… لم تسقط بعد', 'انتظري… لم تسقطي بعد'], ['كيف تريد أن تتجاوز هذه الدقيقة؟ عندك القوّة لذلك.', 'كيف تريدين أن تتجاوزي هذه الدقيقة؟ عندكِ القوّة لذلك.'],
+  ['تنفّس مع الذكر', 'تنفّسي مع الذكر'], ['اتصل بأحمد', 'اتصلي بأسماء'], ['رفيقك. لا يعرف إلا أنك طلبت العون.', 'رفيقتكِ. لا تعرف إلا أنكِ طلبتِ العون.'],
+  ['تمالك نفسك', 'تمالكي نفسكِ'], ['الرغبة تمضي، ووعدك يبقى. تنفّس مع الدائرة.', 'الرغبة تمضي، ووعدكِ يبقى. تنفّسي مع الدائرة.'], ['تابع إلى الصلاة', 'تابعي إلى الصلاة'],
+  ['توضّأ', 'توضّئي'], ['صلِّ ركعتين', 'صلّي ركعتين'], ['ادعُ', 'ادعي'], ['غُضّ بصرك لحظة. لم يُحفظ شيء عمّا ظهر.', 'غُضّي بصركِ لحظة. لم يُحفظ شيء عمّا ظهر.'],
+  ['ارجع خلال', 'ارجعي خلال'], ['تنفّس مع الاستغفار الآن، فيُعلَّم يومك في التقويم «رجوع في وقته».', 'تنفّسي مع الاستغفار الآن، فيُعلَّم يومكِ في التقويم «رجوع في وقته».'],
+  ['قلها وأنت تنتظر', 'قوليها وأنتِ تنتظرين'], ['افتح إنستغرام', 'افتحي إنستغرام'], ['شارك البطاقة', 'شاركي البطاقة'], ['أسبوعك الأول', 'أسبوعكِ الأول'],
+  ['اختر أخًا أو أختًا تثق به.', 'اختاري أختًا تثقين بها.'], ['ادعُ أحمد', 'ادعي أسماء'], ['ليالي نورك', 'ليالي نوركِ'], ['تقدّمك', 'تقدّمكِ'], ['تقويمك', 'تقويمكِ'],
+  ['أدواتك', 'أدواتكِ'], ['قوائمك', 'قوائمكِ'], ['قواعدك', 'قواعدكِ'], ['يرى', 'ترى'], ['لا يرى أبدًا', 'لا ترى أبدًا'], ['ما الذي أعانك اليوم؟', 'ما الذي أعانكِ اليوم؟'],
+  ['ماذا حدث اليوم؟ وما الذي أعانك؟', 'ماذا حدث اليوم؟ وما الذي أعانكِ؟'], ['هل صلّيت في الوقت اليوم؟', 'هل صلّيتِ في الوقت اليوم؟'], ['كيف حفظت بصرك؟', 'كيف حفظتِ بصركِ؟'],
+  ['هل قرأت أو ذكرت الله؟', 'هل قرأتِ أو ذكرتِ الله؟'], ['كم شعرت بالطمأنينة؟', 'كم شعرتِ بالطمأنينة؟'], ['كيف كانت طاقتك؟', 'كيف كانت طاقتكِ؟'],
+  ['رجعتَ مرتين خلال دقائق هذا الأسبوع، وأفضل لياليك', 'رجعتِ مرتين خلال دقائق هذا الأسبوع، وأفضل لياليكِ'], ['دعنا نُعِنك على الثبات', 'دعينا نُعِنكِ على الثبات'],
+  ['أعنّي الآن يا أخي', 'أعنّي الآن يا أختي'],
+  ['اختر ثلاثة أو أكثر، يعرضها حصن عليك في اللحظات الصعبة.', 'اختاري ثلاثة أو أكثر، يعرضها حصن عليكِ في اللحظات الصعبة.'], ['ماذا تفعل بدلًا منه؟', 'ماذا تفعلين بدلًا منه؟'],
+  ['اكتب سطرًا لنفسك تقرؤه في اللحظة الصعبة', 'اكتبي سطرًا لنفسكِ تقرئينه في اللحظة الصعبة'], ['ستراه أولًا حين تضغط «أعنّي الآن».', 'سترينه أولًا حين تضغطين «أعنّي الآن».'],
+  ['تفتح شيئًا دون أن تنتبه', 'تفتحين شيئًا دون أن تنتبهي'], ['تتنفّس وترجع، وتبقى ليلتك محسوبة.', 'تتنفّسين وترجعين، وتبقى ليلتكِ محسوبة.'], ['جرّبه قبل أن تثق به', 'جرّبيه قبل أن تثقي به'],
+  ['دع حصنًا يقف حارسًا', 'دعي حصنًا يقف حارسًا'], ['هاتفك، أمس', 'هاتفكِ، أمس'], ['وحصنٌ يحرسه، ليطمئنّ قلبك.', 'وحصنٌ يحرسه، ليطمئنّ قلبكِ.'], ['من يومك الحقيقي، نقترح', 'من يومكِ الحقيقي، نقترح'],
+  ['هذا نحو ٥٦ يومًا كاملًا في السنة. ليس تخمينًا: أحصاه أندرويد على هاتفك.', 'هذا نحو ٥٦ يومًا كاملًا في السنة. ليس تخمينًا: أحصاه أندرويد على هاتفكِ.'], ['احفظ سطري', 'احفظي سطري'],
+];
+function genderize(root) {
+  if (!AR() || st.q4 !== 1) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; const nodes = [];
+  while (n = w.nextNode()) nodes.push(n);
+  nodes.forEach(n => { if (n.parentElement.closest('.quran, .wisar, .keep, .sharecard')) return; let v = n.nodeValue; for (const [m, f] of FEM) if (v.includes(m)) v = v.split(m).join(f); n.nodeValue = v; });
+}
+function toast(text, sub) {
+  const t = document.createElement('div'); t.className = 'toast2'; t.innerHTML = `${logo(22, 'light')}<div><b>${text}</b>${sub ? `<span>${sub}</span>` : ''}</div>`;
+  app.appendChild(t); requestAnimationFrame(() => t.classList.add('in'));
+  timers.push(setTimeout(() => t.classList.remove('in'), 3200));
+}
+/* live prayer countdown: the prototype's clock is 16:25 */
+const CLOCK0 = Date.now(), NOW0 = 16 * 3600 + 25 * 60;
+const nowSec = () => (NOW0 + Math.floor((Date.now() - CLOCK0) / 1000)) % 86400;
+const PRAYERS = [['Fajr', 'الفجر', 6 * 3600 + 12 * 60], ['Dhuhr', 'الظهر', 12 * 3600 + 24 * 60], ['ʿAṣr', 'العصر', 14 * 3600 + 31 * 60], ['Maghrib', 'المغرب', 16 * 3600 + 43 * 60], ['ʿIshāʾ', 'العشاء', 18 * 3600 + 12 * 60]];
+function nextPrayer() { const s = nowSec(); const i = PRAYERS.findIndex(p => p[2] > s); const k = i < 0 ? 0 : i; let d = PRAYERS[k][2] - s; if (d < 0) d += 86400; return { k, d }; }
+const mmss = (d) => d >= 3600 ? `${Math.floor(d / 3600)}:${String(Math.floor(d / 60) % 60).padStart(2, '0')}:${String(d % 60).padStart(2, '0')}` : `${Math.floor(d / 60)}:${String(d % 60).padStart(2, '0')}`;
+const prayerLine = () => { const { k, d } = nextPrayer(); return T(`${PRAYERS[k][0]} in <b id="pcount">${mmss(d)}</b> · feeds pause for 15 min`, `${PRAYERS[k][1]} بعد <b id="pcount">${N(mmss(d))}</b> · تهدأ المقاطع ١٥ دقيقة`); };
+const homeR5 = S.home.h;
+S.home.h = () => homeR5().replace(/(<div class="prayers">[\s\S]*?<\/div><\/div>)/, `$1<div class="pline">${prayerLine()}</div>`);
+
+/* evening adhkār */
+const ADHKAR_E = [
+  { t: T => T('The three Quls', 'المعوّذات'), ar: 'قُلْ هُوَ ٱللَّهُ أَحَدٌ · قُلْ أَعُوذُ بِرَبِّ ٱلْفَلَقِ · قُلْ أَعُوذُ بِرَبِّ ٱلنَّاسِ', n: 3, src: ['Abū Dāwūd 5082', 'أبو داود ٥٠٨٢'] },
+  { t: T => T('In the name of Allah', 'بسم الله الذي لا يضرّ'), ar: 'بِسْمِ ٱللَّهِ ٱلَّذِي لَا يَضُرُّ مَعَ ٱسْمِهِ شَيْءٌ فِي ٱلْأَرْضِ وَلَا فِي ٱلسَّمَاءِ وَهُوَ ٱلسَّمِيعُ ٱلْعَلِيمُ', n: 3, src: ['Abū Dāwūd 5088 · Tirmidhī 3388', 'أبو داود ٥٠٨٨ · الترمذي ٣٣٨٨'] },
+  { t: T => T('We have reached the evening', 'أمسينا'), ar: 'أَمْسَيْنَا وَأَمْسَى ٱلْمُلْكُ لِلَّهِ، وَٱلْحَمْدُ لِلَّهِ، لَا إِلَٰهَ إِلَّا ٱللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ', n: 1, src: ['Muslim 2723 (opening)', 'مسلم ٢٧٢٣ (أوّله)'] },
+];
+const ADHKAR_M = ADHKAR.slice(), cntM = st.dh;
+const adhH = S.adhkar.h;
+S.adhkar.h = () => {
+  const ev = st.dhSet === 'e';
+  ADHKAR.splice(0, 3, ...(ev ? ADHKAR_E : ADHKAR_M)); st.dh = ev ? st.dhE : cntM;
+  return adhH().replace(T('Morning adhkār', 'أذكار الصباح'), T('Adhkār', 'الأذكار')).replace('<div class="dhlist">', `<div class="seg"><button data-dhset="m" class="${ev ? '' : 'on'}">${T('Morning', 'الصباح')}</button><button data-dhset="e" class="${ev ? 'on' : ''}">${T('Evening', 'المساء')}</button></div><div class="dhlist">`);
+};
+
+/* widget on the Android home screen */
+S.widget = { g: 'Moments', n: 'Widget', ar: 1, from: 'Unchaind 72–77', note: 'Unchaind spends five screens explaining its widget. On Android Hisn pins it in one tap. Here are both sizes on a home screen: nights and the verse, and a Help now strip. App icons are left plain on purpose.', h: () => `<div class="scr" style="background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.35)),var(--bgimg) center/cover"><div style="height:8px"></div>
+  <div class="wbig"><div class="row" style="justify-content:space-between">${logo(22, 'light')}<span class="wk">${T('Nights of light', 'ليالي النور')}</span></div><div class="wnum">${N(9)}</div><div class="quran" style="font-size:17px;color:#fff;text-align:start">أَلَمْ يَعْلَم بِأَنَّ ٱللَّهَ يَرَىٰ</div><div class="wk">${T('Maghrib in 18 min', 'المغرب بعد ١٨ دقيقة')}</div></div>
+  <div class="wstrip" data-go="help">${logo(18, 'light')}<b>${T('Help now', 'أعنّي الآن')}</b><span>${T('One tap', 'لمسة واحدة')}</span></div>
+  <div class="homegrid">${Array.from({length: 8}, () => '<i></i>').join('')}</div><div class="grow"></div><div class="homegrid dock2">${Array.from({length: 4}, () => '<i></i>').join('')}</div></div>` };
+
+/* settings: text size */
+const setH = S.settings.h;
+S.settings.h = () => setH().replace('<div class="card"><div class="t3">Prayer</div>', `<div class="card"><div class="t3">${T('Reading', 'القراءة')}</div><div class="row"><span class="icn" style="font-weight:700">Aa</span><div class="grow"><b>${T('Text size', 'حجم الخط')}</b><div class="sub">${N(Math.round(st.fs * 100))}٪</div></div><button class="minibtn" data-fs="-1" aria-label="${T('Smaller', 'أصغر')}">−</button><button class="minibtn" data-fs="1" aria-label="${T('Larger', 'أكبر')}">+</button></div></div><div class="card"><div class="t3">Prayer</div>`);
+
+/* ---------------- round 6: the best onboarding, in four chapters ---------------- */
+const FLOW = ['splash', 'intro1', 'how', 'welcome', 'name', 'q3', 'q0', 'q1', 'q2', 'usage', 's0', 's1', 's2', 'goals', 'instead', 'reason', 'suggest', 'told', 'perms', 'trylive', 'begin', 'pledge', 'plan', 'notify', 'free', 'home'];
+const CHAP = { name: 0, q3: 0, q0: 0, q1: 0, q2: 0, usage: 1, s0: 1, s1: 1, s2: 1, goals: 2, instead: 2, reason: 2, suggest: 2, told: 3, perms: 3, trylive: 3, begin: 3, pledge: 3, plan: 3, notify: 3, free: 3 };
+const CHAPN = [['You', 'أنت'], ['Why it\'s hard', 'لماذا يصعب'], ['What helps', 'ما يُعين'], ['Your plan', 'خطّتك']];
+const nextOf = (id) => FLOW[Math.min(FLOW.length - 1, FLOW.indexOf(id) + 1)] || 'home';
+const prevOf = (id) => FLOW[Math.max(0, FLOW.indexOf(id) - 1)] || 'splash';
+function chapBar(id, light) {
+  const c = CHAP[id]; if (c === undefined) return '';
+  const inC = FLOW.filter(k => CHAP[k] === c), pos = (inC.indexOf(id) + 1) / inC.length;
+  return `<div class="chapbar ${light ? 'light' : ''}"><button class="back" data-go="${prevOf(id)}">${li('back')}</button><div class="segs4">${CHAPN.map((_, k) => `<i><b style="width:${k < c ? 100 : k === c ? Math.round(pos * 100) : 0}%"></b></i>`).join('')}</div><span>${T(CHAPN[c][0], CHAPN[c][1])}</span></div>`;
+}
+/* quiz and name now use the chapter bar and the flow order */
+quiz = function (i) {
+  const q = quizQ[i], id = 'q' + i;
+  const on = (k) => q.multi ? st.guard.has(k) : st[q.key] === k;
+  return `<div class="scr land fade">${chapBar(id)}<div style="height:6px"></div><div class="t2">${q.q}</div>${q.sub ? `<div class="sub">${q.sub}</div>` : ''}${q.a.map((a, k) => `<button class="opt ${on(k) ? 'on' : ''}" data-ans="${i}:${k}"><span class="n">${k + 1}</span>${a}</button>`).join('')}<div class="grow"></div>${q.multi ? `<button class="btn" data-go="${nextOf(id)}">Continue →</button>` : ''}<div class="anon">Your answers stay on this phone</div></div>`;
+};
+const nameH = S.name.h; S.name.h = () => nameH().replace(/<div class="qtop">[\s\S]*?<span>100%<\/span><\/div>/, chapBar('name')).replace('Finish the quiz →', 'Continue →');
+const slideH = slide; slide = (i) => slideH(i).replace('<div style="height:40px"></div>', `${chapBar('s' + i, 1)}<div style="height:10px"></div>`);
+const goalsH = S.goals.h; S.goals.h = () => goalsH().replace('<div style="height:8px"></div>', chapBar('goals')).replace('data-go="begin"', `data-go="${nextOf('goals')}"`);
+const toldH2 = S.told.h; S.told.h = () => toldH2().replace('<div style="height:8px"></div>', chapBar('told')).replace('data-go="notify"', `data-go="${nextOf('told')}"`);
+const notifyH = S.notify.h; S.notify.h = () => notifyH().replaceAll('data-go="s0"', `data-go="${nextOf('notify')}"`);
+const planH = S.plan.h; S.plan.h = () => planH().replace('data-go="free"', `data-go="${nextOf('plan')}"`);
+const freeH = S.free.h; S.free.h = () => freeH().replace('data-go="setup">Set up protection →', 'data-go="home" data-tour>Open Hisn →');
+const welcomeH = S.welcome.h; S.welcome.h = () => welcomeH().replace('data-go="q0"', `data-go="${nextOf('welcome')}"`);
+const splashH = S.splash.h; S.splash.h = () => splashH().replace('data-tap="welcome"', 'data-tap="intro1"');
+
+st.how = 0; st.usageOn = false; st.instead = new Set([0, 1, 2]); st.reasonTxt = 'So I can stand in Fajr with a clear heart.'; st.sugg = [true, true, true, false]; st.perm = { app: false, dns: false, usage: true, notif: false, battery: false }; st.tried = false;
+Object.assign(S, {
+  intro1: { g: 'First run', n: 'One line', from: 'Opal', note: 'Opal opens with one calm sentence on a full screen and "tap to continue". Hisn does the same before asking for anything.', h: () => `<div class="scr deep land" data-tap="how"><div class="grow"></div>${ic('tower', 'sm')}<div class="t1 c" style="font-size:30px">${T('Every phone has a door.', 'في كل هاتفٍ باب.')}</div><div class="t2 c" style="opacity:.8;font-size:21px">${T('Hisn guards it, so your heart can rest.', 'وحصنٌ يحرسه، ليطمئنّ قلبك.')}</div><div class="grow"></div><div class="grow"></div><div class="sub c">${T('Tap to continue', 'اضغط للمتابعة')}</div></div>` },
+  how: { g: 'First run', n: 'How it works', from: 'Opal + our general app', note: 'Opal and our general app explain the product with your own story, in three frames, before any question. Tap through: you open something, Hisn closes it calmly, you turn back and the night still counts.', h: () => {
+    const f = st.how;
+    const frames = [
+      [T('You open something without thinking', 'تفتح شيئًا دون أن تنتبه'), `<div class="mbrowser"><div class="murl">${li('search', 14)} <span>●●●●●●.com</span></div><div class="mpage"><i></i><i></i><i></i></div></div>`],
+      [T('Hisn closes it. No alarm, no shame.', 'يُغلقه حصن، بلا صراخ ولا لوم.'), `<div class="mbrowser closed">${ic('shield', 'xs')}<b>${T('Hisn closed this page', 'أغلق حصن هذه الصفحة')}</b><span>${T('Nothing was saved', 'لم يُحفظ شيء')}</span></div>`],
+      [T('You breathe, turn back, and the night still counts.', 'تتنفّس وترجع، وتبقى ليلتك محسوبة.'), `<div class="mbrowser"><div class="cal" style="padding:10px">${DOW().map(x => `<span>${x}</span>`).join('')}${['ok', 'ok', 'pol', 'ok', 'ok', 'ok', 'pol today'].map((c, i) => `<span><i class="${c}">${N(i + 17)}</i></span>`).join('')}</div></div>`],
+    ];
+    return `<div class="scr land fade"><div style="height:20px"></div><div class="k c">${T('How Hisn works', 'كيف يعمل حصن')} · ${N(f + 1)}/${N(3)}</div><div class="grow"></div>${frames[f][1]}<div class="t2 c">${frames[f][0]}</div><div class="grow"></div><div class="dots" style="color:var(--pri)">${frames.map((_, k) => `<i class="${k === f ? 'on' : ''}"></i>`).join('')}</div><button class="btn" data-how>${f < 2 ? T('Next →', 'التالي ←') : T('Got it →', 'فهمت ←')}</button></div>`;
+  } },
+  usage: { g: 'First run', n: 'Your real day', from: 'Our general app (+ Unrot, Opal)', note: 'Unrot shows "106 days a year" from a guess; Opal shows "15 years". Our general app reads Android\'s own usage data, on the phone, and shows only that. One switch, with the reason, then the real numbers.', h: () => `<div class="scr">${chapBar('usage')}<div class="t2">${T('Your phone, yesterday', 'هاتفك، أمس')}</div>${st.usageOn ? `<div class="card"><div class="row" style="justify-content:space-between"><div><div class="k">${T('In feeds', 'في المقاطع والتمرير')}</div><div class="t1">${T('3 h 45', '٣ س ٤٥ د')}</div></div>${ic('hourglass', 'xs')}</div>${[['Instagram', 72], ['YouTube', 58], ['TikTok', 41], ['Chrome', 34]].map(([a, m]) => `<div class="ubar"><span class="keep">${a}</span><i style="--w:${m / 72 * 100}%"></i><b>${N(m)} ${T('min', 'د')}</b></div>`).join('')}</div><div class="card"><div class="sub">${T('That is about 56 full days a year. Not a guess: Android counted it on this phone.', 'هذا نحو ٥٦ يومًا كاملًا في السنة. ليس تخمينًا: أحصاه أندرويد على هاتفك.')}</div></div><div class="grow"></div><button class="btn" data-go="${nextOf('usage')}">${T('Continue →', 'متابعة ←')}</button>` : `<div class="sub">${T('Hisn can read how long you spent in each app. It stays on the phone and is never sent anywhere.', 'يستطيع حصن قراءة الوقت الذي قضيته في كل تطبيق. يبقى على الهاتف ولا يُرسل إلى أي مكان.')}</div><div class="card"><div class="row"><span class="icn">${li('chart')}</span><div class="grow"><b>${T('Usage access', 'الوصول إلى الاستخدام')}</b><div class="sub">${T('To show your real numbers, not a guess', 'لنعرض أرقامك الحقيقية لا تخمينًا')}</div></div>${sw(false, 'data-usage', 'Usage access')}</div></div>${ic('phonedown')}<div class="grow"></div><button class="btn ghost" data-go="${nextOf('usage')}">${T('Skip for now', 'تخطَّ الآن')}</button>`}</div>` },
+  instead: { g: 'First run', n: 'Instead', from: 'Unrot + our general app', note: 'Unrot asks how you want to spend the time you win back. Hisn asks the same, with Islamic and physical choices. These fill the "It passed, now move" list in a hard moment.', h: () => { const opts = [['ibrik', 'Make wuḍūʾ', 'الوضوء'], ['quran', 'A page of Qur\'an', 'صفحة من القرآن'], ['mosque', 'Walk to the masjid', 'المشي إلى المسجد'], ['hands', 'Call my parents', 'الاتصال بوالديّ'], ['rug', 'Two rakʿahs', 'ركعتان'], ['dates', 'Eat with family', 'الطعام مع الأهل'], ['olive', 'Sit outside', 'الجلوس في الخارج'], ['crescent', 'Sleep early', 'النوم مبكرًا']];
+    return `<div class="scr">${chapBar('instead')}<div class="t2">${T('When the pull comes, what will you do instead?', 'حين يأتي الإغراء، ماذا تفعل بدلًا منه؟')}</div><div class="sub">${T('Pick three or more. Hisn offers them in hard moments.', 'اختر ثلاثة أو أكثر، يعرضها حصن عليك في اللحظات الصعبة.')}</div><div class="pick">${opts.map(([i, en, ar], k) => `<button class="${st.instead.has(k) ? 'on' : ''}" data-inst="${k}"><img src="img/ic-${i}.png" alt=""><span>${T(en, ar)}</span></button>`).join('')}</div><div class="grow"></div><button class="btn" data-go="${nextOf('instead')}" ${st.instead.size >= 1 ? '' : 'disabled'}>${T('Continue →', 'متابعة ←')}</button></div>`; } },
+  reason: { g: 'First run', n: 'Your reason', from: 'Our general app', note: 'Our general app asks for one line in your own words. Hisn shows it at the top of Help now, where Unchaind shows a list of harms.', h: () => `<div class="scr land fade">${chapBar('reason')}<div class="t2">${T('Write one line to yourself for a hard minute', 'اكتب سطرًا لنفسك تقرؤه في اللحظة الصعبة')}</div><div class="sub">${T('You will see it first when you tap Help now.', 'ستراه أولًا حين تضغط «أعنّي الآن».')}</div><textarea class="field" id="reasonIn" rows="3" aria-label="${T('Your reason', 'سببك')}">${AR() ? 'لأقف في الفجر بقلبٍ صافٍ.' : st.reasonTxt}</textarea><div class="chipz">${[T('For my family', 'من أجل أهلي'), T('To pray with a clear heart', 'لأصلّي بقلبٍ صافٍ'), T('So Allah is pleased with me', 'ليرضى الله عني')].map(t => `<button data-reasonchip>${t}</button>`).join('')}</div><div class="grow"></div><button class="btn" data-go="${nextOf('reason')}">${T('Save my line →', 'احفظ سطري ←')}</button></div>` },
+  suggest: { g: 'First run', n: 'Suggested rules', from: 'Opal', note: 'Opal pre-selects the apps you use most, each with a remove button and a count. Hisn does it from the same usage data, on the phone.', h: () => { const apps = [['Instagram', T('Close Reels, keep messages', 'إغلاق الريلز وإبقاء الرسائل')], ['YouTube', T('Close Shorts', 'إغلاق الشورتس')], ['TikTok', T('Open Wait with dhikr', 'انتظار الفتح مع الذكر')], ['Chrome', T('Words and images checked', 'فحص الكلمات والصور')]]; const n = st.sugg.filter(Boolean).length;
+    return `<div class="scr">${chapBar('suggest')}<div class="t2">${T('From your real day, we suggest', 'من يومك الحقيقي، نقترح')}</div><div class="sub">${T('Adult sites are always blocked. These are for feeds.', 'المواقع الإباحية محجوبة دائمًا، وهذه للمقاطع.')}</div><div class="list">${apps.map(([a, b], k) => `<button data-sugg="${k}"><span class="icn">${li('apps')}</span><span><b class="keep">${a}</b><small>${b}</small></span><span class="tick ${st.sugg[k] ? 'on' : ''}">${li('check', 14)}</span></button>`).join('')}</div><div class="card c"><b>${T(`${n} apps · 395k adult sites`, `${N(n)} تطبيقات · ٣٩٥ ألف موقع إباحي`)}</b></div><div class="grow"></div><button class="btn" data-go="${nextOf('suggest')}">${T('Use these →', 'اعتمدها ←')}</button></div>`; } },
+  perms: { g: 'First run', n: 'Permissions', from: 'Opal + CleanPath', note: 'Opal puts each Android permission on one row with one line of why and a live switch. CleanPath shows a picture of the exact setting. Hisn does both: switches here, the picture guide behind "Show me".', h: () => { const rows = [['app', 'shield', T('App protection', 'حماية التطبيقات'), T('Reads words and closes apps you chose', 'يقرأ الكلمات ويغلق ما اخترت'), 1], ['dns', 'globe', T('Website filter', 'مرشّح المواقع'), T('A local VPN that answers adult sites with nothing', 'شبكة محلية لا تُجيب المواقع الإباحية'), 1], ['usage', 'chart', T('Usage access', 'الوصول إلى الاستخدام'), T('Your real numbers', 'أرقامك الحقيقية'), 0], ['notif', 'bell', T('Notifications', 'الإشعارات'), T('Prayer and reflection reminders', 'تذكير الصلاة والمحاسبة'), 0], ['battery', 'battery', T('Battery', 'البطارية'), T('So Android doesn\'t stop Hisn at night', 'حتى لا يوقف أندرويد حصنًا ليلًا'), 0]]; const need = rows.filter(r => r[4] && !st.perm[r[0]]).length;
+    return `<div class="scr">${chapBar('perms')}<div class="t2">${T('Let Hisn stand guard', 'دع حصنًا يقف حارسًا')}</div><div class="sub">${T('Two are needed. The rest make it stronger.', 'اثنان ضروريان، والباقي يزيده قوة.')}</div><div class="list">${rows.map(([k, i, a, b, req]) => `<button data-perm="${k}"><span class="icn">${li(i)}</span><span class="grow"><b>${a} ${req ? `<em class="req">${T('needed', 'ضروري')}</em>` : ''}</b><small>${b}</small></span>${sw(st.perm[k], '', a).replace('<button', '<span').replace('</button>', '</span>')}</button>`).join('')}</div><button class="btn ghost" data-go="setup">${T('Show me where each switch is', 'أرني أين كل مفتاح')}</button><div class="grow"></div><button class="btn" data-go="${nextOf('perms')}" ${need ? 'disabled' : ''}>${need ? T(`${need} still needed`, `${N(need)} ما زال ضروريًا`) : T('Continue →', 'متابعة ←')}</button></div>`; } },
+  trylive: { g: 'First run', n: 'Try it now', from: 'Our general app', note: 'Our general app ends setup with a live test, so you see it work before you trust it. Tap "Try it": a blocked address is typed and Hisn closes it.', h: () => `<div class="scr">${chapBar('trylive')}<div class="t2">${T('See it work before you trust it', 'جرّبه قبل أن تثق به')}</div><div class="sub">${T('We\'ll open a test address that is on the block list.', 'سنفتح عنوانًا تجريبيًا موجودًا في قائمة الحجب.')}</div>${st.tried ? `<div class="mbrowser closed big">${ic('shield', 'sm')}<b>${T('Hisn closed this page', 'أغلق حصن هذه الصفحة')}</b><span>test.hisn-block.example</span></div><div class="card c" style="border:2px solid #34c759"><b style="color:#2a9d55">${T('It works. Your walls are up.', 'يعمل. أسوارك قائمة.')}</b></div><div class="grow"></div><button class="btn" data-go="${nextOf('trylive')}">${T('Continue →', 'متابعة ←')}</button>` : `<div class="mbrowser big"><div class="murl">${li('search', 14)} <span class="keep" id="typed"></span><i class="caret"></i></div><div class="mpage"><i></i><i></i><i></i></div></div><div class="grow"></div><button class="btn" data-try>${T('Try it', 'جرّبه')}</button><button class="btn ghost" data-go="${nextOf('trylive')}">${T('Skip', 'تخطَّ')}</button>`}</div>` },
+});
+/* help now: show the user's own line at the top */
+const helpR6 = S.help.h;
+S.help.h = () => helpR6().replace(/<div class="t1 c"/, `<div class="myline">“${AR() ? 'لأقف في الفجر بقلبٍ صافٍ.' : st.reasonTxt}”</div><div class="t1 c"`);
+
+/* ---------------- round 7: words from Ibn al-Qayyim and Tazkiyat al-Nufus, each checked against the book ---------------- */
+const Q = {
+  khatir: { ar: 'واعلم أن ورود الخاطر لا يضر، وإنما يضر استدعاؤه ومحادثته، فالخاطر كالمار على الطريق، فإن تركته مرّ وانصرف عنك، وإن استدعيته سحرك بحديثه وغروره.', en: 'A passing thought does no harm; the harm is in calling it in and talking with it. A thought is like someone walking by on the road: leave it and it passes on; invite it and it charms you with its talk.', src: ['Ibn al-Qayyim, al-Jawāb al-Kāfī, p. 157', 'ابن القيم، الجواب الكافي، ص ١٥٧'] },
+  sabr: { ar: 'الصبر على غضّ البصر أيسر من الصبر على ألم ما بعده.', en: 'Patience in lowering the gaze is easier than patience with the pain that comes after.', src: ['quoted by Ibn al-Qayyim, al-Jawāb al-Kāfī, p. 153', 'أورده ابن القيم، الجواب الكافي، ص ١٥٣'] },
+  chain: { ar: 'دافع الخطرة؛ فإن لم تفعل صارت فكرةً؛ فدافع الفكرة؛ فإن لم تفعل صارت شهوةً؛ فحاربها؛ فإن لم تفعل صارت عزيمةً وهمّةً؛ فإن لم تدافعها صارت فعلًا؛ فإن لم تتداركه بضدّه صار عادةً، فيصعب عليك الانتقال عنها.', en: 'Push back the passing thought; if you don\'t, it becomes an idea. Push back the idea; if you don\'t, it becomes a desire. Fight it; if you don\'t, it becomes resolve. If you don\'t push that back, it becomes an act, and if you don\'t mend the act with its opposite, it becomes a habit that is hard to leave.', src: ['Ibn al-Qayyim, al-Fawāʾid, p. 45', 'ابن القيم، الفوائد، ص ٤٥'] },
+  lahazat: { ar: 'فأما اللحظات: فهي رائد الشهوة ورسولها، وحفظها أصل حفظ الفرج.', en: 'Glances are the scout and messenger of desire, and guarding them is the root of guarding chastity.', src: ['Ibn al-Qayyim, al-Jawāb al-Kāfī, p. 153', 'ابن القيم، الجواب الكافي، ص ١٥٣'] },
+  nur: { ar: 'أنه يكسب القلب نورًا، كما أن إطلاقه يلبسه ظلمة، ولهذا ذكر الله سبحانه آية النور عقيب الأمر بغضّ البصر.', en: 'Lowering the gaze gives the heart light, as letting it roam clothes it in darkness. That is why Allah placed the Verse of Light right after the command to lower the gaze.', src: ['Ibn al-Qayyim, al-Jawāb al-Kāfī, p. 178', 'ابن القيم، الجواب الكافي، ص ١٧٨'] },
+  tark: { ar: 'ومن ترك لله شيئًا عوّضه الله خيرًا منه.', en: 'Whoever leaves something for Allah, Allah gives him something better in its place.', src: ['Ibn al-Qayyim, al-Jawāb al-Kāfī, p. 179', 'ابن القيم، الجواب الكافي، ص ١٧٩'] },
+  waqt: { ar: 'إضاعة الوقت أشدّ من الموت؛ لأن إضاعة الوقت تقطعك عن الله والدار الآخرة، والموت يقطعك عن الدنيا وأهلها.', en: 'Wasting time is worse than death: wasting time cuts you off from Allah and the Hereafter, while death cuts you off from this world and its people.', src: ['Ibn al-Qayyim, al-Fawāʾid, p. 44', 'ابن القيم، الفوائد، ص ٤٤'] },
+  umr: { ar: 'فوقت الإنسان هو عمره في الحقيقة… وهو يمرّ أسرع من السحاب.', en: 'A person\'s time is, in truth, his life… and it passes faster than clouds.', src: ['Ibn al-Qayyim, al-Jawāb al-Kāfī, p. 156', 'ابن القيم، الجواب الكافي، ص ١٥٦'] },
+  shafii: { ar: 'ونفسك إن لم تشغلها بالحق وإلا شغلتك بالباطل.', en: 'If you do not keep your soul busy with what is true, it will keep you busy with what is false.', src: ['al-Shāfiʿī, quoted in al-Jawāb al-Kāfī, p. 156', 'الشافعي، أورده ابن القيم في الجواب الكافي، ص ١٥٦'] },
+  fujaa: { ar: 'سألتُ رسول الله ﷺ عن نظر الفُجاءة، فأمرني أن أصرف بصري.', en: 'I asked the Messenger of Allah ﷺ about the sudden glance, and he told me to turn my eyes away.', src: ['Jarīr, Muslim 2159', 'عن جرير، رواه مسلم ٢١٥٩'] },
+  fujaaNote: { ar: 'ومعنى نظر الفجأة أن يقع بصره على الأجنبية من غير قصد، فلا إثم عليه في أول ذلك، ويجب عليه أن يصرف بصره في الحال.', en: 'A sudden glance is one that falls without intent: there is no sin in it, and he must turn his eyes away at once.', src: ['al-Nawawī, in Tazkiyat al-Nufūs, p. 28', 'النووي، نقله صاحب تزكية النفوس، ص ٢٨'] },
+  mahw: { ar: 'وإذا تناول شيئًا من ذلك خطأً سارع إلى محو أثرها بالتوبة والاستغفار، والحسنات الماحية.', en: 'If he takes in some of it by mistake, he hurries to erase its trace with repentance, seeking forgiveness, and good deeds that wipe it out.', src: ['Tazkiyat al-Nufūs, p. 24', 'تزكية النفوس، ص ٢٤'] },
+  abyad: { ar: 'وقلب أبيض: قد أشرق فيه نور الإيمان، وأزهر فيه مصباحه، فإذا عرضت الفتنة أنكرها وردّها، فازداد نوره وإشراقه.', en: 'And a white heart: the light of faith has dawned in it and its lamp shines; when temptation comes it refuses it and turns it away, and its light grows brighter.', src: ['Tazkiyat al-Nufūs, p. 24', 'تزكية النفوس، ص ٢٤'] },
+  ala: { ar: 'والصحيح أن من التائبين من لا يعود إلى درجته، ومنهم من يعود إلى أعلى منها فيصير خيرًا مما كان قبل الذنب.', en: 'Some who repent do not return to their level, and some return higher, becoming better than they were before the sin.', src: ['Ibn Taymiyya, in Tazkiyat al-Nufūs, p. 119', 'ابن تيمية، في تزكية النفوس، ص ١١٩'] },
+  farah: { ar: 'لَلَّهُ أشدُّ فرحًا بتوبة عبده حين يتوب إليه من أحدكم كان على راحلته بأرض فلاة فانفلتت منه…', en: 'Allah is more joyful at the repentance of His servant than one of you whose camel, carrying his food and drink, ran off in a desert and was then found again.', src: ['Bukhārī 6309, Muslim 2747; in Tazkiyat al-Nufūs, p. 124', 'البخاري ٦٣٠٩، مسلم ٢٧٤٧؛ وفي تزكية النفوس، ص ١٢٤'] },
+  shurut: { ar: 'وشرائط التوبة ثلاثة… وهي: الندم، والإقلاع، والعزم على عدم العودة.', en: 'Repentance has three conditions: regret, stopping, and resolving not to return.', src: ['Tazkiyat al-Nufūs, p. 117', 'تزكية النفوس، ص ١١٧'] },
+  bidaya: { ar: 'فالتوبة هي بداية العبد ونهايته.', en: 'Repentance is the servant\'s beginning and his end.', src: ['Tazkiyat al-Nufūs, p. 116', 'تزكية النفوس، ص ١١٦'] },
+  muhasaba: { ar: 'والمقصود أن صلاح القلب بمحاسبة النفس، وفساده بإهمالها والاسترسال معها.', en: 'The heart is set right by holding the soul to account, and ruined by neglecting it and drifting along with it.', src: ['Ibn al-Qayyim, Ighāthat al-Lahfān, 1/143', 'ابن القيم، إغاثة اللهفان، ١/ ١٤٣'] },
+  saat: { ar: 'حقٌّ على العاقل أن لا يغفل عن أربع ساعات: ساعة يناجي فيها ربّه، وساعة يحاسب فيها نفسه، وساعة يخلو فيها مع إخوانه الذين يخبرونه بعيوبه ويصدقونه عن نفسه، وساعة يتخلى فيها بين نفسه وبين لذاتها فيما يحل ويجمل.', en: 'The wise should not neglect four hours: one to speak with his Lord, one to hold himself to account, one with brothers who tell him his faults truthfully, and one for lawful, fitting enjoyment.', src: ['Wahb, quoted in Ighāthat al-Lahfān, 1/133', 'عن وهب، أورده ابن القيم في إغاثة اللهفان، ١/ ١٣٣'] },
+};
+const wisdom = (k, opts = {}) => { const q = Q[k]; return `<div class="wis ${opts.cls || ''}"><div class="wisar">«${q.ar}»</div>${AR() ? '' : `<div class="wisen">${q.en}</div>`}<div class="wissrc">${T(q.src[0], q.src[1])}</div></div>`; };
+const BENEFITS = [
+  ['It is obeying Allah, the height of a servant\'s happiness here and hereafter', 'امتثالٌ لأمر الله الذي هو غاية سعادة العبد في معاشه ومعاده'],
+  ['It gives the heart closeness to Allah', 'يورث القلب أنسًا بالله وجمعيّةً عليه'],
+  ['It strengthens the heart and gladdens it', 'يقوّي القلب ويفرحه'],
+  ['It gives the heart light', 'يُكسب القلب نورًا'],
+  ['It gives true insight', 'يورث فراسةً صادقة'],
+  ['It gives the heart firmness, courage and strength', 'يورث القلب ثباتًا وشجاعةً وقوّة'],
+  ['It closes Shayṭān\'s way into the heart', 'يسدّ على الشيطان مدخله من القلب'],
+  ['It frees the heart to think about what is good for it', 'يفرّغ القلب للفكرة في مصالحه'],
+];
+
+/* place the words where they help */
+const helpR7 = S.help.h; S.help.h = () => helpR7().replace('<div class="grow"></div><button class="btn red"', `${wisdom('khatir', { cls: 'onhelp' })}<div class="grow"></div><button class="btn red"`);
+const blockedR7 = S.blocked.h; S.blocked.h = () => blockedR7().replace(/<div class="quran" style="font-size:22px">قُل لِّلْمُؤْمِنِينَ[^<]*<\/div>/, `${wisdom('fujaa', { cls: 'ondeep' })}<div class="sub c" style="font-size:13px">${T('A glance you didn\'t choose is not counted against you. Turn your eyes away now.', 'النظرة التي لم تقصدها لا إثم عليك فيها، فاصرف بصرك الآن.')}</div>`);
+const slipR7 = S.slip.h; S.slip.h = () => slipR7().replace(/<div class="helpcard"><b>[^<]*<\/b><div class="sub">[\s\S]*?<\/div><\/div>/, `<div class="helpcard"><b>${T('Three steps back', 'ثلاث خطوات للعودة')}</b><div class="sub">${T('1 · Regret it in your heart<br>2 · Stop now<br>3 · Resolve not to return. Then wuḍūʾ and two rakʿahs (Abū Dāwūd 1521)', '١ · الندم بالقلب<br>٢ · الإقلاع الآن<br>٣ · العزم على ألّا تعود، ثم وضوء وركعتان (أبو داود ١٥٢١)')}</div><div class="wissrc">${T(Q.shurut.src[0], Q.shurut.src[1])}</div></div>${wisdom('ala', { cls: 'onhelp' })}`);
+const reflectR7 = S.reflect.h; S.reflect.h = () => reflectR7().replace(/<div class="t3">How were these today\?<\/div>/, `${wisdom('muhasaba')}<div class="t3">How were these today?</div>`);
+const usageR7 = S.usage.h; S.usage.h = () => usageR7().replace('<div class="grow"></div><button class="btn" data-go="' + nextOf('usage') + '">', `${wisdom('waqt')}<div class="grow"></div><button class="btn" data-go="${nextOf('usage')}">`);
+const insteadR7 = S.instead.h; S.instead.h = () => insteadR7().replace('<div class="pick">', `${wisdom('shafii')}<div class="pick">`);
+const companionR7 = S.companion.h; S.companion.h = () => companionR7().replace(/<div class="sub c">Choose one brother[\s\S]*?<div class="qsrc">Abū Dāwūd 4833<\/div>/, `<div class="sub c">${T('Choose one brother or sister you trust. The Prophet ﷺ said a person is upon the way of his close friend.', 'اختر أخًا أو أختًا تثق به. قال النبي ﷺ: «الرجلُ على دينِ خليلِه».')}</div><div class="qsrc">${T('Abū Dāwūd 4833', 'رواه أبو داود ٤٨٣٣')}</div>${wisdom('saat')}`);
+const blockedappR7 = S.blockedapp.h; S.blockedapp.h = () => blockedappR7().replace('<div class="grow"></div><button class="btn white" data-go="home">', `${wisdom('umr', { cls: 'onland' })}<div class="grow"></div><button class="btn white" data-go="home">`);
+const progressR7 = S.progress.h; S.progress.h = () => { const b = BENEFITS[st.benefit % BENEFITS.length]; return progressR7().replace('<div class="row" style="justify-content:space-between"><div class="t3">Your calendar</div>', `<div class="card fruit" data-fruit><div class="k">${T('Fruit of lowering the gaze · Ibn al-Qayyim', 'من ثمار غضّ البصر · ابن القيم')}</div><div class="t3">${T(b[0], b[1])}</div><div class="wissrc">${T('al-Jawāb al-Kāfī, pp. 178–180 · tap for the next', 'الجواب الكافي، ص ١٧٨–١٨٠ · اضغط للتالية')}</div></div><div class="row" style="justify-content:space-between"><div class="t3">Your calendar</div>`); };
+st.benefit = 0;
+const homeR7 = S.home.h; S.home.h = () => { const keys = ['tark', 'abyad', 'sabr', 'umr', 'bidaya', 'nur']; const k = keys[new Date().getDate() % keys.length]; return homeR7().replace(/(<div class="versecard">[\s\S]*?<\/div><\/div>)/, `$1<div class="card wiscard"><div class="row" style="justify-content:space-between"><span class="k">${T('Wisdom for today', 'حكمة اليوم')}</span><button class="minibtn" data-go="wisdom">${T('More', 'المزيد')}</button></div>${wisdom(k)}</div>`); };
+/* slides use the scholars' words */
+slides[0].b = 'Ibn al-Qayyim: push back the passing thought, or it becomes an idea, then a desire, then resolve, then an act, then a habit. Hisn closes the first doors.';
+slides[1].b = 'Ibn al-Qayyim: glances are the scout and messenger of desire, and guarding them is the root of guarding chastity.';
+slides[2].b = 'However many times it happened, Allah forgives all sins for the one who turns back. Some who repent come back higher than before.';
+Object.assign(DICT, {
+  'Ibn al-Qayyim: push back the passing thought, or it becomes an idea, then a desire, then resolve, then an act, then a habit. Hisn closes the first doors.': 'قال ابن القيم: دافع الخطرة، فإن لم تفعل صارت فكرة، ثم شهوة، ثم عزيمة، ثم فعلًا، ثم عادة. وحصن يغلق الأبواب الأولى.',
+  'Ibn al-Qayyim: glances are the scout and messenger of desire, and guarding them is the root of guarding chastity.': 'قال ابن القيم: اللحظات رائد الشهوة ورسولها، وحفظها أصل حفظ الفرج.',
+  'However many times it happened, Allah forgives all sins for the one who turns back. Some who repent come back higher than before.': 'مهما تكرّر الأمر، فإن الله يغفر الذنوب جميعًا لمن رجع، ومن التائبين من يعود أعلى مما كان.',
+});
+/* the scholars' words, in one place */
+S.wisdom = { g: 'Daily', n: 'From the scholars', ar: 1, from: 'al-Jawāb al-Kāfī · al-Fawāʾid · Ighātha · Tazkiyat al-Nufūs', note: 'Every line here was read in the book itself (Islamweb and al-Shamela), with its page. They are placed through the app: the passing-thought passage on Help now, the sudden glance on a closed page, muḥāsaba on the evening reflection, time on your real day and closed feeds, al-Shāfiʿī on Instead, the four hours on the companion, the three conditions and "some come back higher" on coming back, and the fruits of lowering the gaze on Progress.', h: () => {
+  const groups = [[T('The gaze', 'النظر'), ['lahazat', 'sabr', 'nur', 'tark', 'abyad']], [T('A passing thought', 'الخاطر'), ['khatir', 'chain']], [T('Time', 'الوقت'), ['waqt', 'umr', 'shafii']], [T('Holding yourself to account', 'المحاسبة'), ['muhasaba', 'saat']], [T('Coming back', 'التوبة'), ['bidaya', 'shurut', 'ala', 'farah', 'mahw']]];
+  return `<div class="scr">${head(T('From the scholars', 'من كلام السلف'), 'home')}<div class="sub">${T('Ibn al-Qayyim\'s al-Jawāb al-Kāfī (ad-Dāʾ wa ad-Dawāʾ), al-Fawāʾid and Ighāthat al-Lahfān, and Aḥmad Farīd\'s Tazkiyat al-Nufūs. Each with its page.', 'من الجواب الكافي (الداء والدواء) والفوائد وإغاثة اللهفان لابن القيم، وتزكية النفوس لأحمد فريد، مع الصفحة.')}</div>${groups.map(([g, ks]) => `<div class="k" style="margin-top:6px">${g}</div>${ks.map(k => wisdom(k)).join('')}`).join('')}</div>`;
+} };
+const readR7 = S.read.h; S.read.h = () => readR7().replace('<div class="grow"></div><button class="btn" data-done="read">', `<button class="btn line" style="color:var(--ink)" data-go="wisdom">${T('From the scholars: Ibn al-Qayyim and Tazkiyat al-Nufūs', 'من كلام السلف: ابن القيم وتزكية النفوس')}</button><div class="grow"></div><button class="btn" data-done="read">`);
+const toolsR7 = S.tools.h; S.tools.h = () => toolsR7().replace('<div class="k">Your rules</div>', `<div class="list"><button data-go="wisdom"><span class="icn">${li('book')}</span><span><b>${T('From the scholars', 'من كلام السلف')}</b><small>${T('Ibn al-Qayyim, Tazkiyat al-Nufūs', 'ابن القيم، تزكية النفوس')}</small></span><span class="chev">${li('chev', 16)}</span></button></div><div class="k">Your rules</div>`);
+
+/* ---------------- round 8: more of the scholars' words ---------------- */
+Q.lahazat.src = ['Ibn al-Qayyim, al-Jawāb al-Kāfī, p. 152', 'ابن القيم، الجواب الكافي، ص ١٥٢'];
+const FA = (p) => ['Ibn al-Qayyim, al-Fawāʾid, p. ' + p, 'ابن القيم، الفوائد، ص ' + String(p).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d])];
+const TZ = (p, who) => [(who ? who[0] + ', in ' : '') + 'Tazkiyat al-Nufūs, p. ' + p, (who ? who[1] + '، في ' : '') + 'تزكية النفوس، ص ' + String(p).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d])];
+Object.assign(Q, {
+  shahwa: { ar: 'كيف يكون عاقلًا من باع الجنة بما فيها بشهوة ساعة؟!', en: 'How can someone be wise who sold Paradise and all it holds for the desire of an hour?', src: FA(45) },
+  waqar: { ar: 'من عظُم وقارُ الله في قلبه أن يعصيه؛ وقّره الله في قلوب الخلق أن يُذلّوه.', en: 'Whoever holds Allah too great in his heart to disobey Him, Allah makes him too honoured in people\'s hearts for them to humiliate him.', src: FA(49) },
+  bahr: { ar: 'بحرُ الهوى إذا مدّ أغرق، وأخوفُ المنافذ على السابح فتحُ البصر في الماء.', en: 'The sea of desire drowns when it rises, and the most dangerous opening for a swimmer is opening his eyes in the water.', src: FA(55) },
+  nawm: { ar: 'لا بدّ من سِنة الغفلة ورُقاد الهوى، ولكن كن خفيفَ النوم؛ فحُرّاسُ البلد يصيحون: دنا الصباح!', en: 'Some dozing in heedlessness and sleep in desire is bound to happen, but sleep lightly: the town\'s watchmen are calling, morning is near!', src: FA(55) },
+  ahlam: { ar: 'ما مضى من الدنيا أحلام، وما بقي منها أمانيّ، والوقت ضائعٌ بينهما.', en: 'What has passed of this world is dreams, what remains is wishes, and the time is lost in between.', src: FA(64) },
+  awrad: { ar: 'إذا حملتَ على القلب همومَ الدنيا وأثقالها، وتهاونتَ بأوراده التي هي قوتُه وحياتُه؛ كنتَ كالمسافر الذي يُحمِّل دابّته فوق طاقتها، ولا يوفّيها علفها؛ فما أسرع ما تقفُ به!', en: 'If you load the heart with the worries of this world and neglect its daily remembrances, its food and life, you are like a traveller who overloads his mount and doesn\'t feed it: how soon it stops with him!', src: FA(66) },
+  himma: { ar: 'إذا طلع نجمُ الهمّة في ظلام ليل البطالة، وردِفه قمرُ العزيمة؛ أشرقت أرضُ القلب بنور ربّها.', en: 'When the star of aspiration rises in the dark night of idleness, followed by the moon of resolve, the land of the heart shines with the light of its Lord.', src: FA(69) },
+  sharaq: { ar: 'شرابُ الهوى حلوٌ ولكنه يورث الشَّرَق.', en: 'The drink of desire is sweet, but it makes you choke.', src: FA(95) },
+  shabaka: { ar: 'يا مُعرقلًا في شَرَك الهوى، جَمزةُ عزمٍ وقد خرقتَ الشبكة.', en: 'You who are tangled in the snare of desire: one leap of resolve and you have torn the net.', src: FA(95) },
+  naqsh: { ar: 'إطلاقُ البصر ينقُش في القلب صورةَ المنظور، والقلبُ كعبة، والمعبودُ لا يرضى بمزاحمة الأصنام.', en: 'Letting the eyes roam engraves the image in the heart. The heart is a Kaʿba, and the One worshipped does not accept idols crowding it.', src: FA(95) },
+  safa: { ar: 'من أراد صفاءَ قلبه فليُؤثِر الله على شهوته.', en: 'Whoever wants a clear heart, let him put Allah before his desire.', src: FA(142) },
+  kharab: { ar: 'خرابُ القلب من الأمن والغفلة، وعمارتُه من الخشية والذكر.', en: 'The heart is ruined by feeling safe and heedless, and built up by awe and remembrance.', src: FA(143) },
+  mirat: { ar: 'القلب يمرض كما يمرض البدن، وشفاؤه في التوبة والحِمية، ويصدأ كما تصدأ المرآة، وجلاؤه بالذكر.', en: 'The heart falls ill as the body does, and its cure is repentance and abstaining; it rusts as a mirror rusts, and it is polished by remembrance.', src: FA(143) },
+  watan: { ar: 'من وطّن قلبه عند ربّه سكن واستراح، ومن أرسله في الناس اضطرب واشتدّ به القلق.', en: 'Whoever settles his heart with his Lord finds calm and rest; whoever sends it out among people is shaken and grows anxious.', src: FA(143) },
+  shajara: { ar: 'السنة شجرة، والشهور فروعها، والأيام أغصانها، والساعات أوراقها، والأنفاس ثمرها.', en: 'The year is a tree: the months its branches, the days its twigs, the hours its leaves, and the breaths its fruit.', src: FA(240) },
+  hisn: { ar: '…جعل الصبرَ جوادًا لا يكبو، وصارمًا لا ينبو، وجندًا غالبًا لا يُهزم، وحِصنًا حصينًا لا يُهدم، فهو والنصرُ أخوان شقيقان.', en: 'Allah made patience a steed that does not stumble, a blade that does not blunt, an army that is not defeated, and a fortress that is not torn down. Patience and victory are brothers.', src: TZ(76) },
+  samak: { ar: 'الذكر للقلب كالماء للسمك، فكيف يكون حال السمك إذا أُخرج من الماء؟', en: 'Remembrance is to the heart what water is to a fish. How is a fish once it is taken out of the water?', src: TZ(36, ['Ibn Taymiyya', 'ابن تيمية']) },
+  adhib: { ar: 'قال رجل للحسن: يا أبا سعيد، أشكو إليك قسوة قلبي، قال: «أذِبه بالذكر».', en: 'A man told al-Ḥasan, "I complain to you of the hardness of my heart." He said: "Melt it with remembrance."', src: TZ(37, ['al-Ḥasan al-Baṣrī', 'الحسن البصري']) },
+  nakhla: { ar: 'من قال: سبحان الله وبحمده، غُرست له نخلة في الجنة.', en: 'Whoever says "Glory be to Allah and praise be to Him", a palm tree is planted for him in Paradise.', src: TZ(37, ['Jābir, Tirmidhī', 'عن جابر، رواه الترمذي']) },
+  hayy: { ar: 'مثلُ الذي يذكر ربّه والذي لا يذكر ربّه مثلُ الحيّ والميت.', en: 'The one who remembers his Lord and the one who doesn\'t are like the living and the dead.', src: TZ(37, ['Bukhārī', 'رواه البخاري']) },
+});
+/* placements */
+const supportR8 = S.support.h; S.support.h = () => supportR8().replace(/<div class="grow"><\/div><\/div>$/, `${wisdom('shabaka', { cls: 'onhelp' })}<div class="grow"></div></div>`);
+const slipR8 = S.slip.h; S.slip.h = () => slipR8().replace('<div class="grow"></div><button class="btn" data-slip>', `${wisdom('nawm', { cls: 'onhelp' })}<div class="grow"></div><button class="btn" data-slip>`);
+const breatheR8 = S.breathe.h; S.breathe.h = () => breatheR8().replace('<div class="grow"></div><button class="btn" data-go="pray">', `${wisdom('watan', { cls: 'onhelp' })}<div class="grow"></div><button class="btn" data-go="pray">`);
+const prayR8 = S.pray.h; S.pray.h = () => prayR8().replace('<div class="grow"></div><button class="btn white" data-go="home">', `${wisdom('kharab')}<div class="grow"></div><button class="btn white" data-go="home">`);
+const calR8 = S.calendar.h; S.calendar.h = () => calR8().replace(/<\/div>$/, `${wisdom('shajara')}</div>`);
+const adhR8 = S.adhkar.h; S.adhkar.h = () => { let h = adhR8(); const sub = st.dhSet !== 'e' && st.dhi === 1 ? 'nakhla' : 'samak'; return h.replace('<div class="grow"></div>', `${wisdom(sub)}<div class="grow"></div>`); };
+const focusR8 = S.focus.h; S.focus.h = () => focusR8().replace('<div class="grow"></div><button class="btn line" data-go="tools">', `${wisdom('ahlam')}<div class="grow"></div><button class="btn line" data-go="tools">`);
+const waitR8 = S.wait.h; S.wait.h = () => waitR8().replace('<div class="grow"></div><div class="grow"></div>', `${wisdom('sharaq', { cls: 'onland' })}<div class="grow"></div>`);
+const msR8 = S.milestone.h; S.milestone.h = () => msR8().replace('<div class="grow"></div><button class="btn white">', `${wisdom('himma', { cls: 'onland' })}<div class="grow"></div><button class="btn white">`);
+const shieldR8 = S.shield.h; S.shield.h = () => shieldR8().replace('<div class="t3 c">Adult content filter</div>', `<div class="t3 c">Adult content filter</div>${wisdom('hisn')}`);
+const intro1R8 = S.intro1.h; S.intro1.h = () => intro1R8().replace('<div class="grow"></div><div class="grow"></div>', `<div class="grow"></div>${wisdom('hisn', { cls: 'ondeep' })}<div class="grow"></div>`);
+const s1R8 = slide; slide = (i) => { let h = s1R8(i); if (i === 1) h = h.replace('<div class="grow"></div><div class="dots">', `${wisdom('naqsh', { cls: 'ondeep' })}<div class="grow"></div><div class="dots">`); return h; };
+/* the scholars' page gets the new groups */
+const wisR8 = S.wisdom.h;
+S.wisdom.h = () => {
+  const groups = [[T('The fortress', 'الحصن'), ['hisn']], [T('The gaze', 'النظر'), ['lahazat', 'sabr', 'naqsh', 'bahr', 'nur', 'tark', 'abyad']], [T('Desire', 'الشهوة والهوى'), ['shahwa', 'sharaq', 'shabaka', 'safa', 'waqar']], [T('A passing thought', 'الخاطر'), ['khatir', 'chain']], [T('Time', 'الوقت'), ['waqt', 'umr', 'ahlam', 'shafii', 'shajara', 'himma']], [T('Remembrance', 'الذكر'), ['samak', 'mirat', 'adhib', 'hayy', 'nakhla', 'awrad', 'kharab', 'watan']], [T('Holding yourself to account', 'المحاسبة'), ['muhasaba', 'saat']], [T('Coming back', 'التوبة'), ['bidaya', 'shurut', 'ala', 'farah', 'mahw', 'nawm']]];
+  const n = groups.reduce((a, g) => a + g[1].length, 0);
+  return `<div class="scr">${head(T('From the scholars', 'من كلام السلف'), 'home')}<div class="sub">${T(`${n} sayings from Ibn al-Qayyim's al-Jawāb al-Kāfī (ad-Dāʾ wa ad-Dawāʾ), al-Fawāʾid and Ighāthat al-Lahfān, and Aḥmad Farīd's Tazkiyat al-Nufūs. Each with its page.`, `${N(n)} قولًا من الجواب الكافي (الداء والدواء) والفوائد وإغاثة اللهفان لابن القيم، وتزكية النفوس لأحمد فريد، مع الصفحة.`)}</div><div class="chipz wtabs">${groups.map(([g], i) => `<button class="${st.wtab === i ? 'on' : ''}" data-wtab="${i}">${g}</button>`).join('')}</div>${groups[st.wtab || 0][1].map(k => wisdom(k)).join('')}</div>`;
+};
+st.wtab = 0;
+/* home rotates through all of them */
+S.home.h = () => { const keys = Object.keys(Q).filter(k => !['fujaaNote', 'shurut', 'saat', 'muhasaba'].includes(k)); const k = keys[(new Date().getDate() + (st.wisIdx || 0)) % keys.length]; return homeR7().replace(/(<div class="versecard">[\s\S]*?<\/div><\/div>)/, `$1<div class="card wiscard"><div class="row" style="justify-content:space-between"><span class="k">${T('Wisdom for today', 'حكمة اليوم')}</span><span class="row" style="gap:6px"><button class="minibtn" data-wisnext>${T('Another', 'غيرها')}</button><button class="minibtn" data-go="wisdom">${T('All', 'الكل')}</button></span></div>${wisdom(k)}</div>`); };
+st.wisIdx = 0;
+
+st.lang = 'ar';
+{ const ORDER = ['splash','intro1','how','welcome','name','q3','q0','q1','q2','usage','s0','s1','s2','goals','instead','reason','suggest','told','perms','trylive','begin','pledge','plan','notify','free','setup','home','dua','blocked','blockedapp','milestone','wait','focus','companion','widget','help','support','breathe','pray','slip','shield','l_sites','l_sites_fix','l_words','l_images','l_apps','l_lock','lists','health','progress','calendar','adhkar','wisdom','reflect','read','tools','settings'];
   const tmp = { ...S }; Object.keys(S).forEach(k => delete S[k]); ORDER.forEach(k => S[k] = tmp[k]); Object.keys(tmp).forEach(k => { if (!S[k]) S[k] = tmp[k]; }); }
 /* ---------------- engine ---------------- */
 const app = document.getElementById('app');
 let cur = 'splash', timers = [];
-const status = () => `<div class="status"><span>21:40</span><span>●●● ▴ 82</span></div>`;
+const status = () => `<div class="status"><span>${N('16:25')}</span><span>●●● ▴ 82</span></div>`;
 function clearTimers() { timers.forEach(clearInterval); timers.forEach(clearTimeout); timers = []; }
 function go(id, quiet) {
+  if (cur === 'reason' && id !== 'reason') { const t = document.getElementById('reasonIn'); if (t && !AR()) st.reasonTxt = t.value; }
   clearTimers(); const prev = cur; cur = id;
   app.dir = AR() ? 'rtl' : 'ltr'; app.lang = AR() ? 'ar' : 'en';
-  app.innerHTML = S[id].h() + status();
+  if (prev === 'blocked' && id === 'breathe') st.fromBlocked = true;
+  app.innerHTML = S[id].h() + status(); arabize(app); genderize(app);
+  if (st.fs !== 1) app.querySelector('.scr').style.zoom = st.fs;
+  if (st.pendingToast) { const [a, b] = st.pendingToast; st.pendingToast = null; timers.push(setTimeout(() => toast(a, b), 350)); }
   if (!quiet && prev !== id) app.querySelector('.scr').classList.add('enter');
   renderSide(id); renderCompare(id);
   if (id === 'home') {
     const fmt = (s) => N([s / 3600, s / 60 % 60, s % 60].map(v => String(Math.floor(v)).padStart(2, '0')).join(':'));
     const tick = () => { const s = Math.floor((Date.now() - start) / 1000) % 86400, e = document.getElementById('tick'); if (e) e.textContent = fmt(s); };
-    tick(); timers.push(setInterval(tick, 1000));
+    const ptick = () => { const e = document.getElementById('pcount'); if (e) e.textContent = N(mmss(nextPrayer().d)); };
+    tick(); ptick(); timers.push(setInterval(() => { tick(); ptick(); }, 1000));
     const d = document.querySelector('.daysbig b'); if (d && !quiet && !REDUCE) { let n = 0; const up = () => { d.textContent = N(n); if (n++ < 9) timers.push(setTimeout(up, 55)); }; up(); }
   }
   if (id === 'breathe') runBreath();
@@ -674,7 +1371,7 @@ function runBreath() {
   let n = 0;
   const step = () => {
     const round = Math.floor(n / 2) + 1, inhale = n % 2 === 0;
-    if (round > 3) { w.textContent = T('It passed', 'مضت'); c.style.setProperty('--s', .8); r.textContent = T('Alḥamdulillāh', 'الحمد لله'); return; }
+    if (round > 3) { if (st.fromBlocked) { st.fromBlocked = false; st.notes[23] = { ...(st.notes[23] || { pull: [], r: st.rate.slice() }), s: 'pol', note: st.notes[23]?.note || T('Turned back in time after a closed page.', 'رجعتُ في الوقت بعد صفحة مغلقة.') }; toast(T('Marked “turned back in time”', 'عُلِّم يومك «رجوع في وقته»'), T('See it on your calendar', 'تجده في تقويمك')); } w.textContent = T('It passed', 'مضت'); c.style.setProperty('--s', .8); r.textContent = T('Alḥamdulillāh', 'الحمد لله'); return; }
     c.style.setProperty('--s', inhale ? 1 : .55); w.textContent = inhale ? T('Breathe in', 'شهيق') : T('Breathe out', 'زفير'); r.textContent = T(`Round ${round} of 3`, `الجولة ${N(round)} من ٣`);
     n++; timers.push(setTimeout(step, 4200));
   };
@@ -690,10 +1387,10 @@ function bindHold() {
   b.addEventListener('keyup', stop);
 }
 app.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-go],[data-ans],[data-goal],[data-dua],[data-rate],[data-done],[data-toggle-blocker],[data-tour-next],[data-tour-skip],[data-back-pledge],[data-tap],[data-name],[data-layer],[data-safe],[data-alwayson],[data-blur],[data-step],[data-step-next],[data-day],[data-savenote],[data-saveref],[data-check],[data-addblock]');
+  const el = e.target.closest('[data-go],[data-ans],[data-goal],[data-dua],[data-rate],[data-done],[data-toggle-blocker],[data-tour-next],[data-tour-skip],[data-back-pledge],[data-tap],[data-name],[data-layer],[data-safe],[data-alwayson],[data-blur],[data-step],[data-step-next],[data-day],[data-savenote],[data-saveref],[data-check],[data-addblock],[data-bead],[data-dhi],[data-slip],[data-dhset],[data-fs],[data-how],[data-usage],[data-inst],[data-reasonchip],[data-sugg],[data-perm],[data-try],[data-fruit],[data-wtab],[data-wisnext]');
   if (!el) return;
   const d = el.dataset;
-  if (d.ans) { const [i, k] = d.ans.split(':').map(Number), q = quizQ[i]; if (q.multi) { st.guard.has(k) ? st.guard.delete(k) : st.guard.add(k); go('q' + i, 1); } else { st[q.key] = k; go(i < quizQ.length - 1 ? 'q' + (i + 1) : 'name'); } return; }
+  if (d.ans) { const [i, k] = d.ans.split(':').map(Number), q = quizQ[i]; if (q.multi) { st.guard.has(k) ? st.guard.delete(k) : st.guard.add(k); go('q' + i, 1); } else { st[q.key] = k; if (q.key === 'q4') { if (k === 1 && st.name === 'Yusuf') st.name = 'Maryam'; if (k !== 1 && st.name === 'Maryam') st.name = 'Yusuf'; } go(nextOf('q' + i)); } return; }
   if (d.goal) { const k = +d.goal; st.goals.has(k) ? st.goals.delete(k) : st.goals.add(k); go('goals', 1); return; }
   if (d.dua) { const i = +d.dua; st.mine[i] = !st.mine[i]; st.duas[i] += st.mine[i] ? 1 : -1; go('dua', 1); return; }
   if (d.rate) { const [r, v] = d.rate.split(':').map(Number); st.rate[r] = v; const y = app.querySelector('.scr').scrollTop; go('reflect', 1); app.querySelector('.scr').scrollTop = y; return; }
@@ -702,6 +1399,21 @@ app.addEventListener('click', (e) => {
   if ('tourNext' in d) { st.tour = st.tour < 3 ? st.tour + 1 : 0; go('home'); return; }
   if ('tourSkip' in d) { st.tour = 0; go('home'); return; }
   if ('backPledge' in d) { if (st.pledge) { st.pledge--; go('pledge'); } else go('begin'); return; }
+  if (d.wtab) { st.wtab = +d.wtab; go('wisdom', 1); return; }
+  if ('wisnext' in d) { st.wisIdx = (st.wisIdx || 0) + 1; const y = app.querySelector('.scr').scrollTop; go('home', 1); app.querySelector('.scr').scrollTop = y; return; }
+  if ('fruit' in d) { st.benefit++; go('progress', 1); return; }
+  if ('how' in d) { if (st.how < 2) { st.how++; go('how', 1); } else { st.how = 0; go(nextOf('how')); } return; }
+  if ('usage' in d) { st.usageOn = true; st.perm.usage = true; go('usage', 1); return; }
+  if (d.inst) { const k = +d.inst; st.instead.has(k) ? st.instead.delete(k) : st.instead.add(k); go('instead', 1); return; }
+  if ('reasonchip' in d) { const t = document.getElementById('reasonIn'); t.value = el.textContent; if (!AR()) st.reasonTxt = el.textContent; return; }
+  if (d.sugg) { const k = +d.sugg; st.sugg[k] = !st.sugg[k]; go('suggest', 1); return; }
+  if (d.perm) { st.perm[d.perm] = !st.perm[d.perm]; go('perms', 1); return; }
+  if ('try' in d) { el.disabled = true; const target = 'test.hisn-block.example', tEl = document.getElementById('typed'); let i = 0; const typeIt = () => { if (!tEl.isConnected) return; tEl.textContent = target.slice(0, ++i); if (i < target.length) timers.push(setTimeout(typeIt, 55)); else timers.push(setTimeout(() => { st.tried = true; go('trylive', 1); }, 450)); }; typeIt(); return; }
+  if ('slip' in d) { st.notes[23] = { s: 'no', note: st.notes[23]?.note || '', pull: [], r: st.rate.slice() }; st.pendingToast = [T('Welcome back. 41 nights kept.', 'أهلًا بعودتك. ٤١ ليلة محفوظة.'), T('Today is marked on your calendar', 'عُلِّم اليوم في تقويمك')]; go('home'); return; }
+  if (d.dhset) { st.dhSet = d.dhset; st.dhi = 0; go('adhkar', 1); return; }
+  if (d.fs) { st.fs = Math.max(.9, Math.min(1.3, +(st.fs + d.fs * .1).toFixed(2))); go('settings', 1); return; }
+  if ('bead' in d) { const i = st.dhi, n = ADHKAR[i].n; st.dh[i] = Math.min(n, st.dh[i] + 1); if (st.dh[i] >= n) { const nx = ADHKAR.findIndex((x, k) => st.dh[k] < x.n); if (nx >= 0) st.dhi = nx; else { confetti(); toast(T('Adhkār done', 'تمّت الأذكار'), T('Alḥamdulillāh', 'الحمد لله')); } } go('adhkar', 1); return; }
+  if (d.dhi) { st.dhi = +d.dhi; go('adhkar', 1); return; }
   if (d.layer) { st.layers[d.layer] = !st.layers[d.layer]; go(cur, 1); return; }
   if ('safe' in d) { st.safe = !st.safe; go(cur, 1); return; }
   if ('alwayson' in d) { st.alwaysOn = true; go('l_sites'); return; }
@@ -713,7 +1425,7 @@ app.addEventListener('click', (e) => {
   if ('saveref' in d) { const v = document.getElementById('refNote').value.trim(); st.tasks.ref = true; st.notes[23] = { s: 'ok', note: v || 'Reflection saved.', pull: ['Bored'], r: st.rate.slice() }; st.sel = 23; go('calendar'); return; }
   if ('check' in d) { const raw = (document.getElementById('chk').value || '').trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0]; if (!raw || !raw.includes('.')) { st.checked = { host: raw || '—', block: false, why: 'Enter a site name like example.com.' }; } else { const adult = /(porn|xxx|sex|nsfw|xvideo|onlyfans|hentai|cam)/.test(raw) || /\.(xxx|porn|sex|adult)$/.test(raw) || (st.extra || []).includes(raw); st.checked = { host: raw, block: adult, why: adult ? ((st.extra || []).includes(raw) ? 'Blocked by your own list.' : 'Blocked by the built-in list.') : 'Not on any list. That is not a promise about the page.' }; } go('l_sites', 1); return; }
   if ('addblock' in d) { st.extra = (st.extra || []).concat(st.checked.host); st.checked = { ...st.checked, block: true, why: 'Blocked by your own list.' }; go('l_sites', 1); return; }
-  if ('name' in d) { const v = (document.getElementById('nameIn').value || '').trim(); st.name = v || 'Yusuf'; go('told'); return; }
+  if ('name' in d) { const v = (document.getElementById('nameIn').value || '').trim(); st.name = (v === 'يوسف' ? 'Yusuf' : v === 'مريم' ? 'Maryam' : v) || 'Yusuf'; go(nextOf('name')); return; }
   if ('tour' in d) st.tour = 1;
   if (d.go) go(d.go); else if (d.tap) go(d.tap);
 });
@@ -735,6 +1447,7 @@ document.querySelectorAll('.looks button[data-look]').forEach(b => b.addEventLis
 document.querySelectorAll('.looks button[data-logo]').forEach(b => { b.insertAdjacentHTML('afterbegin', `<span class="logo ink" style="width:26px;height:26px;color:var(--fg)">${LOGOS[b.dataset.logo]}</span>`); b.addEventListener('click', () => {
   st.logo = b.dataset.logo; document.querySelectorAll('.looks button[data-logo]').forEach(x => x.setAttribute('aria-pressed', x === b)); go(cur, 1);
 }); });
+document.querySelectorAll('.looks button[data-gender]').forEach(b => b.addEventListener('click', () => { st.q4 = +b.dataset.gender; st.name = st.q4 === 1 ? 'Maryam' : 'Yusuf'; document.querySelectorAll('.looks button[data-gender]').forEach(x => x.setAttribute('aria-pressed', x === b)); go(cur, 1); }));
 document.querySelectorAll('.looks button[data-lang]').forEach(b => b.addEventListener('click', () => {
   st.lang = b.dataset.lang;
   document.querySelectorAll('.looks button[data-lang]').forEach(x => x.setAttribute('aria-pressed', x === b));
@@ -744,8 +1457,273 @@ function renderCompare(id) {
   const names = { fajr: ['Fajr', 'Dawn rose, indigo'], madinah: ['Madinah', 'Ivory, emerald, gold'], layl: ['Layl', 'Night indigo, lamp gold'] };
   const box = document.getElementById('compare');
   box.innerHTML = Object.entries(names).map(([k, [a, b]]) => `<figure><div class="mini"><div class="app" data-look="${k}" dir="${AR() ? 'rtl' : 'ltr'}">${S[id].h().replace(/id="[^"]*"/g, '')}${status()}</div></div><figcaption><b>${a}</b>${b}</figcaption></figure>`).join('');
+  box.querySelectorAll('.mini .app').forEach(a => { arabize(a); genderize(a); });
   box.querySelectorAll('.mini').forEach(m => { const sc = m.clientWidth / 355; m.querySelector('.app').style.transform = `scale(${sc})`; });
 }
 window.addEventListener('resize', () => renderCompare(cur));
 go('splash');
+
+/* ---------------- filmstrip, gallery, features ---------------- */
+function miniOf(k) {
+  const box = document.createElement('figure'); box.className = 'fm';
+  box.innerHTML = `<div class="mini" data-open="${k}"><div class="app" data-look="${st.look}" dir="${AR() ? 'rtl' : 'ltr'}">${S[k].h().replace(/id="[^"]*"/g, '')}${status()}</div></div><figcaption><b>${S[k].n}</b>${S[k].from || ''}</figcaption>`;
+  const a = box.querySelector('.app'); arabize(a); genderize(a); return box;
+}
+function renderPages() {
+  const film = document.getElementById('film'); film.innerHTML = '';
+  const groups = [['Opening', FLOW.filter(k => CHAP[k] === undefined && k !== 'home')], ...CHAPN.map((c, i) => [`${i + 1} · ${c[0]} · ${c[1]}`, FLOW.filter(k => CHAP[k] === i)])];
+  groups.forEach(([title, keys]) => { const h = document.createElement('h3'); h.className = 'filmh'; h.textContent = title; film.appendChild(h); const row = document.createElement('div'); row.className = 'strip'; keys.forEach(k => row.appendChild(miniOf(k))); film.appendChild(row); });
+  const gal = document.getElementById('gallery'); gal.innerHTML = '';
+  const rest = {}; Object.keys(S).filter(k => !FLOW.includes(k) || k === 'home').forEach(k => { if (S[k].hide) return; (rest[S[k].g] = rest[S[k].g] || []).push(k); });
+  Object.entries(rest).forEach(([g, keys]) => { const h = document.createElement('h3'); h.className = 'filmh'; h.textContent = g; gal.appendChild(h); const row = document.createElement('div'); row.className = 'strip'; keys.forEach(k => row.appendChild(miniOf(k))); gal.appendChild(row); });
+  document.querySelectorAll('#film .mini, #gallery .mini').forEach(m => { m.querySelector('.app').style.transform = `scale(${m.clientWidth / 355})`; });
+}
+const FEATS = [
+  ['Protection', [['Website filter (DNS) with 395k adult sites', 'l_sites'], ['SafeSearch on Google, Bing, DuckDuckGo, YouTube', 'l_sites'], ['Always-on VPN check and guide', 'l_sites_fix'], ['Check a website', 'l_sites'], ['Adult words in chosen apps', 'l_words'], ['Telegram searches, bots and channels', 'l_words'], ['Image checks and people blur', 'l_images'], ['Shorts and Reels closed, apps blocked', 'l_apps'], ['Browsers without protection', 'l_apps'], ['Protection lock and uninstall guard', 'l_lock'], ['Your own lists, import and export', 'lists'], ['Health check', 'health']]],
+  ['Hard moments', [['Help now with your own line and promise', 'help'], ['Breathing with dhikr', 'breathe'], ['Continue to prayer', 'pray'], ['Coming back after a slip', 'slip'], ['A page was closed: turn back in time', 'blocked'], ['A companion who sees nights only', 'companion']]],
+  ['Every day', [['Words of Ibn al-Qayyim and Tazkiyat al-Nufūs, each with its page', 'wisdom'], ['Nights of light and a live timer', 'home'], ['Five prayers with a live countdown', 'home'], ['Morning and evening adhkār with a counter', 'adhkar'], ['Today\'s reading', 'read'], ['Evening reflection', 'reflect'], ['Notes on the calendar', 'calendar'], ['Du\'a wall', 'dua']]],
+  ['Time and feeds', [['Focus that pauses for prayer', 'focus'], ['Open Wait with dhikr', 'wait'], ['A feed was closed', 'blockedapp'], ['Quiet nights after ʿIshāʾ', 'tools'], ['Daily limits, gray screen', 'tools']]],
+  ['Progress', [['Gauge, calendar and milestones', 'progress'], ['Milestone celebration and share card', 'milestone'], ['Widget pinned in one tap', 'widget']]],
+  ['Yours', [['Arabic first, brother or sister wording', 'home'], ['Three looks: Fajr, Madinah, Layl', 'home'], ['Text size', 'settings'], ['No account, nothing leaves the phone', 'settings'], ['Free and open source', 'free']]],
+];
+document.getElementById('feat').innerHTML = FEATS.map(([g, items]) => `<div class="fcard"><h3>${g}</h3>${items.map(([t, k]) => `<button data-open="${k}">${t}</button>`).join('')}</div>`).join('');
+document.addEventListener('click', (e) => { const m = e.target.closest('[data-open]'); if (!m) return; st.tour = 0; go(m.dataset.open); document.querySelector('.proto').scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth', block: 'start' }); });
+let rpT; const rerender = () => { clearTimeout(rpT); rpT = setTimeout(renderPages, 60); };
+document.querySelectorAll('.looks button').forEach(b => b.addEventListener('click', rerender));
+window.addEventListener('resize', rerender);
+
+renderPages();
+/* ---------------- round 9: the tazkiya library from the owner's Ibn al-Qayyim list ---------------- */
+const IQ_SITE = 'https://ibn-al-qayyim-legacy.vercel.app';
+const IQX = (() => {
+  const d = window.IQ || { topics: [], books: [], q: [] };
+  const norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+  const q = d.q.map((r, i) => ({ i, t: r[0], b: r[1], p: r[2], href: r[3], m: r[4], s: r[5], n: norm(r[0]) }));
+  const BOOK_EN = { 'الداء والدواء': 'ad-Dāʾ wa ad-Dawāʾ', 'الفوائد لابن القيم': 'al-Fawāʾid', 'عدة الصابرين وذخيرة الشاكرين': 'ʿUddat aṣ-Ṣābirīn', 'إغاثة اللهفان في مصايد الشيطان': 'Ighāthat al-Lahfān', 'الوابل الصيب': 'al-Wābil aṣ-Ṣayyib', 'روضة المحبين ونزهة المشتاقين': 'Rawḍat al-Muḥibbīn', 'مفتاح دار السعادة ومنشور ولاية العلم والإرادة': 'Miftāḥ Dār as-Saʿāda', 'الكلام على مسألة السماع': 'al-Kalām ʿalā Masʾalat as-Samāʿ', 'طريق الهجرتين وباب السعادتين': 'Ṭarīq al-Hijratayn', 'مدارج السالكين': 'Madārij as-Sālikīn', 'زاد المعاد في هدي خير العباد': 'Zād al-Maʿād', 'بدائع الفوائد': 'Badāʾiʿ al-Fawāʾid', 'حادي الأرواح إلى بلاد الأفراح': 'Ḥādī al-Arwāḥ', 'رسالة ابن القيم إلى أحد إخوانه': 'Letter to a brother', 'جلاء الأفهام': 'Jalāʾ al-Afhām', 'الرسالة التبوكية زاد المهاجر إلى ربه': 'ar-Risāla at-Tabūkiyya' };
+  const SHORT_AR = { 'الفوائد لابن القيم': 'الفوائد', 'إغاثة اللهفان في مصايد الشيطان': 'إغاثة اللهفان', 'عدة الصابرين وذخيرة الشاكرين': 'عدة الصابرين', 'روضة المحبين ونزهة المشتاقين': 'روضة المحبين', 'مفتاح دار السعادة ومنشور ولاية العلم والإرادة': 'مفتاح دار السعادة', 'طريق الهجرتين وباب السعادتين': 'طريق الهجرتين', 'زاد المعاد في هدي خير العباد': 'زاد المعاد', 'حادي الأرواح إلى بلاد الأفراح': 'حادي الأرواح', 'الرسالة التبوكية زاد المهاجر إلى ربه': 'الرسالة التبوكية', 'الكلام على مسألة السماع': 'مسألة السماع' };
+  const book = x => d.books[x.b][0];
+  const ed = x => (d.books[x.b][1].split(' - ')[1] || '').trim();
+  const src = x => T(`${BOOK_EN[book(x)] || book(x)}, p. ${x.p}`, `${SHORT_AR[book(x)] || book(x)}، ص ${N(String(x.p))}`);
+  /* topics shown, in the order that matters for this app */
+  const SHOW = ['gaze', 'sin', 'tawba', 'nafs', 'qalb', 'sabr', 'waqt', 'dhikr', 'hamm'];
+  const topics = SHOW.map(k => { const i = d.topics.findIndex(t => t[0] === k); return { k, bit: 1 << i, en: d.topics[i][1], ar: d.topics[i][2] }; }).map(t => ({ ...t, c: q.filter(x => x.m & t.bit).length }));
+  /* the daily pool: short, strongly relevant, from the core books */
+  const daily = q.filter(x => x.t.length <= 240 && x.s >= 18).sort((a, b) => b.s - a.s);
+  return { q, topics, book, ed, src, norm, daily, books: d.books };
+})();
+let SAVED = new Set(); try { SAVED = new Set(JSON.parse(localStorage.getItem('hisn.saved') || '[]')); } catch (e) { }
+const saveSaved = () => { try { localStorage.setItem('hisn.saved', JSON.stringify([...SAVED])); } catch (e) { } };
+st.wseg = 0; st.wtopic = 'all'; st.wq = ''; st.wshow = 20; st.wshare = 0;
+
+const iqFilter = () => {
+  const t = IQX.topics.find(t => t.k === st.wtopic);
+  const qn = IQX.norm(st.wq.trim());
+  return IQX.q.filter(x => (!t || x.m & t.bit) && (!qn || x.n.includes(qn) || IQX.book(x).includes(st.wq.trim())));
+};
+const iqCard = (x, opts = {}) => {
+  const long = x.t.length > 300 && !opts.full;
+  const tags = IQX.topics.filter(t => x.m & t.bit).slice(0, 3);
+  return `<div class="wis iq ${opts.cls || ''}" data-iqid="${x.i}">
+    <div class="wisar keep iqt ${long ? 'clamp' : ''}">${x.t.replace(/</g, '&lt;').replace(/\n+/g, '<br>')}</div>
+    ${long ? `<button class="iqmore" data-iqmore>${T('Read it all', 'اقرأ كاملًا')}</button>` : ''}
+    <div class="iqfoot"><span class="wissrc">${IQX.src(x)}${IQX.ed(x) ? ` · <span class="keep">${IQX.ed(x)}</span>` : ''}</span>
+      <span class="iqact">
+        <button class="iqb ${SAVED.has(x.i) ? 'on' : ''}" data-iqsave="${x.i}" aria-label="${T('Save', 'حفظ')}">${li('heart', 16)}</button>
+        <button class="iqb" data-iqshare="${x.i}" aria-label="${T('Share', 'مشاركة')}">${li('widget', 16)}</button>
+        <a class="iqb" href="${IQ_SITE}${x.href}" target="_blank" rel="noopener" aria-label="${T('Open in the book', 'افتح في الكتاب')}">${li('book', 16)}</a>
+      </span></div>
+    ${opts.tags === false ? '' : `<div class="iqtags">${tags.map(t => `<span>${T(t.en, t.ar)}</span>`).join('')}</div>`}
+  </div>`;
+};
+const iqList = () => {
+  const all = iqFilter(), list = all.slice(0, st.wshow);
+  return `<div class="k iqcount">${T(`${all.length} sayings`, `${N(String(all.length))} قولًا`)}</div>${list.map(x => iqCard(x)).join('') || `<div class="sub c">${T('Nothing found. Try another word.', 'لا نتائج. جرّب كلمة أخرى.')}</div>`}${all.length > st.wshow ? `<button class="btn line" style="color:var(--ink)" data-iqmorelist>${T('Show more', 'عرض المزيد')}</button>` : ''}`;
+};
+
+const curatedR9 = S.wisdom.h;
+S.wisdom = { g: 'Daily', n: 'Tazkiya library', ar: 1, from: 'Owner\'s Ibn al-Qayyim list (GitHub) · al-Jawāb al-Kāfī · al-Fawāʾid · Ighātha · ʿUddat aṣ-Ṣābirīn · al-Wābil aṣ-Ṣayyib · Tazkiyat al-Nufūs', note: 'Three tabs. Chosen: the 39 sayings placed through the app. Library: 457 sayings on purifying the soul, taken from the owner\'s own Ibn al-Qayyim list of 2,177 (Ibn-Al-Qayyim-Legacy on GitHub), keeping only the inner-life books and the topics this app needs: the gaze, sins, repentance, the self, the heart, patience, time, dhikr, worry. Fiqh, creed and rebuttal passages are left out. Search, topic chips, save, share card, and a link to the exact page on the owner\'s reading site. Saved: what you kept. Quote text is never changed, and the brother/sister switch does not touch it.', h: () => {
+  const seg = [T('Chosen', 'مختارات'), T('Library', 'المكتبة'), T(`Saved${SAVED.size ? ' · ' + SAVED.size : ''}`, `المحفوظة${SAVED.size ? ' · ' + N(String(SAVED.size)) : ''}`)];
+  const top = `<div class="seg3">${seg.map((s, i) => `<button class="${st.wseg === i ? 'on' : ''}" data-wseg="${i}">${s}</button>`).join('')}</div>`;
+  if (st.wseg === 0) return curatedR9().replace(/(<\/div>)(<div class="sub">)/, `$1${top}$2`);
+  const headH = head(T('Purifying the soul', 'تزكية النفس'), 'home');
+  if (st.wseg === 2) {
+    const xs = IQX.q.filter(x => SAVED.has(x.i));
+    return `<div class="scr">${headH}${top}${xs.length ? xs.map(x => iqCard(x)).join('') : `<div class="empty"><div class="t3 c">${T('Nothing saved yet', 'لم تحفظ شيئًا بعد')}</div><div class="sub c">${T('Tap the heart on any saying to keep it here.', 'اضغط القلب على أي قول ليبقى هنا.')}</div></div>`}</div>`;
+  }
+  return `<div class="scr">${headH}${top}
+    <div class="sub">${T('Ibn al-Qayyim on the heart, the gaze and coming back to Allah. From your Ibn al-Qayyim library, each with its book and page. Arabic as written.', 'من كلام ابن القيم في القلب والنظر والرجوع إلى الله، من مكتبة ابن القيم، مع الكتاب والصفحة، بنصّه كما هو.')}</div>
+    <div class="iqsearch">${li('look', 18)}<input id="iqIn" class="field" dir="auto" placeholder="${T('Search: heart, gaze, patience…', 'ابحث: القلب، النظر، الصبر…')}" value="${st.wq.replace(/"/g, '&quot;')}"></div>
+    <div class="chipz wtabs iqtopics"><button class="${st.wtopic === 'all' ? 'on' : ''}" data-wtopic="all">${T('All', 'الكل')}</button>${IQX.topics.map(t => `<button class="${st.wtopic === t.k ? 'on' : ''}" data-wtopic="${t.k}">${T(t.en, t.ar)} <small>${N(String(t.c))}</small></button>`).join('')}</div>
+    <div id="iqList" class="iqlist">${iqList()}</div></div>`;
+} };
+
+/* share card */
+S.wshare = { g: 'Daily', n: 'Share a saying', ar: 1, from: 'Unchaind verse cards · Ibn al-Qayyim Legacy quote sharing', note: 'A clean card to send to a friend or post. Only the saying, the book and page, and a small mark. Never your nights, never what you are recovering from.', h: () => {
+  const x = IQX.q[st.wshare] || IQX.daily[0];
+  return `<div class="scr">${head(T('Share', 'مشاركة'), 'wisdom')}
+    <div class="sharecard"><div class="sclogo">${logo(30)}</div><div class="wisar keep iqt">«${x.t.replace(/</g, '&lt;').replace(/\n+/g, '<br>')}»</div><div class="scsrc">${T('Ibn al-Qayyim', 'ابن القيم')} · ${IQX.src(x)}</div></div>
+    <div class="sub c">${T('Your nights and your reasons are never on this card.', 'لياليك وأسبابك لا تظهر على هذه البطاقة أبدًا.')}</div>
+    <div class="grow"></div>
+    <button class="btn" data-sharedone>${T('Save image', 'حفظ الصورة')}</button>
+    <button class="btn line" style="color:var(--ink)" data-sharecopy>${T('Copy text', 'نسخ النص')}</button></div>`;
+} };
+
+/* home: one saying a day from the library pool */
+const homeR9 = S.home.h;
+S.home.h = () => {
+  const pool = IQX.daily; if (!pool.length) return homeR9();
+  const day = Math.floor(Date.now() / 864e5), x = pool[(day + (st.wisIdx || 0)) % pool.length];
+  return homeR9().replace(/<div class="card wiscard">[\s\S]*?<\/div><\/div><\/div>/, `<div class="card wiscard"><div class="row" style="justify-content:space-between"><span class="k">${T('Wisdom for today', 'حكمة اليوم')}</span><span class="row" style="gap:6px"><button class="minibtn" data-wisnext>${T('Another', 'غيرها')}</button><button class="minibtn" data-go="wisdom" data-wsegto="1">${T('Library', 'المكتبة')}</button></span></div>${iqCard(x, { tags: false, cls: 'flat' })}</div>`);
+};
+
+/* help now and slip: a second word from the library, on the topic of the moment */
+const pickTopic = (k, seed) => { const t = IQX.topics.find(t => t.k === k); const xs = IQX.q.filter(x => x.m & t.bit && x.t.length <= 260 && x.s >= 16); return xs[(seed || 0) % xs.length]; };
+const slipR9 = S.slip.h; S.slip.h = () => { const x = pickTopic('tawba', st.wisIdx); return slipR9().replace('<div class="grow"></div><button class="btn" data-slip>', `${x ? iqCard(x, { tags: false, cls: 'onhelp' }) : ''}<div class="grow"></div><button class="btn" data-slip>`); };
+const reflectR9 = S.reflect.h; S.reflect.h = () => { const x = pickTopic('nafs', new Date().getDate()); return reflectR9().replace(/<div class="grow"><\/div>/, `${x ? iqCard(x, { tags: false }) : ''}<div class="grow"></div>`); };
+
+/* ORDER: put the share card after the library */
+{ const tmp = { ...S }; Object.keys(S).forEach(k => delete S[k]); Object.keys(tmp).forEach(k => { if (k === 'wshare') return; S[k] = tmp[k]; if (k === 'wisdom') S.wshare = tmp.wshare; }); }
+
+app.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-wseg],[data-wtopic],[data-iqmore],[data-iqmorelist],[data-iqsave],[data-iqshare],[data-sharedone],[data-sharecopy],[data-wsegto]');
+  if (!el) return; const d = el.dataset;
+  if (d.wsegto) { st.wseg = +d.wsegto; go('wisdom', 1); return; }
+  if (d.wseg) { st.wseg = +d.wseg; go('wisdom', 1); return; }
+  if (d.wtopic) { st.wtopic = d.wtopic; st.wshow = 20; const y = app.querySelector('.scr').scrollTop; go('wisdom', 1); app.querySelector('.scr').scrollTop = y; return; }
+  if ('iqmore' in d) { el.previousElementSibling.classList.remove('clamp'); el.remove(); return; }
+  if ('iqmorelist' in d) { st.wshow += 20; const l = document.getElementById('iqList'); l.innerHTML = iqList(); arabize(l); return; }
+  if (d.iqsave) { const i = +d.iqsave; SAVED.has(i) ? SAVED.delete(i) : SAVED.add(i); saveSaved(); el.classList.toggle('on', SAVED.has(i)); if (cur === 'wisdom' && st.wseg === 2) { const y = app.querySelector('.scr').scrollTop; go('wisdom', 1); app.querySelector('.scr').scrollTop = y; } else if (typeof toast === "function") toast(SAVED.has(i) ? T('Saved', 'حُفظ') : T('Removed', 'أُزيل')); return; }
+  if (d.iqshare) { st.wshare = +d.iqshare; go('wshare'); return; }
+  if ('sharecopy' in d) { const x = IQX.q[st.wshare]; try { navigator.clipboard.writeText(`«${x.t}»\n— ابن القيم، ${IQX.book(x)}، ص ${x.p}`); } catch (er) { } if (typeof toast === "function") toast(T('Copied', 'نُسخ')); return; }
+  if ('sharedone' in d) { if (typeof toast === "function") toast(T('Saved to Photos', 'حُفظت في الصور')); return; }
+});
+app.addEventListener('input', (e) => {
+  if (e.target.id !== 'iqIn') return;
+  st.wq = e.target.value; st.wshow = 20;
+  const l = document.getElementById('iqList'); l.innerHTML = iqList(); arabize(l);
+});
+
+/* ---------------- round 10: new home, new calendar, tab bar ---------------- */
+const TODAY = new Date(2026, 10, 23);
+const hij = (dt, o) => { try { return new Intl.DateTimeFormat((AR() ? 'ar-SA' : 'en') + '-u-ca-islamic-umalqura' + (AR() ? '-nu-arab' : ''), o).format(dt); } catch (e) { return ''; } };
+const hijDay = (dt) => { try { return +new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { day: 'numeric' }).format(dt); } catch (e) { return 0; } };
+const gDate = (dt, o) => dt.toLocaleDateString(AR() ? 'ar-EG' : 'en-GB', o);
+const SV = {
+  home: '<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>',
+  chart: '<path d="M5 20V10M12 20V4M19 20v-7"/>',
+  book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21V5"/>',
+  grid: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+};
+const sv = (k, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${SV[k]}</svg>`;
+
+/* tab bar on the four main places, help raised in the middle */
+const tabbar = (on) => `<nav class="tabbar">${[['home', 'home', 'Home', 'الرئيسية'], ['progress', 'chart', 'Progress', 'التقدّم'], null, ['wisdom', 'book', 'Library', 'المكتبة'], ['tools', 'grid', 'Tools', 'الأدوات']].map(t => t ? `<button class="${on === t[0] ? 'on' : ''}" data-go="${t[0]}" ${t[0] === 'wisdom' ? 'data-wsegto="0"' : ''}>${sv(t[1])}<span>${T(t[2], t[3])}</span></button>` : `<button class="tabhelp" data-go="help" aria-label="${T('Help now', 'أعنّي الآن')}"><i>${li('alert', 22)}</i><span>${T('Help', 'أعنّي')}</span></button>`).join('')}</nav>`;
+['progress', 'wisdom', 'tools'].forEach(k => { const f = S[k].h; S[k].h = () => f().replace(/<\/div>\s*$/, `${tabbar(k)}</div>`); });
+
+/* week strip: the last seven nights */
+const weekStrip = () => {
+  const days = Array.from({ length: 7 }, (_, i) => 17 + i);
+  return `<button class="week" data-go="calendar">${days.map(d => { const s = dayState(d), dt = new Date(2026, 10, d); return `<span class="wd ${s} ${d === 23 ? 'today' : ''}"><small>${gDate(dt, { weekday: 'narrow' })}</small><i>${s === 'no' ? '' : sv('moon', 14)}</i></span>`; }).join('')}</button>`;
+};
+st.prayed = new Set([0, 1, 2]); st.tasks.adhkar = true;
+const ringSvg = (p) => { const r = 92, c = 2 * Math.PI * r; return `<svg class="hring" viewBox="0 0 210 210"><circle cx="105" cy="105" r="${r}" fill="none" stroke="var(--ringbg)" stroke-width="7"/><circle cx="105" cy="105" r="${r}" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p)}" transform="rotate(-90 105 105)"/></svg>`; };
+
+S.home.h = () => {
+  const t = st.tasks, look = st.look || 'fajr', o = off();
+  const todo = [
+    ['adhkar', 'misbaha', T('Morning adhkār', 'أذكار الصباح'), T('3 min · with a counter', '٣ دقائق · مع العدّاد'), !!t.adhkar],
+    ['read', 'quran', T('Today\'s reading', 'ورد اليوم'), T('an-Nūr 30–31 · 4 min', 'النور ٣٠–٣١ · ٤ دقائق'), !!t.read],
+    ['reflect', 'lantern', T('Evening reflection', 'محاسبة المساء'), T('One minute, then a note', 'دقيقة، ثم ملاحظة'), !!t.ref],
+  ];
+  const done = todo.filter(x => x[4]).length;
+  const pool = IQX.daily, day = Math.floor(Date.now() / 864e5), wq = pool[(day + (st.wisIdx || 0)) % pool.length];
+  const since = hij(new Date(2026, 10, 14), { day: 'numeric', month: 'long' });
+  return `<div class="scr home2" id="homescr">
+  <div class="hero" style="--bgimg:url(img/bg-${look}.jpg)">
+    <div class="homehd">${logo(28, 'ink')}<div class="grow"><b>${T(`As-salāmu ʿalaykum, ${st.name}`, `السلام عليكم يا ${nm(st.name)}`)}</b><small>${hij(TODAY, { weekday: 'long', day: 'numeric', month: 'long' })}</small></div><button class="avatar" data-go="settings" aria-label="${T('Settings', 'الإعدادات')}">${li('user', 18)}</button></div>
+    <button class="ringbox" data-go="progress" aria-label="${T('Your progress', 'تقدّمك')}">${ringSvg(9 / 14)}<span class="rin"><small>${T('nights of light', 'ليالٍ من النور')}</small><span class="daysbig"><b>${N(9)}</b></span><span class="timer"><i></i><span id="tick">15:28:04</span></span></span></button>
+    <div class="herosub">${T(`Since ${since} · 5 nights to <b>Bright lamp</b>`, `منذ ${since} · ${N(5)} ليالٍ إلى <b>المصباح المضيء</b>`)}</div>
+    <button class="shieldchip ${o ? 'warn' : ''}" data-go="${o ? 'health' : 'shield'}">${li('shield', 15)}<span>${o ? T(`${o} protection${o > 1 ? 's' : ''} off · fix`, `${N(String(o))} من الحماية متوقفة · أصلحها`) : T('Protected · all layers on', 'محميّ · كل الطبقات تعمل')}</span></button>
+  </div>
+  ${weekStrip()}
+  <div class="card pcard"><div class="row" style="justify-content:space-between"><span class="k">${T('Prayers today', 'صلوات اليوم')}</span><span class="k">${N(String(st.prayed.size))}/${N('5')}</span></div>
+    <div class="prow">${PRAYERS.map(([en, ar, s], i) => { const nx = nextPrayer().k === i, ok = st.prayed.has(i); return `<button class="pp ${ok ? 'ok' : ''} ${nx ? 'nx' : ''}" data-prayed="${i}" aria-pressed="${ok}"><i>${ok ? sv('check', 14) : ''}</i><span>${T(en, ar)}</span><b>${N(String(Math.floor(s / 3600)).padStart(2, '0') + ':' + String(s / 60 % 60).padStart(2, '0'))}</b></button>`; }).join('')}</div>
+    <div class="pline">${prayerLine()}</div></div>
+  <div class="card today"><div class="row" style="justify-content:space-between"><span class="t3">${T('Today', 'اليوم')}</span><span class="tprog"><i style="width:${done / 3 * 100}%"></i></span><span class="k">${N(String(done))}/${N('3')}</span></div>
+    ${todo.map(([g, icn, a, b, ok]) => `<button class="trow ${ok ? 'ok' : ''}" data-go="${g}"><span class="tchk">${ok ? sv('check', 14) : ''}</span>${ic(icn, 'xs')}<span class="grow"><b>${a}</b><small>${b}</small></span><span class="chev">${li('chev', 16)}</span></button>`).join('')}</div>
+  <div class="card wiscard"><div class="row" style="justify-content:space-between"><span class="k">${T('Wisdom for today', 'حكمة اليوم')}</span><span class="row" style="gap:6px"><button class="minibtn ghost" data-wisnext>${T('Another', 'غيرها')}</button><button class="minibtn ghost" data-go="wisdom" data-wsegto="1">${T('Library', 'المكتبة')}</button></span></div>${wq ? iqCard(wq, { tags: false, cls: 'flat' }) : ''}</div>
+  <div class="versecard"><div class="row" style="justify-content:space-between"><span class="k">${T('Verse of the day', 'آية اليوم')}</span><span class="k vref">${T('96:14', 'العلق ١٤')}</span></div><div class="quran">أَلَمْ يَعْلَم بِأَنَّ ٱللَّهَ يَرَىٰ</div>${AR() ? '' : '<div>"Is he then unaware that Allah seeth?"</div>'}</div>
+  <div class="tgrid">${[['shield', 'shield', T('Content shield', 'درع المحتوى'), o ? T('Needs you', 'يحتاجك') : T('On', 'يعمل')], ['focus', 'hourglass', T('Focus', 'التركيز'), T('Close feeds now', 'أغلق المقاطع الآن')], ['dua', 'hands', T('Du\'a wall', 'جدار الدعاء'), T('3 new', '٣ جديدة')], ['calendar', 'crescent', T('Calendar', 'التقويم'), T('Notes by night', 'ملاحظات كل ليلة')]].map(([g, icn, a, b]) => `<button data-go="${g}">${ic(icn, 'xs')}<b>${a}</b><small>${b}</small></button>`).join('')}</div>
+  ${tabbar('home')}
+  ${st.tour ? tour() : ''}</div>`;
+};
+Object.assign(tourSteps[2], { t: 'Your prayers, one tap each', b: 'Tap a prayer once you have prayed it. Feeds go quiet before each one.', r: 'left:14px;width:327px;top:514px;height:178px;max-width:none' });
+tourSteps[0].r = 'left:66px;right:66px;top:99px;height:222px';
+tourSteps[1].r = 'left:136px;right:136px;bottom:6px;height:72px';
+Object.assign(DICT, { 'Your prayers, one tap each': 'صلواتك، بلمسة لكلٍّ منها', 'Tap a prayer once you have prayed it. Feeds go quiet before each one.': 'اضغط الصلاة بعد أن تصلّيها. وتهدأ المقاطع قبل كل صلاة.' });
+
+/* ---------- calendar ---------- */
+st.calM = 0; st.calView = 'm'; st.cSel = { m: 0, d: 23 };
+const stateOf = (m, d) => {
+  if (m === 0) return dayState(d);
+  const dt = new Date(2026, 10 + m, d);
+  if (dt < new Date(2026, 8, 12)) return 'none';
+  const h = (d * 7 + (m + 9) * 13) % 23;
+  return h === 3 ? 'no' : (h === 5 || h === 11) ? 'pol' : 'ok';
+};
+const monthStats = (m) => { const n = new Date(2026, 11 + m, 0).getDate(); let c = { ok: 0, pol: 0, no: 0 }, run = 0, best = 0; for (let d = 1; d <= n; d++) { const s = stateOf(m, d); if (c[s] !== undefined) c[s]++; if (s === 'ok' || s === 'pol') { run++; best = Math.max(best, run); } else run = 0; } return { ...c, best }; };
+const DOW2 = () => AR() ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const monthGrid = (m, mini) => {
+  const first = new Date(2026, 10 + m, 1), n = new Date(2026, 11 + m, 0).getDate(), pad = first.getDay();
+  const cells = Array.from({ length: pad }, () => '<span></span>').concat(Array.from({ length: n }, (_, i) => {
+    const d = i + 1, dt = new Date(2026, 10 + m, d), s = stateOf(m, d), hd = hijDay(dt), white = hd >= 13 && hd <= 15, fri = dt.getDay() === 5;
+    if (mini) return `<i class="mc ${s}"></i>`;
+    const isT = m === 0 && d === 23, sel = st.cSel.m === m && st.cSel.d === d;
+    return `<button class="cd ${s} ${isT ? 'today' : ''} ${sel ? 'sel' : ''} ${fri ? 'fri' : ''}" data-cday="${m}:${d}" ${s === 'future' || s === 'none' ? 'disabled' : ''}><b>${N(String(d))}</b><small>${N(String(hd))}</small>${white ? '<u></u>' : ''}${m === 0 && st.notes[d]?.note ? '<em></em>' : ''}</button>`;
+  }));
+  return `<div class="${mini ? 'mgrid' : 'cgrid'}">${mini ? '' : DOW2().map((x, i) => `<span class="dw ${i === 5 ? 'fri' : ''}">${x}</span>`).join('')}${cells.join('')}</div>`;
+};
+S.calendar.h = () => {
+  const m = st.calM, first = new Date(2026, 10 + m, 1), last = new Date(2026, 11 + m, 0);
+  const hA = hij(first, { month: 'long' }), hB = hij(last, { month: 'long', year: 'numeric' });
+  const top = `${head(T('Your calendar', 'تقويمك'), 'progress')}<div class="seg3 seg2"><button class="${st.calView === 'm' ? 'on' : ''}" data-calview="m">${T('Month', 'الشهر')}</button><button class="${st.calView === 'y' ? 'on' : ''}" data-calview="y">${T('Year', 'السنة')}</button></div>`;
+  if (st.calView === 'y') {
+    const all = [-2, -1, 0].map(monthStats).reduce((a, s) => ({ ok: a.ok + s.ok, pol: a.pol + s.pol, no: a.no + s.no }), { ok: 0, pol: 0, no: 0 });
+    return `<div class="scr">${top}<div class="cstats"><div><b>${N(String(all.ok + all.pol))}</b><small>${T('nights of light', 'ليلة نور')}</small></div><div><b>${N(String(all.pol))}</b><small>${T('turned back in time', 'رجوع في الوقت')}</small></div><div><b>${N(String(all.no))}</b><small>${T('slips, forgiven', 'زلّات، والباب مفتوح')}</small></div></div>
+      <div class="ygrid">${[-2, -1, 0, 1].map(mm => `<button class="ym ${mm === 0 ? 'cur' : ''}" data-calmonth="${mm}" ${mm > 0 ? 'disabled' : ''}><span>${gDate(new Date(2026, 10 + mm, 1), { month: 'long' })} <small>${hij(new Date(2026, 10 + mm, 15), { month: 'long' })}</small></span>${monthGrid(mm, true)}</button>`).join('')}</div>
+      <div class="sub c">${T('Since you began. Every gold mark is a night you kept. A slip is one grey mark, never a reset.', 'منذ بدايتك. كل علامة ذهبية ليلة حفظتها، والزلّة علامة رمادية واحدة لا تمحو ما قبلها.')}</div></div>`;
+  }
+  const s = monthStats(m), sel = st.cSel, sd = new Date(2026, 10 + sel.m, sel.d), state = stateOf(sel.m, sel.d), n = sel.m === 0 ? st.notes[sel.d] : null;
+  const lab = { ok: T('Night of light', 'ليلة نور'), pol: T('Turned back in time', 'رجعتَ في الوقت'), no: T('Came back after a slip', 'عدتَ بعد زلّة'), future: T('Not yet', 'لم تأتِ بعد'), none: T('Before you began', 'قبل أن تبدأ') }[state];
+  const isToday = sel.m === 0 && sel.d === 23;
+  return `<div class="scr">${top}
+    <div class="cnav"><button class="back" data-calmonth="${m - 1}" ${m <= -2 ? 'disabled' : ''} aria-label="${T('Previous month', 'الشهر السابق')}">${li('back', 16)}</button><div class="c"><b>${gDate(first, { month: 'long', year: 'numeric' })}</b><div class="sub" style="font-size:12px">${hA === hB.split(' ')[0] ? hB : `${hA} – ${hB}`}</div></div><button class="back flip" data-calmonth="${m + 1}" ${m >= 0 ? 'disabled' : ''} aria-label="${T('Next month', 'الشهر التالي')}">${li('back', 16)}</button></div>
+    <div class="cstats"><div><b>${N(String(s.ok + s.pol))}</b><small>${T('nights of light', 'ليلة نور')}</small></div><div><b>${N(String(s.best))}</b><small>${T('longest run', 'أطول سلسلة')}</small></div><div><b>${N(String(m === 0 ? Object.values(st.notes).filter(x => x.note).length : 0))}</b><small>${T('notes', 'ملاحظات')}</small></div></div>
+    ${monthGrid(m)}
+    <div class="legend3"><span><i class="ok"></i>${T('Kept', 'محفوظة')}</span><span><i class="pol"></i>${T('Turned back', 'رجوع')}</span><span><i class="no"></i>${T('Slip', 'زلّة')}</span><span><u></u>${T('White days', 'الأيام البيض')}</span><span><em></em>${T('Note', 'ملاحظة')}</span></div>
+    <div class="card daycard"><div class="row"><div class="grow"><b>${isToday ? T('Tonight', 'الليلة') : gDate(sd, { weekday: 'long', day: 'numeric', month: 'long' })}</b><div class="sub">${hij(sd, { day: 'numeric', month: 'long', year: 'numeric' })} · ${lab}</div></div><span class="pill ${state}">${{ ok: T('Kept', 'محفوظة'), pol: T('In time', 'في الوقت'), no: T('Slip', 'زلّة'), future: '', none: '' }[state]}</span></div>
+    ${n?.note ? `<div class="notebody keep">“${n.note}”</div>` : isToday ? `<textarea class="field" id="todayNote" rows="3" placeholder="${T('What happened today? What helped?', 'ماذا حدث اليوم؟ وما الذي أعانك؟')}" aria-label="${T('Tonight\'s note', 'ملاحظة الليلة')}"></textarea><button class="btn" data-savenote>${T('Save to tonight', 'احفظها لليلة')}</button>` : `<div class="sub">${T('No note this night.', 'لا ملاحظة في هذه الليلة.')}</div>`}
+    ${n?.r ? `<div class="minibars">${[T('Prayer', 'الصلاة'), T('Gaze', 'البصر'), T('Qurʾān', 'القرآن'), T('Calm', 'السكينة'), T('Energy', 'النشاط')].map((x, i) => `<div><span>${x}</span><i style="--v:${n.r[i] * 10}%"></i><b>${N(String(n.r[i]))}</b></div>`).join('')}</div>` : ''}
+    ${n?.pull?.length ? `<div class="chipz">${n.pull.map(p => `<button class="on" style="font-size:12px;padding:5px 10px">${p}</button>`).join('')}</div>` : ''}</div>
+    ${wisdom('shajara')}</div>`;
+};
+
+app.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-prayed],[data-cday],[data-calmonth],[data-calview]');
+  if (!el || el.disabled) return; const d = el.dataset;
+  const keepY = (id) => { const y = app.querySelector('.scr').scrollTop; go(id, 1); app.querySelector('.scr').scrollTop = y; };
+  if (d.prayed) { const i = +d.prayed; st.prayed.has(i) ? st.prayed.delete(i) : st.prayed.add(i); keepY('home'); return; }
+  if (d.cday) { const [m, dd] = d.cday.split(':').map(Number); st.cSel = { m, d: dd }; if (m === 0) st.sel = dd; keepY('calendar'); return; }
+  if (d.calmonth) { st.calM = Math.max(-2, Math.min(0, +d.calmonth)); st.calView = 'm'; const n = new Date(2026, 11 + st.calM, 0).getDate(); st.cSel = { m: st.calM, d: st.calM === 0 ? 23 : n }; go('calendar', 1); return; }
+  if (d.calview) { st.calView = d.calview; go('calendar', 1); return; }
+});
+/* saving a note keeps the new calendar on tonight */
+app.addEventListener('click', (e) => { if (e.target.closest('[data-savenote]')) { st.cSel = { m: 0, d: 23 }; st.calM = 0; } }, true);
+
+S.home.note = 'New home. A photo hero for your look (dawn courtyard, palm garden toward the Green Dome, a fortress at night) with your nights inside a ring to the next milestone and a live timer. A protection chip that turns amber when a layer is off. The last seven nights as moons; tap for the calendar. Prayers you tap when prayed, with the next one counting down. Today as a three-step checklist. The day\'s saying from the tazkiya library, the verse, four tools, and a tab bar with Help raised in the middle.';
+S.home.from = 'Unchaind 58–60 · Opal home · CleanPath week strip';
+S.calendar.note = 'Month and year. Real Hijri dates under every day (Umm al-Qurā), the white days (13–15) marked, Friday in gold. Gold for a kept night, an outline for turning back in time, grey for a slip, a bar for a note. Three numbers on top: nights of light, longest run, notes. Tap any day for its note, ratings and what pulled at you; write tonight\'s note right there. Year shows every month since you began.';
+S.calendar.n = 'Calendar and notes';
 </script>
