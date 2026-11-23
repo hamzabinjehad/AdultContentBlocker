@@ -169,6 +169,16 @@ internal fun UnrotProgress(state: HisnState, padding: PaddingValues, onOpen: (St
     ) {
         // CleanPath's Analytics top: gauge, two tiles, meters (see UnrotAnalyticsTop.kt).
         item(key = "analytics-top") { UnrotAnalyticsTop(wins, state.personal.day, steps) }
+        // The day count and the next milestone (moved from Home, which now ends like the mockup).
+        item(key = "day") {
+            UnrotDayCard(
+                day = state.personal.day,
+                pauses = state.personal.pauses,
+                onStart = { onOpen("personal") },
+                hero = false,
+                sticker = MilestoneMemory.celebrated(context)
+            )
+        }
         // One swaying cartoon tree per day (UnrotWood.kt, from the trees-and-animations work).
         wins?.let { w -> item(key = "wood") { UnrotWoodCard(w) } }
         wins?.let { w ->

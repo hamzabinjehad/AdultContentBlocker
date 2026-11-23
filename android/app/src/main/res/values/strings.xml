@@ -2631,4 +2631,7 @@
     <string name="obg_pledge_hold">Hold to plant your seed</string>
     <string name="obg_pledge_keep">Keep holding…</string>
     <string name="obg_pledge_planted">Your seed is planted.</string>
+    <string name="home_glass_title">Keep the glass closed</string>
+    <string name="home_glass_count">%1$d of %2$d</string>
+    <string name="home_glass_body">Each pane keeps something out. Change any of them here or on Shield.</string>
 </resources>

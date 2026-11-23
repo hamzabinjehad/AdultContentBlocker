@@ -447,8 +447,10 @@ private fun StartBreathing(
             )
             Spacer(Modifier.height(28.dp))
             // The flower waits closed: it only opens once the first breath begins.
-            Box(Modifier.size(220.dp)) { BreathRing(scale = BreathPattern.REST, progress = 0f) }
-            Spacer(Modifier.height(28.dp))
+            Box(Modifier.size(290.dp)) { BreathRing(scale = BreathPattern.REST, progress = 0f) }
+        }
+        // The choice sits by the Start button, so the flower has the page to itself.
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     stringResource(R.string.brs_rounds_label).uppercase(),

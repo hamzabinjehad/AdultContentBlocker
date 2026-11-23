@@ -404,7 +404,12 @@ fun ProtectionScreen(
                     }
                 }
                 val winsNow = wins
-                if (winsNow != null) {
+                // Unrot's Home ends like the Glasshouse mockup: Today's three, the glass's
+                // switches and the person's own words. The day, before/now and given-back
+                // cards live on Progress.
+                if (unrotEdition) {
+                    item(key = "glass-switches") { UnrotGlassSwitches(state, onOpen) }
+                } else if (winsNow != null) {
                     item {
                         Box(Modifier.tourTarget("day")) {
                             // A heavier stretch shows what still went well, never a rising line.
@@ -418,7 +423,7 @@ fun ProtectionScreen(
                     if (unrotEdition && stepsLeft == 0 && healthy) {
                         item(key = "next") { UnrotNextCard(state, onOpen) }
                     }
-                } else item {
+                } else if (!unrotEdition) item {
                     Box(Modifier.tourTarget("day")) {
                     UnrotDayCard(
                         day = state.personal.day,
@@ -529,9 +534,7 @@ fun ProtectionScreen(
             if (shield && tab == SHIELD_ALL) {
                 item { UnrotShieldNumbers(state, onOpen) }
             }
-            if (today && unrotEdition && !Wins.disabled) {
-                item(key = "today-plan") { Column { UnrotTodayPlan(state, winsResumes, onOpen) } }
-            }
+            // Unrot's plan for today is the glass's switches on Home (UnrotGlassSwitches).
             if (today) {
                 // Unrot's tools sit under the glass (UnrotHomeActions) instead.
                 if (!unrotEdition) item(key = "quick-tools") {
@@ -544,7 +547,8 @@ fun ProtectionScreen(
                     )
                     }
                 }
-                item { UnrotTodayNumbers(state) }
+                // Unrot's numbers are on Progress, at the top.
+                if (!unrotEdition) item { UnrotTodayNumbers(state) }
             } else if (!shield) {
                 item {
                     PauseCard(onPause = state::openPause)

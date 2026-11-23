@@ -241,7 +241,10 @@ class ShellNavigationTest {
             finishUnrotSetup()
         }
         rule.showShell(actions)
-        // Today is a lazy list: bring the card into composition before looking for it.
+        // The day card lives on Progress now; Home keeps the day in its header pill.
+        rule.onNode(hasText("Progress") and hasClickAction()).performClick()
+        rule.waitForIdle()
+        // Progress is a lazy list: bring the card into composition before looking for it.
         rule.onAllNodes(hasScrollToNodeAction()).onFirst().performScrollToNode(hasText("Day 12"))
         rule.onNodeWithText("Day 12").assertIsDisplayed()
         rule.onNodeWithText("2 days to day 14").assertIsDisplayed()

@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Park
@@ -300,3 +303,49 @@ internal fun GlassSheet(onDismiss: () -> Unit, content: @Composable androidx.com
         content = content
     )
 }
+
+/**
+ * "Keep the glass closed" (mockup home2, CleanPath's Additional Blocking made ours): the four
+ * panes that keep feeds out, each saying what it does, with a count of how many are closed.
+ * Every row is the same switch or screen as on Shield, so Home and Shield never disagree.
+ */
+@Composable
+internal fun UnrotGlassSwitches(state: HisnState, onOpen: (String) -> Unit) {
+    val context = LocalContext.current
+    val resources = androidx.compose.ui.platform.LocalResources.current
+    val schedule = state.appSchedule
+    val waiting = remember(state.blockedApps.size) { app.hisn.android.OpenWaitStore.apps(context).size }
+    val locked = state.lockRemainingMillis > 0L
+    val closed = listOf(state.shortVideos.on, state.dns.on, schedule.enabled, waiting > 0).count { it }
+    val shape = RoundedCornerShape(24.dp)
+    Column(
+        Modifier.fillMaxWidth()
+            .background(LocalHisnStatusColors.current.card, shape)
+            .border(1.dp, Color.White.copy(alpha = .08f), shape)
+            .padding(top = 16.dp, bottom = 6.dp)
+    ) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.home_glass_title), style = MaterialTheme.typography.titleLarge.storySerif(),
+                modifier = Modifier.weight(1f).semantics { heading() })
+            Text(stringResource(R.string.home_glass_count, closed, 4), style = MaterialTheme.typography.titleSmall,
+                color = Color(0xFFF2C14E))
+        }
+        Text(stringResource(R.string.home_glass_body), style = MaterialTheme.typography.bodySmall, color = Color(0xFFA99D86),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+        ShieldRow(Icons.AutoMirrored.Rounded.ViewList, TileButter, stringResource(R.string.shield_row_feeds),
+            stringResource(if (state.shortVideos.on) R.string.shield_row_feeds_on else R.string.shield_row_off),
+            checked = state.shortVideos.on, onChecked = state.shortVideos::set, lockedOn = locked && state.shortVideos.on)
+        ShieldRow(Icons.Rounded.Language, TileBlush, stringResource(R.string.shield_row_sites),
+            stringResource(if (state.dns.on) R.string.shield_row_sites_on else R.string.shield_row_off),
+            checked = state.dns.on, onChecked = state.dns::set, lockedOn = locked && state.dns.on)
+        ShieldRow(Icons.Rounded.Bedtime, TilePaper, stringResource(R.string.shield_row_quiet),
+            if (!schedule.enabled) stringResource(R.string.shield_row_off) else quietLive(schedule)
+                ?: stringResource(R.string.shield_row_quiet_on, homeClock(schedule.startMinute), homeClock(schedule.endMinute)),
+            onClick = { onOpen("schedule") })
+        ShieldRow(Icons.Rounded.Pause, TileSky, stringResource(R.string.shield_row_wait),
+            if (waiting == 0) stringResource(R.string.shield_row_off) else resources.getQuantityString(R.plurals.shield_apps, waiting, waiting),
+            onClick = { context.startActivity(android.content.Intent(context, app.hisn.android.OpenWaitSettingsActivity::class.java)) })
+    }
+}
+
+private fun homeClock(minute: Int): String = String.format(java.util.Locale.ROOT, "%02d:%02d", minute / 60, minute % 60)

@@ -2833,4 +2833,7 @@
     <string name="obg_pledge_hold">اضغط مطوّلًا لتزرع بذرتك</string>
     <string name="obg_pledge_keep">واصل الضغط…</string>
     <string name="obg_pledge_planted">زُرعت بذرتك.</string>
+    <string name="home_glass_title">أبقِ الزجاج مغلقًا</string>
+    <string name="home_glass_count">%1$d من %2$d</string>
+    <string name="home_glass_body">كل لوح يُبقي شيئًا خارجًا. غيّر أيًّا منها هنا أو في الدرع.</string>
 </resources>
