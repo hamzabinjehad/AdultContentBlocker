@@ -126,6 +126,13 @@ class UnrotOnboardingTest {
         // What helps, with the glass, before every part gets its answer.
         rule.onNodeWithText("How Unrot", substring = true).assertIsDisplayed()
         tap("Next")
+        // An urge is a wave, how the sprout lives, and what to expect.
+        rule.onNodeWithText("An urge is a wave.").assertIsDisplayed()
+        tap("Next")
+        rule.onNodeWithText("Your sprout lives on what you do.").assertIsDisplayed()
+        tap("Next")
+        rule.onNodeWithText("The first weeks, honestly.").assertIsDisplayed()
+        tap("Next")
         rule.onNodeWithText("Every part of it gets an answer.").assertIsDisplayed()
         tap("Let’s get them back")
         tap("Read")

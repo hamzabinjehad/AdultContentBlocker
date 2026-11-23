@@ -135,7 +135,7 @@ interface UnrotSetupActions : OnboardingActions {
 }
 
 private enum class Step {
-    Hello, Demo1, Demo2, Demo3, Name, Age, Goals, When, Feel, Start, Year, Cost, Tricks, Hard, Helps, Solve, Instead,
+    Hello, Demo1, Demo2, Demo3, Name, Age, Goals, When, Feel, Start, Year, Cost, Tricks, Hard, Helps, Wave, Lives, Expect, Solve, Instead,
     Apps, Firm, Try, Quiet, Note, Plan, Switches, Notify, Test, Hold, Done
 }
 
@@ -148,7 +148,7 @@ private val Chapters = listOf(R.string.obg_chapter_you, R.string.obg_chapter_why
 private fun chapterOf(step: Step): Int = when (step) {
     Step.Hello, Step.Demo1, Step.Demo2, Step.Demo3, Step.Name, Step.Age, Step.Goals, Step.When, Step.Feel, Step.Start -> 0
     Step.Year, Step.Cost, Step.Tricks, Step.Hard -> 1
-    Step.Helps, Step.Solve, Step.Instead -> 2
+    Step.Helps, Step.Wave, Step.Lives, Step.Expect, Step.Solve, Step.Instead -> 2
     else -> 3
 }
 
@@ -305,7 +305,10 @@ fun UnrotOnboarding(actions: UnrotSetupActions, refresh: Int, initialReason: Str
             Step.Cost -> go(Step.Tricks)
             Step.Tricks -> go(Step.Hard)
             Step.Hard -> go(Step.Helps)
-            Step.Helps -> go(Step.Solve)
+            Step.Helps -> go(Step.Wave)
+            Step.Wave -> go(Step.Lives)
+            Step.Lives -> go(Step.Expect)
+            Step.Expect -> go(Step.Solve)
             Step.Solve -> go(Step.Instead)
             Step.Instead -> { saveAnswers(); go(Step.Apps) }
             Step.Apps -> go(if (chosen.isEmpty()) Step.Note else Step.Firm)
@@ -450,6 +453,9 @@ fun UnrotOnboarding(actions: UnrotSetupActions, refresh: Int, initialReason: Str
                     Step.Tricks -> TricksStep()
                     Step.Hard -> HardStep()
                     Step.Helps -> HelpsStep()
+                    Step.Wave -> WaveStep()
+                    Step.Lives -> LivesStep()
+                    Step.Expect -> ExpectStep()
                     Step.Solve -> SolveStep()
                     Step.Age -> AgeStep(age) { key -> age = key; next() }
                     Step.Instead -> {
@@ -587,7 +593,7 @@ private fun WhySheet(step: String, onDismiss: () -> Unit) {
         "When" -> R.string.why_when
         "Feel" -> R.string.why_feel
         "Start", "Year" -> R.string.why_start
-        "Cost", "Tricks", "Hard", "Helps", "Solve" -> R.string.why_why
+        "Cost", "Tricks", "Hard", "Helps", "Wave", "Lives", "Expect", "Solve" -> R.string.why_why
         "Instead" -> R.string.why_instead
         "Apps", "Firm", "Try" -> R.string.why_apps
         "Quiet" -> R.string.why_quiet
@@ -618,6 +624,9 @@ private fun stepGlow(step: Step): Color = when (step) {
     Step.Hard -> SetupButter
     Step.Tricks -> SetupSky
     Step.Helps -> SetupSage
+    Step.Wave -> SetupSky
+    Step.Lives -> SetupSage
+    Step.Expect -> SetupButter
     Step.Demo3, Step.Start, Step.Year, Step.Note, Step.Feel, Step.Test -> SetupBlush
     Step.Name, Step.Instead, Step.Firm, Step.Plan, Step.Switches -> SetupSage
     else -> Color.Transparent
@@ -1433,6 +1442,110 @@ private fun TricksStep() {
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth()
     )
+}
+
+/** An urge is a wave: it rises, peaks and passes if you wait it out (urge surfing, Marlatt). */
+@Composable
+private fun WaveStep() {
+    SetupHeader(
+        stringResource(R.string.obg_wave_eyebrow), stringResource(R.string.obg_wave_title),
+        stringResource(R.string.obg_wave_title_mark), stringResource(R.string.obg_wave_body)
+    )
+    val gold = glassGold()
+    val line = MaterialTheme.colorScheme.onSurfaceVariant
+    val desc = stringResource(R.string.obg_wave_art)
+    val rises = stringResource(R.string.obg_wave_rises)
+    val peaks = stringResource(R.string.obg_wave_peaks)
+    val passes = stringResource(R.string.obg_wave_passes)
+    val shape = MaterialTheme.shapes.large
+    Column(
+        Modifier.fillMaxWidth().unrotFrame(shape, hero = true).background(LocalHisnStatusColors.current.card, shape)
+            .padding(16.dp).clearAndSetSemantics { contentDescription = desc },
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(150.dp)) {
+            val w = size.width; val h = size.height
+            // The baseline: where the person waits.
+            drawLine(line.copy(alpha = .35f), androidx.compose.ui.geometry.Offset(0f, h * .85f),
+                androidx.compose.ui.geometry.Offset(w, h * .85f), strokeWidth = 2f,
+                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 10f)))
+            val path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(0f, h * .85f)
+                cubicTo(w * .22f, h * .84f, w * .30f, h * .08f, w * .45f, h * .08f)
+                cubicTo(w * .60f, h * .08f, w * .70f, h * .82f, w, h * .85f)
+            }
+            val fill = androidx.compose.ui.graphics.Path().apply { addPath(path); lineTo(w, h * .85f); lineTo(0f, h * .85f); close() }
+            drawPath(fill, androidx.compose.ui.graphics.Brush.verticalGradient(listOf(gold.copy(alpha = .35f), gold.copy(alpha = .02f))))
+            drawPath(path, gold, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+            drawCircle(gold, 9f, androidx.compose.ui.geometry.Offset(w * .45f, h * .08f))
+        }
+        Row(Modifier.fillMaxWidth()) {
+            Text(rises, style = MaterialTheme.typography.labelMedium, color = line, modifier = Modifier.weight(1f))
+            Text(peaks, style = MaterialTheme.typography.labelMedium, color = gold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+            Text(passes, style = MaterialTheme.typography.labelMedium, color = line, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+        }
+    }
+    Text(stringResource(R.string.obg_wave_line), style = MaterialTheme.typography.titleMedium.storySerif(),
+        textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+    Text(stringResource(R.string.obg_wave_source), style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+}
+
+/** The sprout's rules before they ever happen: it grows, it cracks, it breaks, and what each means. */
+@Composable
+private fun LivesStep() {
+    SetupHeader(
+        stringResource(R.string.obg_lives_eyebrow), stringResource(R.string.obg_lives_title),
+        stringResource(R.string.obg_lives_title_mark), stringResource(R.string.obg_lives_body)
+    )
+    LifeRow(R.drawable.unrot_glass_sprout, R.string.obg_lives_grows, R.string.obg_lives_grows_body)
+    LifeRow(R.drawable.unrot_glass_cracked, R.string.obg_lives_cracks, R.string.obg_lives_cracks_body)
+    LifeRow(R.drawable.unrot_glass_broken, R.string.obg_lives_breaks, R.string.obg_lives_breaks_body)
+}
+
+@Composable
+private fun LifeRow(art: Int, title: Int, body: Int) {
+    val shape = MaterialTheme.shapes.large
+    Row(
+        Modifier.fillMaxWidth().unrotFrame(shape).background(LocalHisnStatusColors.current.card, shape)
+            .padding(12.dp).semantics(mergeDescendants = true) {},
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(art), contentDescription = null,
+            modifier = Modifier.size(76.dp).clip(CircleShape))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(stringResource(title), style = MaterialTheme.typography.titleMedium, color = glassGold())
+            Text(stringResource(body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** What to expect, honestly: what many people notice week by week, including the boring part. */
+@Composable
+private fun ExpectStep() {
+    SetupHeader(
+        stringResource(R.string.obg_expect_eyebrow), stringResource(R.string.obg_expect_title),
+        stringResource(R.string.obg_expect_title_mark), stringResource(R.string.obg_expect_body)
+    )
+    val gold = glassGold()
+    listOf(
+        R.string.obg_expect_1 to R.string.obg_expect_1_body,
+        R.string.obg_expect_2 to R.string.obg_expect_2_body,
+        R.string.obg_expect_3 to R.string.obg_expect_3_body,
+        R.string.obg_expect_4 to R.string.obg_expect_4_body
+    ).forEachIndexed { i, (when_, body) ->
+        Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.size(14.dp).background(if (i == 0) gold else gold.copy(alpha = .35f), CircleShape))
+                if (i < 3) Box(Modifier.padding(top = 4.dp).width(2.dp).height(58.dp).background(gold.copy(alpha = .25f)))
+            }
+            Column(Modifier.weight(1f).padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(stringResource(when_), style = MaterialTheme.typography.labelLarge, color = gold)
+                Text(stringResource(body), style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
 }
 
 /** What helps: how Unrot works, in four parts, ending on the glass that cracks and heals gold. */
