@@ -100,6 +100,15 @@ public final class HostDecision {
         }
 
         private Source source(String host) {
+            Source direct = directSource(host);
+            if (direct != Source.NONE) return direct;
+            // A blocked site opened through Google Translate's proxy or the AMP cache
+            // carries its own name inside the proxy hostname; the same layers decide it.
+            String proxied = ProxiedHost.original(host);
+            return proxied == null ? Source.NONE : directSource(proxied);
+        }
+
+        private Source directSource(String host) {
             if (personal.evaluateCanonical(host) == DomainPolicy.Decision.BLOCK) return Source.PERSONAL_BLOCK;
             if (adultTlds.matchesCanonical(host)) return Source.ADULT_TLD;
             if (terms != null && terms.matchesCanonical(host)) return Source.HOST_TERM;

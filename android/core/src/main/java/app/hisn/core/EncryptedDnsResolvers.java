@@ -22,7 +22,19 @@ public final class EncryptedDnsResolvers {
             "76.76.2.0", "76.76.10.0",            // Control D
             "185.228.168.9", "185.228.169.9",     // CleanBrowsing Family
             "64.6.64.6", "64.6.65.6",             // Verisign
-            "156.154.70.1", "156.154.71.1"        // Neustar
+            "156.154.70.1", "156.154.71.1",       // Neustar
+            // Unfiltered siblings and other providers with dedicated DoH/DoT addresses.
+            // Cloudflare for Families (1.1.1.3, 1.0.0.3) is Hisn's own upstream and is absent.
+            "1.1.1.2", "1.0.0.2",                 // Cloudflare malware-only
+            "9.9.9.10", "149.112.112.10", "9.9.9.11", "149.112.112.11", // Quad9 unfiltered/ECS
+            "94.140.14.140", "94.140.14.141",     // AdGuard unfiltered
+            "45.90.28.0", "45.90.30.0",           // NextDNS
+            "194.242.2.2", "194.242.2.3",         // Mullvad
+            "185.222.222.222", "45.11.45.11",     // DNS.SB
+            "223.5.5.5", "223.6.6.6",             // AliDNS
+            "119.29.29.29", "1.12.12.12", "120.53.53.53", // DNSPod
+            "77.88.8.8", "77.88.8.1",             // Yandex
+            "193.110.81.0", "185.253.5.0"         // dns0.eu
     };
     private static final String[] IPV6 = {
             "2606:4700:4700::1111", "2606:4700:4700::1001", // Cloudflare
@@ -30,7 +42,16 @@ public final class EncryptedDnsResolvers {
             "2620:fe::fe", "2620:fe::9",                    // Quad9
             "2620:119:35::35", "2620:119:53::53",           // OpenDNS
             "2a10:50c0::ad1:ff", "2a10:50c0::ad2:ff",       // AdGuard
-            "2606:1a40::2", "2606:1a40:1::2"                // Control D
+            "2606:1a40::2", "2606:1a40:1::2",               // Control D
+            "2606:4700:4700::1112", "2606:4700:4700::1002", // Cloudflare malware-only
+            "2620:fe::10", "2620:fe::fe:10", "2620:fe::11", // Quad9 unfiltered/ECS
+            "2a10:50c0::1:ff", "2a10:50c0::2:ff",           // AdGuard unfiltered
+            "2a07:a8c0::", "2a07:a8c1::",                   // NextDNS
+            "2a07:e340::2",                                 // Mullvad
+            "2a09::", "2a11::",                             // DNS.SB
+            "2400:3200::1", "2400:3200:baba::1",            // AliDNS
+            "2a02:6b8::feed:ff", "2a02:6b8:0:1::feed:ff",   // Yandex
+            "2a0f:fc80::", "2a0f:fc81::"                    // dns0.eu
     };
 
     private static final byte[][] IPV4_BYTES = parseAll(IPV4, 4);

@@ -19,7 +19,7 @@
     <string name="dns_start">إعداد فلترة DNS</string>
     <string name="dns_on_button">فلترة DNS مفعّلة</string>
     <string name="dns_safe_search_switch">فرض البحث الآمن على محركات البحث</string>
-    <string name="dns_safe_search_hint">أثناء تفعيل فلترة DNS، يجيب حصن عن Google وBing وDuckDuckGo وYouTube بسجل CNAME للبحث الآمن. لا يخمّن النطاقات القُطرية أو واجهات التطبيقات. لم يُختبر هذا التحويل على جهاز بعد.</string>
+    <string name="dns_safe_search_hint">أثناء تفعيل فلترة DNS، يوجّه حصن Google (بكل نطاقاته القُطرية) وBing وDuckDuckGo وYandex وPixabay إلى البحث الآمن، ويوجّه YouTube، ومنه تطبيق YouTube، إلى الوضع المقيّد. لا يغيّر إلا الأسماء التي توثّقها كل خدمة وتقدّم لها شهادة صالحة.</string>
     <string name="dns_advanced">فحوص وخيارات متقدمة</string>
     <string name="dns_settings">إعدادات VPN في أندرويد</string>
     <string name="vpn_settings_reminder_title">راجع قفل الحماية النشط</string>
@@ -2868,4 +2868,20 @@
     <string name="obg_expect_3_body">يتقدّم موعد نومك. ويصبح البدء بالمهام الطويلة أسهل.</string>
     <string name="obg_expect_4">الشهر الثاني</string>
     <string name="obg_expect_4_body">يهدأ الشدّ. تفتح التطبيقات حين تختار أنت.</string>
+    <plurals name="shield_panes_open">
+        <item quantity="zero">%1$d من %2$d ألواح مفتوحة</item>
+        <item quantity="one">لوحك الوحيد مفتوح</item>
+        <item quantity="two">%1$d من لوحين مفتوح</item>
+        <item quantity="few">%1$d من %2$d ألواح مفتوحة</item>
+        <item quantity="many">%1$d من %2$d لوحًا مفتوحة</item>
+        <item quantity="other">%1$d من %2$d لوح مفتوحة</item>
+    </plurals>
+    <plurals name="shield_panes_closed">
+        <item quantity="zero">كل الألواح مغلقة</item>
+        <item quantity="one">لوحك الوحيد مغلق</item>
+        <item quantity="two">اللوحان مغلقان</item>
+        <item quantity="few">الألواح الـ%1$d كلها مغلقة</item>
+        <item quantity="many">الألواح الـ%1$d كلها مغلقة</item>
+        <item quantity="other">الألواح الـ%1$d كلها مغلقة</item>
+    </plurals>
 </resources>

@@ -37,6 +37,7 @@ import app.hisn.core.ProtectionLock;
 import app.hisn.core.SelfProtectionScreens;
 import app.hisn.core.SelfProtectionScreens.Guard;
 import app.hisn.core.PrivateBrowsing;
+import app.hisn.core.AddressBarHost;
 import app.hisn.core.ShortVideoSurfaces;
 import app.hisn.core.VisibleTextSample;
 
@@ -66,6 +67,7 @@ public final class TextGuardService extends AccessibilityService {
     static volatile long scheduleInterventions;
     static volatile long timeLimitInterventions;
     static volatile long shortVideoInterventions;
+    static volatile long addressInterventions;
     static volatile long holdEnforcements;
     static volatile long homeFailures;
     static volatile long inspectionFailures;
@@ -693,6 +695,27 @@ public final class TextGuardService extends AccessibilityService {
                             return;
                         }
                     } finally { surface.recycle(); }
+                }
+            }
+            if (rules.adultWordsEnabled) {
+                // The site in a browser's address bar meets the same rules as DNS, for pages DNS
+                // never saw: the browser's own encrypted DNS, a cached answer or paused filtering.
+                for (GuardWindows.Window window : windows) {
+                    if (ShortVideoSurfaces.urlBarViewId(window.app) == null) continue;
+                    shortVideoOnScreen = true;
+                    AccessibilityNodeInfo surface = windowRoot(this, window);
+                    if (surface == null) continue;
+                    String host;
+                    try { host = blockedAddress(surface, window.app, rules); }
+                    finally { surface.recycle(); }
+                    if (host != null) {
+                        recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
+                        addressInterventions++;
+                        if (intervene(window.app, window.id, window.active, true, false, false, false, false)) {
+                            inspectionOutcome = "address-bar-intervention";
+                        }
+                        return;
+                    }
                 }
             }
             privateTabsOn = PrivateTabsStore.on(this);
@@ -1394,6 +1417,24 @@ public final class TextGuardService extends AccessibilityService {
         handler.postDelayed(showRestriction, 350);
     }
     private long lastPrivateTabNote;
+
+    /** The blocked site shown in this browser's address bar, or null. The bar is read only when
+     * it is not being typed in, so a half-typed address or a search phrase is never judged. */
+    private String blockedAddress(AccessibilityNodeInfo root, String app, PolicyStore.Snapshot rules) {
+        String bar = ShortVideoSurfaces.urlBarViewId(app);
+        if (bar == null) return null;
+        java.util.List<AccessibilityNodeInfo> found = root.findAccessibilityNodeInfosByViewId(bar);
+        if (found == null) return null;
+        String blocked = null;
+        for (AccessibilityNodeInfo node : found) {
+            if (blocked == null && node.isVisibleToUser() && !node.isFocused()) {
+                String host = AddressBarHost.host(node.getText());
+                if (AddressBarCheck.blocks(this, rules, host)) blocked = host;
+            }
+            node.recycle();
+        }
+        return blocked;
+    }
 
     /** A visible Shorts or Reels player, found by its view ID, or a browser's address bar showing
      * a short-video page. Only the address bar's text is read, and not while it is being typed in:

@@ -22,7 +22,8 @@ public final class EncryptedDnsProvidersTest {
                 "doh.mullvad.net", "base.dns.mullvad.net", "dns.controld.com", "freedns.controld.com",
                 "doh.xfinity.com", "private.canadianshield.cira.ca", "family.canadianshield.cira.ca",
                 "odvr.nic.cz", "doh.dns.sb", "dns.alidns.com", "doh.pub", "sm2.doh.pub", "dot.pub",
-                "resolver.arpa")) {
+                "resolver.arpa", "dns0.eu", "zero.dns0.eu", "doh.sb", "common.dot.dns.yandex.net",
+                "dns.switch.ch", "dns.njal.la", "doh-jp.blahdns.com", "doh.centraleu.pi-dns.com", "ordns.he.net")) {
             check(EncryptedDnsProviders.blocks(name, null), "provider not blocked: " + name);
         }
         // Parent sites, look-alike labels and ordinary names stay governed by the normal rules.
@@ -32,7 +33,7 @@ public final class EncryptedDnsProvidersTest {
                 "mullvad.net", "controld.com", "cleanbrowsing.org", "familyshield.opendns.com",
                 "example.com", "application-dns.net", "arpa",
                 "xfinity.com", "cira.ca", "canadianshield.cira.ca", "nic.cz", "dns.sb", "alidns.com",
-                "pub", "example.pub", "4.3.2.1.in-addr.arpa", "", "1.1.1.1", "_dns.resolver.arpa")) {
+                "pub", "example.pub", "yandex.net", "blahdns.com", "pi-dns.com", "he.net", "4.3.2.1.in-addr.arpa", "", "1.1.1.1", "_dns.resolver.arpa")) {
             check(!EncryptedDnsProviders.blocks(name, null), "unexpected block: " + name);
         }
         check(!EncryptedDnsProviders.blocks(null, null), "null name");

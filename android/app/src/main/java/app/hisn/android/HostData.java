@@ -20,6 +20,9 @@ final class HostData {
 
     static boolean termsFailed() { return termsFailed; }
 
+    /** The bundled terms if a previous call already loaded them, without loading. */
+    static HostTermPolicy loadedTerms() { return terms; }
+
     private static HostTermPolicy terms(Context context) {
         HostTermPolicy held = terms;
         if (held != null) return held;

@@ -11,7 +11,7 @@
     <string name="dns_start">Set up DNS filtering</string>
     <string name="dns_on_button">DNS filtering is on</string>
     <string name="dns_safe_search_switch">Force SafeSearch on search engines</string>
-    <string name="dns_safe_search_hint">While DNS filtering is on, answers Google, Bing, DuckDuckGo and YouTube with a SafeSearch CNAME. Country domains and app-specific APIs are not guessed. Device testing of the rewrite is still pending.</string>
+    <string name="dns_safe_search_hint">While DNS filtering is on, sends Google (every country domain), Bing, DuckDuckGo, Yandex and Pixabay to their safe search, and YouTube, including the YouTube app, to Restricted Mode. Only names each service documents and serves a valid certificate for are changed.</string>
     <string name="dns_advanced">Advanced checks and options</string>
     <string name="dns_settings">Android VPN settings</string>
     <string name="vpn_settings_reminder_title">Review your active protection lock</string>
@@ -2666,4 +2666,12 @@
     <string name="obg_expect_3_body">Bedtime moves earlier. Long tasks get easier to start.</string>
     <string name="obg_expect_4">Month 2</string>
     <string name="obg_expect_4_body">The pull is quieter. You open apps when you choose to.</string>
+    <plurals name="shield_panes_open">
+        <item quantity="one">Your one pane is open</item>
+        <item quantity="other">%1$d of %2$d panes are open</item>
+    </plurals>
+    <plurals name="shield_panes_closed">
+        <item quantity="one">Your one pane is closed</item>
+        <item quantity="other">All %1$d panes are closed</item>
+    </plurals>
 </resources>

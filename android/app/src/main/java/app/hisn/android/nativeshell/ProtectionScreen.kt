@@ -436,6 +436,10 @@ fun ProtectionScreen(
                     }
                 }
             }
+            // Shield's tabs sit on top, like CleanPath's Blocker; the status follows.
+            if (shield && unrotEdition) {
+                item(key = "shield-tabs") { UnrotShieldTabs(shieldTab) { shieldTab = it } }
+            }
             if (!today) item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (shield && stepsLeft > 0) {
@@ -445,9 +449,17 @@ fun ProtectionScreen(
                         // Today's saved count: the filter's own counter restarts at 0 with the filter.
                         val shieldContext = androidx.compose.ui.platform.LocalContext.current
                         val blocked = remember(state.blockedLookups) { app.hisn.android.StepIns.keptOutToday(shieldContext) }
+                        // The mockup's status line: how many panes of the glass are open, by name below.
+                        val openPanes = unrotParts.count { !it.second }
+                        val panes = unrotParts.size
+                        val paneTitle = when {
+                            panes == 0 -> null
+                            openPanes == 0 -> androidx.compose.ui.res.pluralStringResource(R.plurals.shield_panes_closed, panes, panes)
+                            else -> androidx.compose.ui.res.pluralStringResource(R.plurals.shield_panes_open, panes, openPanes, panes)
+                        }
                         UnrotShieldStatus(
                             healthy = healthy,
-                            title = if (healthy) stringResource(R.string.shield_status_ok) else heroTitle,
+                            title = paneTitle ?: if (healthy) stringResource(R.string.shield_status_ok) else heroTitle,
                             body = when {
                                 !healthy -> heroBody
                                 runtime.dnsAttached -> stringResource(
@@ -525,9 +537,6 @@ fun ProtectionScreen(
                 }
             }
 
-            if (shield && unrotEdition) {
-                item(key = "shield-tabs") { UnrotShieldTabs(shieldTab) { shieldTab = it } }
-            }
             if (shield && state.lockRemainingMillis > 0L) {
                 item { UnrotLockBanner(state.lockLabel, onBreathe = state::openPause) }
             }

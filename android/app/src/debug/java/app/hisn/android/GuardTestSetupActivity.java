@@ -79,6 +79,11 @@ public final class GuardTestSetupActivity extends Activity {
                         + " CONNECTED " + TextGuardService.connected + " OUTCOME " + TextGuardService.inspectionOutcome);
                 return;
             }
+            if ("address-status".equals(mode)) {
+                report("PASS " + mode + " ADDRESS_INTERVENTIONS " + TextGuardService.addressInterventions
+                        + " CONNECTED " + TextGuardService.connected + " OUTCOME " + TextGuardService.inspectionOutcome);
+                return;
+            }
             if ("schedule-policy-test".equals(mode)) {
                 SchedulePolicyChecks.run(this);
                 report("PASS " + mode);

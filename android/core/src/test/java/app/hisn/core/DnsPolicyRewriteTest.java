@@ -32,7 +32,9 @@ public final class DnsPolicyRewriteTest {
         check(policy.evaluate(DnsPolicyTest.query("www.google.com", 15)).action
                 == DnsPolicy.Action.FORWARD, "MX should not be rewritten");
         check(policy.evaluate(DnsPolicyTest.query("google.co.uk", 1)).action
-                == DnsPolicy.Action.FORWARD, "country Google guessed");
+                == DnsPolicy.Action.REWRITE, "published country Google left unrestricted");
+        check(policy.evaluate(DnsPolicyTest.query("mail.google.com", 1)).action
+                == DnsPolicy.Action.FORWARD, "another Google service rewritten");
         check(policy.evaluate(DnsPolicyTest.query("blocked.example", 1)).action
                 == DnsPolicy.Action.BLOCK, "blocked domain rewritten");
         check(new DnsPolicy(hostname -> DomainPolicy.Decision.ALLOW)

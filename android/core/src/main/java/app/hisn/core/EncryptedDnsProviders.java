@@ -34,7 +34,14 @@ public final class EncryptedDnsProviders {
             // Other providers built into Firefox or Chrome secure-DNS settings, and large regional ones.
             "doh.xfinity.com", "private.canadianshield.cira.ca", "protected.canadianshield.cira.ca",
             "family.canadianshield.cira.ca", "odvr.nic.cz", "doh.dns.sb",
-            "dns.alidns.com", "doh.pub", "dot.pub"), Collections.emptySet());
+            "dns.alidns.com", "doh.pub", "dot.pub",
+            // Smaller public resolvers that privacy guides and VPN apps commonly suggest.
+            "dns0.eu", "doh.sb", "dns.yandex.net", "doh.360.cn", "dns.twnic.tw", "public.dns.iij.jp",
+            "dns.switch.ch", "doh.libredns.gr", "dns.digitale-gesellschaft.ch", "doh.ffmuc.net",
+            "dns.njal.la", "doh.applied-privacy.net", "dnsforge.de", "dns.aa.net.uk", "ordns.he.net",
+            "doh-jp.blahdns.com", "doh-de.blahdns.com", "doh-sg.blahdns.com", "dns.comss.one", "doh.tiar.app", "dns.rabbitdns.org", "doh.centraleu.pi-dns.com", "doh.northeu.pi-dns.com", "doh.westus.pi-dns.com",
+            "doh.eastus.pi-dns.com", "doh.eastau.pi-dns.com", "doh.eastas.pi-dns.com",
+            "dns.decloudus.com", "doh.dns.apple.com"), Collections.emptySet());
 
     private EncryptedDnsProviders() { }
 
