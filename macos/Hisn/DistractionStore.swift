@@ -94,7 +94,7 @@ public struct RuleBook: Codable, Equatable, Sendable {
     /// Starts a new local day: yesterday's totals go to history, counts reset.
     public mutating func roll(to key: String) {
         guard key != dayKey else { return }
-        if !dayKey.isEmpty {
+        if !dayKey.isEmpty, !rules.isEmpty {
             let feedSeconds = ledger.day == dayKey ? feedSecondsToday() : 0
             history.append(DayTotal(day: dayKey, feedSeconds: feedSeconds,
                                     pauses: day.opens.values.reduce(0, +), closed: closedToday))
@@ -125,6 +125,8 @@ public struct RuleBook: Codable, Equatable, Sendable {
         let past = TimeGivenBack.seconds(beforePerDay: beforePerDay, feedSecondsByDay: history.map(\.feedSeconds))
         let start = calendar.startOfDay(for: now)
         let fraction = min(1, max(0, now.timeIntervalSince(start) / 86_400))
+        // Nothing is given back by a day with no rules: Unrot did nothing that day.
+        guard !rules.isEmpty else { return past }
         return past + max(0, beforePerDay * fraction - feedSecondsToday())
     }
 
@@ -215,6 +217,12 @@ public final class DistractionStore: ObservableObject {
         var next = book
         next.roll(to: UsageLedger.dayKey(now, calendar: calendar))
         next.applyDue(at: now)
+        // What the browser extensions reported since the last tick.
+        let inbox = DistractionBridge.loadInbox(defaults)
+        if !inbox.isEmpty {
+            next.drain(inbox, calendar: calendar)
+            defaults?.removeObject(forKey: DistractionBridge.inboxKey)
+        }
         next.refreshUsage()
         if let focus = next.focus, !focus.isRunning(at: now), now >= focus.until { next.focus = nil }
         commit(next)

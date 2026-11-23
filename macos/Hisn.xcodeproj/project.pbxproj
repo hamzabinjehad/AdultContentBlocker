@@ -131,6 +131,12 @@
 			path = ContentView.swift;
 			sourceTree = "<group>";
 		};
+		E5507413CA04B0CCB91BC141 /* DistractionBridge.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = DistractionBridge.swift;
+			sourceTree = "<group>";
+		};
 		7C89149F0A798DC6B1A851ED /* DistractionEnforcer.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -141,6 +147,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = DistractionRules.swift;
+			sourceTree = "<group>";
+		};
+		ECFF70811CCD8571DD4D9AE7 /* DistractionRulesView.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = DistractionRulesView.swift;
 			sourceTree = "<group>";
 		};
 		D00A89B237150DCED9AF357E /* DistractionStore.swift */ = {
@@ -399,6 +411,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = StatusMenu.swift;
+			sourceTree = "<group>";
+		};
+		1F3A069886310E19B25A8E38 /* UnrotToday.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = UnrotToday.swift;
 			sourceTree = "<group>";
 		};
 		10FB64131D78ACC9D6EEB33B /* UserBlocks.swift */ = {
@@ -779,8 +797,10 @@
 				F5F21851827D78F1D8AAB642,
 				29485861D4702CB826FD6A55,
 				A1954A7D9F26A7718A4AAAD4,
+				E5507413CA04B0CCB91BC141,
 				7C89149F0A798DC6B1A851ED,
 				BADFD7CF8686EA54DD61B319,
+				ECFF70811CCD8571DD4D9AE7,
 				D00A89B237150DCED9AF357E,
 				638C07E6A6C63DB2FEDE498C,
 				D684139EF30AD4884636E2D9,
@@ -824,6 +844,7 @@
 				177FBF20EADAD131CC8605FD,
 				9A85D28497AE287B0A4C4E8C,
 				51FD9D9EEE75399A2987D61E,
+				1F3A069886310E19B25A8E38,
 				10FB64131D78ACC9D6EEB33B,
 				F041F0CA1C6D4EF1C5AB4B46,
 				7E17AFB9B95664B8D0BCD35C,
@@ -1409,6 +1430,18 @@
 			isa = PBXBuildFile;
 			fileRef = 638C07E6A6C63DB2FEDE498C;
 		};
+		563DE2C980388ED5C8168DAA /* DistractionRules.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = BADFD7CF8686EA54DD61B319;
+		};
+		330D12948952CF4A2931A945 /* DistractionStore.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = D00A89B237150DCED9AF357E;
+		};
+		0D4989520A18423052E1429F /* DistractionBridge.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = E5507413CA04B0CCB91BC141;
+		};
 		0CD0477C5D19A732D130E31C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1429,6 +1462,9 @@
 				DC5C8D2281EBBF30217F9740,
 				C005460B15C7112981DEA59F,
 				F076F3BB3C4EB53DE71C78BE,
+				563DE2C980388ED5C8168DAA,
+				330D12948952CF4A2931A945,
+				0D4989520A18423052E1429F,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2074,9 +2110,21 @@
 			isa = PBXBuildFile;
 			fileRef = D00A89B237150DCED9AF357E;
 		};
+		0141A941FE0C615787C09109 /* DistractionBridge.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = E5507413CA04B0CCB91BC141;
+		};
 		C23D42C99034F09D8BE1D25B /* DistractionEnforcer.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 7C89149F0A798DC6B1A851ED;
+		};
+		DC67A3792F70722526135DDA /* DistractionRulesView.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = ECFF70811CCD8571DD4D9AE7;
+		};
+		416C3E9C915B4730F22C32F4 /* UnrotToday.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 1F3A069886310E19B25A8E38;
 		};
 		079A944B3E87101645898B0C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -2138,7 +2186,10 @@
 				2D7DAC562EBC96FCF48C820B,
 				C950A416EF672E6AEACAF0C5,
 				8CCEE261F5007CDA7D8CD637,
+				0141A941FE0C615787C09109,
 				C23D42C99034F09D8BE1D25B,
+				DC67A3792F70722526135DDA,
+				416C3E9C915B4730F22C32F4,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

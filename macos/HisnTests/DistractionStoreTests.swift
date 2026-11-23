@@ -99,6 +99,14 @@ final class DistractionStoreTests: XCTestCase {
                        "90 minutes by noon against a 60-minute share")
     }
 
+    func testNoRulesGiveNothingBack() {
+        var book = RuleBook()
+        book.roll(to: "2026-11-23")
+        XCTAssertEqual(book.givenBackSeconds(at: monday(18), calendar: calendar), 0)
+        book.roll(to: "2026-11-24")
+        XCTAssertTrue(book.history.isEmpty, "a day without rules is not a day Unrot helped")
+    }
+
     func testFocusEndsByStrictness() {
         var book = RuleBook()
         let gentle = FocusSessionState(startedAt: monday(12), until: monday(12, 25), intent: "", targets: [.site("x.com")])
@@ -124,6 +132,59 @@ final class DistractionStoreTests: XCTestCase {
         XCTAssertEqual(DistractionEngine.decide(.app("com.hnc.Discord"), at: monday(16), rules: book.rules,
                                                 day: book.day, focus: nil, calendar: calendar), .allow)
         XCTAssertFalse(book.useEmergencyPass(at: monday(14), calendar: calendar))
+    }
+
+    // MARK: Browser bridge
+
+    func testBridgeDecidesPagesAndHidesOnlyTheFeed() {
+        var book = RuleBook()
+        book.rules = [RuleTemplate.feedsOnly.make(),
+                      DistractionRule(name: "Chat", targets: [.site("discord.com")],
+                                      action: .wait(seconds: 10, grows: true, opensPerDay: 2, openMinutes: 10))]
+        func ask(_ url: String, inbox: [DistractionBridge.Report] = [], at now: Date? = nil) -> [String: Any] {
+            DistractionBridge.decide(url: url, book: book, inbox: inbox, now: now ?? monday(12), calendar: calendar)
+        }
+        XCTAssertEqual(ask("https://www.youtube.com/")["action"] as? String, "hideFeed")
+        XCTAssertEqual(ask("https://www.youtube.com/")["surface"] as? String, "youtubeHome")
+        XCTAssertEqual(ask("https://www.youtube.com/shorts/abc")["action"] as? String, "block")
+        XCTAssertEqual(ask("https://www.youtube.com/watch?v=1")["action"] as? String, "allow")
+        XCTAssertEqual(ask("chrome://settings")["action"] as? String, "allow")
+
+        let wait = ask("https://discord.com/channels/@me")
+        XCTAssertEqual(wait["action"] as? String, "wait")
+        XCTAssertEqual(wait["seconds"] as? Int, 10)
+        XCTAssertEqual(wait["opensLeft"] as? Int, 2)
+        // The open is still in the inbox, not yet in the book: the reload must pass.
+        let opened = DistractionBridge.Report(kind: .open, rule: book.rules[1].id, host: nil,
+                                              from: monday(12), to: monday(12))
+        XCTAssertEqual(ask("https://discord.com/", inbox: [opened], at: monday(12, 1))["action"] as? String, "allow")
+        XCTAssertEqual(ask("https://discord.com/", inbox: [opened], at: monday(12, 11))["seconds"] as? Int, 15)
+    }
+
+    func testBridgeReportsAreCheckedAndDrained() throws {
+        let suite = "unrot.tests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = DistractionStore(defaults: defaults)
+        store.calendar = calendar
+        store.clock = { self.monday(12) }
+        store.lockUntil = { nil }
+        let locked = DistractionRule(name: "Feeds", targets: [.site("x.com")], action: .block, strictness: .locked)
+        _ = store.propose(locked, replacing: nil)
+
+        XCTAssertEqual(DistractionBridge.handle(["op": "usage", "host": "https://www.x.com/home", "seconds": 600],
+                                                defaults: defaults, now: monday(12))["ok"] as? Bool, true)
+        for bad: [String: Any] in [["op": "usage", "host": "x.com", "seconds": 999_999],
+                                   ["op": "usage", "host": "not a host", "seconds": 60],
+                                   ["op": "opened", "rule": "nope"],
+                                   ["op": "snoozed", "rule": locked.id.uuidString]] {
+            XCTAssertEqual(DistractionBridge.handle(bad, defaults: defaults, now: monday(12))["ok"] as? Bool, false)
+        }
+        store.tick()
+        XCTAssertEqual(store.book.ledger.seconds(for: locked), 600, accuracy: 0.5)
+        XCTAssertTrue(DistractionBridge.loadInbox(defaults).isEmpty, "drained once")
+        XCTAssertEqual(DistractionBridge.handle(["op": "decide", "url": "https://x.com/home"], defaults: defaults,
+                                                now: monday(12), calendar: calendar)["action"] as? String, "block")
     }
 
     func testStoreSavesAndReloads() throws {

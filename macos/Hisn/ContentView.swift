@@ -34,15 +34,17 @@ struct ContentView: View {
     }
 
     enum Page: String, CaseIterable, Identifiable {
-        case overview, setup, rules, lock, settings
+        case today, overview, setup, rules, focus, lock, settings
 
         var id: String { rawValue }
 
         var title: LocalizedStringKey {
             switch self {
-            case .overview: return "Overview"
+            case .today:    return "Today"
+            case .overview: return MacEdition.isUnrot ? "Shield" : "Overview"
             case .setup:    return "Protected Setup"
             case .rules:    return "Blocking Rules"
+            case .focus:    return "Limits and Focus"
             case .lock:     return "Lock"
             case .settings: return "Settings"
             }
@@ -50,18 +52,22 @@ struct ContentView: View {
 
         var systemImage: String {
             switch self {
+            case .today:    return "sun.max"
             case .overview: return "checkmark.shield"
             case .setup:    return "checklist"
             case .rules:    return "list.bullet.rectangle"
+            case .focus:    return "hourglass"
             case .lock:     return "lock"
             case .settings: return "gearshape"
             }
         }
         var subtitle: LocalizedStringKey {
             switch self {
+            case .today: return "design.page.today"
             case .overview: return "design.page.overview"
             case .setup: return "design.page.setup"
             case .rules: return "design.page.rules"
+            case .focus: return "design.page.focus"
             case .lock: return "design.page.lock"
             case .settings: return "design.page.settings"
             }
@@ -69,10 +75,11 @@ struct ContentView: View {
     }
 
     private enum SidebarGroup: String, CaseIterable {
-        case protection, commitment, app
+        case day, protection, commitment, app
 
         var title: LocalizedStringKey {
             switch self {
+            case .day:        return "Your day"
             case .protection: return "Protection"
             case .commitment: return "Commitment"
             case .app:        return "App"
@@ -81,8 +88,9 @@ struct ContentView: View {
 
         var pages: [Page] {
             switch self {
+            case .day:        return MacEdition.isUnrot ? [.today, .focus] : []
             case .protection: return [.overview, .setup, .rules]
-            case .commitment: return [.lock]
+            case .commitment: return MacEdition.isUnrot ? [.lock] : [.focus, .lock]
             case .app:        return [.settings]
             }
         }
@@ -93,8 +101,9 @@ struct ContentView: View {
         HnMainSplit {
             VStack(spacing: 0) {
                 brandHeader
+                if MacEdition.isUnrot { breatheButton }
                 VStack(alignment: .leading, spacing: 18) {
-                    ForEach(SidebarGroup.allCases, id: \.self) { group in
+                    ForEach(SidebarGroup.allCases.filter { !$0.pages.isEmpty }, id: \.self) { group in
                         VStack(alignment: .leading, spacing: 2) {
                             Text(group.title)
                                 .font(.system(size: 10.5, weight: .semibold))
@@ -117,6 +126,11 @@ struct ContentView: View {
                 .padding(.top, 4)
                 Spacer(minLength: 0)
 
+                if MacEdition.isUnrot {
+                    UnrotSidebarSprout(store: .shared) { navigation.page = .today }
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 6)
+                }
                 SidebarStatus(lock: lock, filter: filter) { navigation.page = .overview }
                     .padding(.horizontal, 8)
                     .padding(.bottom, 10)
@@ -126,6 +140,8 @@ struct ContentView: View {
                 ScrollView {
                     Group {
                         switch page ?? .overview {
+                        case .today:
+                            UnrotTodayPage { navigation.page = $0 }
                         case .overview:
                             OverviewPage(lock: lock, filter: filter,
                                          openSiteCheck: { activeSheet = .siteCheck }) { navigation.page = $0 }
@@ -135,6 +151,8 @@ struct ContentView: View {
                             RulesPage(isLocked: lock.isLocked,
                                       managed: ManagedMode.current(),
                                       openSiteCheck: { activeSheet = .siteCheck })
+                        case .focus:
+                            DistractionRulesPage()
                         case .lock:
                             LockPage(lock: lock, filter: filter)
                         case .settings:
@@ -155,7 +173,7 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle("Hisn")
+            .navigationTitle(Text(verbatim: MacEdition.current.displayName))
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button { activeSheet = .siteCheck } label: {
@@ -250,16 +268,41 @@ struct ContentView: View {
         return Text(page.title) + Text(verbatim: " · ") + Text("Locked · \(lock.remainingDescription) left")
     }
 
+    /// Unrot's one always-there action, at the head of the sidebar.
+    private var breatheButton: some View {
+        Button { PauseWindowController.shared.show() } label: {
+            HStack(spacing: 7) {
+                Image(systemName: "wind").font(.system(size: 12, weight: .bold))
+                Text("Breathe").font(.system(size: 13, weight: .semibold))
+                Spacer(minLength: 0)
+                Text(verbatim: "⇧⌘P").font(.system(size: 11)).opacity(0.55)
+            }
+            .padding(.horizontal, 12).frame(height: 32)
+            .foregroundStyle(HnPalette.onAccent)
+            .background(Capsule().fill(LinearGradient(colors: [Color(red: 0.95, green: 0.76, blue: 0.35),
+                                                               Color(red: 0.85, green: 0.60, blue: 0.12)],
+                                                      startPoint: .top, endPoint: .bottom)))
+            .overlay(Capsule().stroke(Color.white.opacity(0.35), lineWidth: 0.5))
+            .shadow(color: Color(red: 0.79, green: 0.54, blue: 0.07).opacity(0.3), radius: 6, y: 2)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 14)
+        .help("A slow breath, any time")
+    }
+
     private var brandHeader: some View {
         HStack(spacing: 9) {
             HnMark(size: 26)
             VStack(alignment: .leading, spacing: 0) {
-                Text("Hisn")
+                Text(verbatim: MacEdition.current.displayName)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(HnPalette.ink)
-                Text(verbatim: "حصن")
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(HnPalette.muted)
+                if !MacEdition.isUnrot {
+                    Text(verbatim: "حصن")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(HnPalette.muted)
+                }
             }
             Spacer(minLength: 0)
         }

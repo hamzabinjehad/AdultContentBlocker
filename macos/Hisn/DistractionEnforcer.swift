@@ -370,7 +370,7 @@ struct DistractionPanelView: View {
             Circle().trim(from: 0, to: progress).stroke(gold, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 1), value: progress)
-            Text(remaining > 0 ? "\(remaining)" : "✓").font(.system(size: 26, weight: .bold, design: .serif))
+            Text(verbatim: remaining > 0 ? "\(remaining)" : "✓").font(.system(size: 26, weight: .bold, design: .serif))
         }
         .frame(width: 84, height: 84)
         .accessibilityLabel(remaining > 0 ? String(localized: "\(remaining) seconds") : String(localized: "Ready"))

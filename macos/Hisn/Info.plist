@@ -10,6 +10,9 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<!-- Which product this build is: "unrot" (general, gold, Today) or "hisn". See MacEdition. -->
+	<key>HisnEdition</key>
+	<string>unrot</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>

@@ -120,6 +120,11 @@ func handle(_ message: [String: Any]) -> [String: Any] {
         }
         return reply
 
+    case "distraction":
+        // Unrot's limits, waits and Focus for pages: a decision for a URL, or a
+        // report of what the person did. Read-only on the rules themselves.
+        return DistractionBridge.handle(message, defaults: defaults, now: LockStore.trustedNow())
+
     case "ping":
         return ["ok": true, "at": Date().timeIntervalSince1970 * 1000]
 

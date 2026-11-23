@@ -4,514 +4,1922 @@
     "" : {
       "shouldTranslate" : false
     },
-    "%@ is closed" : {
+    "%@ left of %@" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ مغلق"
+            "value" : "بقي %1$@ من %2$@"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ is closed"
+            "value" : "%1$@ left of %2$@"
           }
         }
       }
     },
-    "%@ is closed during Focus" : {
+    "%lld h" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ مغلق أثناء التركيز"
+            "value" : "%lld س"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ is closed during Focus"
+            "value" : "%lld h"
           }
         }
       }
     },
-    "%@ is closed for now" : {
+    "%lld h %lld m" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ مغلق الآن"
+            "value" : "%1$lld س %2$lld د"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ is closed for now"
+            "value" : "%1$lld h %2$lld m"
           }
         }
       }
     },
-    "%@ opens again tomorrow." : {
+    "%lld m" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يُفتح %@ من جديد غدًا."
+            "value" : "%lld د"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ opens again tomorrow."
+            "value" : "%lld m"
           }
         }
       }
     },
-    "%@ · in %lld s" : {
+    "%lld minutes" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ · بعد %2$lld ث"
+            "value" : "%lld دقائق"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ · in %2$lld s"
+            "value" : "%lld minutes"
           }
         }
       }
     },
-    "%lld opens left today" : {
+    "%lld of %lld opens left" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "بقي لك %lld مرات فتح اليوم"
+            "value" : "بقي %1$lld من %2$lld مرات فتح"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld opens left today"
+            "value" : "%1$lld of %2$lld opens left"
           }
         }
       }
     },
-    "%lld seconds" : {
+    "%lld rules running" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld ثوانٍ"
+            "value" : "%lld قواعد تعمل الآن"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld seconds"
+            "value" : "%lld rules running"
           }
         }
       }
     },
-    "5 more minutes" : {
+    "%lld s pause" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "5 دقائق أخرى"
+            "value" : "وقفة %lld ث"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "5 more minutes"
+            "value" : "%lld s pause"
           }
         }
       }
     },
-    "5 more minutes · in %lld s" : {
+    "A longer Focus is already running." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "5 دقائق أخرى · بعد %lld ث"
+            "value" : "هناك تركيز أطول يعمل الآن."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "5 more minutes · in %lld s"
+            "value" : "A longer Focus is already running."
           }
         }
       }
     },
-    "A break" : {
+    "A short breath and a question before an app or site opens." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استراحة"
+            "value" : "نفَس قصير وسؤال قبل أن يُفتح تطبيق أو موقع."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A break"
+            "value" : "A short breath and a question before an app or site opens."
           }
         }
       }
     },
-    "Bored" : {
+    "A timed block you start yourself. Distractions close until it ends." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ملل"
+            "value" : "فترة محددة تبدؤها أنت. تُغلق المشتتات حتى تنتهي."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bored"
+            "value" : "A timed block you start yourself. Distractions close until it ends."
           }
         }
       }
     },
-    "Breathe instead" : {
+    "A weaker “%@” applies at %@." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تنفّس بدلًا من ذلك"
+            "value" : "تُطبَّق «%1$@» الأضعف عند %2$@."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Breathe instead"
+            "value" : "A weaker “%1$@” applies at %2$@."
           }
         }
       }
     },
-    "Breathe out slowly while the ring fills." : {
+    "Add a site, like reddit.com" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ازفر ببطء حتى تمتلئ الدائرة."
+            "value" : "أضف موقعًا، مثل reddit.com"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Breathe out slowly while the ring fills."
+            "value" : "Add a site, like reddit.com"
           }
         }
       }
     },
-    "Close %@" : {
+    "Add app" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أغلق %@"
+            "value" : "أضف تطبيقًا"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close %@"
+            "value" : "Add app"
           }
         }
       }
     },
-    "Firm rule: the wait grows each time today." : {
+    "Add at least one app or site." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "قاعدة حازمة: يطول الانتظار في كل مرة اليوم."
+            "value" : "أضف تطبيقًا أو موقعًا واحدًا على الأقل."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Firm rule: the wait grows each time today."
+            "value" : "Add at least one app or site."
           }
         }
       }
     },
-    "Focus" : {
+    "Add rule" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "التركيز"
+            "value" : "أضف القاعدة"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Focus"
+            "value" : "Add rule"
           }
         }
       }
     },
-    "Hide %@" : {
+    "After a pause" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أخفِ %@"
+            "value" : "بعد وقفة"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hide %@"
+            "value" : "After a pause"
           }
         }
       }
     },
-    "It opens again tomorrow." : {
+    "All day" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يُفتح من جديد غدًا."
+            "value" : "طوال اليوم"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "It opens again tomorrow."
+            "value" : "All day"
           }
         }
       }
     },
-    "Just habit" : {
+    "All the apps and sites in this rule share the time." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "مجرد عادة"
+            "value" : "كل التطبيقات والمواقع في هذه القاعدة تتشارك الوقت."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Just habit"
+            "value" : "All the apps and sites in this rule share the time."
           }
         }
       }
     },
-    "Locked rules and Focus stop until their current window ends. Adult protection stays on. The next pass is in 7 days." : {
+    "Always closed" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تتوقف القواعد المقفلة والتركيز حتى تنتهي فترتها الحالية. تبقى الحماية من المحتوى الإباحي قائمة. التصريح التالي بعد 7 أيام."
+            "value" : "مغلق دائمًا"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Locked rules and Focus stop until their current window ends. Adult protection stays on. The next pass is in 7 days."
+            "value" : "Always closed"
           }
         }
       }
     },
-    "No opens left today" : {
+    "and" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لم يبقَ لك فتح اليوم"
+            "value" : "و"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No opens left today"
+            "value" : "and"
           }
         }
       }
     },
-    "Open for %lld minutes" : {
+    "Apps and sites" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "افتحه %lld دقائق"
+            "value" : "التطبيقات والمواقع"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open for %lld minutes"
+            "value" : "Apps and sites"
           }
         }
       }
     },
-    "Something I need" : {
+    "At set hours" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "شيء أحتاجه"
+            "value" : "في ساعات محددة"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Something I need"
+            "value" : "At set hours"
           }
         }
       }
     },
-    "This app" : {
+    "Breathe for" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "هذا التطبيق"
+            "value" : "تنفّس لمدة"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This app"
+            "value" : "Breathe for"
           }
         }
       }
     },
-    "Today’s time for %@ is used" : {
+    "Choose a rule…" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "انتهى وقت اليوم لـ %@"
+            "value" : "اختر قاعدة…"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Today’s time for %@ is used"
+            "value" : "Choose a rule…"
           }
         }
       }
     },
-    "Use the pass" : {
+    "Choose from Applications…" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استخدم التصريح"
+            "value" : "اختر من التطبيقات…"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use the pass"
+            "value" : "Choose from Applications…"
           }
         }
       }
     },
-    "Use this week’s emergency pass?" : {
+    "Close chosen apps and sites from 9 to 5 on workdays." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أتستخدم تصريح الطوارئ لهذا الأسبوع؟"
+            "value" : "أغلق تطبيقات ومواقع مختارة من 9 إلى 5 في أيام العمل."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use this week’s emergency pass?"
+            "value" : "Close chosen apps and sites from 9 to 5 on workdays."
           }
         }
       }
     },
-    "Use this week’s emergency pass…" : {
+    "Closed" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استخدم تصريح الطوارئ لهذا الأسبوع…"
+            "value" : "مغلق"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use this week’s emergency pass…"
+            "value" : "Closed"
           }
         }
       }
     },
-    "What did you open %@ for?" : {
+    "Closed while the rule runs." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لماذا فتحت %@؟"
+            "value" : "مغلق ما دامت القاعدة تعمل."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "What did you open %@ for?"
+            "value" : "Closed while the rule runs."
           }
         }
       }
     },
-    "You chose this earlier, for a calmer day." : {
+    "Daily limit" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اخترت هذا من قبل، ليومٍ أهدأ."
+            "value" : "حد يومي"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You chose this earlier, for a calmer day."
+            "value" : "Daily limit"
           }
         }
       }
     },
-    "You chose to keep it closed." : {
+    "Delete…" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اخترت أن يبقى مغلقًا."
+            "value" : "احذف…"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You chose to keep it closed."
+            "value" : "Delete…"
           }
         }
       }
     },
-    "You started this to: %@" : {
+    "design.page.focus" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "بدأته من أجل: %@"
+            "value" : "حدود ووقفات وجداول للتطبيقات والمواقع التي تشتتك."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You started this to: %@"
+            "value" : "Limits, pauses and schedules for the apps and sites that pull you away."
+          }
+        }
+      }
+    },
+    "Discard" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تجاهل"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard"
+          }
+        }
+      }
+    },
+    "Each open lasts" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مدة كل فتح"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each open lasts"
+          }
+        }
+      }
+    },
+    "End Focus" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنهِ التركيز"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End Focus"
+          }
+        }
+      }
+    },
+    "Everything distracting closes at night, 22:00 to 07:00." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل ما يشتت يُغلق ليلًا، من 22:00 إلى 07:00."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everything distracting closes at night, 22:00 to 07:00."
+          }
+        }
+      }
+    },
+    "Everything in your rules, and the big feeds, close until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل ما في قواعدك، والخلاصات الكبيرة، تُغلق حتى ينتهي."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everything in your rules, and the big feeds, close until it ends."
+          }
+        }
+      }
+    },
+    "Facebook feed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خلاصة فيسبوك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Facebook feed"
+          }
+        }
+      }
+    },
+    "Facebook Reels" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ريلز فيسبوك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Facebook Reels"
+          }
+        }
+      }
+    },
+    "Facebook Watch" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فيسبوك ووتش"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Facebook Watch"
+          }
+        }
+      }
+    },
+    "Feeds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الخلاصات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feeds"
+          }
+        }
+      }
+    },
+    "Feeds only" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الخلاصات فقط"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feeds only"
+          }
+        }
+      }
+    },
+    "Firm" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حازمة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Firm"
+          }
+        }
+      }
+    },
+    "Focus until %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تركيز حتى %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus until %@"
+          }
+        }
+      }
+    },
+    "For how long" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لكم من الوقت"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For how long"
+          }
+        }
+      }
+    },
+    "Gentle" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لطيفة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gentle"
+          }
+        }
+      }
+    },
+    "Give the rule a name." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعطِ القاعدة اسمًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give the rule a name."
+          }
+        }
+      }
+    },
+    "Given back" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقت مُستعاد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Given back"
+          }
+        }
+      }
+    },
+    "Hide home feeds and short videos. Search and links keep working." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أخفِ خلاصات الصفحة الرئيسية والمقاطع القصيرة. يبقى البحث والروابط."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide home feeds and short videos. Search and links keep working."
+          }
+        }
+      }
+    },
+    "I can end it" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أستطيع إنهاءه"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I can end it"
+          }
+        }
+      }
+    },
+    "If I want to stop early" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إن أردت التوقف مبكرًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If I want to stop early"
+          }
+        }
+      }
+    },
+    "Instagram Explore" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استكشاف إنستغرام"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instagram Explore"
+          }
+        }
+      }
+    },
+    "Instagram feed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خلاصة إنستغرام"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instagram feed"
+          }
+        }
+      }
+    },
+    "Instagram Reels" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ريلز إنستغرام"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instagram Reels"
+          }
+        }
+      }
+    },
+    "Keep it as it is" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أبقِها كما هي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep it as it is"
+          }
+        }
+      }
+    },
+    "Limit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limit"
+          }
+        }
+      }
+    },
+    "Limits and Focus" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحدود والتركيز"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limits and Focus"
+          }
+        }
+      }
+    },
+    "LinkedIn feed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خلاصة لينكدإن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LinkedIn feed"
+          }
+        }
+      }
+    },
+    "Longer each time I open it today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أطول في كل مرة أفتحه اليوم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Longer each time I open it today"
+          }
+        }
+      }
+    },
+    "Making a rule stronger applies at once. Making it weaker follows the rule’s strictness." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقوية القاعدة تُطبَّق فورًا. إضعافها يتبع درجة صرامتها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Making a rule stronger applies at once. Making it weaker follows the rule’s strictness."
+          }
+        }
+      }
+    },
+    "Mon–Fri" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإثنين–الجمعة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mon–Fri"
+          }
+        }
+      }
+    },
+    "Most people start with a daily limit on feeds, or a short pause before the app they open without thinking." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يبدأ أغلب الناس بحد يومي للخلاصات، أو بوقفة قصيرة قبل التطبيق الذي يفتحونه بلا تفكير."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Most people start with a daily limit on feeds, or a short pause before the app they open without thinking."
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الاسم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "New rule" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قاعدة جديدة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New rule"
+          }
+        }
+      }
+    },
+    "New rule…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قاعدة جديدة…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New rule…"
+          }
+        }
+      }
+    },
+    "next day" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اليوم التالي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "next day"
+          }
+        }
+      }
+    },
+    "No extra minutes and no weaker changes while it runs. One emergency pass a week." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا دقائق إضافية ولا إضعاف ما دامت تعمل. تصريح طوارئ واحد في الأسبوع."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No extra minutes and no weaker changes while it runs. One emergency pass a week."
+          }
+        }
+      }
+    },
+    "No limit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بلا حد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No limit"
+          }
+        }
+      }
+    },
+    "No rules yet" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا قواعد بعد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No rules yet"
+          }
+        }
+      }
+    },
+    "Not until it ends" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس قبل أن ينتهي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not until it ends"
+          }
+        }
+      }
+    },
+    "Nothing chosen yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُختر شيء بعد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing chosen yet."
+          }
+        }
+      }
+    },
+    "Nothing is running right now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء يعمل الآن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing is running right now"
+          }
+        }
+      }
+    },
+    "On" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعمل"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On"
+          }
+        }
+      }
+    },
+    "On your rules’ apps and sites today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "على تطبيقات ومواقع قواعدك اليوم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On your rules’ apps and sites today"
+          }
+        }
+      }
+    },
+    "One hour a day for feeds, shared. Then they close until tomorrow." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ساعة واحدة في اليوم للخلاصات، مشتركة. ثم تُغلق حتى الغد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One hour a day for feeds, shared. Then they close until tomorrow."
+          }
+        }
+      }
+    },
+    "Open now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفتوح الآن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open now"
+          }
+        }
+      }
+    },
+    "Opens a day" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرات الفتح في اليوم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens a day"
+          }
+        }
+      }
+    },
+    "Pause" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقفة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        }
+      }
+    },
+    "Pause first" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توقّف أولًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause first"
+          }
+        }
+      }
+    },
+    "Pauses" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الوقفات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pauses"
+          }
+        }
+      }
+    },
+    "Quiet hours" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ساعات الهدوء"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quiet hours"
+          }
+        }
+      }
+    },
+    "Reddit front page" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصفحة الرئيسية لريديت"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reddit front page"
+          }
+        }
+      }
+    },
+    "Reddit Popular" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الرائج في ريديت"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reddit Popular"
+          }
+        }
+      }
+    },
+    "Rules for the apps and sites that pull you away. Adult protection is separate and always on." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قواعد للتطبيقات والمواقع التي تشدّك. الحماية من المحتوى الإباحي منفصلة وتعمل دائمًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rules for the apps and sites that pull you away. Adult protection is separate and always on."
+          }
+        }
+      }
+    },
+    "Schedule" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جدول"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schedule"
+          }
+        }
+      }
+    },
+    "Select a rule to change it" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر قاعدة لتغييرها"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select a rule to change it"
+          }
+        }
+      }
+    },
+    "Shown to you if you reach for a closed app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يظهر لك إن حاولت فتح تطبيق مغلق."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shown to you if you reach for a closed app."
+          }
+        }
+      }
+    },
+    "Sites and feeds need Unrot’s browser extension to be on." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المواقع والخلاصات تحتاج إلى تشغيل إضافة المتصفح."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sites and feeds need Unrot’s browser extension to be on."
+          }
+        }
+      }
+    },
+    "Snapchat Spotlight" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سبوتلايت سناب شات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snapchat Spotlight"
+          }
+        }
+      }
+    },
+    "Something in this rule is out of range." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شيء في هذه القاعدة خارج الحدود."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something in this rule is out of range."
+          }
+        }
+      }
+    },
+    "Something you’ve decided you’re done with." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شيء قررت أن تتركه."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something you’ve decided you’re done with."
+          }
+        }
+      }
+    },
+    "Start %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start %@"
+          }
+        }
+      }
+    },
+    "Start and end can’t be the same time, and at least one day is needed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يمكن أن يتساوى وقت البداية والنهاية، ويلزم يوم واحد على الأقل."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start and end can’t be the same time, and at least one day is needed."
+          }
+        }
+      }
+    },
+    "Start Focus" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ التركيز"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Focus"
+          }
+        }
+      }
+    },
+    "Start Focus…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ التركيز…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Focus…"
+          }
+        }
+      }
+    },
+    "Start from what you want less of. You can change everything after." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ بما تريد أن يقل. يمكنك تغيير كل شيء لاحقًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start from what you want less of. You can change everything after."
+          }
+        }
+      }
+    },
+    "Start with one rule" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ بقاعدة واحدة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start with one rule"
+          }
+        }
+      }
+    },
+    "That doesn’t look like a site address." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يبدو هذا عنوان موقع."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That doesn’t look like a site address."
+          }
+        }
+      }
+    },
+    "This makes the rule weaker, so it applies at %@. You can cancel it until then." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا يُضعف القاعدة، فيُطبَّق عند %@. يمكنك إلغاؤه حتى ذلك الوقت."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This makes the rule weaker, so it applies at %@. You can cancel it until then."
+          }
+        }
+      }
+    },
+    "This rule can’t be made weaker right now." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يمكن إضعاف هذه القاعدة الآن."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This rule can’t be made weaker right now."
+          }
+        }
+      }
+    },
+    "This rule can’t be made weaker until %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يمكن إضعاف هذه القاعدة حتى %@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This rule can’t be made weaker until %@."
+          }
+        }
+      }
+    },
+    "TikTok" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تيك توك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TikTok"
+          }
+        }
+      }
+    },
+    "Times closed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرات الإغلاق"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Times closed"
+          }
+        }
+      }
+    },
+    "to" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إلى"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "to"
+          }
+        }
+      }
+    },
+    "Together, per day" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معًا، في اليوم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together, per day"
+          }
+        }
+      }
+    },
+    "Turn this rule on or off" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شغّل هذه القاعدة أو أوقفها"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn this rule on or off"
+          }
+        }
+      }
+    },
+    "Used for today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتهى وقت اليوم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used for today"
+          }
+        }
+      }
+    },
+    "Wait before opening" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتظر قبل الفتح"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wait before opening"
+          }
+        }
+      }
+    },
+    "Waiting to apply" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بانتظار التطبيق"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting to apply"
+          }
+        }
+      }
+    },
+    "Weekends" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عطلة نهاية الأسبوع"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weekends"
+          }
+        }
+      }
+    },
+    "What is it for?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لأجل ماذا؟"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What is it for?"
+          }
+        }
+      }
+    },
+    "What it does" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ماذا تفعل"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What it does"
+          }
+        }
+      }
+    },
+    "When" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متى"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When"
+          }
+        }
+      }
+    },
+    "When I want more" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حين أريد المزيد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When I want more"
+          }
+        }
+      }
+    },
+    "Work hours" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ساعات العمل"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Work hours"
+          }
+        }
+      }
+    },
+    "Write the report" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اكتب التقرير"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write the report"
+          }
+        }
+      }
+    },
+    "X For You" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«لك» في X"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "X For You"
+          }
+        }
+      }
+    },
+    "Your rules" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قواعدك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your rules"
+          }
+        }
+      }
+    },
+    "YouTube home feed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خلاصة يوتيوب الرئيسية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "YouTube home feed"
+          }
+        }
+      }
+    },
+    "YouTube Shorts" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوتيوب شورتس"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "YouTube Shorts"
           }
         }
       }
@@ -531,6 +1939,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%1$@” is too short to block safely. Words need at least %2$lld letters — shorter ones match parts of ordinary words and block pages you need."
+          }
+        }
+      }
+    },
+    "“%@” will be removed at %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ستُحذف «%1$@» عند %2$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%1$@” will be removed at %2$@."
+          }
+        }
+      }
+    },
+    "“5 more minutes” after a wait that grows each time. Making the rule weaker takes 10 minutes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«5 دقائق أخرى» بعد انتظار يطول كل مرة. إضعاف القاعدة يستغرق 10 دقائق."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“5 more minutes” after a wait that grows each time. Making the rule weaker takes 10 minutes."
+          }
+        }
+      }
+    },
+    "“5 more minutes” any time. Changes apply at once." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«5 دقائق أخرى» في أي وقت. تُطبَّق التغييرات فورًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“5 more minutes” any time. Changes apply at once."
+          }
+        }
+      }
+    },
+    "%@ · in %lld s" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · بعد %2$lld ث"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · in %2$lld s"
           }
         }
       }
@@ -693,12 +2165,76 @@
         }
       }
     },
+    "%@ is closed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ مغلق"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is closed"
+          }
+        }
+      }
+    },
+    "%@ is closed during Focus" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ مغلق أثناء التركيز"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is closed during Focus"
+          }
+        }
+      }
+    },
+    "%@ is closed for now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ مغلق الآن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is closed for now"
+          }
+        }
+      }
+    },
     "%@ is now blocked." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ محجوب الآن."
+          }
+        }
+      }
+    },
+    "%@ opens again tomorrow." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُفتح %@ من جديد غدًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ opens again tomorrow."
           }
         }
       }
@@ -735,6 +2271,9 @@
           }
         }
       }
+    },
+    "%lld" : {
+      "shouldTranslate" : false
     },
     "%lld domains" : {
       "localizations" : {
@@ -874,6 +2413,38 @@
         }
       }
     },
+    "%lld opens left today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بقي لك %lld مرات فتح اليوم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld opens left today"
+          }
+        }
+      }
+    },
+    "%lld seconds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ثوانٍ"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld seconds"
+          }
+        }
+      }
+    },
     "%lld valid" : {
       "localizations" : {
         "ar" : {
@@ -964,6 +2535,9 @@
         }
       }
     },
+    "✓" : {
+      "shouldTranslate" : false
+    },
     "1. Get the enrollment profile from your organization.\n2. Open it, or open Device Management, and approve it in System Settings.\n3. Return here and check again." : {
       "localizations" : {
         "ar" : {
@@ -1017,12 +2591,60 @@
         }
       }
     },
+    "5 more minutes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 دقائق أخرى"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 more minutes"
+          }
+        }
+      }
+    },
+    "5 more minutes · in %lld s" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 دقائق أخرى · بعد %lld ث"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 more minutes · in %lld s"
+          }
+        }
+      }
+    },
     "48-hour release or partner approval" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "إفراج بعد 48 ساعة أو موافقة الشريك"
+          }
+        }
+      }
+    },
+    "A break" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استراحة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A break"
           }
         }
       }
@@ -1635,6 +3257,16 @@
         }
       }
     },
+    "Adult image and video checks are switched on or off here, in Content checking. Person blur is a separate choice: open the Hisn extension, choose Manage protection, then Visual checks. It is saved in that browser." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُشغَّل فحص الصور والفيديو الإباحية أو يُوقَف من هنا، في «فحص المحتوى». أما تمويه الأشخاص فخيار منفصل: افتح إضافة حصن، واختر «إدارة الحماية» ثم «الفحص البصري». ويُحفظ في ذلك المتصفح."
+          }
+        }
+      }
+    },
     "Allow during a lock" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2084,6 +3716,22 @@
         }
       }
     },
+    "Bored" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملل"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bored"
+          }
+        }
+      }
+    },
     "Breathe again" : {
       "localizations" : {
         "ar" : {
@@ -2100,6 +3748,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "خذ نفسًا عميقًا…"
+          }
+        }
+      }
+    },
+    "Breathe instead" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنفّس بدلًا من ذلك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breathe instead"
+          }
+        }
+      }
+    },
+    "Breathe out slowly while the ring fills." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ازفر ببطء حتى تمتلئ الدائرة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breathe out slowly while the ring fills."
           }
         }
       }
@@ -2618,6 +4298,16 @@
         }
       }
     },
+    "Check images and videos" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص الصور والفيديو"
+          }
+        }
+      }
+    },
     "Check the installed RouterOS version for IP > DNS > Adlist support. The router can import a local hosts-format file where this feature is available. Check memory, storage, and client DNS routing before importing a large list." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2631,16 +4321,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Check the installed RouterOS version for IP > DNS > Adlist support. The router can import a local hosts-format file where this feature is available. Check memory, storage, and client DNS routing before importing a large list."
-          }
-        }
-      }
-    },
-    "Check images and videos" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "افحص الصور والفيديو"
           }
         }
       }
@@ -2880,6 +4560,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إغلاق"
+          }
+        }
+      }
+    },
+    "Close %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أغلق %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close %@"
           }
         }
       }
@@ -3937,6 +5633,22 @@
         }
       }
     },
+    "Firm rule: the wait grows each time today." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قاعدة حازمة: يطول الانتظار في كل مرة اليوم."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Firm rule: the wait grows each time today."
+          }
+        }
+      }
+    },
     "First run" : {
       "localizations" : {
         "ar" : {
@@ -3959,6 +5671,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fixed commitment until the chosen deadline"
+          }
+        }
+      }
+    },
+    "Focus" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التركيز"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus"
           }
         }
       }
@@ -4214,6 +5942,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Have your administrator import Hisn's verified signed rules into AdGuard Home on a gateway or an always-on DNS server. Point the router and its clients to that server for IPv4 and IPv6."
+          }
+        }
+      }
+    },
+    "Hide %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أخفِ %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide %@"
           }
         }
       }
@@ -5075,12 +6819,44 @@
         }
       }
     },
+    "It opens again tomorrow." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُفتح من جديد غدًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It opens again tomorrow."
+          }
+        }
+      }
+    },
     "Its address matches a blocked keyword." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "عنوانه يطابق كلمة مفتاحية محجوبة."
+          }
+        }
+      }
+    },
+    "Just habit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مجرد عادة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just habit"
           }
         }
       }
@@ -5409,6 +7185,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "مقفل · بقي %@"
+          }
+        }
+      }
+    },
+    "Locked rules and Focus stop until their current window ends. Adult protection stays on. The next pass is in 7 days." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتوقف القواعد المقفلة والتركيز حتى تنتهي فترتها الحالية. تبقى الحماية من المحتوى الإباحي قائمة. التصريح التالي بعد 7 أيام."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locked rules and Focus stop until their current window ends. Adult protection stays on. The next pass is in 7 days."
           }
         }
       }
@@ -6189,6 +7981,22 @@
         }
       }
     },
+    "No opens left today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يبقَ لك فتح اليوم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No opens left today"
+          }
+        }
+      }
+    },
     "No partner set up." : {
       "localizations" : {
         "ar" : {
@@ -6597,7 +8405,6 @@
       }
     },
     "Off" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6867,6 +8674,22 @@
         }
       }
     },
+    "Open for %lld minutes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتحه %lld دقائق"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open for %lld minutes"
+          }
+        }
+      }
+    },
     "Open Hisn" : {
       "localizations" : {
         "ar" : {
@@ -6995,16 +8818,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open the ASUS router page and find WAN > Internet Connection, then the WAN DNS settings. The menus differ between firmware versions; follow the matching method in the official guide."
-          }
-        }
-      }
-    },
-    "Adult image and video checks are switched on or off here, in Content checking. Person blur is a separate choice: open the Hisn extension, choose Manage protection, then Visual checks. It is saved in that browser." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يُشغَّل فحص الصور والفيديو الإباحية أو يُوقَف من هنا، في «فحص المحتوى». أما تمويه الأشخاص فخيار منفصل: افتح إضافة حصن، واختر «إدارة الحماية» ثم «الفحص البصري». ويُحفظ في ذلك المتصفح."
           }
         }
       }
@@ -7293,6 +9106,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "وقفات اليوم: %lld"
+          }
+        }
+      }
+    },
+    "Person blur in the extension" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تمويه الأشخاص في الإضافة"
           }
         }
       }
@@ -8853,6 +10676,22 @@
         }
       }
     },
+    "Something I need" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شيء أحتاجه"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something I need"
+          }
+        }
+      }
+    },
     "Something to do" : {
       "localizations" : {
         "ar" : {
@@ -9883,6 +11722,22 @@
         }
       }
     },
+    "This app" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا التطبيق"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app"
+          }
+        }
+      }
+    },
     "This app bundle has no filter extension, so there is nothing to turn on. Reinstall the full Hisn build." : {
       "localizations" : {
         "ar" : {
@@ -10277,6 +12132,22 @@
         }
       }
     },
+    "Today’s time for %@ is used" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتهى وقت اليوم لـ %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today’s time for %@ is used"
+          }
+        }
+      }
+    },
     "Too short to use: %@." : {
       "localizations" : {
         "ar" : {
@@ -10533,6 +12404,54 @@
         }
       }
     },
+    "Use the pass" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدم التصريح"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the pass"
+          }
+        }
+      }
+    },
+    "Use this week’s emergency pass?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أتستخدم تصريح الطوارئ لهذا الأسبوع؟"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this week’s emergency pass?"
+          }
+        }
+      }
+    },
+    "Use this week’s emergency pass…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدم تصريح الطوارئ لهذا الأسبوع…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this week’s emergency pass…"
+          }
+        }
+      }
+    },
     "Verified" : {
       "localizations" : {
         "ar" : {
@@ -10596,16 +12515,6 @@
         }
       }
     },
-    "Person blur in the extension" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تمويه الأشخاص في الإضافة"
-          }
-        }
-      }
-    },
     "Waiting for your approval in System Settings" : {
       "localizations" : {
         "ar" : {
@@ -10642,6 +12551,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أحسنت. الرغبة تزول أسرع مما تشعر."
+          }
+        }
+      }
+    },
+    "What did you open %@ for?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لماذا فتحت %@؟"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What did you open %@ for?"
           }
         }
       }
@@ -10875,12 +12800,60 @@
         }
       }
     },
+    "You chose this earlier, for a calmer day." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اخترت هذا من قبل، ليومٍ أهدأ."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You chose this earlier, for a calmer day."
+          }
+        }
+      }
+    },
+    "You chose to keep it closed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اخترت أن يبقى مغلقًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You chose to keep it closed."
+          }
+        }
+      }
+    },
     "You set this up on a calmer day, for a moment like this one." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "أعددت هذا في يوم أهدأ، من أجل لحظة كهذه."
+          }
+        }
+      }
+    },
+    "You started this to: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدأته من أجل: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You started this to: %@"
           }
         }
       }

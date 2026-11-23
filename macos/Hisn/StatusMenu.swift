@@ -22,7 +22,7 @@ final class AppNavigation: ObservableObject {
     /// what the app does was the first-run problem this fixes.
     static func firstPage(defaults: UserDefaults = .standard,
                           hostingTests: Bool = AppDelegate.isHostingTests) -> ContentView.Page {
-        .overview
+        MacEdition.isUnrot ? .today : .overview
     }
 
     func open(_ page: ContentView.Page) {

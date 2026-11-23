@@ -11,10 +11,33 @@ import SwiftUI
 ///
 /// The vocabulary stays small: one filled action, one accent, one hairline.
 /// State is carried by a word and a symbol; colour is the third signal.
+/// Which product this build is: Hisn (the Islamic edition, ink blue) or Unrot
+/// (the general edition, gold, with Today and the sprout). One code base; the
+/// edition changes the accent, the sidebar and the first page.
+///
+/// Read from the `edition` default when set (for trying the other look), else
+/// from the bundle's `HisnEdition` key. Tests set `override`.
+enum MacEdition: String {
+    case hisn, unrot
+
+    static var override: MacEdition?
+
+    static var current: MacEdition {
+        if let override { return override }
+        if AppDelegate.isHostingTests { return .hisn }
+        if let chosen = UserDefaults.standard.string(forKey: "edition").flatMap(MacEdition.init) { return chosen }
+        return (Bundle.main.object(forInfoDictionaryKey: "HisnEdition") as? String).flatMap(MacEdition.init) ?? .hisn
+    }
+
+    static var isUnrot: Bool { current == .unrot }
+
+    var displayName: String { self == .unrot ? "Unrot" : "Hisn" }
+}
+
 enum HnPalette {
-    static let canvas = dynamic(light: 0xF4F1EB, dark: 0x151412)
-    static let sidebar = dynamic(light: 0xECE7DE, dark: 0x1C1A17)
-    static let card = dynamic(light: 0xFFFFFF, dark: 0x24211C)
+    static let canvas = dynamic(light: 0xF4F1EB, dark: 0x151412, unrotLight: 0xFAF8F4, unrotDark: 0x1B1814)
+    static let sidebar = dynamic(light: 0xECE7DE, dark: 0x1C1A17, unrotLight: 0xF3EBDC, unrotDark: 0x26211A)
+    static let card = dynamic(light: 0xFFFFFF, dark: 0x24211C, unrotLight: 0xFFFFFF, unrotDark: 0x28241E)
     /// A quiet fill for segments, disabled states and grouping.
     static let soft = dynamic(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.045, darkAlpha: 0.07)
     /// A field or well inside a surface.
@@ -27,10 +50,11 @@ enum HnPalette {
 
     /// The app's one accent: a deep ink blue, fixed so selection, sliders and
     /// the primary action agree even when the system accent is graphite.
-    static let accent = dynamic(light: 0x2A4C8A, dark: 0x93AEFF)
-    static let onAccent = dynamic(light: 0xFFFFFF, dark: 0x15223E)
-    static let accentText = dynamic(light: 0x234174, dark: 0xA9C0FF)
-    static let accentSoft = dynamic(light: 0x2A4C8A, dark: 0x93AEFF, lightAlpha: 0.10, darkAlpha: 0.16)
+    static let accent = dynamic(light: 0x2A4C8A, dark: 0x93AEFF, unrotLight: 0xD99A1F, unrotDark: 0xF0B93C)
+    static let onAccent = dynamic(light: 0xFFFFFF, dark: 0x15223E, unrotLight: 0x2B1C03, unrotDark: 0x2B1C03)
+    static let accentText = dynamic(light: 0x234174, dark: 0xA9C0FF, unrotLight: 0x8A5A00, unrotDark: 0xF0B93C)
+    static let accentSoft = dynamic(light: 0x2A4C8A, dark: 0x93AEFF, lightAlpha: 0.10, darkAlpha: 0.16,
+                                    unrotLight: 0xC98A12, unrotDark: 0xF0B93C)
 
     static let calm = dynamic(light: 0x3E6B50, dark: 0x8FC6A2)
     static let calmSoft = dynamic(light: 0x3E6B50, dark: 0x8FC6A2, lightAlpha: 0.11, darkAlpha: 0.13)
@@ -40,10 +64,12 @@ enum HnPalette {
     static let dangerSoft = dynamic(light: 0x9C3B32, dark: 0xEE9A90, lightAlpha: 0.10, darkAlpha: 0.13)
 
     private static func dynamic(light: UInt32, dark: UInt32,
-                                lightAlpha: CGFloat = 1, darkAlpha: CGFloat = 1) -> Color {
+                                lightAlpha: CGFloat = 1, darkAlpha: CGFloat = 1,
+                                unrotLight: UInt32? = nil, unrotDark: UInt32? = nil) -> Color {
         Color(nsColor: NSColor(name: nil) { appearance in
             let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            let value = isDark ? dark : light
+            let unrot = MacEdition.isUnrot
+            let value = isDark ? (unrot ? unrotDark ?? dark : dark) : (unrot ? unrotLight ?? light : light)
             return NSColor(red: CGFloat((value >> 16) & 0xFF) / 255,
                            green: CGFloat((value >> 8) & 0xFF) / 255,
                            blue: CGFloat(value & 0xFF) / 255,
@@ -924,9 +950,9 @@ struct HnMark: View {
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
                 .fill(HnPalette.accent)
-            Image(systemName: "shield.lefthalf.filled")
+            Image(systemName: MacEdition.isUnrot ? "leaf.fill" : "shield.lefthalf.filled")
                 .font(.system(size: size * 0.48, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(MacEdition.isUnrot ? HnPalette.onAccent : .white)
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)

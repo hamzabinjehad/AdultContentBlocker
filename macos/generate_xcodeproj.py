@@ -127,7 +127,12 @@ APP_SOURCES = SHARED + [
     "Hisn/DistractionRules.swift",
     # The saved rule book, and the app watcher with its wait / closed panel.
     "Hisn/DistractionStore.swift",
+    "Hisn/DistractionBridge.swift",
     "Hisn/DistractionEnforcer.swift",
+    # The Limits and Focus page: rule list, inspector, templates, Focus.
+    "Hisn/DistractionRulesView.swift",
+    # Unrot's first page: the sprout under glass, today, what is running.
+    "Hisn/UnrotToday.swift",
 ]
 
 # Every string the app shows, in English and Arabic. A String Catalog: Xcode
@@ -144,7 +149,10 @@ FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
                            "HisnFilter/FilterXPCService.swift",
                            "HisnFilter/main.swift"]
 # The bridge records which browser's extension checked in, for the guard.
-BRIDGE_SOURCES = SHARED + ["HisnBridge/main.swift", "Hisn/ExtensionPresence.swift"]
+BRIDGE_SOURCES = SHARED + ["HisnBridge/main.swift", "Hisn/ExtensionPresence.swift",
+                           # Page decisions for the extensions, and their reports.
+                           "Hisn/DistractionRules.swift", "Hisn/DistractionStore.swift",
+                           "Hisn/DistractionBridge.swift"]
 # Safari Web Extension target: the handler is native; the scanner itself is
 # staged from the shared extension by a build phase.
 SAFARI_SOURCES = ["HisnSafariExtension/SafariWebExtensionHandler.swift"]
