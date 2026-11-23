@@ -13,7 +13,7 @@ struct UnrotCheckInSheet: View {
         ("stress", "u.pull.stress"), ("alone", "u.pull.alone"), ("none", "u.pull.none")]
 
     var body: some View {
-        USheet(title: "u.checkin.title", subtitle: "u.checkin.private") {
+        USheet(title: "u.checkin.title", subtitle: "u.checkin.private", tall: true) {
             HStack(spacing: 6) {
                 ForEach(Self.moods.indices, id: \.self) { i in
                     Button { mood = i } label: {
@@ -95,6 +95,7 @@ struct UnrotHardMomentSheet: View {
 struct UnrotInsteadSheet: View {
     @ObservedObject var store: UnrotStore
     let canClose: Bool
+    var onChooseApps: () -> Void = {}
     let onGo: () -> Bool
     @Environment(\.dismiss) private var dismiss
     @State private var picked: String?
@@ -119,6 +120,12 @@ struct UnrotInsteadSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 UGoldButton(title: "u.instead.offIGo", wide: true) { dismiss() }
+                if !closed {
+                    UPillButton(title: "u.feed.choose", systemImage: "apps.iphone") {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { onChooseApps() }
+                    }
+                }
             } else {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     ForEach(shown, id: \.0) { idea in
@@ -156,6 +163,8 @@ struct UnrotInsteadSheet: View {
 /// read or add to it; days still to come take no notes.
 struct UnrotNotesSheet: View {
     @ObservedObject var store: UnrotStore
+    /// The day to open on (from a day in Progress); today otherwise.
+    var startDay: Date? = nil
     @State private var month = Date()
     @State private var selected = Date()
     @State private var draft = ""
@@ -169,6 +178,9 @@ struct UnrotNotesSheet: View {
     var body: some View {
         USheet(title: "u.notes.title", subtitle: "u.notes.body", tall: true) {
             calendarCard
+                .onAppear {
+                    if let startDay { selected = startDay; month = startDay }
+                }
             dayHeader
             if canWrite { composer }
             let notes = store.notes(on: selected)
@@ -330,6 +342,7 @@ struct UnrotNotesSheet: View {
 struct UnrotFocusSheet: View {
     @ObservedObject var store: UnrotStore
     let canClose: Bool
+    var onChooseApps: () -> Void = {}
     let onStart: (Int) -> Bool
     let onEnd: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -346,6 +359,10 @@ struct UnrotFocusSheet: View {
                 UPillButton(title: "u.focus.end", systemImage: "stop.fill") { onEnd(); dismiss() }
             } else if !canClose {
                 UCard { Text("u.focus.needsRule").foregroundStyle(UPalette.ink).fixedSize(horizontal: false, vertical: true) }
+                UGoldButton(title: "u.feed.choose", systemImage: "apps.iphone", wide: true) {
+                    dismiss()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { onChooseApps() }
+                }
             } else {
                 HStack(spacing: 8) {
                     ForEach([15, 25, 45, 60, 90], id: \.self) { value in
@@ -433,4 +450,43 @@ enum UnrotTool: String, CaseIterable, Identifiable {
     private static let icons: [UnrotTool: String] = [.breathe: "wind", .focus: "scope", .notes: "book.closed",
         .instead: "lightbulb", .checkIn: "checkmark.circle", .hardMoment: "heart",
         .rules: "slider.horizontal.3", .lock: "lock"]
+}
+
+/// Help and questions: short, honest answers about what Unrot can and cannot do on iPhone.
+struct UnrotHelpSheet: View {
+    @State private var open: Int?
+    static let count = 8
+
+    var body: some View {
+        USheet(title: "u.help.title", subtitle: "u.help.sub", tall: true) {
+            ForEach(0..<Self.count, id: \.self) { i in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { open = open == i ? nil : i }
+                } label: {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(alignment: .top) {
+                            Text(uKey("u.help.q", i)).font(.subheadline.weight(.bold)).foregroundStyle(UPalette.ink)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 8)
+                            Image(systemName: open == i ? "minus" : "plus").font(.caption.weight(.bold))
+                                .foregroundStyle(UPalette.goldLight)
+                        }
+                        if open == i {
+                            Text(uKey("u.help.a", i)).font(.footnote).foregroundStyle(UPalette.dim)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(UPalette.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(UPalette.cardLine) }
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityHint(Text(open == i ? "u.help.hide" : "u.help.show"))
+            }
+        }
+    }
 }

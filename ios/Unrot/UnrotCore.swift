@@ -155,6 +155,13 @@ enum UnrotFormat {
         return String(format: "%d:%02d", s / 60, s % 60)
     }
 
+    /// The local day a key names ("2026-11-23" → that midnight).
+    static func date(fromKey key: String, calendar: Calendar = .current) -> Date? {
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+    }
+
     static func dayKey(_ date: Date, calendar: Calendar = .current) -> String {
         let c = calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
@@ -221,5 +228,159 @@ enum NotesCalendar {
     /// Newest day first, then newest written first within a day.
     static func newestFirst(_ a: (day: String, at: Date), _ b: (day: String, at: Date)) -> Bool {
         a.day != b.day ? a.day > b.day : a.at > b.at
+    }
+}
+
+/// The week's check-ins in one line: the most common pull, if any day named one.
+enum MoodWeek {
+    static func topPull(_ pulls: [String]) -> String? {
+        let named = pulls.filter { $0 != "none" }
+        let counts = Dictionary(named.map { ($0, 1) }, uniquingKeysWith: +)
+        return counts.max { a, b in a.value == b.value ? a.key > b.key : a.value < b.value }?.key
+    }
+}
+
+/// Unrot's own links (widgets, Shortcuts): unrot://breathe, unrot://notes, unrot://home.
+enum UnrotLink: String, CaseIterable {
+    case home, breathe, notes, checkin, focus
+    static let scheme = "unrot"
+    var url: URL { URL(string: "\(Self.scheme)://\(rawValue)")! }
+    init?(url: URL) {
+        guard url.scheme == Self.scheme, let host = url.host, let link = UnrotLink(rawValue: host) else { return nil }
+        self = link
+    }
+}
+
+/// What the Home Screen widget may show, written by the app to the App Group.
+/// Growth and the glass only: no adult counts, notes or check-ins.
+struct WidgetSnapshot: Codable, Equatable {
+    static let key = "unrot.widget"
+    var givenBack: Int
+    var day: Int
+    var crackedAt: TimeInterval
+    var sealedAt: TimeInterval
+    var brokenAt: TimeInterval
+    var sealedDay: String?
+    var night: Bool
+    var updated: Date
+
+    func glass(at date: Date) -> GlassState {
+        GlassState.at(now: date.timeIntervalSince1970, crackedAt: crackedAt, sealedAt: sealedAt,
+                      brokenAt: brokenAt, sealedDay: sealedDay, today: UnrotFormat.dayKey(date))
+    }
+
+    /// When the picture next changes on its own: a crack's window closing or a break's hour ending.
+    func nextChange(after date: Date) -> Date? {
+        let t = date.timeIntervalSince1970
+        return [crackedAt + GlassState.sealWindow, brokenAt + GlassState.brokenShows]
+            .filter { $0 > t }.min().map { Date(timeIntervalSince1970: $0 + 1) }
+    }
+}
+
+/// Everything Unrot knows about one day, for the day page. Built from the
+/// store's records; nothing is stored twice.
+struct DaySummary: Equatable {
+    let key: String
+    /// Feed time Screen Time reported (lower bound, ten-minute steps); nil when not measured.
+    let feed: Int?
+    let before: Int
+    /// Time given back that day; nil for today (counted tomorrow) or unmeasured days.
+    let gain: Int?
+    let mood: Int?
+    let pull: String?
+    let pauses: Int
+    let triesStopped: Int
+    let notes: [String]
+    let isToday: Bool
+    let isFuture: Bool
+    let beforeStart: Bool
+
+    /// Feed time against before, in minutes (negative is less); nil when unmeasured.
+    var difference: Int? { feed.map { $0 - before } }
+
+    static func make(key: String, today: String, startDay: String?, before: Int, feed: [String: Int],
+                     gains: [String: Int], mood: (Int, String)?, pauses: Int, tries: Int, notes: [String]) -> DaySummary {
+        DaySummary(key: key, feed: feed[key], before: before, gain: gains[key], mood: mood?.0,
+                   pull: mood.map { $0.1 }.flatMap { $0 == "none" ? nil : $0 },
+                   pauses: pauses, triesStopped: tries, notes: notes,
+                   isToday: key == today, isFuture: key > today,
+                   beforeStart: startDay.map { key < $0 } ?? false)
+    }
+}
+
+/// Days for the progress chart: the last week or the last four.
+enum ChartRange: Int, CaseIterable {
+    case week = 7, month = 28
+    var titleKey: String { self == .week ? "u.range.week" : "u.range.month" }
+}
+
+/// The four numbers under the progress chart, for a range of days.
+struct RangeStats: Equatable {
+    /// Average measured feed time a day; nil with no measured day.
+    let average: Int?
+    let underBefore: Int
+    let measuredDays: Int
+    /// The day key and minutes of the lightest measured day.
+    let lightest: (key: String, minutes: Int)?
+    let givenBack: Int
+
+    static func == (a: RangeStats, b: RangeStats) -> Bool {
+        a.average == b.average && a.underBefore == b.underBefore && a.measuredDays == b.measuredDays
+            && a.lightest?.key == b.lightest?.key && a.lightest?.minutes == b.lightest?.minutes && a.givenBack == b.givenBack
+    }
+
+    /// `days` are day keys; today is left out of averages because it is not over.
+    static func make(days: [String], today: String, feed: [String: Int], gains: [String: Int], before: Int) -> RangeStats {
+        let whole = days.filter { $0 < today }
+        let measured = whole.compactMap { key in feed[key].map { (key: key, minutes: $0) } }
+        let total = measured.reduce(0) { $0 + $1.minutes }
+        return RangeStats(average: measured.isEmpty ? nil : total / measured.count,
+                          underBefore: before > 0 ? measured.filter { $0.minutes < before }.count : 0,
+                          measuredDays: measured.count,
+                          lightest: measured.min { $0.minutes == $1.minutes ? $0.key > $1.key : $0.minutes < $1.minutes },
+                          givenBack: whole.reduce(0) { $0 + (gains[$1] ?? 0) })
+    }
+}
+
+/// The seven stages as a path: the day each was reached, from the days' gains.
+enum StagePath {
+    struct Step: Equatable {
+        let stage: Int
+        /// Day key the running total first reached this stage; nil while ahead.
+        let reached: String?
+    }
+
+    /// Stage 0 (the seed) is reached on the start day.
+    static func steps(gains: [String: Int], startDay: String?) -> [Step] {
+        var total = 0
+        var reached: [Int: String] = [:]
+        if let startDay { reached[0] = startDay }
+        for day in gains.keys.sorted() {
+            total += gains[day] ?? 0
+            for (stage, threshold) in GlassStage.thresholds.enumerated() where stage > 0 && reached[stage] == nil && total >= threshold {
+                reached[stage] = day
+            }
+        }
+        return GlassStage.thresholds.indices.map { Step(stage: $0, reached: reached[$0]) }
+    }
+}
+
+/// This week's average feed time against last week's, both over whole measured days.
+struct WeekTrend: Equatable {
+    let thisWeek: Int
+    let lastWeek: Int
+    var percent: Int { GivenBack.percent(before: lastWeek, now: thisWeek) }
+
+    /// `days` oldest first, ending today; today is left out. Needs two measured days in each week.
+    static func make(days14: [String], today: String, feed: [String: Int]) -> WeekTrend? {
+        let whole = days14.filter { $0 < today }
+        guard whole.count >= 8 else { return nil }
+        func average(_ keys: ArraySlice<String>) -> Int? {
+            let values = keys.compactMap { feed[$0] }
+            return values.count >= 2 ? values.reduce(0, +) / values.count : nil
+        }
+        let split = whole.count - 7
+        guard let now = average(whole[split...]), let before = average(whole[..<split]), before > 0 else { return nil }
+        return WeekTrend(thisWeek: now, lastWeek: before)
     }
 }

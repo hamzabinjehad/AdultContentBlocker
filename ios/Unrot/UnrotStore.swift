@@ -74,6 +74,7 @@ final class UnrotStore: ObservableObject {
         static let focusUntil = "unrot.focus.until"
         static let focusMinutes = "unrot.focus.minutes"
         static let tour = "unrot.tour"
+        static let celebrated = "unrot.stage.celebrated"
     }
 
     /// Tests get a throwaway suite; the app the shared App Group.
@@ -230,6 +231,16 @@ final class UnrotStore: ObservableObject {
 
     var noteDays: Set<String> { Set(journal.map(\.day)) }
 
+    /// One day as the day page shows it.
+    func summary(for day: Date, now: Date = Date()) -> DaySummary {
+        let key = UnrotFormat.dayKey(day)
+        let pauses = (breaths[key] ?? 0)
+        return DaySummary.make(key: key, today: today(now), startDay: startedAt.map { UnrotFormat.dayKey($0) },
+                               before: answers.beforeMinutes, feed: feed, gains: gains,
+                               mood: checkIns[key].map { ($0.mood, $0.pull) }, pauses: pauses,
+                               tries: blockedTries[key] ?? 0, notes: notes(on: day).map(\.text))
+    }
+
     func startedFocus(until: Date, minutes: Int) {
         focusUntil = until.timeIntervalSince1970
         focusMinutes += minutes
@@ -249,6 +260,25 @@ final class UnrotStore: ObservableObject {
     func markTourSeen() {
         tourSeen = true
         defaults.set(true, forKey: Key.tour)
+    }
+
+    func replayTour() {
+        tourSeen = false
+        defaults.set(false, forKey: Key.tour)
+    }
+
+    /// The highest stage already celebrated; nil until the first look, which
+    /// never celebrates (a returning person is not shown every stage at once).
+    var celebratedStage: Int? {
+        defaults.object(forKey: Key.celebrated) as? Int
+    }
+
+    /// The stage to celebrate now, if the sprout grew since the last look.
+    func stageToCelebrate() -> Int? {
+        let stage = GlassStage.stage(givenBackMinutes: givenBackMinutes)
+        defer { defaults.set(max(stage, celebratedStage ?? stage), forKey: Key.celebrated) }
+        guard let seen = celebratedStage else { return nil }
+        return stage > seen ? stage : nil
     }
 
     /// Starts over from the welcome. Time given back and the garden are kept.
@@ -284,10 +314,11 @@ final class UnrotStore: ObservableObject {
                           instead: ["read", "sleep", "outside"])
         onboarded = true
         tourSeen = true
-        startedAt = cal.date(byAdding: .day, value: -8, to: now)
+        startedAt = cal.date(byAdding: .day, value: -14, to: now)
         var demoFeed: [String: Int] = [:]
-        for (offset, used) in [190, 170, 150, 140, 120, 130, 100, 90].enumerated() {
-            if let d = cal.date(byAdding: .day, value: -(8 - offset), to: now) { demoFeed[UnrotFormat.dayKey(d)] = used }
+        let demoDays = [230, 210, 220, 200, 180, 190, 190, 170, 150, 140, 120, 130, 100, 90]
+        for (offset, used) in demoDays.enumerated() {
+            if let d = cal.date(byAdding: .day, value: -(demoDays.count - offset), to: now) { demoFeed[UnrotFormat.dayKey(d)] = used }
         }
         demoFeed[today(now)] = 40
         feed = demoFeed
@@ -310,6 +341,7 @@ final class UnrotStore: ObservableObject {
         case "broken": brokenAt = now.timeIntervalSince1970 - 60
         case "new": startedAt = now; feed = [:]; breaths = [:]; blockedTries = [:]; journal = []; checkIns = [:]
         case "onboarding": onboarded = false
+        case "tour": tourSeen = false
         default: break
         }
         #endif

@@ -13,11 +13,13 @@ struct UnrotHomeView: View {
     let onInfo: () -> Void
 
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var tourStep: TourSpot?
 
     private var glass: GlassState { store.glass(now: now) }
     private var usedToday: Int? { store.feed[store.today(now)] }
 
     var body: some View {
+        ScrollViewReader { scroller in
         ScrollView {
             VStack(spacing: 18) {
                 header
@@ -26,10 +28,11 @@ struct UnrotHomeView: View {
                                measuring: shield.feedWatched && store.gains.isEmpty,
                                onInfo: onInfo, onBreathe: { onTool(.breathe) })
                 if let issue = shield.banner { banner(issue) } else if shield.checked && shield.on[.lock] != true { lockNudge }
-                tools
+                tools.tourSpot(.tools)
                 if glass.look != .cracked {
                     UGoldButton(title: "u.tool.breathe", systemImage: "wind",
                                 pulse: store.breathsToday(now) == 0, wide: true) { onTool(.breathe) }
+                        .tourSpot(.breathe)
                 }
                 checkRow
                 todaysThree
@@ -43,6 +46,40 @@ struct UnrotHomeView: View {
             .frame(maxWidth: .infinity)
         }
         .scrollIndicators(.hidden)
+        .scrollDisabled(tourStep != nil)
+        .overlayPreferenceValue(TourAnchors.self) { anchors in
+            if let step = tourStep {
+                GeometryReader { geo in
+                    TourOverlay(spot: step, rect: anchors[step.rawValue].map { geo[$0] },
+                                onNext: { advanceTour(scroller) }, onSkip: endTour)
+                }
+            }
+        }
+        .onAppear {
+            if !store.tourSeen && tourStep == nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { withAnimation { tourStep = .sprout } }
+            }
+        }
+        .onChange(of: store.tourSeen) { seen in
+            if !seen && tourStep == nil {
+                scroller.scrollTo("tour-0", anchor: .top)
+                withAnimation { tourStep = .sprout }
+            }
+        }
+        }
+    }
+
+    private func advanceTour(_ scroller: ScrollViewProxy) {
+        guard let step = tourStep, let next = TourSpot(rawValue: step.rawValue + 1) else { return endTour() }
+        withAnimation(.easeInOut(duration: 0.35)) {
+            scroller.scrollTo("tour-\(next.rawValue)", anchor: .center)
+            tourStep = next
+        }
+    }
+
+    private func endTour() {
+        withAnimation { tourStep = nil }
+        store.markTourSeen()
     }
 
     // MARK: - Header
@@ -53,6 +90,7 @@ struct UnrotHomeView: View {
             HStack(spacing: 8) {
                 Text("u.day \(store.day(now))")
                     .font(.footnote.weight(.bold))
+                    .lineLimit(1).fixedSize()
                     .foregroundStyle(UPalette.leafBright)
                     .padding(.horizontal, 12).frame(minHeight: 32)
                     .background(UPalette.leaf.opacity(0.18), in: Capsule())
@@ -119,16 +157,11 @@ struct UnrotHomeView: View {
 
     private var checkRow: some View {
         HStack(spacing: 10) {
-            Button { onTool(.checkIn) } label: {
-                Image(systemName: store.checkedInToday == nil ? "checklist" : "checkmark")
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(UPalette.onGold)
-                    .frame(width: 78, height: 52)
-                    .background(UPalette.goldFill, in: Capsule())
-            }
-            .buttonStyle(UPressStyle())
-            .accessibilityLabel(Text("u.checkin.title"))
-            UPillButton(title: "u.hard.button", systemImage: "heart") { onTool(.hardMoment) }
+            // Breathe is the one gold action; these two are quieter, and both say what they do.
+            UPillButton(title: store.checkedInToday == nil ? "u.tool.checkin" : "u.checkin.doneToday",
+                        systemImage: store.checkedInToday == nil ? "sun.max" : "checkmark",
+                        tint: store.checkedInToday == nil ? UPalette.goldLight : UPalette.leaf) { onTool(.checkIn) }
+            UPillButton(title: "u.tool.hard", systemImage: "heart") { onTool(.hardMoment) }
         }
     }
 
@@ -239,13 +272,23 @@ struct UnrotHomeView: View {
         return uKey("u.peak.", first)
     }
 
+    /// The day's line from the shared reminder pack (with its source when it has one);
+    /// Unrot's own eight thoughts if the pack is missing.
     private var thought: some View {
         let day = Calendar.current.ordinality(of: .day, in: .year, for: now) ?? 0
+        let arabic = UnrotReminders.arabic
+        let line = UnrotReminders.forDay(now)
         return UCard {
             ULabel("u.thought.title")
-            Text(uKey("u.thought.", day % 8))
-                .font(.uDisplay(21, weight: .bold)).foregroundStyle(UPalette.ink)
-                .fixedSize(horizontal: false, vertical: true)
+            Group {
+                if let line { Text(verbatim: line.text(arabic: arabic)) } else { Text(uKey("u.thought.", day % 8)) }
+            }
+            .font(.uDisplay(21, weight: .bold)).foregroundStyle(UPalette.ink)
+            .fixedSize(horizontal: false, vertical: true)
+            if let source = line?.source(arabic: arabic) {
+                Text(verbatim: source).font(.caption).foregroundStyle(UPalette.dim)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 }

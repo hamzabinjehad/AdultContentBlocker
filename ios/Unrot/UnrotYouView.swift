@@ -10,8 +10,14 @@ struct UnrotYouView: View {
     let lockDevice: LockConfirmationDevice
     @Binding var language: String
     let onTool: (UnrotTool) -> Void
+    var onHome: () -> Void = {}
 
     @State private var editingBefore = false
+    @AppStorage(ReminderScheduler.enabledKey) private var remindersOn = false
+    @State private var remindersDenied = false
+    @State private var showingHelp = false
+    @State private var editingReason = false
+    @State private var editingIdeas = false
     @State private var confirmReplay = false
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -34,6 +40,9 @@ struct UnrotYouView: View {
         }
         .scrollIndicators(.hidden)
         .sheet(isPresented: $editingBefore) { BeforeEditor(store: store) }
+        .sheet(isPresented: $showingHelp) { UnrotHelpSheet() }
+        .sheet(isPresented: $editingReason) { ReasonEditor(store: store) }
+        .sheet(isPresented: $editingIdeas) { InsteadEditor(store: store) }
         .alert("u.you.replayTitle", isPresented: $confirmReplay) {
             Button("u.you.replay") { store.replayOnboarding() }
             Button("cancel", role: .cancel) {}
@@ -70,7 +79,9 @@ struct UnrotYouView: View {
             Divider().overlay(UPalette.cardLine)
             row("book.closed", "u.tool.notes", value: "\(store.notes.count)") { onTool(.notes) }
             Divider().overlay(UPalette.cardLine)
-            row("lightbulb", "u.tool.instead", value: "\(store.answers.instead.count)") { onTool(.instead) }
+            row("lightbulb", "u.you.ideas", value: "\(store.answers.instead.count)") { editingIdeas = true }
+            Divider().overlay(UPalette.cardLine)
+            row("quote.opening", "u.you.reason", value: nil) { editingReason = true }
             Divider().overlay(UPalette.cardLine)
             row("slider.horizontal.3", "u.you.rules", value: nil) { onTool(.rules) }
         }
@@ -100,6 +111,23 @@ struct UnrotYouView: View {
     private var settings: some View {
         UCard {
             ULabel("u.you.settings")
+            Toggle(isOn: Binding(get: { remindersOn }, set: { setReminders($0) })) {
+                HStack(spacing: 12) {
+                    Image(systemName: "bell").foregroundStyle(UPalette.gold).frame(width: 28)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("u.rem.title").foregroundStyle(UPalette.ink)
+                        Text("u.rem.detail").font(.caption).foregroundStyle(UPalette.dim)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .tint(UPalette.gold)
+            .font(.subheadline)
+            if remindersDenied {
+                Text("u.rem.denied").font(.caption).foregroundStyle(UPalette.warn)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Divider().overlay(UPalette.cardLine)
             HStack {
                 Image(systemName: "globe").foregroundStyle(UPalette.gold).frame(width: 28)
                 Text("u.you.language").foregroundStyle(UPalette.ink)
@@ -119,7 +147,22 @@ struct UnrotYouView: View {
                 rowLabel("ellipsis.circle", "u.you.everything", value: nil)
             }
             Divider().overlay(UPalette.cardLine)
+            row("questionmark.circle", "u.help.title", value: nil) { showingHelp = true }
+            Divider().overlay(UPalette.cardLine)
+            row("sparkles", "u.you.tour", value: nil) { onHome(); store.replayTour() }
+            Divider().overlay(UPalette.cardLine)
             row("arrow.counterclockwise", "u.you.replay", value: nil) { confirmReplay = true }
+        }
+    }
+
+    private func setReminders(_ on: Bool) {
+        Task { @MainActor in
+            if on {
+                guard await ReminderScheduler.requestPermission() else { remindersDenied = true; return }
+                remindersDenied = false
+            }
+            remindersOn = on
+            await ReminderScheduler.reschedule(on: on, when: store.answers.when)
         }
     }
 
@@ -165,3 +208,51 @@ struct BeforeEditor: View {
         .onAppear { minutes = max(15, store.answers.beforeMinutes) }
     }
 }
+
+/// Your reason, in your own words: shown on Home, in Breathe and on the pledge.
+struct ReasonEditor: View {
+    @ObservedObject var store: UnrotStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+
+    var body: some View {
+        USheet(title: "u.you.reason", subtitle: "u.ob.reason.sub") {
+            TextField("u.ob.reason.placeholder", text: $text, axis: .vertical)
+                .lineLimit(3...6)
+                .font(.uDisplay(20)).foregroundStyle(UPalette.ink)
+                .padding(16)
+                .background(UPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay { RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(UPalette.gold.opacity(0.7)) }
+            UGoldButton(title: "u.save", wide: true) {
+                store.update { $0.reason = text.trimmingCharacters(in: .whitespacesAndNewlines) }
+                dismiss()
+            }
+        }
+        .onAppear { text = store.answers.reason }
+    }
+}
+
+/// Which Instead ideas show on the Instead sheet.
+struct InsteadEditor: View {
+    @ObservedObject var store: UnrotStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var picked: [String] = []
+
+    var body: some View {
+        USheet(title: "u.you.ideas", subtitle: "u.ob.instead.sub", tall: true) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(UnrotInsteadSheet.ideas, id: \.0) { idea in
+                    UOption(title: idea.2, systemImage: idea.1, selected: picked.contains(idea.0), multiple: true) {
+                        if let i = picked.firstIndex(of: idea.0) { picked.remove(at: i) } else { picked.append(idea.0) }
+                    }
+                }
+            }
+            UGoldButton(title: "u.save", wide: true) {
+                store.update { $0.instead = picked }
+                dismiss()
+            }
+        }
+        .onAppear { picked = store.answers.instead }
+    }
+}
+

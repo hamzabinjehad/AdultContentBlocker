@@ -44,9 +44,85 @@ small Screen Time pieces.
   blocked a page, so a crack (tried and stopped) and a break (got through) are
   the person's own report under "Had a hard moment", as on Android for breaks.
 
-`UnrotCoreTests` pins the glass, stages, feed steps, time given back and that
-every built key is translated. Real shielding, Focus and feed thresholds need a
+- **Hard to delete.** "Make Unrot hard to delete" (Home nudge, setup step 4,
+  Shield → Kept on, You) walks the passcode vault in one flow: pick 1–90 days,
+  Unrot shows a new Screen Time passcode for 15 minutes with the exact Settings
+  steps (including tapping Cancel on Apple Account recovery), hides it, then the
+  person confirms "Deleting Apps: Don't Allow"; optionally a commitment of the
+  same length holds Unrot's own switches. iPhone itself then refuses to delete
+  apps until the date. A guardian or a supervised iPhone is stronger:
+  `profile/make_ios_profile.py --edition general` writes Unrot's supervised
+  profile (`app.unrot.mobile`, no app removal, removal password). No level is
+  claimed higher than the shared `removalProtection` rules allow.
+- **My notes on a calendar.** Notes are a dated journal: a month calendar with a
+  gold dot on days with notes and a mood dot from the check-in; tap a day to read
+  or add (never for days to come). Old notes move into today once.
+
+- **Moments.** A five-stop first-open tour on Home (replay it from You), a
+  "Your sprout grew" screen once per new stage (never on the first look), and a
+  share card from Progress or the stage-up screen carrying only the stage, time
+  given back and the day, never adult numbers, notes or check-ins.
+- **Gentle reminders** (You › Settings, off until the person turns them on):
+  a short line a little before each time they said the pull is strongest,
+  at most four a day, planned a week ahead and re-planned on every open. The
+  lines are Android's 86 reviewed reminders, bundled from
+  `android/app/src/general/assets/reminders/reminders.json` (one source for
+  both phones); the same pack gives Home its daily thought, with its source.
+- **Home Screen widget** (`UnrotWidget`, small and medium): the painting for
+  the stage and glass, the stage, time given back and the next stage. The app
+  writes a growth-only snapshot to the App Group; the widget changes on its own
+  when a crack's window closes.
+- **Lock Screen widgets** (circle with a ring to the next stage, rectangle,
+  inline) open straight into Breathe through `unrot://breathe`; the app also
+  answers `unrot://home`, `notes`, `checkin` and `focus`.
+- **Your words stay editable**: You › Your reason and Your Instead ideas.
+- **Every day opens.** On Progress, tapping a garden pot, a chart bar, a mood
+  day or the lightest day opens that day: its plant, feed time against before,
+  time given back, pauses, check-in, notes and (privately) what was stopped,
+  with previous/next and swipe. The feed chart is Swift Charts with a
+  Week / 4 weeks switch, a labelled before line, drag-to-read, an audio graph
+  for VoiceOver, and four numbers (average a day, days under before, lightest
+  day, given back).
+- **Your path, the month garden, the trend.** A compact line of the seven
+  stages with the day each was reached (Show all lists them; each opens its
+  day), the garden as a whole month of pots, and "Down 35% from last week" once
+  two weeks are measured. UI pass: a status-bar scrim on every tab, labelled
+  Check in / Hard moment pills (Breathe stays the one gold action), an empty
+  chart state, and a light tick on tab changes.
+- **How the week felt** on Progress: each day's check-in mood and the pull that
+  came up most, with a nudge to plan Focus or Instead for it.
+- **Help and questions** in You: eight honest answers (deleting, counting,
+  what Unrot sees, the glass, layers, resets, the passcode, turning it off).
+- **Large text.** Serif titles and numbers grow with Dynamic Type (to 2×),
+  header chips move under the title at accessibility sizes, the big number
+  shrinks to fit, and the tab bar stops growing at xLarge like iOS's own.
+
+`UnrotCoreTests` pins the glass, stages, feed steps, time given back, the lock
+flow, the stage-up rule, the share card's contents, the notes calendar and journal, and that every built key is translated.
+The vault needs Keychain, so the lock flow only runs on a signed build; the
+unsigned simulator build shows the vault's "could not be read" message. Real shielding, Focus and feed thresholds need a
 signed device with Family Controls and are not claimed as tested here.
+
+## DNS filter: SafeSearch, proxied copies and more bypass resolvers
+
+Three additions to the DNS proxy, all sharing Android's rules.
+
+- **Forced SafeSearch.** Google's 187 search domains, Bing, DuckDuckGo, Yandex
+  and Pixabay are answered with a CNAME to the engine's restricted host, plus
+  that host's addresses fetched through the same Cloudflare Families DoH, so
+  image search stays filtered in every app. A/AAAA and HTTPS/SVCB are
+  rewritten so IP hints cannot skip it. **On by default.** YouTube Restricted
+  Mode is a separate switch, **off by default**, because it also hides
+  comments. Both are in Setup › DNS filter; during a commitment either can be
+  turned on but not off. A block always wins over a rewrite.
+- **Google Translate and AMP cache copies.** `www-site-com.translate.goog` and
+  `site-com.cdn.ampproject.org` are decoded and checked against every content
+  rail (list, adult TLDs, terms, saved sites), like `ProxiedHost.java`.
+- **28 more encrypted-DNS resolvers** answered locally, matching Android's list
+  (the parity test checks this).
+
+`DNSRewriteTests` covers each one. Real rewrites through the proxy need a
+signed device and are not claimed as tested.
 
 ## 1.8.0 the device-wide DNS filter and the direct build
 

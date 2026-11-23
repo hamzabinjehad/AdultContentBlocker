@@ -13,7 +13,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parent
 STRINGS = {language: ROOT / f"Hisn/{language}.lproj/Localizable.strings" for language in ("en", "ar")}
 # Swift sources compiled into the app (see generate_xcodeproj.py) whose literals are lookups.
-SOURCES = sorted((ROOT / "Hisn").glob("*.swift")) + sorted((ROOT / "Unrot").glob("*.swift")) + [
+SOURCES = sorted((ROOT / "Hisn").glob("*.swift")) + sorted((ROOT / "Unrot").glob("*.swift")) + sorted((ROOT / "Unrot/Widget").glob("*.swift")) + [
     ROOT / "../shared/apple/RouterAppDomainsView.swift",
     ROOT / "../shared/apple/MobileProtectionPolicy.swift",
     ROOT / "Shared/AppUsageConfiguration.swift",

@@ -544,3 +544,195 @@ final class DNSUpstreamTests: XCTestCase {
         XCTAssertEqual(transport.calls, 0)
     }
 }
+
+final class DNSRewriteTests: XCTestCase {
+    private func engine() throws -> DNSFilterEngine {
+        let index = try domainIndex(["adult.example", "listed.example", "my-site.example.org"])
+        let terms = try HostTermPolicy(tokens: ["porn", "sex"], substrings: ["sharmota"],
+                                       neverKeyword: [], exemptHosts: [])
+        return DNSFilterEngine(domains: index, hostTerms: terms)
+    }
+
+    private func question(_ name: String, type: UInt16 = 1) throws -> DNSQuestion {
+        try DNSMessage.parseQuery(makeQuery(name, type: type))
+    }
+
+    // MARK: Proxied names
+
+    func testProxyLabelsAreReadBackLikeAndroid() {
+        XCTAssertEqual(ProxiedHost.original("www-example-com.translate.goog"), "www.example.com")
+        XCTAssertEqual(ProxiedHost.original("en-m-wikipedia-org.translate.goog"), "en.m.wikipedia.org")
+        XCTAssertEqual(ProxiedHost.original("my--site-example-org.translate.goog"), "my-site.example.org")
+        XCTAssertEqual(ProxiedHost.original("a--b--c-example.cdn.ampproject.org"), "a-b-c.example")
+        XCTAssertEqual(ProxiedHost.original("0-xn----abc-com-0.translate.goog"), "xn--abc.com")
+        XCTAssertEqual(ProxiedHost.original("0--example-com.translate.goog"), "0-example.com")
+        XCTAssertEqual(ProxiedHost.original("WWW-Example-COM.Translate.goog"), "www.example.com")
+        for other in ["translate.goog", "www.translate.goog.example", "a.b.translate.goog",
+                      "example.translate.goog", "-.translate.goog", "cdn.ampproject.org",
+                      "www.example.com", "example-com.translate.goog.evil.example",
+                      "xn--bcher-de-65a.translate.goog", "a---b.translate.goog"] {
+            XCTAssertNil(ProxiedHost.original(other), other)
+        }
+    }
+
+    func testEveryContentRailDecidesTheProxiedCopy() throws {
+        let engine = try engine()
+        XCTAssertEqual(engine.decide(try question("www-listed-example.translate.goog")), .blocked(.list))
+        XCTAssertEqual(engine.decide(try question("listed-example.cdn.ampproject.org")), .blocked(.list))
+        XCTAssertEqual(engine.decide(try question("my--site-example-org.translate.goog")), .blocked(.list))
+        XCTAssertEqual(engine.decide(try question("new-site-xxx.translate.goog")), .blocked(.adultTld))
+        XCTAssertEqual(engine.decide(try question("sharmota-example.translate.goog")), .blocked(.hostTerm))
+        XCTAssertEqual(engine.decide(try question("saved-example.translate.goog"),
+                                     customSites: ["saved.example"]), .blocked(.customSite))
+        // Ordinary translated pages and the proxies themselves stay open.
+        for host in ["en-wikipedia-org.translate.goog", "translate.goog", "cdn.ampproject.org",
+                     "translate.google.com"] {
+            XCTAssertEqual(engine.decide(try question(host)), .allowed, host)
+        }
+    }
+
+    // MARK: SafeSearch targets
+
+    func testSearchNamesRewriteOnlyWhenChosen() {
+        let standard = DNSRewriteOptions.standard
+        XCTAssertEqual(SafeSearchTargets.target(for: "www.google.com", options: standard), SafeSearchTargets.google)
+        XCTAssertEqual(SafeSearchTargets.target(for: "google.co.uk", options: standard), SafeSearchTargets.google)
+        XCTAssertEqual(SafeSearchTargets.target(for: "www.google.com.sa.", options: standard), SafeSearchTargets.google)
+        XCTAssertEqual(SafeSearchTargets.target(for: "images.google.com", options: standard), SafeSearchTargets.google)
+        XCTAssertEqual(SafeSearchTargets.target(for: "WWW.BING.COM", options: standard), SafeSearchTargets.bing)
+        XCTAssertEqual(SafeSearchTargets.target(for: "duckduckgo.com", options: standard), SafeSearchTargets.duckDuckGo)
+        XCTAssertEqual(SafeSearchTargets.target(for: "www.ya.ru", options: standard), SafeSearchTargets.yandex)
+        XCTAssertEqual(SafeSearchTargets.target(for: "pixabay.com", options: standard), SafeSearchTargets.pixabay)
+        XCTAssertEqual(SafeSearchTargets.googleSuffixes.count, 187)
+        // Other Google services, look-alikes and unverified names are never guessed.
+        for host in ["mail.google.com", "accounts.google.com", "google.evil", "google.com.evil",
+                     "notgoogle.com", "maps.google.com", "yandex.ua", "youtube-nocookie.com",
+                     "forcesafesearch.google.com", "strict.bing.com"] {
+            XCTAssertNil(SafeSearchTargets.target(for: host, options: standard), host)
+        }
+        // YouTube is its own choice, off by default.
+        XCTAssertNil(SafeSearchTargets.target(for: "www.youtube.com", options: standard))
+        let both = DNSRewriteOptions(safeSearch: true, youtubeRestricted: true)
+        for host in ["youtube.com", "m.youtube.com", "youtubei.googleapis.com", "www.youtube-nocookie.com"] {
+            XCTAssertEqual(SafeSearchTargets.target(for: host, options: both), SafeSearchTargets.youtube, host)
+        }
+        let youtubeOnly = DNSRewriteOptions(safeSearch: false, youtubeRestricted: true)
+        XCTAssertNil(SafeSearchTargets.target(for: "www.google.com", options: youtubeOnly))
+        XCTAssertEqual(SafeSearchTargets.target(for: "www.youtube.com", options: youtubeOnly), SafeSearchTargets.youtube)
+        XCTAssertNil(SafeSearchTargets.target(for: "www.google.com", options: .none))
+    }
+
+    func testTheEngineRewritesAddressTypesAndNeverABlock() throws {
+        let engine = try engine()
+        let both = DNSRewriteOptions(safeSearch: true, youtubeRestricted: true)
+        for type: UInt16 in [1, 28, 64, 65] {
+            XCTAssertEqual(engine.decide(try question("www.google.com", type: type), rewrites: both),
+                           .rewrite(SafeSearchTargets.google), "type \(type)")
+        }
+        // MX, TXT and other types carry no address, so they are forwarded.
+        XCTAssertEqual(engine.decide(try question("google.com", type: 15), rewrites: both), .allowed)
+        XCTAssertEqual(engine.decide(try question("google.com", type: 16), rewrites: both), .allowed)
+        // A person's own block wins over a rewrite.
+        XCTAssertEqual(engine.decide(try question("www.bing.com"), customSites: ["bing.com"], rewrites: both),
+                       .blocked(.customSite))
+        XCTAssertEqual(engine.decide(try question("www.google.com")), .allowed)
+    }
+
+    // MARK: Wire format
+
+    func testTheRewriteReplyChainsTheQuestionToTheRestrictedAddresses() throws {
+        let query = try DNSMessage.parseQuery(ednsQuery("www.google.com", payload: 1232))
+        let upstream = DNSMessage.AddressRecord(ttl: 86_400, data: Data([216, 239, 38, 120]))
+        let reply = try XCTUnwrap(DNSMessage.cnameReply(for: query, target: SafeSearchTargets.google,
+                                                        addresses: [upstream]))
+        let bytes = [UInt8](reply)
+        XCTAssertEqual(Array(bytes[0..<2]), uint16(query.id))
+        XCTAssertEqual(Array(bytes[4..<12]), uint16(1) + uint16(2) + uint16(0) + uint16(0))
+        XCTAssertTrue(DNSMessage.isResponse(reply, to: query))
+        var at = 12 + query.questionBytes.count
+        XCTAssertEqual(Array(bytes[at..<(at + 6)]), [0xC0, 0x0C, 0, 5, 0, 1])
+        XCTAssertEqual(Array(bytes[(at + 6)..<(at + 10)]), [0, 0, 1, 0x2C])
+        let target = dnsName(SafeSearchTargets.google)
+        XCTAssertEqual(Array(bytes[(at + 10)..<(at + 12)]), uint16(UInt16(target.count)))
+        let targetOffset = at + 12
+        XCTAssertEqual(Array(bytes[targetOffset..<(targetOffset + target.count)]), target)
+        at = targetOffset + target.count
+        XCTAssertEqual(Array(bytes[at..<(at + 2)]), uint16(0xC000 | UInt16(targetOffset)))
+        XCTAssertEqual(Array(bytes[(at + 2)..<(at + 6)]), uint16(1) + uint16(1))
+        XCTAssertEqual(Array(bytes[(at + 6)..<(at + 10)]), [0, 0, 1, 0x2C], "TTL capped at five minutes")
+        XCTAssertEqual(Array(bytes[(at + 10)..<(at + 16)]), uint16(4) + [216, 239, 38, 120])
+        XCTAssertEqual(bytes.count, at + 16)
+        // Hisn's own guard reads the chain as ending at the restricted host.
+        var seen: [String] = []
+        XCTAssertFalse(try DNSReplyGuard.blocks(reply) { seen.append($0); return false })
+        XCTAssertEqual(seen, ["www.google.com", SafeSearchTargets.google])
+    }
+
+    func testWithoutAddressesTheReplyIsTheCNAMEAlone() throws {
+        for type: UInt16 in [1, 65] {
+            let query = try question("www.bing.com", type: type)
+            let extra = DNSMessage.AddressRecord(ttl: 60, data: Data([1, 2, 3, 4]))
+            let reply = try XCTUnwrap(DNSMessage.cnameReply(
+                for: query, target: SafeSearchTargets.bing, addresses: type == 1 ? [] : [extra]))
+            let bytes = [UInt8](reply)
+            XCTAssertEqual(Array(bytes[6..<8]), uint16(1), "type \(type)")
+            XCTAssertEqual(bytes.count, 12 + query.questionBytes.count + 12
+                + dnsName(SafeSearchTargets.bing).count)
+        }
+    }
+
+    func testAddressRecordsAreReadFromTheEndOfTheTargetChain() throws {
+        let lookup = try XCTUnwrap(DNSMessage.query(name: SafeSearchTargets.bing, type: 1, id: 7))
+        let question = try DNSMessage.parseQuery(lookup)
+        XCTAssertEqual(question.name, SafeSearchTargets.bing)
+        XCTAssertTrue(question.recursionDesired)
+        let edge = dnsName("strict.bing.com.edgekey.net")
+        let upstream = dnsReply(question, answers: [
+            dnsAnswer(owner: [0xC0, 0x0C], type: 5, rdata: edge),
+            dnsAnswer(owner: edge, type: 1, rdata: [204, 79, 197, 220]),
+            dnsAnswer(owner: edge, type: 28, rdata: Array(repeating: 1, count: 16)),
+        ])
+        XCTAssertEqual(DNSMessage.addressRecords(in: upstream, type: 1),
+                       [DNSMessage.AddressRecord(ttl: 60, data: Data([204, 79, 197, 220]))])
+        XCTAssertEqual(DNSMessage.addressRecords(in: upstream, type: 28).count, 1)
+        // A wrong-length address or a cut reply gives nothing, never a partial list.
+        let bad = dnsReply(question, answers: [dnsAnswer(owner: [0xC0, 0x0C], type: 1, rdata: [1, 2, 3])])
+        XCTAssertEqual(DNSMessage.addressRecords(in: bad, type: 1), [])
+        XCTAssertEqual(DNSMessage.addressRecords(in: upstream.prefix(upstream.count - 3), type: 1), [])
+        XCTAssertEqual(DNSMessage.addressRecords(in: upstream, type: 15), [])
+        XCTAssertNil(DNSMessage.query(name: "a..b", type: 1, id: 1))
+    }
+
+    // MARK: The saved choice
+
+    func testTheChoiceDefaultsOnAndOnlyTightensDuringACommitment() throws {
+        let suite = "hisn-rewrite-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        addTeardownBlock { defaults.removePersistentDomain(forName: suite) }
+        XCTAssertEqual(DNSRewriteOptions.read(defaults: defaults), .standard)
+        XCTAssertEqual(DNSRewriteOptions.read(defaults: nil), .standard)
+        defaults.set(Data("damaged".utf8), forKey: DNSRewriteOptions.key)
+        XCTAssertEqual(DNSRewriteOptions.read(defaults: defaults), .standard)
+        DNSRewriteOptions.none.write(defaults: defaults)
+        XCTAssertEqual(DNSRewriteOptions.read(defaults: defaults), .none)
+
+        let on = DNSRewriteOptions(safeSearch: true, youtubeRestricted: true)
+        XCTAssertTrue(DNSRewriteOptions.permits(current: .none, proposed: on, locked: true))
+        XCTAssertFalse(DNSRewriteOptions.permits(current: on, proposed: .standard, locked: true))
+        XCTAssertFalse(DNSRewriteOptions.permits(current: .standard, proposed: .none, locked: true))
+        XCTAssertTrue(DNSRewriteOptions.permits(current: on, proposed: .none, locked: false))
+    }
+
+    @MainActor
+    func testTheControllerSavesTheChoiceForTheExtension() throws {
+        let suite = "hisn-rewrite-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        addTeardownBlock { defaults.removePersistentDomain(forName: suite) }
+        let protection = ProtectionController(dnsRewriteShare: DNSRewriteShare(defaults: defaults))
+        XCTAssertEqual(protection.dnsRewrites, .standard)
+        let both = DNSRewriteOptions(safeSearch: true, youtubeRestricted: true)
+        protection.setDNSRewrites(both)
+        XCTAssertEqual(protection.dnsRewrites, both)
+        XCTAssertEqual(DNSRewriteOptions.read(defaults: defaults), both)
+    }
+}

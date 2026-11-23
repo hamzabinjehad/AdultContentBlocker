@@ -22,7 +22,15 @@ struct DNSFilterEngine {
         /// Hisn's own alias, answered locally so the app can prove the DNS route
         /// reaches the proxy without querying a real name.
         case selfCheck
+        /// An allowed search or video name answered with a CNAME to the
+        /// engine's restricted host (SafeSearch, YouTube Restricted Mode).
+        case rewrite(String)
     }
+
+    /// The query types whose answer can carry an address. HTTPS/SVCB records
+    /// hold IP hints a client may use before A/AAAA, so they are rewritten too
+    /// or the hints would reach the unrestricted engine.
+    static let rewrittenTypes: Set<UInt16> = [1, 28, 64, 65]
 
     let domains: DomainIndex
     let hostTerms: HostTermPolicy?
@@ -30,8 +38,16 @@ struct DNSFilterEngine {
     /// `customSites` is passed in rather than stored: the app can change the
     /// person's own blocked sites while the proxy runs, and the extension
     /// re-reads them on a short cache instead of restarting the tunnel.
-    func decide(_ question: DNSQuestion, customSites: [String] = []) -> Decision {
-        decision(host: question.name, customSites: customSites)
+    func decide(_ question: DNSQuestion, customSites: [String] = [],
+                rewrites: DNSRewriteOptions = .none) -> Decision {
+        let verdict = decision(host: question.name, customSites: customSites)
+        // A block always wins: a blocked name is never rewritten into an answer.
+        guard verdict == .allowed, question.klass == 1,
+              Self.rewrittenTypes.contains(question.type),
+              let target = SafeSearchTargets.target(for: question.name, options: rewrites) else {
+            return verdict
+        }
+        return .rewrite(target)
     }
 
     /// True when a resolved alias target is blocked. CNAME/DNAME/SVCB answers
@@ -54,11 +70,23 @@ struct DNSFilterEngine {
         // allowance must not turn a public DoH endpoint into the route around
         // the DNS layer because a bypass is not a content preference.
         if EncryptedDNSProviders.blocks(host) { return .blocked(.encryptedDns) }
-        if CustomSitePolicy.covers(customSites, host) { return .blocked(.customSite) }
-        if domains.blocks(host: host) { return .blocked(.list) }
-        if AdultTldGuard.matches(host: host) { return .blocked(.adultTld) }
-        if hostTerms?.matches(host) == true { return .blocked(.hostTerm) }
+        if let reason = contentReason(host, customSites: customSites) { return .blocked(reason) }
+        // A blocked site opened through Google Translate's proxy or the AMP
+        // cache carries its own name inside the proxy hostname; the same
+        // content layers decide that copy, as Android's HostDecision does.
+        if let original = ProxiedHost.original(host),
+           let reason = contentReason(original, customSites: customSites) {
+            return .blocked(reason)
+        }
         return .allowed
+    }
+
+    private func contentReason(_ host: String, customSites: [String]) -> Reason? {
+        if CustomSitePolicy.covers(customSites, host) { return .customSite }
+        if domains.blocks(host: host) { return .list }
+        if AdultTldGuard.matches(host: host) { return .adultTld }
+        if hostTerms?.matches(host) == true { return .hostTerm }
+        return nil
     }
 }
 

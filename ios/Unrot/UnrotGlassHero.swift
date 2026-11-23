@@ -20,12 +20,12 @@ struct UnrotGlassHero: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            art
+            art.tourSpot(.sprout)
             dots.padding(.top, 2)
             laurel.padding(.top, 12)
             subline.padding(.top, 4)
-            bigNumber.padding(.top, 2)
-            footer.padding(.top, 10)
+            bigNumber.padding(.top, 2).tourSpot(.number)
+            footer.padding(.top, 10).tourSpot(.next)
         }
         .frame(maxWidth: .infinity)
         .onAppear { breathe = true }
@@ -133,6 +133,9 @@ struct UnrotGlassHero: View {
             }
         }
         .foregroundStyle(UPalette.ink)
+        .lineLimit(1)
+        .minimumScaleFactor(0.4)
+        .padding(.horizontal, 12)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(glass.look == .cracked
                             ? Text("u.glass.crackedSub \(UnrotFormat.clock(seconds: glass.sealLeft))")
@@ -154,8 +157,7 @@ struct UnrotGlassHero: View {
                 UGoldButton(title: "u.glass.sealButton", systemImage: "wind", pulse: true, action: onBreathe)
             }
         case .broken:
-            Text("u.glass.staysYours \(UnrotFormat.short(minutes: givenBack))")
-                .font(.footnote).foregroundStyle(UPalette.dim)
+            EmptyView()
         default:
             if let left = GlassStage.minutesToNext(givenBackMinutes: givenBack) {
                 VStack(spacing: 8) {

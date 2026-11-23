@@ -62,6 +62,8 @@ final class DNSProxyProvider: NEDNSProxyProvider, @unchecked Sendable {
     private var customSites: [String] = []
     private var customSitesReadAt = Date.distantPast
     private static let customSitesLifetime: TimeInterval = 30
+    private var rewrites = DNSRewriteOptions.standard
+    private var rewritesReadAt = Date.distantPast
 
     override func startProxy(options: [String: Any]?,
                              completionHandler: @escaping (Error?) -> Void) {
@@ -281,11 +283,32 @@ final class DNSProxyProvider: NEDNSProxyProvider, @unchecked Sendable {
             return nil
         }
         let response: Data
-        switch engine.decide(question, customSites: currentCustomSites()) {
+        switch engine.decide(question, customSites: currentCustomSites(),
+                             rewrites: currentRewrites()) {
         case .selfCheck:
             response = DNSMessage.selfCheckReply(for: question)
         case .blocked:
             response = DNSMessage.nxdomain(for: question)
+        case .rewrite(let target):
+            // Resolve the restricted host through the same authenticated
+            // upstream, so the client gets one complete answer instead of
+            // having to follow a bare CNAME. A failed lookup still returns the
+            // CNAME: the client resolves it itself, never the original engine.
+            var addresses: [DNSMessage.AddressRecord] = []
+            let id = UInt16.random(in: .min ... .max)
+            if question.type == 1 || question.type == 28,
+               let lookup = DNSMessage.query(name: target, type: question.type, id: id),
+               let targetQuestion = try? DNSMessage.parseQuery(lookup),
+               let reply = await resolver.resolve(lookup, isValid: {
+                   DNSMessage.isResponse($0, to: targetQuestion)
+               }) {
+                addresses = DNSMessage.addressRecords(in: reply, type: question.type)
+            }
+            guard let rewritten = DNSMessage.cnameReply(for: question, target: target,
+                                                        addresses: addresses) else {
+                return DNSMessage.servfail(for: question)
+            }
+            response = rewritten
         case .allowed:
             guard let upstream = await resolver.resolve(query, isValid: {
                 DNSMessage.isResponse($0, to: question)
@@ -324,6 +347,22 @@ final class DNSProxyProvider: NEDNSProxyProvider, @unchecked Sendable {
         lock.lock()
         customSites = next
         customSitesReadAt = Date()
+        lock.unlock()
+        return next
+    }
+
+    /// The person's SafeSearch and Restricted Mode choice, on the same short
+    /// cache. A missing or damaged record is the standard choice (SafeSearch on).
+    private func currentRewrites() -> DNSRewriteOptions {
+        lock.lock()
+        let fresh = Date().timeIntervalSince(rewritesReadAt) < Self.customSitesLifetime
+        let cached = rewrites
+        lock.unlock()
+        if fresh { return cached }
+        let next = DNSRewriteOptions.read(defaults: UserDefaults(suiteName: DNSFilterAssets.group))
+        lock.lock()
+        rewrites = next
+        rewritesReadAt = Date()
         lock.unlock()
         return next
     }

@@ -5,6 +5,12 @@
 	};
 	objectVersion = 56;
 	objects = {
+		56904C1FEE23BA7021FD710F  = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.json;
+			path = "../android/app/src/general/assets/reminders/reminders.json";
+			sourceTree = "<group>";
+		};
 		58148B49A40E82D8CBE9F579  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -325,6 +331,12 @@
 			path = "Shared/DNSReplyGuard.swift";
 			sourceTree = "<group>";
 		};
+		D6E5AB5B770E903049F61B97  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/DNSRewrites.swift";
+			sourceTree = "<group>";
+		};
 		540F64C242CD2A13F37529C7  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -403,6 +415,12 @@
 			path = "Unrot/UnrotCore.swift";
 			sourceTree = "<group>";
 		};
+		2E30D3D2E384512698D43CA4  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotDayView.swift";
+			sourceTree = "<group>";
+		};
 		77CCEE3664208A5ED163FD73  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -421,6 +439,12 @@
 			path = "Unrot/UnrotLockView.swift";
 			sourceTree = "<group>";
 		};
+		9A75B21C78CBEC2421B95EF0  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotMoments.swift";
+			sourceTree = "<group>";
+		};
 		EB5309D46D744267C7CCA00A  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -431,6 +455,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "Unrot/UnrotProgressView.swift";
+			sourceTree = "<group>";
+		};
+		CE4E6608ADC33E1F9ED42A89  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotReminders.swift";
 			sourceTree = "<group>";
 		};
 		37E7447835CC8653E765D84E  = {
@@ -467,6 +497,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "Unrot/UnrotYouView.swift";
+			sourceTree = "<group>";
+		};
+		E5EB20A6DF4598B778CDDAD6  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/Widget/UnrotWidget.swift";
 			sourceTree = "<group>";
 		};
 		6A6050B4078DF3D6C6D4F890  = {
@@ -568,6 +604,13 @@
 			sourceTree = BUILT_PRODUCTS_DIR;
 			includeInIndex = 0;
 		};
+		F4BFB90E1062564DD7771E8C  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = UnrotWidget.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
 		500B386ECFE0BC825E155B22  = {
 			isa = PBXFileReference;
 			explicitFileType = wrapper.cfbundle;
@@ -590,6 +633,7 @@
 				3F209F6C2670A953C107C257,
 				F465DDDB4A951751894E0139,
 				25B29FC46A9AB494331B94F0,
+				F4BFB90E1062564DD7771E8C,
 				500B386ECFE0BC825E155B22,
 			);
 			name = Products;
@@ -598,6 +642,7 @@
 		C7F72C0E6EDDC20FF9C16D2F  = {
 			isa = PBXGroup;
 			children = (
+				56904C1FEE23BA7021FD710F,
 				58148B49A40E82D8CBE9F579,
 				AD749F27C885AF47D2DFEDB3,
 				1AC01D8272F7B9928ACCA554,
@@ -649,6 +694,7 @@
 				DF6CF61D1D4D4026514AD894,
 				7DF9096670FC3E369FFA005C,
 				0963274D2C3FB112D11F221D,
+				D6E5AB5B770E903049F61B97,
 				540F64C242CD2A13F37529C7,
 				1C67CCB221F0A36EA58D344B,
 				0FCF301BA37793E827F2F87F,
@@ -662,17 +708,21 @@
 				F39F44DBA27C2F958D80A7A8,
 				810358D14B39D8125B7AE35A,
 				2E17B90DC84D5B9AA08702DC,
+				2E30D3D2E384512698D43CA4,
 				77CCEE3664208A5ED163FD73,
 				384FA450B5DB2AA8B672CE47,
 				61C650DEB40FB7D4151E7E8E,
+				9A75B21C78CBEC2421B95EF0,
 				EB5309D46D744267C7CCA00A,
 				E216A04D53A4FDBF7927D7D2,
+				CE4E6608ADC33E1F9ED42A89,
 				37E7447835CC8653E765D84E,
 				FDEA10CC82E76283B0E53F3C,
 				E87BDEEF67D5E57943C3A09F,
 				38309664404BFA404E648EBB,
 				4659F39AFCE1C64B5F527D62,
 				2CAF3F44230936DB658DBC51,
+				E5EB20A6DF4598B778CDDAD6,
 				6A6050B4078DF3D6C6D4F890,
 				ED9BA85BF38759FD67931242,
 				B9A01987720A964863B71216,
@@ -835,6 +885,10 @@
 			isa = PBXBuildFile;
 			fileRef = DF6CF61D1D4D4026514AD894;
 		};
+		356390EDECB4CB0BF084AA31  = {
+			isa = PBXBuildFile;
+			fileRef = D6E5AB5B770E903049F61B97;
+		};
 		CFFEDA4CEA4EFCB10C7B05AD  = {
 			isa = PBXBuildFile;
 			fileRef = 540F64C242CD2A13F37529C7;
@@ -935,6 +989,18 @@
 			isa = PBXBuildFile;
 			fileRef = 61C650DEB40FB7D4151E7E8E;
 		};
+		0BD438DD8595D185C9F23D06  = {
+			isa = PBXBuildFile;
+			fileRef = 9A75B21C78CBEC2421B95EF0;
+		};
+		335A68D8CA8D21C57F4BBA7A  = {
+			isa = PBXBuildFile;
+			fileRef = CE4E6608ADC33E1F9ED42A89;
+		};
+		599E5948752BF288D44DD4D5  = {
+			isa = PBXBuildFile;
+			fileRef = 2E30D3D2E384512698D43CA4;
+		};
 		2DB02DFA2989AB99AA238947  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -978,6 +1044,7 @@
 				A8B788347475FA75E84F7855,
 				2659FEAB0863ACB3F65B40DA,
 				F44D7DD825183D7A0047ACB0,
+				356390EDECB4CB0BF084AA31,
 				CFFEDA4CEA4EFCB10C7B05AD,
 				D1AC498B93E197C5971F8E62,
 				AD536142C0E6B77781F61765,
@@ -1003,6 +1070,9 @@
 				4C8DF3861C04685EAC5C2C70,
 				13A2A2DE8A8A458D6A3E7878,
 				20C919196A6365EBC2DB2C69,
+				0BD438DD8595D185C9F23D06,
+				335A68D8CA8D21C57F4BBA7A,
+				599E5948752BF288D44DD4D5,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1033,6 +1103,10 @@
 			isa = PBXBuildFile;
 			fileRef = F39F44DBA27C2F958D80A7A8;
 		};
+		4253CCEDB81D6198A66089EC  = {
+			isa = PBXBuildFile;
+			fileRef = 56904C1FEE23BA7021FD710F;
+		};
 		7DD8028C7AB6DAC5CB686E32  = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1042,6 +1116,7 @@
 				D6A6A66334E4E9F69C1B9312,
 				5B1CA244E9677D2DEDC712CB,
 				40389FB387290B69B7F75B32,
+				4253CCEDB81D6198A66089EC,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1256,6 +1331,23 @@
 			target = 3BCC72D4E742A9E99BAF5266;
 			targetProxy = C62A5B0BCB9EDF8E4B9B1610;
 		};
+		78A7D1368362F16DDD5D10FA  = {
+			isa = PBXBuildFile;
+			fileRef = F4BFB90E1062564DD7771E8C;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		0DCA2AF0DD85E1A0A34ABC4C  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = 9DC54B67B0B2EB5DCFD40A6A;
+			remoteInfo = UnrotWidget;
+		};
+		DE2B75E2C671697C4DD63DE7  = {
+			isa = PBXTargetDependency;
+			target = 9DC54B67B0B2EB5DCFD40A6A;
+			targetProxy = 0DCA2AF0DD85E1A0A34ABC4C;
+		};
 		FF30F53173E32C0B2BD5EA05  = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1273,6 +1365,7 @@
 				35F957889DF39874011E6FFF,
 				B3A352C14C747F9E5408F46E,
 				691215B63C00A8FBDBD2BD2B,
+				78A7D1368362F16DDD5D10FA,
 			);
 			name = "Embed extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1369,6 +1462,7 @@
 				7EEEAD8AADCB3A9C7C22C90D,
 				F73A9A1C95698501F69151F5,
 				796D46022E45BB6BDF539696,
+				DE2B75E2C671697C4DD63DE7,
 			);
 			buildRules = ();
 		};
@@ -2843,6 +2937,10 @@
 			isa = PBXBuildFile;
 			fileRef = DF6CF61D1D4D4026514AD894;
 		};
+		FAEFCFB95BE45564BC2CB945  = {
+			isa = PBXBuildFile;
+			fileRef = D6E5AB5B770E903049F61B97;
+		};
 		4F88299B6FEF39A26AEEE99C  = {
 			isa = PBXBuildFile;
 			fileRef = 540F64C242CD2A13F37529C7;
@@ -2885,6 +2983,7 @@
 				A2842227F24F4D5AA2DD8235,
 				C9B88D9803BA29BEB8BCB15A,
 				25F769C6A2ADE22B3EA7B66F,
+				FAEFCFB95BE45564BC2CB945,
 				4F88299B6FEF39A26AEEE99C,
 				3CBD1708515C362B26BFCB9E,
 				674C414A12C7EB56C99D0888,
@@ -3005,6 +3104,140 @@
 				35DF30CC351D94E24869FDCA,
 				E5662A1BB1682E122745CA7B,
 				CEEB69296E79E6F50FA5718C,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		A611D4B2E8DC4F7A6993112D  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		3286C3D48E0B28A8CFD4FDFC  = {
+			isa = PBXBuildFile;
+			fileRef = E5EB20A6DF4598B778CDDAD6;
+		};
+		735C5BA15141E5370C94E140  = {
+			isa = PBXBuildFile;
+			fileRef = 2E17B90DC84D5B9AA08702DC;
+		};
+		FCAA2CA891C642352C2C9B89  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A611D4B2E8DC4F7A6993112D,
+				3286C3D48E0B28A8CFD4FDFC,
+				735C5BA15141E5370C94E140,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9B8130DAF800047B787C692F  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FD6493766B674127D7B9A7C1  = {
+			isa = PBXBuildFile;
+			fileRef = ED9BA85BF38759FD67931242;
+		};
+		196EF7081E4B1FC71D0DCEDF  = {
+			isa = PBXBuildFile;
+			fileRef = F39F44DBA27C2F958D80A7A8;
+		};
+		762EEF1E3E1258DAEF21CB73  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		4B12042D3FE7922BAB331207  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FD6493766B674127D7B9A7C1,
+				196EF7081E4B1FC71D0DCEDF,
+				762EEF1E3E1258DAEF21CB73,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		08D76D560E30C7C753F99803  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.widget;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = Unrot/Widget/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotWidget.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		8A338CC4B359BA6730E7F575  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.widget;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = Unrot/Widget/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotWidget.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		6E2E879D05F00B2C954DB456  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				08D76D560E30C7C753F99803,
+				8A338CC4B359BA6730E7F575,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9DC54B67B0B2EB5DCFD40A6A  = {
+			isa = PBXNativeTarget;
+			name = UnrotWidget;
+			productName = UnrotWidget;
+			productReference = F4BFB90E1062564DD7771E8C;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 6E2E879D05F00B2C954DB456;
+			buildPhases = (
+				FCAA2CA891C642352C2C9B89,
+				9B8130DAF800047B787C692F,
+				4B12042D3FE7922BAB331207,
 			);
 			dependencies = (
 			);
@@ -3216,6 +3449,7 @@
 				F76E4DA0098FC8310DCFD52D,
 				6D74AC54990DD6D0A4A04D73,
 				3BCC72D4E742A9E99BAF5266,
+				9DC54B67B0B2EB5DCFD40A6A,
 				BB909FEDD53944992665E527,
 			);
 		};

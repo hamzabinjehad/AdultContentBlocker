@@ -191,6 +191,110 @@ enum DNSMessage {
             + question.questionBytes + answer
     }
 
+    // MARK: - Rewrites
+
+    /// One address record taken from the restricted host's own answer.
+    struct AddressRecord: Equatable {
+        let ttl: UInt32
+        let data: Data
+    }
+
+    /// The longest TTL a rewrite answer carries, so a changed choice in the app
+    /// reaches clients within minutes instead of the upstream's hours.
+    static let rewriteTTL: UInt32 = 300
+
+    /// Encodes a lowercased dotted name as uncompressed DNS labels, or nil when
+    /// it is not a valid name.
+    static func encodeName(_ name: String) -> Data? {
+        var data = Data()
+        for label in name.split(separator: ".", omittingEmptySubsequences: false) {
+            let bytes = Array(label.utf8)
+            guard !bytes.isEmpty, bytes.count <= 63 else { return nil }
+            data.append(UInt8(bytes.count))
+            data.append(contentsOf: bytes)
+        }
+        data.append(0)
+        return data.count <= maximumNameLength + 2 ? data : nil
+    }
+
+    /// A recursive query for `name` and `type`, used to resolve a rewrite's
+    /// target through the same authenticated upstream as every other name.
+    static func query(name: String, type: UInt16, id: UInt16) -> Data? {
+        guard let encoded = encodeName(name) else { return nil }
+        var data = Data()
+        appendUInt16(&data, id)
+        appendUInt16(&data, 0x0100)
+        appendUInt16(&data, 1)
+        appendUInt16(&data, 0)
+        appendUInt16(&data, 0)
+        appendUInt16(&data, 0)
+        data.append(encoded)
+        appendUInt16(&data, type)
+        appendUInt16(&data, 1)
+        return data
+    }
+
+    /// Every IN address record of `type` (A or AAAA) in a reply's answer
+    /// section, whichever name owns it: the restricted host may sit behind its
+    /// own CNAME chain, and the chain's end is what the client connects to.
+    /// A malformed reply yields no records rather than a partial parse.
+    static func addressRecords(in reply: Data, type: UInt16) -> [AddressRecord] {
+        let expected = type == 1 ? 4 : type == 28 ? 16 : 0
+        guard expected > 0 else { return [] }
+        let bytes = [UInt8](reply)
+        guard bytes.count >= headerLength, bytes.count <= 65_535,
+              uint16(bytes, 2) & 0x8000 != 0, uint16(bytes, 2) & 0xF == 0,
+              uint16(bytes, 4) == 1 else { return [] }
+        let answers = Int(uint16(bytes, 6))
+        guard answers <= 64, var offset = try? skipName(bytes, from: headerLength) else { return [] }
+        offset += 4
+        var records: [AddressRecord] = []
+        for _ in 0..<answers {
+            guard let afterName = try? skipName(bytes, from: offset),
+                  afterName + 10 <= bytes.count else { return [] }
+            let recordType = uint16(bytes, afterName)
+            let klass = uint16(bytes, afterName + 2)
+            let ttl = UInt32(uint16(bytes, afterName + 4)) << 16 | UInt32(uint16(bytes, afterName + 6))
+            let length = Int(uint16(bytes, afterName + 8))
+            let start = afterName + 10
+            guard start + length <= bytes.count else { return [] }
+            if recordType == type, klass == 1 {
+                guard length == expected else { return [] }
+                records.append(AddressRecord(ttl: ttl, data: Data(bytes[start..<(start + length)])))
+            }
+            offset = start + length
+        }
+        return Array(records.prefix(16))
+    }
+
+    /// The rewrite answer: the client's question, a CNAME from its name to the
+    /// restricted host, then the restricted host's addresses under that name.
+    /// With no addresses the reply is the CNAME alone and the client resolves
+    /// the target itself, exactly as Android answers.
+    static func cnameReply(for question: DNSQuestion, target: String,
+                           addresses: [AddressRecord] = []) -> Data? {
+        guard let encoded = encodeName(target) else { return nil }
+        let records = (question.type == 1 || question.type == 28) ? addresses : []
+        var answer = Data([0xC0, 0x0C, 0x00, 0x05, 0x00, 0x01])
+        appendUInt32(&answer, rewriteTTL)
+        appendUInt16(&answer, UInt16(encoded.count))
+        // The target's name starts right after this record's fixed fields.
+        let targetOffset = headerLength + question.questionBytes.count + answer.count
+        answer.append(encoded)
+        guard targetOffset < 0x3FFF else { return nil }
+        for record in records {
+            appendUInt16(&answer, 0xC000 | UInt16(targetOffset))
+            appendUInt16(&answer, question.type)
+            appendUInt16(&answer, 1)
+            appendUInt32(&answer, min(record.ttl, rewriteTTL))
+            appendUInt16(&answer, UInt16(record.data.count))
+            answer.append(record.data)
+        }
+        return header(question, flags: 0x8000 | 0x0080
+            | (question.recursionDesired ? 0x0100 : 0), answers: UInt16(1 + records.count))
+            + question.questionBytes + answer
+    }
+
     /// A reply carrying only the header and question with TC set, which tells
     /// the client to retry over TCP.
     static func truncated(for question: DNSQuestion) -> Data {

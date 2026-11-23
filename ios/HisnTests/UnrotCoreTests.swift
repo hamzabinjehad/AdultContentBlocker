@@ -252,4 +252,181 @@ final class UnrotCoreTests: XCTestCase {
         XCTAssertNil(defaults.stringArray(forKey: UnrotStore.Key.notes))
         XCTAssertEqual(UnrotStore(defaults: defaults).notes.count, 2)
     }
+
+    // MARK: - Moments
+
+    @MainActor
+    func testStageUpNeverOnFirstLookThenOncePerNewStage() {
+        let defaults = UserDefaults(suiteName: "unrot.stage.\(UUID().uuidString)")!
+        let store = UnrotStore(defaults: defaults)
+        XCTAssertNil(store.stageToCelebrate(), "a first look never celebrates")
+        XCTAssertEqual(store.celebratedStage, 0)
+        // A day with an hour given back: Young plant (stage 3).
+        let cal = Calendar.current
+        let start = cal.date(byAdding: .day, value: -3, to: Date())!
+        store.finishOnboarding(.init(beforeMinutes: 120), now: start)
+        defaults.set([UnrotFormat.dayKey(cal.date(byAdding: .day, value: -1, to: Date())!): 60], forKey: UnrotStore.Key.feed)
+        store.reload()
+        XCTAssertEqual(store.stageToCelebrate(), 3)
+        XCTAssertNil(store.stageToCelebrate(), "each stage is celebrated once")
+    }
+
+    func testShareCardCarriesGrowthOnly() {
+        let lines = ShareCardContent.lines(stage: 9, givenBack: 710, day: 9)
+        XCTAssertEqual(lines.stageKey, "u.stage.tree")
+        XCTAssertEqual(lines.givenBack, "11 h 50")
+        // The card's whole content is these three lines: no adult counts, notes or check-ins.
+        XCTAssertEqual(Mirror(reflecting: lines).children.count, 3)
+    }
+
+    func testTourHasFiveTranslatedStops() throws {
+        XCTAssertEqual(TourSpot.allCases.count, 5)
+        let path = try XCTUnwrap(Bundle.main.path(forResource: "en", ofType: "lproj"))
+        let bundle = try XCTUnwrap(Bundle(path: path))
+        for spot in TourSpot.allCases {
+            for key in ["u.tour.title.\(spot.rawValue)", "u.tour.body.\(spot.rawValue)"] {
+                XCTAssertNotEqual(bundle.localizedString(forKey: key, value: nil, table: nil), key)
+            }
+        }
+    }
+
+    // MARK: - Reminders, widget, help
+
+    func testReminderPackShipsWithTheAppAndParses() {
+        XCTAssertGreaterThanOrEqual(UnrotReminders.all.count, 80, "the shared pack is bundled")
+        XCTAssertTrue(UnrotReminders.all.allSatisfy { !$0.en.isEmpty && !$0.ar.isEmpty })
+        XCTAssertTrue(UnrotReminders.parse(Data("{}".utf8)).isEmpty, "a damaged pack is no lines, not a crash")
+        let day = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertEqual(UnrotReminders.forDay(day), UnrotReminders.forDay(day.addingTimeInterval(3600)))
+    }
+
+    func testReminderPlanUsesTheirTimesAndNeverThePast() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let now = cal.date(from: DateComponents(year: 2026, month: 11, day: 23, hour: 13))!
+        let plan = ReminderPlan.requests(now: now, days: 7, when: ["bed", "morning"], count: 86, calendar: cal)
+        // Today: the morning slot has passed, bed has not; then two a day for six days.
+        XCTAssertEqual(plan.count, 1 + 6 * 2)
+        XCTAssertEqual(plan.first?.date.hour, 22)
+        XCTAssertEqual(Set(plan.map(\.id)).count, plan.count)
+        XCTAssertEqual(Set(plan.map(\.index)).count, plan.count, "no line repeats in a week")
+        XCTAssertTrue(plan.allSatisfy { $0.id.hasPrefix(ReminderPlan.prefix) })
+        XCTAssertEqual(ReminderPlan.slots(for: []).map(\.key), ["evening"])
+        XCTAssertTrue(ReminderPlan.requests(now: now, when: ["work"], count: 0, calendar: cal).isEmpty)
+    }
+
+    func testWidgetSnapshotFollowsTheGlassAndCarriesNothingPrivate() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let snapshot = WidgetSnapshot(givenBack: 90, day: 4, crackedAt: now.timeIntervalSince1970 - 60, sealedAt: 0,
+                                      brokenAt: 0, sealedDay: nil, night: false, updated: now)
+        XCTAssertEqual(snapshot.glass(at: now).look, .cracked)
+        let change = try! XCTUnwrap(snapshot.nextChange(after: now))
+        XCTAssertEqual(snapshot.glass(at: change).look, .clear)
+        let fields = Set(Mirror(reflecting: snapshot).children.compactMap(\.label))
+        XCTAssertEqual(fields, ["givenBack", "day", "crackedAt", "sealedAt", "brokenAt", "sealedDay", "night", "updated"])
+    }
+
+    func testEveryHelpAnswerIsTranslated() throws {
+        for language in ["en", "ar"] {
+            let bundle = try XCTUnwrap(Bundle(path: try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"))))
+            for i in 0..<UnrotHelpSheet.count {
+                for key in ["u.help.q\(i)", "u.help.a\(i)"] {
+                    XCTAssertNotEqual(bundle.localizedString(forKey: key, value: nil, table: nil), key, "\(language) \(key)")
+                }
+            }
+        }
+    }
+
+    // MARK: - Links and the mood week
+
+    func testLinksRoundTripAndRejectOthers() {
+        for link in UnrotLink.allCases { XCTAssertEqual(UnrotLink(url: link.url), link) }
+        XCTAssertNil(UnrotLink(url: URL(string: "unrot://somewhere")!))
+        XCTAssertNil(UnrotLink(url: URL(string: "https://breathe")!))
+    }
+
+    func testTopPullIgnoresNothingAndBreaksTiesStably() {
+        XCTAssertEqual(MoodWeek.topPull(["tired", "bored", "tired", "none", "none", "none"]), "tired")
+        XCTAssertNil(MoodWeek.topPull(["none", "none"]))
+        XCTAssertEqual(MoodWeek.topPull(["stress", "alone"]), MoodWeek.topPull(["alone", "stress"]))
+    }
+
+    // MARK: - Day page
+
+    func testDaySummaryReadsEveryRecordForThatDayOnly() {
+        let day = DaySummary.make(key: "2026-11-21", today: "2026-11-23", startDay: "2026-11-15", before: 180,
+                                  feed: ["2026-11-21": 120, "2026-11-22": 300], gains: ["2026-11-21": 60],
+                                  mood: (1, "tired"), pauses: 2, tries: 1, notes: ["hard evening"])
+        XCTAssertEqual(day.feed, 120)
+        XCTAssertEqual(day.gain, 60)
+        XCTAssertEqual(day.difference, -60)
+        XCTAssertEqual(day.pull, "tired")
+        XCTAssertEqual(day.notes, ["hard evening"])
+        XCTAssertFalse(day.isToday || day.isFuture || day.beforeStart)
+    }
+
+    func testDaySummaryMarksTodayFutureAndBeforeStart() {
+        func make(_ key: String) -> DaySummary {
+            DaySummary.make(key: key, today: "2026-11-23", startDay: "2026-11-15", before: 120, feed: [:], gains: [:],
+                            mood: (2, "none"), pauses: 0, tries: 0, notes: [])
+        }
+        XCTAssertTrue(make("2026-11-23").isToday)
+        XCTAssertTrue(make("2026-11-24").isFuture)
+        XCTAssertTrue(make("2026-11-10").beforeStart)
+        XCTAssertNil(make("2026-11-20").difference, "an unmeasured day has no difference")
+        XCTAssertNil(make("2026-11-20").pull, "\"nothing today\" is not a pull")
+    }
+
+    @MainActor
+    func testStoreSummaryCountsThatDaysNotesAndCheckIn() {
+        let store = UnrotStore(defaults: UserDefaults(suiteName: "unrot.day.\(UUID().uuidString)")!)
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+        store.addNote("yesterday's note", on: yesterday)
+        store.addNote("today's note")
+        store.checkIn(mood: 4, pull: "bored", now: yesterday)
+        let summary = store.summary(for: yesterday)
+        XCTAssertEqual(summary.notes, ["yesterday's note"])
+        XCTAssertEqual(summary.mood, 4)
+        XCTAssertEqual(summary.pull, "bored")
+    }
+
+    func testRangeStatsLeaveTodayOutAndFindTheLightestDay() {
+        let days = ["2026-11-20", "2026-11-21", "2026-11-22", "2026-11-23"]
+        let stats = RangeStats.make(days: days, today: "2026-11-23",
+                                    feed: ["2026-11-20": 200, "2026-11-21": 90, "2026-11-23": 5],
+                                    gains: ["2026-11-20": 0, "2026-11-21": 90], before: 180)
+        XCTAssertEqual(stats.average, 145)
+        XCTAssertEqual(stats.measuredDays, 2)
+        XCTAssertEqual(stats.underBefore, 1)
+        XCTAssertEqual(stats.lightest?.key, "2026-11-21")
+        XCTAssertEqual(stats.givenBack, 90)
+        XCTAssertNil(RangeStats.make(days: days, today: "2026-11-23", feed: [:], gains: [:], before: 180).average)
+    }
+
+    // MARK: - Path and trend
+
+    func testStagePathDatesEachStageByRunningTotal() {
+        let gains = ["2026-11-20": 4, "2026-11-21": 20, "2026-11-22": 40, "2026-11-23": 0]
+        let steps = StagePath.steps(gains: gains, startDay: "2026-11-19")
+        XCTAssertEqual(steps.count, 7)
+        XCTAssertEqual(steps[0].reached, "2026-11-19")
+        XCTAssertEqual(steps[1].reached, "2026-11-21", "5 m reached on the second day (4 + 20)")
+        XCTAssertEqual(steps[2].reached, "2026-11-21", "15 m the same day")
+        XCTAssertEqual(steps[3].reached, "2026-11-22", "1 h on the third (64)")
+        XCTAssertNil(steps[4].reached)
+    }
+
+    func testWeekTrendNeedsTwoWeeksOfReadings() {
+        let cal = Calendar(identifier: .gregorian)
+        var c = cal; c.timeZone = TimeZone(identifier: "UTC")!
+        let today = c.date(from: DateComponents(year: 2026, month: 11, day: 23))!
+        let days = UnrotFormat.lastDays(14, now: today, calendar: c).map { UnrotFormat.dayKey($0, calendar: c) }
+        var feed: [String: Int] = [:]
+        for (i, key) in days.enumerated() { feed[key] = i < 6 ? 200 : 140 }
+        let trend = try! XCTUnwrap(WeekTrend.make(days14: days, today: days.last!, feed: feed))
+        XCTAssertEqual(trend.lastWeek, 200)
+        XCTAssertEqual(trend.thisWeek, 140)
+        XCTAssertEqual(trend.percent, -30)
+        XCTAssertNil(WeekTrend.make(days14: days, today: days.last!, feed: [days[12]: 50]))
+    }
 }

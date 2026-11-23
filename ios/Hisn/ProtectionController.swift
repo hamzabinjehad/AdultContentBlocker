@@ -73,6 +73,12 @@ final class ProtectionController: ObservableObject {
     /// Where the DNS extension reads the person's blocked sites. The Screen
     /// Time filter keeps its own copy; this one is the DNS layer's.
     private let dnsSitesShare: DNSCustomSitesPublishing
+    /// Where the DNS extension reads the SafeSearch and Restricted Mode choice.
+    private let dnsRewriteShare: DNSRewriteSharing
+    /// SafeSearch for search engines and YouTube Restricted Mode, answered by
+    /// the DNS filter. Saved even while the filter is off, so it applies the
+    /// moment the filter is turned on.
+    @Published private(set) var dnsRewrites = DNSRewriteOptions.standard
     private let isTest: Bool
     enum DNSRouteCheck: Equatable { case unchecked, running, passed, failed, unavailable }
     /// Evidence from the last route check: the app's resolver path reached
@@ -82,6 +88,7 @@ final class ProtectionController: ObservableObject {
     init(commitmentStore: CommitmentPersistence? = nil, readinessHistory: ReadinessHistory? = nil,
          customSiteStore: CustomSiteStore? = nil,
          dnsSitesShare: DNSCustomSitesPublishing? = nil,
+         dnsRewriteShare: DNSRewriteSharing? = nil,
          resourceBundleURL: URL = Bundle.main.bundleURL,
          clockSource: @escaping () -> (wall: Date, uptime: TimeInterval) = { (Date(), CommitmentClock.continuousTime) },
          serverTime: ServerTimeSource? = nil, shared: MonitorSharedState? = nil,
@@ -98,6 +105,8 @@ final class ProtectionController: ObservableObject {
         let isTest = NSClassFromString("XCTestCase") != nil
         self.isTest = isTest
         self.dnsSitesShare = dnsSitesShare ?? DNSCustomSitesShare.deviceLocal(isTest: isTest)
+        self.dnsRewriteShare = dnsRewriteShare ?? DNSRewriteShare.deviceLocal(isTest: isTest)
+        dnsRewrites = self.dnsRewriteShare.load()
         self.commitmentStore = commitmentStore ?? (isTest ? MemoryCommitmentStore() : MobileCommitmentStore())
         // Tests never reach Apple's server, the real app group or the notification prompt.
         self.serverTime = serverTime ?? (isTest ? UnavailableServerTime() : AppleServerTime())
@@ -747,6 +756,19 @@ final class ProtectionController: ObservableObject {
         }
         #endif
         dnsRouteCheck = .unchecked
+    }
+
+    /// Saves the SafeSearch / Restricted Mode choice for the DNS filter. During
+    /// a commitment either may be turned on but not off.
+    func setDNSRewrites(_ next: DNSRewriteOptions) {
+        updateClock()
+        guard next != dnsRewrites else { return }
+        guard DNSRewriteOptions.permits(current: dnsRewrites, proposed: next, locked: rulesLocked) else {
+            errorKey = "dns.safeSearch.locked"
+            return
+        }
+        dnsRewriteShare.publish(next)
+        dnsRewrites = next
     }
 
     func disableDNS() async {

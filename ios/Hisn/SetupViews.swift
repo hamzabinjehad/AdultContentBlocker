@@ -283,6 +283,7 @@ struct BlockingLayersSetupView: View {
                 } else {
                     Button("dns.prepare") { confirmDNS = true }.disabled(protection.busy)
                 }
+                DNSRewriteToggles(protection: protection)
                 DisclosureGroup("dns.details") {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("dns.steps")
@@ -633,6 +634,43 @@ extension SetupGuide.Step {
         case .layers: return "setup.step.layers.detail"
         case .commitment: return "setup.step.commitment.detail"
         case .vault: return "setup.step.vault.detail"
+        }
+    }
+}
+
+/// SafeSearch and YouTube Restricted Mode for the DNS filter. Each switch is
+/// saved at once and read by the extension within half a minute; during a
+/// commitment a switch that is on cannot be turned off.
+struct DNSRewriteToggles: View {
+    @ObservedObject var protection: ProtectionController
+
+    var body: some View {
+        let options = protection.dnsRewrites
+        let locked = protection.rulesLocked
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("dns.safeSearch", isOn: Binding(
+                get: { options.safeSearch },
+                set: { protection.setDNSRewrites(DNSRewriteOptions(safeSearch: $0,
+                                                                   youtubeRestricted: options.youtubeRestricted)) }))
+                .disabled(protection.busy || (locked && options.safeSearch))
+            Text("dns.safeSearch.detail")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("dns.youtubeRestricted", isOn: Binding(
+                get: { options.youtubeRestricted },
+                set: { protection.setDNSRewrites(DNSRewriteOptions(safeSearch: options.safeSearch,
+                                                                   youtubeRestricted: $0)) }))
+                .disabled(protection.busy || (locked && options.youtubeRestricted))
+            Text("dns.youtubeRestricted.detail")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        if locked && (options.safeSearch || options.youtubeRestricted) {
+            Text("dns.safeSearch.locked")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
     }
 }

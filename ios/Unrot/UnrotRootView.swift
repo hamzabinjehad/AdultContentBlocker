@@ -2,6 +2,7 @@ import DeviceActivity
 import FamilyControls
 import ManagedSettings
 import SwiftUI
+import WidgetKit
 
 /// Unrot's four places — Home, Shield, Progress, You — on a floating pill bar,
 /// with Breathe always one tap away. Protection itself is Hisn's proven engine
@@ -23,6 +24,8 @@ struct UnrotRootView: View {
     @State private var sheet: Sheet?
     @State private var breathing = false
     @State private var pausePrompt: UnrotPausePrompt?
+    @State private var stageUp: StageUp?
+    @State private var notesStart: Date?
 
     var body: some View {
         Group {
@@ -40,9 +43,23 @@ struct UnrotRootView: View {
         .fullScreenCover(isPresented: $breathing) {
             UnrotBreatheView(store: store) { breathing = false }
         }
+        .fullScreenCover(item: $stageUp) { up in
+            UnrotStageUpView(stage: up.stage, givenBack: store.givenBackMinutes, day: store.day()) { stageUp = nil }
+        }
         .fullScreenCover(item: $pausePrompt) { prompt in
             // The shield's "pause first" lands here, exactly as in Hisn.
             PauseRuleGrantView(usage: usage, appName: prompt.request.appName) { pausePrompt = nil }
+        }
+        .onOpenURL { url in
+            guard let link = UnrotLink(url: url), store.onboarded else { return }
+            sheet = nil
+            switch link {
+            case .home: tab = .home
+            case .breathe: tab = .home; breathing = true
+            case .notes: tab = .home; sheet = .notes
+            case .checkin: tab = .home; sheet = .checkIn
+            case .focus: tab = .home; sheet = .focus
+            }
         }
         .onAppear {
             refresh()
@@ -50,13 +67,21 @@ struct UnrotRootView: View {
             // Screenshots: `-unrot-open notes` opens one sheet at launch.
             let args = ProcessInfo.processInfo.arguments
             if let i = args.firstIndex(of: "-unrot-open"), args.indices.contains(i + 1) {
-                sheet = Sheet(rawValue: args[i + 1])
+                if args[i + 1] == "stageUp" {
+                    stageUp = StageUp(stage: GlassStage.stage(givenBackMinutes: store.givenBackMinutes))
+                } else {
+                    sheet = Sheet(rawValue: args[i + 1])
+                }
             }
             #endif
         }
         .onChange(of: scenePhase) { phase in if phase == .active { refresh() } }
         .onChange(of: protection.checkedAt) { _ in usage.refresh(trustedNow: protection.trustedNow) }
         .onChange(of: usage.configuration?.selection) { _ in UnrotScreenTime.watchFeeds(usage.configuration) }
+        .onChange(of: store.crackedAt) { _ in publishWidget() }
+        .onChange(of: store.sealedAt) { _ in publishWidget() }
+        .onChange(of: store.brokenAt) { _ in publishWidget() }
+        .onChange(of: scenePhase) { phase in if phase == .background { publishWidget() } }
     }
 
     // MARK: - Main
@@ -72,15 +97,26 @@ struct UnrotRootView: View {
             }
             .toolbar(.hidden, for: .tabBar)
             .modifier(ClearTabBackground())
-            dock
+            statusScrim
+            if store.tourSeen || tab != .home { dock }
         }
-        .overlay(alignment: .top) {
-            // The status bar stays readable over scrolled content.
-            LinearGradient(colors: [UPalette.base.opacity(0.95), UPalette.base.opacity(0)], startPoint: .top, endPoint: .bottom)
-                .frame(height: 60)
-                .ignoresSafeArea(edges: .top)
-                .allowsHitTesting(false)
+    }
+
+    /// The status bar never sits on top of scrolled text: the room darkens under it.
+    private var statusScrim: some View {
+        GeometryReader { geo in
+            VStack(spacing: 0) {
+                LinearGradient(stops: [.init(color: UPalette.base, location: 0),
+                                       .init(color: UPalette.base.opacity(0.85), location: 0.6),
+                                       .init(color: UPalette.base.opacity(0), location: 1)],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(height: geo.safeAreaInsets.top + 22)
+                Spacer(minLength: 0)
+            }
+            .ignoresSafeArea()
         }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     private var backdropMood: UBackdrop.Mood {
@@ -103,13 +139,15 @@ struct UnrotRootView: View {
     }
 
     private var progress: some View {
-        UnrotProgressView(store: store, facts: facts, now: protection.now)
+        UnrotProgressView(store: store, facts: facts, now: protection.now,
+                          onOpenNotes: { day in notesStart = day; sheet = .notes },
+                          onCheckIn: { sheet = .checkIn })
             .background(UBackdrop())
     }
 
     private var you: some View {
         UnrotYouView(store: store, protection: protection, usage: usage, vault: vault,
-                     lockDevice: lockDevice, language: $language, onTool: open)
+                     lockDevice: lockDevice, language: $language, onTool: open, onHome: { tab = .home })
             .background(UBackdrop())
     }
 
@@ -118,7 +156,10 @@ struct UnrotRootView: View {
         VStack(spacing: 12) {
             HStack(spacing: 4) {
                 ForEach(Tab.allCases, id: \.self) { item in
-                    Button { tab = item } label: {
+                    Button {
+                        if tab != item { UISelectionFeedbackGenerator().selectionChanged() }
+                        tab = item
+                    } label: {
                         VStack(spacing: 3) {
                             Image(systemName: icon(item)).font(.system(size: 18, weight: .semibold))
                             Text(uKey("u.tab.", ["home", "shield", "progress", "you"][item.rawValue]))
@@ -138,6 +179,8 @@ struct UnrotRootView: View {
             .overlay { Capsule().strokeBorder(Color.white.opacity(0.08)) }
             .shadow(color: .black.opacity(0.5), radius: 16, y: 6)
             .frame(maxWidth: 520)
+            // Like iOS's own tab bar: labels stop growing past a size, so they never wrap.
+            .dynamicTypeSize(...DynamicTypeSize.xLarge)
         }
         .padding(.horizontal, 14)
         .padding(.bottom, 6)
@@ -160,7 +203,7 @@ struct UnrotRootView: View {
         switch tool {
         case .breathe: breathing = true
         case .focus: sheet = .focus
-        case .notes: sheet = .notes
+        case .notes: notesStart = nil; sheet = .notes
         case .instead: sheet = .instead
         case .checkIn: sheet = .checkIn
         case .hardMoment: sheet = .hard
@@ -174,10 +217,12 @@ struct UnrotRootView: View {
         case .checkIn: UnrotCheckInSheet(store: store)
         case .hard: UnrotHardMomentSheet(store: store) { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { breathing = true } }
         case .instead:
-            UnrotInsteadSheet(store: store, canClose: usage.configuration != nil) { startFocus(minutes: 15) }
-        case .notes: UnrotNotesSheet(store: store)
+            UnrotInsteadSheet(store: store, canClose: usage.configuration != nil,
+                              onChooseApps: { sheet = .rule }) { startFocus(minutes: 15) }
+        case .notes: UnrotNotesSheet(store: store, startDay: notesStart)
         case .focus:
             UnrotFocusSheet(store: store, canClose: usage.configuration != nil,
+                            onChooseApps: { sheet = .rule },
                             onStart: { startFocus(minutes: $0) }, onEnd: endFocus)
         case .more:
             UnrotMoreSheet { tool in
@@ -219,8 +264,17 @@ struct UnrotRootView: View {
         usage.refresh(trustedNow: protection.trustedNow)
         if store.focusUntil > 0 && !store.focusActive { endFocus() }
         UnrotScreenTime.watchFeeds(usage.configuration)
+        publishWidget()
+        // New lines for the coming week, at the person's current times.
+        if UserDefaults.standard.bool(forKey: ReminderScheduler.enabledKey) {
+            let when = store.answers.when
+            Task { await ReminderScheduler.reschedule(on: true, when: when) }
+        }
         if pausePrompt == nil, !breathing, let request = usage.takePauseRequest() {
             pausePrompt = UnrotPausePrompt(request: request)
+        }
+        if store.onboarded, store.tourSeen, stageUp == nil, pausePrompt == nil, let stage = store.stageToCelebrate() {
+            stageUp = StageUp(stage: stage)
         }
     }
 
@@ -230,6 +284,18 @@ struct UnrotRootView: View {
             removal: protection.removal,
             attestation: MobileProtectionPolicy.LockAttestation(storage: lockAttestationData),
             vault: vault.facts, now: protection.now, deviceMarker: lockDevice.marker).level
+    }
+
+    /// The Home Screen widget's copy of growth and the glass (nothing private).
+    private func publishWidget() {
+        let snapshot = WidgetSnapshot(givenBack: store.givenBackMinutes, day: store.day(),
+                                      crackedAt: store.crackedAt, sealedAt: store.sealedAt, brokenAt: store.brokenAt,
+                                      sealedDay: store.sealedDay, night: facts.quietNow, updated: Date())
+        guard let data = try? JSONEncoder().encode(snapshot),
+              let shared = UserDefaults(suiteName: Edition.appGroup),
+              shared.data(forKey: WidgetSnapshot.key) != data else { return }
+        shared.set(data, forKey: WidgetSnapshot.key)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private var facts: UnrotShieldFacts {
@@ -246,12 +312,20 @@ struct UnrotRootView: View {
             f.quietNow = true
             f.quietEnds = RuleSummary.time(config.windowEnd)
         }
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-unrot-night") { f.quietNow = true; f.quietEnds = "07:00" }
+        #endif
         f.feedWatched = usage.configuration != nil
         f.listCount = protection.listCount
         f.customSites = protection.customSites.count
         f.ruleApps = usage.configuration.map { $0.selection.applicationTokens.count + $0.selection.categoryTokens.count } ?? 0
         return f
     }
+}
+
+private struct StageUp: Identifiable {
+    let stage: Int
+    var id: Int { stage }
 }
 
 private struct UnrotPausePrompt: Identifiable {

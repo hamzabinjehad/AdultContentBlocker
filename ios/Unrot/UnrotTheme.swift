@@ -31,8 +31,9 @@ enum UPalette {
 
 extension Font {
     /// The concept's Fraunces role: iOS's own serif (New York).
+    /// Grows with Dynamic Type like the body text, to at most twice its size.
     static func uDisplay(_ size: CGFloat, weight: Weight = .semibold) -> Font {
-        .system(size: size, weight: weight, design: .serif)
+        .system(size: min(UIFontMetrics.default.scaledValue(for: size), size * 2), weight: weight, design: .serif)
     }
     static func uDisplay(_ style: TextStyle, weight: Weight = .semibold) -> Font {
         .system(style, design: .serif).weight(weight)
@@ -136,7 +137,7 @@ struct UPillButton: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 if let systemImage { Image(systemName: systemImage) }
-                Text(title).font(.subheadline.weight(.bold))
+                Text(title).font(.subheadline.weight(.bold)).lineLimit(1).minimumScaleFactor(0.8)
             }
             .foregroundStyle(tint)
             .padding(.horizontal, 18)
@@ -188,7 +189,7 @@ struct UChip: View {
     var body: some View {
         HStack(spacing: 6) {
             Circle().fill(tint).frame(width: 7, height: 7)
-            text.font(.footnote.weight(.bold)).foregroundStyle(tint)
+            text.font(.footnote.weight(.bold)).foregroundStyle(tint).lineLimit(1).fixedSize()
         }
         .padding(.horizontal, 12)
         .frame(minHeight: 32)
@@ -213,19 +214,28 @@ struct UTitleBar<Trailing: View>: View {
     var subtitle: Text? = nil
     @ViewBuilder var trailing: Trailing
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.uDisplay(30))
-                    .foregroundStyle(UPalette.ink)
-                    .accessibilityAddTraits(.isHeader)
-                if let subtitle { subtitle.font(.caption.weight(.medium)).foregroundStyle(UPalette.dim) }
+        // At the largest text sizes the chips go under the title instead of squeezing it.
+        Group {
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 10) { titles; trailing }
+            } else {
+                HStack(alignment: .center) { titles; Spacer(minLength: 8); trailing }
             }
-            Spacer(minLength: 8)
-            trailing
         }
         .padding(.top, 8)
+    }
+
+    private var titles: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.uDisplay(30))
+                .foregroundStyle(UPalette.ink)
+                .accessibilityAddTraits(.isHeader)
+            if let subtitle { subtitle.font(.caption.weight(.medium)).foregroundStyle(UPalette.dim) }
+        }
     }
 }
 

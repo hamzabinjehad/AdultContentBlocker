@@ -25,7 +25,10 @@ UNROT_APP_SOURCES = ["Unrot/UnrotCore.swift", "Unrot/UnrotStore.swift", "Unrot/U
                      "Unrot/UnrotRootView.swift", "Unrot/UnrotHomeView.swift", "Unrot/UnrotGlassHero.swift",
                      "Unrot/UnrotSheets.swift", "Unrot/UnrotBreatheView.swift", "Unrot/UnrotShieldView.swift",
                      "Unrot/UnrotProgressView.swift", "Unrot/UnrotYouView.swift", "Unrot/UnrotOnboarding.swift",
-                     "Unrot/UnrotLockView.swift"]
+                     "Unrot/UnrotLockView.swift", "Unrot/UnrotMoments.swift", "Unrot/UnrotReminders.swift",
+                     "Unrot/UnrotDayView.swift"]
+# Android's reviewed reminder pack, shared as-is so both phones show the same lines.
+UNROT_REMINDERS = "../android/app/src/general/assets/reminders/reminders.json"
 UNROT_TEST_SOURCES = ["HisnTests/UnrotCoreTests.swift"]
 
 
@@ -49,8 +52,10 @@ def main(safari_only: bool = False, domain_only: bool = False,
     shield_config = "HisnShieldConfig"
     shield_action = "HisnShieldAction"
     proxy = "HisnDNSProxy"
+    widget = "UnrotWidget"
     names = ([app, *blockers, *([] if domain_only else [scanner])] if safari_only
-             else [app, *blockers, monitor, scanner, shield_config, shield_action, proxy, tests])
+             else [app, *blockers, monitor, scanner, shield_config, shield_action, proxy,
+                   *([widget] if general else []), tests])
     sources = {
         app: ["Hisn/HisnMobileApp.swift", "Hisn/MobileRootView.swift", "Hisn/ProtectionController.swift",
               "Hisn/MobileCommitmentStore.swift", "Hisn/CommitmentSection.swift",
@@ -68,7 +73,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
               "Shared/HostTermPolicy.swift", "Shared/EncryptedDNSProviders.swift", "Shared/DNSReplyGuard.swift",
               "Shared/ListGeneration.swift", "Shared/ListGenerationStore.swift",
               "Shared/SafariGenerationRules.swift",
-              "Shared/DNSFilterEngine.swift", "Shared/DNSUpstream.swift",
+              "Shared/DNSFilterEngine.swift", "Shared/DNSRewrites.swift", "Shared/DNSUpstream.swift",
               "../shared/apple/TextNormalizer.swift", "../shared/apple/Punycode.swift",
               "../shared/apple/AdultTldGuard.swift",
               "../shared/apple/RouterAppDomains.swift", "../shared/apple/RouterAppDomainsView.swift",
@@ -101,7 +106,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "Shared/DomainIndex.swift", "Shared/HostTermPolicy.swift",
                 "Shared/EncryptedDNSProviders.swift", "Shared/DNSReplyGuard.swift",
                 "Shared/ListGeneration.swift", "Shared/ListGenerationStore.swift",
-                "Shared/DNSFilterEngine.swift", "Shared/DNSUpstream.swift",
+                "Shared/DNSFilterEngine.swift", "Shared/DNSRewrites.swift", "Shared/DNSUpstream.swift",
                 "../shared/apple/TextNormalizer.swift", "../shared/apple/Punycode.swift",
                 "../shared/apple/AdultTldGuard.swift",
                 "../shared/apple/CustomSitePolicy.swift", "../shared/apple/MirroredRuleStore.swift",
@@ -119,6 +124,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
         # Hisn's tests import HisnMobile; the Unrot test bundle has its own.
         sources[app] += UNROT_APP_SOURCES
         sources[monitor] += ["Unrot/UnrotCore.swift"]
+        sources[widget] = ["Shared/Edition.swift", "Unrot/Widget/UnrotWidget.swift", "Unrot/UnrotCore.swift"]
         sources[tests] = UNROT_TEST_SOURCES
     # The Safari-only candidate has no Family Controls entitlement, so it does
     # not build or embed Hisn's shield extensions.
@@ -131,7 +137,8 @@ def main(safari_only: bool = False, domain_only: bool = False,
                  shield_config: [privacy], shield_action: [privacy], proxy: [privacy],
                  **{blocker: [privacy] for blocker in blockers}}
     if general:
-        resources[app].append("Unrot/UnrotArt.xcassets")
+        resources[app] += ["Unrot/UnrotArt.xcassets", UNROT_REMINDERS]
+        resources[widget] = ["Unrot/UnrotArt.xcassets", privacy]
     if safari_only:
         sources[app] = ["Shared/Edition.swift", "HisnSafariOnly/SafariOnlyApp.swift",
                         "../shared/apple/MobileProtectionPolicy.swift"]
@@ -216,11 +223,13 @@ def main(safari_only: bool = False, domain_only: bool = False,
         phases = [phase(name, "PBXSourcesBuildPhase", [refs[path] for path in sources[name]]),
                   phase(name, "PBXFrameworksBuildPhase", []),
                   phase(name, "PBXResourcesBuildPhase", [loc, refs["Hisn/Assets.xcassets"], refs[privacy], refs["Hisn/Notices.txt"]]
-                        + ([refs["Unrot/UnrotArt.xcassets"]] if general else []) if name == app else
+                        + ([refs["Unrot/UnrotArt.xcassets"], refs[UNROT_REMINDERS]] if general else []) if name == app else
+                        [loc, *[refs[path] for path in resources[name]]] if name == widget else
                         [refs[path] for path in resources.get(name, [])])]
         extra = {"PRODUCT_BUNDLE_IDENTIFIER": q(app_identifier if name == app else
                  f"{app_identifier}.tests" if name == tests else f"{app_identifier}.activity" if name == monitor
                  else f"{app_identifier}.dnsproxy" if name == proxy
+                 else f"{app_identifier}.widget" if name == widget
                  else f"{app_identifier}.HisnText" if name == scanner
                  else f"{app_identifier}.shieldconfig" if name == shield_config
                  else f"{app_identifier}.shieldaction" if name == shield_action
@@ -261,7 +270,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
             extra["ASSETCATALOG_COMPILER_APPICON_NAME"] = "UnrotIcon" if general else "AppIcon"
             embedded = []
             for blocker in [name for name in names
-                            if name in [*blockers, monitor, scanner, shield_config, shield_action, proxy]]:
+                            if name in [*blockers, monitor, scanner, shield_config, shield_action, proxy, widget]]:
                 embedded.append(p.add(oid("ios-embed", blocker), "PBXBuildFile", {
                     "fileRef": products[blocker], "settings": "{ATTRIBUTES = (RemoveHeadersOnCopy, );}"}))
                 deps.append(dependency(name, blocker))
@@ -306,6 +315,10 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "files": "()", "inputPaths": "()", "outputPaths": "()", "alwaysOutOfDate": "1",
                 "shellPath": "/bin/sh", "shellScript": q(script).replace("\n", "\\n"),
                 "runOnlyForDeploymentPostprocessing": "0"}))
+        elif name == widget:
+            extra.update({"INFOPLIST_FILE": "Unrot/Widget/Info.plist",
+                          "CODE_SIGN_ENTITLEMENTS": "Unrot/Entitlements/UnrotWidget.entitlements",
+                          "APPLICATION_EXTENSION_API_ONLY": "YES", "SKIP_INSTALL": "YES"})
         elif name == tests:
             extra.update({"GENERATE_INFOPLIST_FILE": "YES", "BUNDLE_LOADER": q("$(TEST_HOST)"),
                           "TEST_HOST": q(f"$(BUILT_PRODUCTS_DIR)/{app}.app/{app}")})
