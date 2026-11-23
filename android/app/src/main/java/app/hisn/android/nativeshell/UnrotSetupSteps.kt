@@ -555,7 +555,7 @@ internal fun YearStep(name: String, dailyMs: Long, estimate: Boolean, ageKey: St
         }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        LegendDot(SetupTomato, stringResource(R.string.year_legend_feeds, days))
+        LegendDot(SetupTomato, stringResource(R.string.year_legend_feeds, days - back))
         LegendDot(SetupSage, stringResource(R.string.year_legend_back, back))
     }
     // With an age, the same pace as years of a life to 75: said once, plainly.
@@ -684,7 +684,6 @@ internal fun ColumnScope.HoldStep(note: String, goals: String, onDone: () -> Uni
     var job by remember { mutableStateOf<Job?>(null) }
     var done by remember { mutableStateOf(false) }
     val view = androidx.compose.ui.platform.LocalView.current
-    var beatSound = 0
     SetupHeader(stringResource(R.string.hold_eyebrow), stringResource(R.string.hold_title), body = stringResource(R.string.hold_body), center = true)
     Spacer(Modifier.height(16.dp))
     val label = stringResource(R.string.hold_action)
@@ -709,7 +708,6 @@ internal fun ColumnScope.HoldStep(note: String, goals: String, onDone: () -> Uni
                             // A building pulse, faster and firmer as the ring fills.
                             val step = (p * p * 24).toInt()
                             if (step > beat) { beat = step; UnrotFeel.pulse(view, p) }
-                            if ((p * 3).toInt() > (beatSound)) { beatSound = (p * 3).toInt(); haptics.sound(FeelSound.TICK) }
                             kotlinx.coroutines.delay(16)
                         }
                         done = true

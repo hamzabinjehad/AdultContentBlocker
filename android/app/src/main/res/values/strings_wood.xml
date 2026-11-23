@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wood_title">Your wood</string>
+    <string name="wood_sub">%1$d trees: one for every day with Unrot. Tap one.</string>
+    <string name="wood_desc">Your wood: %1$d trees, %2$s given back in all</string>
+    <string name="wood_today">Today: a sapling, still growing</string>
+    <string name="wood_tree">%1$s · %2$s given back · %3$s</string>
+    <string name="wood_small">%1$s · a heavy day, still a small green bush</string>
+    <string name="wood_dry">%1$s · the glass broke; this tree stays dry</string>
+    <string name="wood_next">Next kind: %1$s, on day %2$d</string>
+    <string name="wood_oak">Oak</string>
+    <string name="wood_pine">Pine</string>
+    <string name="wood_cherry">Cherry</string>
+    <string name="wood_lemon">Lemon</string>
+    <string name="wood_olive">Olive</string>
+    <string name="wood_willow">Willow</string>
+</resources>

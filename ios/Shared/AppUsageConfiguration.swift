@@ -272,7 +272,7 @@ struct AppUsageConfiguration: Codable {
                           trustedNow: trustedNow, calendar: calendar)
     }
 
-    static let group = "group.app.hisn.mobile"
+    static let group = Edition.appGroup
     static let key = "appUsageConfiguration"
     /// The guard: a second, independent always-block rule for the main rule's
     /// bypass route — other browsers and VPN apps. Its own record and its own

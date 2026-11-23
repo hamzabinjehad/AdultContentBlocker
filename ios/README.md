@@ -11,6 +11,43 @@ level stops deletion and what each one cannot stop, is in
 outside the App Store, and what each install path can grant, is in
 [IOS_DIRECT.md](../docs/IOS_DIRECT.md).
 
+## Unrot, the general edition on iPhone
+
+The same app, built a second way, like Android's `general` flavor. Hisn's
+protection code is unchanged and shared; Unrot adds its own face and three
+small Screen Time pieces.
+
+- **Build it.** `python3 generate_xcodeproj.py --general` writes
+  `UnrotMobile.xcodeproj`: app `app.unrot.mobile`, App Group
+  `group.app.unrot.mobile`, every target compiled with `UNROT`, its own
+  entitlements in `Unrot/Entitlements`, icon and painted art in
+  `Unrot/UnrotArt.xcassets`. `Shared/Edition.swift` holds the names, so Hisn
+  and Unrot can sit on one iPhone without reading each other's rules. Hisn's
+  own project is generated exactly as before.
+- **The screens** follow the Glasshouse concept (`design/glasshouse-2026-11-23`):
+  Home with the painted sprout under glass, seven stages, time given back,
+  cracked / gold / broken glass, four round tools, check-in, "Had a hard
+  moment", today's three, feed time and your own words; Breathe (ready, 3-2-1,
+  the flower, "It passed"); Shield as five panes over Hisn's proven setup
+  screens; Progress with the before→now gauge, the garden, the week and the
+  private "kept out" card; You; and a 14-screen first run ending in a
+  hold-to-commit pledge. English and Arabic; the shared screens are renamed
+  Unrot at build time by `Unrot/rebrand_strings.py`.
+- **Feed time on iPhone.** iOS never gives an app its usage numbers. The
+  monitor extension registers 40 thresholds on the apps the person chose for
+  their rule and keeps only the highest reached each day. Time given back is
+  the person's own "before" minus that, for whole days, never below zero.
+- **Focus** closes the same apps for 15–90 minutes through its own
+  ManagedSettings store; the monitor lifts it at the end. The shield says
+  "Focus is on" while it runs.
+- **What iPhone cannot tell Unrot.** No app learns when Safari or the filter
+  blocked a page, so a crack (tried and stopped) and a break (got through) are
+  the person's own report under "Had a hard moment", as on Android for breaks.
+
+`UnrotCoreTests` pins the glass, stages, feed steps, time given back and that
+every built key is translated. Real shielding, Focus and feed thresholds need a
+signed device with Family Controls and are not claimed as tested here.
+
 ## 1.8.0 the device-wide DNS filter and the direct build
 
 Two changes. The DNS layer is now Hisn's own policy on the device, and the app

@@ -14,6 +14,9 @@ final class VisualResult {
     /** Normalized face boxes (x, y, w, h repeated) from a faces-only WebView asked for boxes, so
      * the native FaceRes runtime can estimate women/men; null otherwise. */
     final float[] faceBoxes;
+    /** Normalized boxes (x, y, w, h repeated) of the faces that matched the people setting, for the
+     * face-only blur; null when unknown. Positions only: no pixels or scores. */
+    final float[] blurBoxes;
 
     VisualResult(String verdict, boolean personBlur) {
         this(verdict, personBlur, false);
@@ -28,6 +31,12 @@ final class VisualResult {
     }
 
     VisualResult(String verdict, boolean personBlur, boolean strong, String detail, float[] faceBoxes) {
+        this(verdict, personBlur, strong, detail, faceBoxes, null);
+    }
+
+    VisualResult(String verdict, boolean personBlur, boolean strong, String detail, float[] faceBoxes,
+            float[] blurBoxes) {
+        this.blurBoxes = personBlur ? blurBoxes : null;
         this.verdict = verdict;
         this.personBlur = personBlur;
         this.strong = strong && "block".equals(verdict);

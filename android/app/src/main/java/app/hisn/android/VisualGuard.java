@@ -106,6 +106,13 @@ final class VisualGuard implements AutoCloseable {
     private static final long CAPTURE_TIMEOUT_MILLIS = 5000;
     private final Runnable captureTimeout = this::captureTimedOut;
     private final Runnable tick = this::poll;
+    /** Prepares screenshots so the main thread stays free for accessibility events. */
+    private final java.util.concurrent.ExecutorService shotWorker =
+            java.util.concurrent.Executors.newSingleThreadExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "hisn-shot");
+                thread.setDaemon(true);
+                return thread;
+            });
     /** The screen coming on brings the next poll forward; while it is off, polls are slow and never sample. */
     private final BroadcastReceiver screenOn = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) { if (!closed) soon(); }
@@ -132,6 +139,10 @@ final class VisualGuard implements AutoCloseable {
      * window's interval, and an in-flight frame for the old window must not decide anything. */
     void windowChanged() {
         gate.invalidate();
+        // A new screen may reuse the old window's id: treat it as unchecked and veil it now
+        // (face-only blur), not on the next poll, until a screenshot has looked at it.
+        faceOwner = null;
+        veilNewScreen();
         // Do not hide the cover here: adding an accessibility overlay can itself produce a
         // window-state event. The next poll hides it when no selected window is eligible, and a
         // clean frame hides it when a selected app no longer contains a matching face.
@@ -150,6 +161,57 @@ final class VisualGuard implements AutoCloseable {
         // The verdict cache checks the actual input pixels even when accessibility reports activity.
         cadence.activity(SystemClock.uptimeMillis());
         soon();
+    }
+
+    /** Scroll since the frame being checked was captured, for the window it came from. */
+    private int captureWindow = -1, scrolledX, scrolledY;
+
+    /** A selected window scrolled by (dx, dy) pixels. Blurred people move with the content right
+     * away instead of waiting a third of a second for the next screenshot. When the distance is
+     * unknown, the patches grow until that screenshot lands. */
+    void scrolled(int window, int dx, int dy) {
+        if (closed) return;
+        boolean known = app.hisn.core.PeopleRegions.knownScroll(dx, dy);
+        if (window == captureWindow && known) { scrolledX += dx; scrolledY += dy; }
+        if (faceOwner != null && faceOwner.id == window) {
+            // Face-only blur: patches follow the page and what scrolls into view is veiled until
+            // checked. An unknown distance leaves the whole window unchecked.
+            if (known) overlay.scrolled(-dx, -dy);
+            else overlay.veilAll(bounds(window));
+            return;
+        }
+        if (covered == null || covered.id != window || !overlay.facesShown()) return;
+        if (known) overlay.shift(-dx, -dy);
+        else overlay.moving();
+    }
+
+    /** Face-only blur: veils the active selected window right away when the screen changes. */
+    private void veilNewScreen() {
+        if (closed || covered != null || SystemClock.uptimeMillis() < retryAfter || !faceBlur()
+                || !PersonBlur.on(personMode) || !interactive()) return;
+        try {
+            for (GuardWindows.Window window : eligibleWindows()) {
+                if (!window.active) continue;
+                android.graphics.Rect bounds = bounds(window.id);
+                if (bounds == null) return;
+                overlay.veilAll(bounds);
+                faceOwner = window;
+                return;
+            }
+        } catch (RuntimeException unavailable) { /* The next poll veils it instead. */ }
+    }
+
+    /** The window the face-only blur layer (patches and veils) belongs to; null when none. */
+    private GuardWindows.Window faceOwner;
+
+    /** Face-only blur: a screenshot of target was checked. Only what scrolled in since the
+     * capture stays veiled. */
+    private void faceChecked(GuardWindows.Window target) {
+        android.graphics.Rect bounds = bounds(target.id);
+        if (bounds == null) return;
+        faceOwner = target;
+        boolean since = captureWindow == target.id;
+        overlay.checked(bounds, since ? -scrolledX : 0, since ? -scrolledY : 0);
     }
 
     private void soon() {
@@ -189,8 +251,12 @@ final class VisualGuard implements AutoCloseable {
         verdicts.retain(ids);
         if (windows.isEmpty()) { eligibility = "NOT_SELECTED"; return eligible; }
         boolean typing = false;
+        // No keyboard on screen means nobody is typing. Asking the app where its input focus is
+        // waits on the app's own UI thread, which during a scroll can hold this thread (and every
+        // accessibility event behind it) for over a second, so ask only when a keyboard shows.
+        boolean keyboard = keyboardShown();
         for (GuardWindows.Window window : windows) {
-            Boolean input = typing(window);
+            Boolean input = keyboard ? typing(window) : Boolean.FALSE;
             if (input == null) continue; // Gone or changed app since listing.
             if (input) typing = true; else eligible.add(window);
         }
@@ -248,6 +314,17 @@ final class VisualGuard implements AutoCloseable {
 
     /** True while that window holds input focus and an input field in it is focused, including
      * passwords (rule in core GuardWindows.typing); null when it is gone. */
+    private boolean keyboardShown() {
+        try {
+            for (android.view.accessibility.AccessibilityWindowInfo window : service.getWindows()) {
+                if (window.getType() == android.view.accessibility.AccessibilityWindowInfo.TYPE_INPUT_METHOD) return true;
+            }
+            return false;
+        } catch (RuntimeException unknown) {
+            return true; // Unknown: check focus the slow way, as before.
+        }
+    }
+
     private Boolean typing(GuardWindows.Window window) {
         AccessibilityNodeInfo root = null, input = null;
         try {
@@ -289,6 +366,16 @@ final class VisualGuard implements AutoCloseable {
             List<GuardWindows.Window> eligible = interactive ? eligibleWindows() : Collections.emptyList();
             GuardWindows.Window target = nextTarget(eligible, now);
             if (covered != null && GuardWindows.find(eligible, covered.id, covered.app) == null) hideCover();
+            if (faceOwner != null && GuardWindows.find(eligible, faceOwner.id, faceOwner.app) == null) hideCover();
+            // Face-only blur: a window no screenshot has checked yet is veiled until one does.
+            if (target != null && covered == null && now >= retryAfter && faceBlur() && PersonBlur.on(personMode)
+                    && (faceOwner == null || faceOwner.id != target.id)) {
+                android.graphics.Rect bounds = bounds(target.id);
+                if (bounds != null) {
+                    overlay.veilAll(bounds);
+                    faceOwner = target;
+                }
+            }
             if (target == null) clearConfirmations();
             if (busy) return;
             // Cover-mode users can keep the initial screen hidden while the engine loads.
@@ -328,69 +415,30 @@ final class VisualGuard implements AutoCloseable {
             lastCaptureRequestAt = now;
             handler.postDelayed(captureTimeout, CAPTURE_TIMEOUT_MILLIS);
             captureRequests++;
-            service.takeScreenshotOfWindow(target.id, service.getMainExecutor(), new AccessibilityService.TakeScreenshotCallback() {
+            // Read on the main thread now; the screenshot is prepared on the worker below.
+            final boolean people = PersonBlur.on(personMode);
+            final boolean faceBlur = people && faceBlur();
+            final boolean hybrid = classifier instanceof HybridRuntime;
+            final boolean nativeAdult = classifier instanceof TfliteClassifier || hybrid;
+            captureWindow = target.id;
+            scrolledX = 0;
+            scrolledY = 0;
+            service.takeScreenshotOfWindow(target.id, shotWorker, new AccessibilityService.TakeScreenshotCallback() {
+                /** On the worker: the full-size copy and scaling take up to half a second on a slow
+                 * phone. Off the main thread, scroll events keep arriving and blurred faces keep
+                 * following the page while this runs. */
                 @Override public void onSuccess(AccessibilityService.ScreenshotResult screenshot) {
+                    Shot shot;
                     try (HardwareBuffer buffer = screenshot.getHardwareBuffer()) {
-                        if (closed || pendingFrame != frame) return;
-                        handler.removeCallbacks(captureTimeout);
-                        captures++;
-                        captureFailureStreak = 0;
-                        captureBackoffUntil = 0;
-                        lastCaptureMillis = SystemClock.uptimeMillis() - pendingStarted;
-                        if (currentWindow(frame, target) == null) {
-                            discarded++; pendingFrame = null; busy = false; clearPendingPersonFrame();
-                            health.report(State.WAITING);
-                            sampleEnded();
-                            return;
-                        }
-                        Bitmap hardware = Bitmap.wrapHardwareBuffer(buffer, screenshot.getColorSpace());
-                        if (hardware == null) { unreadableFrame(); return; }
-                        Bitmap copy = null, scaled = null, context = null, crop = null;
-                        try {
-                            if ((long) hardware.getWidth() * hardware.getHeight() > 16777216) {
-                                unreadableFrame(); return;
-                            }
-                            copy = hardware.copy(Bitmap.Config.ARGB_8888, false);
-                            boolean people = PersonBlur.on(personMode);
-                            int edge = people ? PERSON_FRAME_EDGE : FRAME_EDGE;
-                            lastFrameEdge = edge;
-                            scaled = scaleFrame(copy, edge);
-                            boolean nativeAdult = classifier instanceof TfliteClassifier || classifier instanceof HybridRuntime;
-                            if (nativeAdult) crop = adultPictureFrame(copy);
-                            if (classifier instanceof HybridRuntime) context = scaleFrame(copy, FRAME_EDGE);
-                            else context = scaled;
-                            if (people) pendingPersonFrame = VisualOverlay.blur(scaled);
-                            long signature = signature(scaled);
-                            // The cache key covers the pixels of both inputs when a picture was isolated.
-                            long key = people ? 0 : fingerprint(scaled, crop);
-                            String cached = people ? null : verdicts.get(target.id, key, SystemClock.uptimeMillis());
-                            if (cached != null) {
-                                cached(frame, target, signature, cached);
-                                return;
-                            }
-                            lastInferenceMillis = 0;
-                            pendingInferenceStart = SystemClock.uptimeMillis();
-                            java.util.function.Consumer<VisualResult> callback =
-                                    result -> decided(frame, target, signature, key, result);
-                            if (classifier instanceof HybridRuntime) {
-                                ((HybridRuntime) classifier).inspect(crop == null ? context : crop,
-                                        crop == null ? null : context, scaled, callback);
-                            } else if (classifier instanceof TfliteClassifier) {
-                                ((TfliteClassifier) classifier).inspect(crop == null ? scaled : crop,
-                                        crop == null ? null : scaled, callback);
-                            } else {
-                                classifier.inspect(scaled, callback);
-                            }
-                        } finally {
-                            if (crop != null && crop != copy && crop != scaled && crop != context) crop.recycle();
-                            if (context != null && context != copy && context != scaled) context.recycle();
-                            if (scaled != null && scaled != copy) scaled.recycle();
-                            if (copy != null) copy.recycle();
-                            hardware.recycle();
-                        }
-                    } catch (RuntimeException | OutOfMemoryError unavailable) { busy = false; fail(); }
+                        shot = Shot.prepare(buffer, screenshot.getColorSpace(), people, faceBlur, hybrid, nativeAdult);
+                    } catch (Throwable unavailable) { shot = null; }
+                    final Shot ready = shot;
+                    if (!handler.post(() -> shotReady(frame, target, ready, people, faceBlur)) && ready != null) ready.recycle();
                 }
                 @Override public void onFailure(int error) {
+                    handler.post(() -> failed(error));
+                }
+                private void failed(int error) {
                     if (!closed && pendingFrame == frame) {
                         handler.removeCallbacks(captureTimeout);
                         pendingFrame = null;
@@ -477,6 +525,102 @@ final class VisualGuard implements AutoCloseable {
     }
 
     /** The optional picture view. The adult check also receives the whole screen for context. */
+    /** One screenshot made ready for the models, off the main thread. Owns its bitmaps. */
+    static final class Shot {
+        Bitmap scaled, crop, context, person;
+        long signature, key;
+        boolean unreadable;
+        int edge;
+
+        /** Only reached from the Android 14 screenshot callback. */
+        @android.annotation.TargetApi(34)
+        static Shot prepare(HardwareBuffer buffer, android.graphics.ColorSpace space, boolean people,
+                boolean faceBlur, boolean hybrid, boolean nativeAdult) {
+            Shot shot = new Shot();
+            Bitmap hardware = Bitmap.wrapHardwareBuffer(buffer, space);
+            if (hardware == null || (long) hardware.getWidth() * hardware.getHeight() > 16777216) {
+                if (hardware != null) hardware.recycle();
+                shot.unreadable = true;
+                return shot;
+            }
+            Bitmap copy = null;
+            try {
+                copy = hardware.copy(Bitmap.Config.ARGB_8888, false);
+                shot.edge = people ? PERSON_FRAME_EDGE : FRAME_EDGE;
+                shot.scaled = scaleFrame(copy, shot.edge);
+                if (nativeAdult) shot.crop = adultPictureFrame(copy);
+                shot.context = hybrid ? scaleFrame(copy, FRAME_EDGE) : shot.scaled;
+                // The face-only blur keeps a small unblurred copy for its patches' colors;
+                // the cover keeps only its 32-pixel blur.
+                if (people) shot.person = faceBlur ? FaceBlurLayer.reduce(shot.scaled) : VisualOverlay.blur(shot.scaled);
+                shot.signature = signature(shot.scaled);
+                // The cache key covers the pixels of both inputs when a picture was isolated.
+                shot.key = people ? 0 : fingerprint(shot.scaled, shot.crop);
+                // Bitmaps the scaling returned unchanged are the copy itself; keep those.
+                if (shot.crop == copy || shot.scaled == copy || shot.context == copy) copy = null;
+                return shot;
+            } catch (RuntimeException | OutOfMemoryError unavailable) {
+                shot.recycle();
+                throw unavailable;
+            } finally {
+                if (copy != null) copy.recycle();
+                hardware.recycle();
+            }
+        }
+
+        void recycle() {
+            if (crop != null && crop != scaled && crop != context) crop.recycle();
+            if (context != null && context != scaled) context.recycle();
+            if (scaled != null) scaled.recycle();
+            if (person != null) person.recycle();
+            crop = context = scaled = person = null;
+        }
+    }
+
+    private void shotReady(VisualFrameGate.Frame frame, GuardWindows.Window target, Shot shot,
+            boolean people, boolean faceBlur) {
+        try {
+            if (closed || pendingFrame != frame) return;
+            handler.removeCallbacks(captureTimeout);
+            captures++;
+            captureFailureStreak = 0;
+            captureBackoffUntil = 0;
+            lastCaptureMillis = SystemClock.uptimeMillis() - pendingStarted;
+            if (currentWindow(frame, target) == null) {
+                discarded++; pendingFrame = null; busy = false; clearPendingPersonFrame();
+                health.report(State.WAITING);
+                sampleEnded();
+                return;
+            }
+            if (shot == null) { busy = false; fail(); return; }
+            if (shot.unreadable) { unreadableFrame(); return; }
+            lastFrameEdge = shot.edge;
+            if (people) { pendingPersonFrame = shot.person; shot.person = null; }
+            if (classifier instanceof HybridRuntime) ((HybridRuntime) classifier).bodies(faceBlur);
+            Bitmap scaled = shot.scaled, crop = shot.crop, context = shot.context;
+            long signature = shot.signature, key = shot.key;
+            String cached = people ? null : verdicts.get(target.id, key, SystemClock.uptimeMillis());
+            if (cached != null) {
+                cached(frame, target, signature, cached);
+                return;
+            }
+            lastInferenceMillis = 0;
+            pendingInferenceStart = SystemClock.uptimeMillis();
+            java.util.function.Consumer<VisualResult> callback =
+                    result -> decided(frame, target, signature, key, result);
+            if (classifier instanceof HybridRuntime) {
+                ((HybridRuntime) classifier).inspect(crop == null ? context : crop,
+                        crop == null ? null : context, scaled, callback);
+            } else if (classifier instanceof TfliteClassifier) {
+                ((TfliteClassifier) classifier).inspect(crop == null ? scaled : crop,
+                        crop == null ? null : scaled, callback);
+            } else {
+                classifier.inspect(scaled, callback);
+            }
+        } catch (RuntimeException | OutOfMemoryError unavailable) { busy = false; fail(); }
+        finally { if (shot != null) shot.recycle(); }
+    }
+
     static Bitmap adultPictureFrame(Bitmap copy) {
         Bitmap picture = picture(copy);
         if (picture == null) return null;
@@ -657,7 +801,7 @@ final class VisualGuard implements AutoCloseable {
             }
             adultClear(target);
             if (result.personBlur) {
-                personHit(live, personFrame, now);
+                personHit(live, personFrame, result.blurBoxes, now);
             } else {
                 if (personConfirmWindow == target.id) {
                     personConfirmWindow = -1;
@@ -665,6 +809,7 @@ final class VisualGuard implements AutoCloseable {
                     personUnconfirmed++;
                 }
                 hideCoverFor(target);
+                if (faceBlur()) faceChecked(live);
             }
         } catch (RuntimeException unavailable) { fail(); }
         finally {
@@ -673,7 +818,29 @@ final class VisualGuard implements AutoCloseable {
         }
     }
 
-    private void personHit(GuardWindows.Window target, Bitmap personFrame, long now) {
+    private boolean faceBlur() {
+        return PersonBlur.FACES.equals(PersonBlur.response(service));
+    }
+
+    private void personHit(GuardWindows.Window target, Bitmap personFrame, float[] regions, long now) {
+        if (faceBlur()) {
+            android.graphics.Rect bounds = regions == null || regions.length == 0 ? null : bounds(target.id);
+            if (bounds != null && mayCover(target)) {
+                covered = target;
+                overlay.showFaces(bounds, regions, personFrame);
+                // The page may have scrolled while the models ran: start where the people are now.
+                if (captureWindow == target.id && (scrolledX != 0 || scrolledY != 0)) {
+                    overlay.shift(-scrolledX, -scrolledY);
+                }
+                faceChecked(target);
+                return;
+            }
+            // Where the people are is unknown: cover the whole screen rather than show them.
+            Bitmap blurred = personFrame == null ? null : VisualOverlay.blur(personFrame);
+            try { showPeople(target, blurred); }
+            finally { if (blurred != null) blurred.recycle(); }
+            return;
+        }
         showPeople(target, personFrame);
         // Android Back is global. Only the application window receiving navigation can be sent back.
         if (!target.active || !target.focused || target.pip
@@ -697,6 +864,19 @@ final class VisualGuard implements AutoCloseable {
         if (service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)) personBacks++;
     }
 
+    /** The window's place on screen, or null when it is gone. */
+    private android.graphics.Rect bounds(int id) {
+        try {
+            for (android.view.accessibility.AccessibilityWindowInfo window : service.getWindows()) {
+                if (window.getId() != id) continue;
+                android.graphics.Rect rect = new android.graphics.Rect();
+                window.getBoundsInScreen(rect);
+                return rect.isEmpty() ? null : rect;
+            }
+        } catch (RuntimeException unavailable) { /* Treated as unknown. */ }
+        return null;
+    }
+
     private boolean mayCover(GuardWindows.Window target) {
         return covered == null || (covered.id == target.id && covered.app.equals(target.app));
     }
@@ -714,6 +894,7 @@ final class VisualGuard implements AutoCloseable {
 
     private void hideCover() {
         covered = null;
+        faceOwner = null;
         overlay.hide();
     }
 
@@ -809,6 +990,7 @@ final class VisualGuard implements AutoCloseable {
     @Override public void close() {
         VisualTestHooks.clear();
         closed = true;
+        shotWorker.shutdown();
         handler.removeCallbacksAndMessages(null);
         if (listening) {
             try { service.unregisterReceiver(screenOn); } catch (RuntimeException alreadyGone) { /* Nothing to do. */ }

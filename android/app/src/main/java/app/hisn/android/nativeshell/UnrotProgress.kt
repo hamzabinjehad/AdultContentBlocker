@@ -95,17 +95,12 @@ private val QuestionTiles = listOf(TileButter, TileBlush, TileSage, TileSky, Til
 
 @Composable
 private fun Question(number: Int, text: Int) {
-    Row(
-        Modifier.padding(start = 2.dp, top = 10.dp, bottom = 2.dp).riseIn(number).semantics(mergeDescendants = true) { heading() },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Box(
-            Modifier.size(26.dp).background(TileButter, CircleShape),
-            contentAlignment = Alignment.Center
-        ) { Text("$number", style = MaterialTheme.typography.labelLarge, color = UnrotInk) }
-        Text(stringResource(text), style = MaterialTheme.typography.titleMedium)
-    }
+    // A quiet serif heading; numbered circles skipped numbers when a section was hidden.
+    Text(
+        stringResource(text),
+        style = MaterialTheme.typography.titleLarge.storySerif(),
+        modifier = Modifier.padding(start = 2.dp, top = 20.dp, bottom = 2.dp).riseIn(number).semantics { heading() }
+    )
 }
 
 @Composable
@@ -172,6 +167,10 @@ internal fun UnrotProgress(state: HisnState, padding: PaddingValues, onOpen: (St
         ),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // CleanPath's Analytics top: gauge, two tiles, meters (see UnrotAnalyticsTop.kt).
+        item(key = "analytics-top") { UnrotAnalyticsTop(wins, state.personal.day, steps) }
+        // One swaying cartoon tree per day (UnrotWood.kt, from the trees-and-animations work).
+        wins?.let { w -> item(key = "wood") { UnrotWoodCard(w) } }
         wins?.let { w ->
             if (!w.heavier) item { UnrotProgressHero(w) }
             item {

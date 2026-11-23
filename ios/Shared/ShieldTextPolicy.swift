@@ -37,10 +37,10 @@ enum ShieldTextPolicy {
         var secondaryButton: String?
 
         init(title: String, subtitle: String, primaryButton: String, secondaryButton: String? = nil) {
-            self.title = title
-            self.subtitle = subtitle
-            self.primaryButton = primaryButton
-            self.secondaryButton = secondaryButton
+            self.title = Edition.brand(title)
+            self.subtitle = Edition.brand(subtitle)
+            self.primaryButton = Edition.brand(primaryButton)
+            self.secondaryButton = secondaryButton.map(Edition.brand)
         }
     }
 
@@ -128,10 +128,10 @@ enum ShieldTextPolicy {
         switch language {
         case .english:
             return (title: name.isEmpty ? "Pause before opening" : "Pause before opening \(name)",
-                    body: "Tap to take the pause in Hisn. Nothing opens until you finish it.")
+                    body: Edition.brand("Tap to take the pause in Hisn. Nothing opens until you finish it."))
         case .arabic:
             return (title: name.isEmpty ? "توقف قبل الفتح" : "توقف قبل فتح \(name)",
-                    body: "اضغط لتأخذ التوقف في حصن. لا يُفتح شيء حتى تُكمله.")
+                    body: Edition.brand("اضغط لتأخذ التوقف في حصن. لا يُفتح شيء حتى تُكمله."))
         }
     }
 
@@ -207,6 +207,14 @@ enum ShieldTextPolicy {
                            appName: String? = nil,
                            now: Date = Date(),
                            preferredLanguages: [String] = Locale.preferredLanguages) -> Copy {
+        #if UNROT
+        // Unrot's Focus closes the feed apps on purpose for a while: say so,
+        // with no pause button, until it ends.
+        if let until = defaults?.double(forKey: focusUntilKey), until > now.timeIntervalSince1970 {
+            return focusCopy(until: Date(timeIntervalSince1970: until),
+                             language: language(defaults: defaults, preferredLanguages: preferredLanguages))
+        }
+        #endif
         let config = configuration(in: defaults)
         let pauseBudget: PauseRule.Budget = config?.mode == .pause
             ? PauseRuleStore(defaults: defaults).budget(
@@ -221,4 +229,27 @@ enum ShieldTextPolicy {
                     language: language(defaults: defaults, preferredLanguages: preferredLanguages),
                     appName: appName)
     }
+
+    #if UNROT
+    /// Where Unrot's app keeps the end of a running Focus (UnrotStore.Key.focusUntil).
+    static let focusUntilKey = "unrot.focus.until"
+
+    static func focusCopy(until: Date, language: Language) -> Copy {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: language == .arabic ? "ar" : "en")
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        let time = formatter.string(from: until)
+        switch language {
+        case .english:
+            return Copy(title: "Focus is on",
+                        subtitle: "You closed your feeds until \(time). This is the time you asked for.",
+                        primaryButton: "Close")
+        case .arabic:
+            return Copy(title: "التركيز يعمل",
+                        subtitle: "أغلقتَ تطبيقات التصفح حتى \(time). هذا هو الوقت الذي طلبته.",
+                        primaryButton: "إغلاق")
+        }
+    }
+    #endif
 }

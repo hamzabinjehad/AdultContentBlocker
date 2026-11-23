@@ -41,7 +41,6 @@ class ShellActivity : ComponentActivity(), ShellActions {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        app.hisn.android.nativeshell.UnrotFeel.warm(this)
         enableEdgeToEdge()
         requestedTab = tabOf(intent)
         if (intent?.getBooleanExtra("focus", false) == true) app.hisn.android.nativeshell.FocusRequest.open.value = true

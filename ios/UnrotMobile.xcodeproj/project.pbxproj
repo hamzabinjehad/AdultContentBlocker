@@ -1,0 +1,3224 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+		58148B49A40E82D8CBE9F579  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/AdultTldGuard.swift";
+			sourceTree = "<group>";
+		};
+		AD749F27C885AF47D2DFEDB3  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/CommitmentPolicy.swift";
+			sourceTree = "<group>";
+		};
+		1AC01D8272F7B9928ACCA554  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/CustomSitePolicy.swift";
+			sourceTree = "<group>";
+		};
+		F75157D9F3F6FD446D4554B2  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/LayerAlertPolicy.swift";
+			sourceTree = "<group>";
+		};
+		22ED35E5701488EB13E1DF35  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/MirroredRuleStore.swift";
+			sourceTree = "<group>";
+		};
+		B68499C7EA29DC064714AED1  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/MobileProtectionPolicy.swift";
+			sourceTree = "<group>";
+		};
+		E03F2484738224ABA6D4E770  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/Punycode.swift";
+			sourceTree = "<group>";
+		};
+		4AD2C81EF123DB97B20BD752  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/ReadinessHistory.swift";
+			sourceTree = "<group>";
+		};
+		5BCBB7D0DC93FC1DDAE9ED61  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/RouterAppDomains.swift";
+			sourceTree = "<group>";
+		};
+		982975E53CB533CADA8FD61F  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/RouterAppDomainsView.swift";
+			sourceTree = "<group>";
+		};
+		64554B05BB9C71A01C19915F  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/TextNormalizer.swift";
+			sourceTree = "<group>";
+		};
+		C38152135A92032045D3472B  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/TrustedTime.swift";
+			sourceTree = "<group>";
+		};
+		F4A4A803611C34FD3F87E18B  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/AppUsageController.swift";
+			sourceTree = "<group>";
+		};
+		23B3BC04F04C2B468AF11442  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/AppsView.swift";
+			sourceTree = "<group>";
+		};
+		50D5E2EE75626431AAA2BD98  = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder.assetcatalog;
+			path = "Hisn/Assets.xcassets";
+			sourceTree = "<group>";
+		};
+		0EBF9AB5818BE3FB3CC7C87B  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/BrowserFirstSection.swift";
+			sourceTree = "<group>";
+		};
+		C34582A095CC840419BB2B67  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/CommitmentSection.swift";
+			sourceTree = "<group>";
+		};
+		5EF93C39AE0A12F863A953BC  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/CustomSitesSection.swift";
+			sourceTree = "<group>";
+		};
+		11FE4E426F2729B3E0ED3082  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/DNSCustomSitesShare.swift";
+			sourceTree = "<group>";
+		};
+		32FC3F8B0EE251656944860E  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/DNSRouteProbe.swift";
+			sourceTree = "<group>";
+		};
+		05D3E25C09E84BF6A4E4E3F9  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/HisnMobileApp.swift";
+			sourceTree = "<group>";
+		};
+		9B58D6F32A0B01CC13845E15  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/HisnPalette.swift";
+			sourceTree = "<group>";
+		};
+		04C0750083C97DDB24B4923E  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/HisnTheme.swift";
+			sourceTree = "<group>";
+		};
+		9E23A713F382FFCA64AA280A  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/HisnUI.swift";
+			sourceTree = "<group>";
+		};
+		F144496A1CD93678A10B07E0  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/ListUpdater.swift";
+			sourceTree = "<group>";
+		};
+		FCE2B547D5D74B8316E364F7  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/MobileCommitmentStore.swift";
+			sourceTree = "<group>";
+		};
+		5F9265D85EAD1C04BD50005C  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/MobileRootView.swift";
+			sourceTree = "<group>";
+		};
+		9307E419CCB6058B20DA0572  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/MoreView.swift";
+			sourceTree = "<group>";
+		};
+		4FBC244AD919421502A7BBD6  = {
+			isa = PBXFileReference;
+			lastKnownFileType = text;
+			path = "Hisn/Notices.txt";
+			sourceTree = "<group>";
+		};
+		55FF400FC78DA029FDF891E1  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/OverviewCards.swift";
+			sourceTree = "<group>";
+		};
+		87FCFE1D32D633AB88DE35AC  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/PasscodeVault.swift";
+			sourceTree = "<group>";
+		};
+		368028F82BE73865E23337BC  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/PasscodeVaultSection.swift";
+			sourceTree = "<group>";
+		};
+		F2845BD91AACFBBE87D5A026  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/Pause.swift";
+			sourceTree = "<group>";
+		};
+		C3FD2806C0A6B876F9D2C13E  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/PauseRuleGrantView.swift";
+			sourceTree = "<group>";
+		};
+		84B27300ED8ECE1A5923E820  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/PracticeView.swift";
+			sourceTree = "<group>";
+		};
+		6CB3CEF61F360B26D4CD8F00  = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.xml;
+			path = "Hisn/PrivacyInfo.xcprivacy";
+			sourceTree = "<group>";
+		};
+		22116B79393CB72307A2D146  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/ProtectionController.swift";
+			sourceTree = "<group>";
+		};
+		9B1C567182189D556CEB6F78  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/ProtectionHero.swift";
+			sourceTree = "<group>";
+		};
+		3925C9F04CC0D5C05A860964  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/SetupViews.swift";
+			sourceTree = "<group>";
+		};
+		A84FF6205D8CEC1437F3FC48  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/TodayView.swift";
+			sourceTree = "<group>";
+		};
+		0AB52204637DB2563CA85EB5  = {
+			name = ar;
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.strings;
+			path = "Hisn/ar.lproj/Localizable.strings";
+			sourceTree = "<group>";
+		};
+		B5D09C9CD30AB4C3C2F775B7  = {
+			name = en;
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.strings;
+			path = "Hisn/en.lproj/Localizable.strings";
+			sourceTree = "<group>";
+		};
+		97E3A110C1EF2759EB12FA3D  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnActivityMonitor/ActivityMonitor.swift";
+			sourceTree = "<group>";
+		};
+		1349496B0BFBD6AE9C197419  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnBlocker/ContentBlockerRequestHandler.swift";
+			sourceTree = "<group>";
+		};
+		638A9C0FAC54EBEB2A392F9C  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnDNSProxy/DNSProxyProvider.swift";
+			sourceTree = "<group>";
+		};
+		AE71E87754EB481546D35CD0  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnShieldAction/ShieldActionExtension.swift";
+			sourceTree = "<group>";
+		};
+		39F3D8B658B10DDA9D974CF3  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnShieldConfig/ShieldConfigurationExtension.swift";
+			sourceTree = "<group>";
+		};
+		5C25BCCE29FDFB43995D18E4  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnTests/UnrotCoreTests.swift";
+			sourceTree = "<group>";
+		};
+		C04E1F33DC7CE7CFD4CD8A41  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnWebExtension/SafariWebExtensionHandler.swift";
+			sourceTree = "<group>";
+		};
+		76CFB910A4011D94CDB9761F  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/AppUsageConfiguration.swift";
+			sourceTree = "<group>";
+		};
+		DF6CF61D1D4D4026514AD894  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/DNSFilterEngine.swift";
+			sourceTree = "<group>";
+		};
+		7DF9096670FC3E369FFA005C  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/DNSMessage.swift";
+			sourceTree = "<group>";
+		};
+		0963274D2C3FB112D11F221D  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/DNSReplyGuard.swift";
+			sourceTree = "<group>";
+		};
+		540F64C242CD2A13F37529C7  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/DNSUpstream.swift";
+			sourceTree = "<group>";
+		};
+		1C67CCB221F0A36EA58D344B  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/DomainIndex.swift";
+			sourceTree = "<group>";
+		};
+		0FCF301BA37793E827F2F87F  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/Edition.swift";
+			sourceTree = "<group>";
+		};
+		03778AF5BC70E1F9637E5716  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/EncryptedDNSProviders.swift";
+			sourceTree = "<group>";
+		};
+		E97CEE2199ECC7931DCA55E4  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/HostTermPolicy.swift";
+			sourceTree = "<group>";
+		};
+		A5A87FAFDF8C15EA7D961056  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/ListGeneration.swift";
+			sourceTree = "<group>";
+		};
+		58F53AAA5B00AC1B3D65000C  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/ListGenerationStore.swift";
+			sourceTree = "<group>";
+		};
+		D83ACD8756A1B1ABE39CDD3B  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/PauseRule.swift";
+			sourceTree = "<group>";
+		};
+		24C82CD6B06A4A65F3A2F063  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/SafariGenerationRules.swift";
+			sourceTree = "<group>";
+		};
+		85E4F1747E8749EE39D50512  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/ShieldTextPolicy.swift";
+			sourceTree = "<group>";
+		};
+		F39F44DBA27C2F958D80A7A8  = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder.assetcatalog;
+			path = "Unrot/UnrotArt.xcassets";
+			sourceTree = "<group>";
+		};
+		810358D14B39D8125B7AE35A  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotBreatheView.swift";
+			sourceTree = "<group>";
+		};
+		2E17B90DC84D5B9AA08702DC  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotCore.swift";
+			sourceTree = "<group>";
+		};
+		77CCEE3664208A5ED163FD73  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotGlassHero.swift";
+			sourceTree = "<group>";
+		};
+		384FA450B5DB2AA8B672CE47  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotHomeView.swift";
+			sourceTree = "<group>";
+		};
+		61C650DEB40FB7D4151E7E8E  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotLockView.swift";
+			sourceTree = "<group>";
+		};
+		EB5309D46D744267C7CCA00A  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotOnboarding.swift";
+			sourceTree = "<group>";
+		};
+		E216A04D53A4FDBF7927D7D2  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotProgressView.swift";
+			sourceTree = "<group>";
+		};
+		37E7447835CC8653E765D84E  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotRootView.swift";
+			sourceTree = "<group>";
+		};
+		FDEA10CC82E76283B0E53F3C  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotSheets.swift";
+			sourceTree = "<group>";
+		};
+		E87BDEEF67D5E57943C3A09F  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotShieldView.swift";
+			sourceTree = "<group>";
+		};
+		38309664404BFA404E648EBB  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotStore.swift";
+			sourceTree = "<group>";
+		};
+		4659F39AFCE1C64B5F527D62  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotTheme.swift";
+			sourceTree = "<group>";
+		};
+		2CAF3F44230936DB658DBC51  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Unrot/UnrotYouView.swift";
+			sourceTree = "<group>";
+		};
+		6A6050B4078DF3D6C6D4F890  = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.json;
+			path = "fixtures/safari_cases.json";
+			sourceTree = "<group>";
+		};
+		ED9BA85BF38759FD67931242  = {
+			isa = PBXVariantGroup;
+			children = (
+				B5D09C9CD30AB4C3C2F775B7,
+				0AB52204637DB2563CA85EB5,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		0343326789669083DA747519  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.application;
+			path = UnrotMobile.app;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		CD5754B2A0541F9804EBE17A  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = Hisn1.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		FF327485B10172D704987CE1  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = Hisn2.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		4EBF2B2D008D1DFE6CF00CBB  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = Hisn3.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		5FB357DD48BE21500641536B  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = Hisn4.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		B21C5A749CD200E79C0CAB5F  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = Hisn5.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		23882EB39BFEF6FBB19EB5B6  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = Hisn6.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		121F4066E0355F6750B62C82  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = HisnActivityMonitor.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		0BC62AF2FE57A9299247DC0B  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = HisnText.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		3F209F6C2670A953C107C257  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = HisnShieldConfig.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		F465DDDB4A951751894E0139  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = HisnShieldAction.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		25B29FC46A9AB494331B94F0  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = HisnDNSProxy.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		500B386ECFE0BC825E155B22  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = UnrotMobileTests.xctest;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		B9A01987720A964863B71216  = {
+			isa = PBXGroup;
+			children = (
+				0343326789669083DA747519,
+				CD5754B2A0541F9804EBE17A,
+				FF327485B10172D704987CE1,
+				4EBF2B2D008D1DFE6CF00CBB,
+				5FB357DD48BE21500641536B,
+				B21C5A749CD200E79C0CAB5F,
+				23882EB39BFEF6FBB19EB5B6,
+				121F4066E0355F6750B62C82,
+				0BC62AF2FE57A9299247DC0B,
+				3F209F6C2670A953C107C257,
+				F465DDDB4A951751894E0139,
+				25B29FC46A9AB494331B94F0,
+				500B386ECFE0BC825E155B22,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C7F72C0E6EDDC20FF9C16D2F  = {
+			isa = PBXGroup;
+			children = (
+				58148B49A40E82D8CBE9F579,
+				AD749F27C885AF47D2DFEDB3,
+				1AC01D8272F7B9928ACCA554,
+				F75157D9F3F6FD446D4554B2,
+				22ED35E5701488EB13E1DF35,
+				B68499C7EA29DC064714AED1,
+				E03F2484738224ABA6D4E770,
+				4AD2C81EF123DB97B20BD752,
+				5BCBB7D0DC93FC1DDAE9ED61,
+				982975E53CB533CADA8FD61F,
+				64554B05BB9C71A01C19915F,
+				C38152135A92032045D3472B,
+				F4A4A803611C34FD3F87E18B,
+				23B3BC04F04C2B468AF11442,
+				50D5E2EE75626431AAA2BD98,
+				0EBF9AB5818BE3FB3CC7C87B,
+				C34582A095CC840419BB2B67,
+				5EF93C39AE0A12F863A953BC,
+				11FE4E426F2729B3E0ED3082,
+				32FC3F8B0EE251656944860E,
+				05D3E25C09E84BF6A4E4E3F9,
+				9B58D6F32A0B01CC13845E15,
+				04C0750083C97DDB24B4923E,
+				9E23A713F382FFCA64AA280A,
+				F144496A1CD93678A10B07E0,
+				FCE2B547D5D74B8316E364F7,
+				5F9265D85EAD1C04BD50005C,
+				9307E419CCB6058B20DA0572,
+				4FBC244AD919421502A7BBD6,
+				55FF400FC78DA029FDF891E1,
+				87FCFE1D32D633AB88DE35AC,
+				368028F82BE73865E23337BC,
+				F2845BD91AACFBBE87D5A026,
+				C3FD2806C0A6B876F9D2C13E,
+				84B27300ED8ECE1A5923E820,
+				6CB3CEF61F360B26D4CD8F00,
+				22116B79393CB72307A2D146,
+				9B1C567182189D556CEB6F78,
+				3925C9F04CC0D5C05A860964,
+				A84FF6205D8CEC1437F3FC48,
+				97E3A110C1EF2759EB12FA3D,
+				1349496B0BFBD6AE9C197419,
+				638A9C0FAC54EBEB2A392F9C,
+				AE71E87754EB481546D35CD0,
+				39F3D8B658B10DDA9D974CF3,
+				5C25BCCE29FDFB43995D18E4,
+				C04E1F33DC7CE7CFD4CD8A41,
+				76CFB910A4011D94CDB9761F,
+				DF6CF61D1D4D4026514AD894,
+				7DF9096670FC3E369FFA005C,
+				0963274D2C3FB112D11F221D,
+				540F64C242CD2A13F37529C7,
+				1C67CCB221F0A36EA58D344B,
+				0FCF301BA37793E827F2F87F,
+				03778AF5BC70E1F9637E5716,
+				E97CEE2199ECC7931DCA55E4,
+				A5A87FAFDF8C15EA7D961056,
+				58F53AAA5B00AC1B3D65000C,
+				D83ACD8756A1B1ABE39CDD3B,
+				24C82CD6B06A4A65F3A2F063,
+				85E4F1747E8749EE39D50512,
+				F39F44DBA27C2F958D80A7A8,
+				810358D14B39D8125B7AE35A,
+				2E17B90DC84D5B9AA08702DC,
+				77CCEE3664208A5ED163FD73,
+				384FA450B5DB2AA8B672CE47,
+				61C650DEB40FB7D4151E7E8E,
+				EB5309D46D744267C7CCA00A,
+				E216A04D53A4FDBF7927D7D2,
+				37E7447835CC8653E765D84E,
+				FDEA10CC82E76283B0E53F3C,
+				E87BDEEF67D5E57943C3A09F,
+				38309664404BFA404E648EBB,
+				4659F39AFCE1C64B5F527D62,
+				2CAF3F44230936DB658DBC51,
+				6A6050B4078DF3D6C6D4F890,
+				ED9BA85BF38759FD67931242,
+				B9A01987720A964863B71216,
+			);
+			sourceTree = "<group>";
+		};
+		C13958A87DA7DA07853158D2  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		187097F91D1E1AC84DAF3C00  = {
+			isa = PBXBuildFile;
+			fileRef = 05D3E25C09E84BF6A4E4E3F9;
+		};
+		CAD2CC3B50455AD52687493B  = {
+			isa = PBXBuildFile;
+			fileRef = 5F9265D85EAD1C04BD50005C;
+		};
+		13FA323C1E523E324C29879B  = {
+			isa = PBXBuildFile;
+			fileRef = 22116B79393CB72307A2D146;
+		};
+		18FBC966A7CDD07CE627DAE5  = {
+			isa = PBXBuildFile;
+			fileRef = FCE2B547D5D74B8316E364F7;
+		};
+		091549A5162F3025D0DB06FB  = {
+			isa = PBXBuildFile;
+			fileRef = C34582A095CC840419BB2B67;
+		};
+		B55EE13C9A67DEE19E1B7CFC  = {
+			isa = PBXBuildFile;
+			fileRef = F4A4A803611C34FD3F87E18B;
+		};
+		180C3A794DC5BF1F0262D32B  = {
+			isa = PBXBuildFile;
+			fileRef = 0EBF9AB5818BE3FB3CC7C87B;
+		};
+		A123569CE64D580A2F1409C6  = {
+			isa = PBXBuildFile;
+			fileRef = 5EF93C39AE0A12F863A953BC;
+		};
+		D2BAC1BD78475A8EB553EFD7  = {
+			isa = PBXBuildFile;
+			fileRef = 1AC01D8272F7B9928ACCA554;
+		};
+		374E420150569B10426D52A1  = {
+			isa = PBXBuildFile;
+			fileRef = 87FCFE1D32D633AB88DE35AC;
+		};
+		AEBC39306A2047081D9FF7AF  = {
+			isa = PBXBuildFile;
+			fileRef = 368028F82BE73865E23337BC;
+		};
+		88F3FD4F15DDD146F2057ACD  = {
+			isa = PBXBuildFile;
+			fileRef = 9B58D6F32A0B01CC13845E15;
+		};
+		16946146B9720AFA2218A2A5  = {
+			isa = PBXBuildFile;
+			fileRef = 9E23A713F382FFCA64AA280A;
+		};
+		94D658100CE778123DF900F6  = {
+			isa = PBXBuildFile;
+			fileRef = 55FF400FC78DA029FDF891E1;
+		};
+		01A7DF5B2A9C5478A97D46BD  = {
+			isa = PBXBuildFile;
+			fileRef = 3925C9F04CC0D5C05A860964;
+		};
+		A354979ACB33690648EFDCDF  = {
+			isa = PBXBuildFile;
+			fileRef = F2845BD91AACFBBE87D5A026;
+		};
+		35CB7637F68063B537B0C027  = {
+			isa = PBXBuildFile;
+			fileRef = C3FD2806C0A6B876F9D2C13E;
+		};
+		108BB3F9357E1FA5BF8D8766  = {
+			isa = PBXBuildFile;
+			fileRef = 9B1C567182189D556CEB6F78;
+		};
+		724EE357E048DDF913FCE76C  = {
+			isa = PBXBuildFile;
+			fileRef = F144496A1CD93678A10B07E0;
+		};
+		92A2C00DA19EEBD89DE30CDC  = {
+			isa = PBXBuildFile;
+			fileRef = 04C0750083C97DDB24B4923E;
+		};
+		34C5DE99A50D3BB87FFC7921  = {
+			isa = PBXBuildFile;
+			fileRef = A84FF6205D8CEC1437F3FC48;
+		};
+		86A9ADA32174A2C29C803AF0  = {
+			isa = PBXBuildFile;
+			fileRef = 23B3BC04F04C2B468AF11442;
+		};
+		626FE867FFCD473125C17A35  = {
+			isa = PBXBuildFile;
+			fileRef = 84B27300ED8ECE1A5923E820;
+		};
+		28D53A1EBC4BA33236BD3D6E  = {
+			isa = PBXBuildFile;
+			fileRef = 9307E419CCB6058B20DA0572;
+		};
+		8E398D401E8C36ABDA3884D2  = {
+			isa = PBXBuildFile;
+			fileRef = 32FC3F8B0EE251656944860E;
+		};
+		6C441600110FE1B6A3EF054A  = {
+			isa = PBXBuildFile;
+			fileRef = 11FE4E426F2729B3E0ED3082;
+		};
+		194223C327C986498153A863  = {
+			isa = PBXBuildFile;
+			fileRef = 76CFB910A4011D94CDB9761F;
+		};
+		A2CC1A7ED0C69299F02E7DA0  = {
+			isa = PBXBuildFile;
+			fileRef = 85E4F1747E8749EE39D50512;
+		};
+		FAB0A9126932A0F137D43A45  = {
+			isa = PBXBuildFile;
+			fileRef = D83ACD8756A1B1ABE39CDD3B;
+		};
+		141E09C58796BF92F895C342  = {
+			isa = PBXBuildFile;
+			fileRef = 7DF9096670FC3E369FFA005C;
+		};
+		A50F0BBB4C4B0192FEA4EA92  = {
+			isa = PBXBuildFile;
+			fileRef = 1C67CCB221F0A36EA58D344B;
+		};
+		C5A79CBD80AE1081019028DA  = {
+			isa = PBXBuildFile;
+			fileRef = E97CEE2199ECC7931DCA55E4;
+		};
+		5864681848352D3C5EDA2793  = {
+			isa = PBXBuildFile;
+			fileRef = 03778AF5BC70E1F9637E5716;
+		};
+		03702F1B64D5C729AB8C4BF9  = {
+			isa = PBXBuildFile;
+			fileRef = 0963274D2C3FB112D11F221D;
+		};
+		F279927A4A44422475DD56A5  = {
+			isa = PBXBuildFile;
+			fileRef = A5A87FAFDF8C15EA7D961056;
+		};
+		A8B788347475FA75E84F7855  = {
+			isa = PBXBuildFile;
+			fileRef = 58F53AAA5B00AC1B3D65000C;
+		};
+		2659FEAB0863ACB3F65B40DA  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		F44D7DD825183D7A0047ACB0  = {
+			isa = PBXBuildFile;
+			fileRef = DF6CF61D1D4D4026514AD894;
+		};
+		CFFEDA4CEA4EFCB10C7B05AD  = {
+			isa = PBXBuildFile;
+			fileRef = 540F64C242CD2A13F37529C7;
+		};
+		D1AC498B93E197C5971F8E62  = {
+			isa = PBXBuildFile;
+			fileRef = 64554B05BB9C71A01C19915F;
+		};
+		AD536142C0E6B77781F61765  = {
+			isa = PBXBuildFile;
+			fileRef = E03F2484738224ABA6D4E770;
+		};
+		78F4787B8746BC79F560515E  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
+		6D9D8F4CDBF22EE8BFEA8CFC  = {
+			isa = PBXBuildFile;
+			fileRef = 5BCBB7D0DC93FC1DDAE9ED61;
+		};
+		7C9CE82CAF16560D612F0B4F  = {
+			isa = PBXBuildFile;
+			fileRef = 982975E53CB533CADA8FD61F;
+		};
+		9BC12DFBE4574FA1B95DF291  = {
+			isa = PBXBuildFile;
+			fileRef = AD749F27C885AF47D2DFEDB3;
+		};
+		E08A483AB1D671595B38FC5D  = {
+			isa = PBXBuildFile;
+			fileRef = B68499C7EA29DC064714AED1;
+		};
+		F9BA1475A35E937C88D49D5B  = {
+			isa = PBXBuildFile;
+			fileRef = 22ED35E5701488EB13E1DF35;
+		};
+		118E6CCA206B12E9219F4FEE  = {
+			isa = PBXBuildFile;
+			fileRef = 4AD2C81EF123DB97B20BD752;
+		};
+		83FEC4D346C9B4E448DDD392  = {
+			isa = PBXBuildFile;
+			fileRef = C38152135A92032045D3472B;
+		};
+		63CC226DD0CA376723697E4C  = {
+			isa = PBXBuildFile;
+			fileRef = F75157D9F3F6FD446D4554B2;
+		};
+		80CFC97C482CDD0CD1560432  = {
+			isa = PBXBuildFile;
+			fileRef = 2E17B90DC84D5B9AA08702DC;
+		};
+		159ACA7C4AC0DD80D8440F47  = {
+			isa = PBXBuildFile;
+			fileRef = 38309664404BFA404E648EBB;
+		};
+		1DDBE4103F9BF6395254351F  = {
+			isa = PBXBuildFile;
+			fileRef = 4659F39AFCE1C64B5F527D62;
+		};
+		C678F51E8FE425FB22B3DB65  = {
+			isa = PBXBuildFile;
+			fileRef = 37E7447835CC8653E765D84E;
+		};
+		0C505C45A9C07F34916CB89A  = {
+			isa = PBXBuildFile;
+			fileRef = 384FA450B5DB2AA8B672CE47;
+		};
+		77AE8BD67DA77D46AFE99BDA  = {
+			isa = PBXBuildFile;
+			fileRef = 77CCEE3664208A5ED163FD73;
+		};
+		EFDDD60079D1B171ABBCEB60  = {
+			isa = PBXBuildFile;
+			fileRef = FDEA10CC82E76283B0E53F3C;
+		};
+		3BEAC28E3A711BE08BBB5A47  = {
+			isa = PBXBuildFile;
+			fileRef = 810358D14B39D8125B7AE35A;
+		};
+		1E7FDB9F70932A85925A3B31  = {
+			isa = PBXBuildFile;
+			fileRef = E87BDEEF67D5E57943C3A09F;
+		};
+		379A6AE964C67EEB405731C9  = {
+			isa = PBXBuildFile;
+			fileRef = E216A04D53A4FDBF7927D7D2;
+		};
+		4C8DF3861C04685EAC5C2C70  = {
+			isa = PBXBuildFile;
+			fileRef = 2CAF3F44230936DB658DBC51;
+		};
+		13A2A2DE8A8A458D6A3E7878  = {
+			isa = PBXBuildFile;
+			fileRef = EB5309D46D744267C7CCA00A;
+		};
+		20C919196A6365EBC2DB2C69  = {
+			isa = PBXBuildFile;
+			fileRef = 61C650DEB40FB7D4151E7E8E;
+		};
+		2DB02DFA2989AB99AA238947  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C13958A87DA7DA07853158D2,
+				187097F91D1E1AC84DAF3C00,
+				CAD2CC3B50455AD52687493B,
+				13FA323C1E523E324C29879B,
+				18FBC966A7CDD07CE627DAE5,
+				091549A5162F3025D0DB06FB,
+				B55EE13C9A67DEE19E1B7CFC,
+				180C3A794DC5BF1F0262D32B,
+				A123569CE64D580A2F1409C6,
+				D2BAC1BD78475A8EB553EFD7,
+				374E420150569B10426D52A1,
+				AEBC39306A2047081D9FF7AF,
+				88F3FD4F15DDD146F2057ACD,
+				16946146B9720AFA2218A2A5,
+				94D658100CE778123DF900F6,
+				01A7DF5B2A9C5478A97D46BD,
+				A354979ACB33690648EFDCDF,
+				35CB7637F68063B537B0C027,
+				108BB3F9357E1FA5BF8D8766,
+				724EE357E048DDF913FCE76C,
+				92A2C00DA19EEBD89DE30CDC,
+				34C5DE99A50D3BB87FFC7921,
+				86A9ADA32174A2C29C803AF0,
+				626FE867FFCD473125C17A35,
+				28D53A1EBC4BA33236BD3D6E,
+				8E398D401E8C36ABDA3884D2,
+				6C441600110FE1B6A3EF054A,
+				194223C327C986498153A863,
+				A2CC1A7ED0C69299F02E7DA0,
+				FAB0A9126932A0F137D43A45,
+				141E09C58796BF92F895C342,
+				A50F0BBB4C4B0192FEA4EA92,
+				C5A79CBD80AE1081019028DA,
+				5864681848352D3C5EDA2793,
+				03702F1B64D5C729AB8C4BF9,
+				F279927A4A44422475DD56A5,
+				A8B788347475FA75E84F7855,
+				2659FEAB0863ACB3F65B40DA,
+				F44D7DD825183D7A0047ACB0,
+				CFFEDA4CEA4EFCB10C7B05AD,
+				D1AC498B93E197C5971F8E62,
+				AD536142C0E6B77781F61765,
+				78F4787B8746BC79F560515E,
+				6D9D8F4CDBF22EE8BFEA8CFC,
+				7C9CE82CAF16560D612F0B4F,
+				9BC12DFBE4574FA1B95DF291,
+				E08A483AB1D671595B38FC5D,
+				F9BA1475A35E937C88D49D5B,
+				118E6CCA206B12E9219F4FEE,
+				83FEC4D346C9B4E448DDD392,
+				63CC226DD0CA376723697E4C,
+				80CFC97C482CDD0CD1560432,
+				159ACA7C4AC0DD80D8440F47,
+				1DDBE4103F9BF6395254351F,
+				C678F51E8FE425FB22B3DB65,
+				0C505C45A9C07F34916CB89A,
+				77AE8BD67DA77D46AFE99BDA,
+				EFDDD60079D1B171ABBCEB60,
+				3BEAC28E3A711BE08BBB5A47,
+				1E7FDB9F70932A85925A3B31,
+				379A6AE964C67EEB405731C9,
+				4C8DF3861C04685EAC5C2C70,
+				13A2A2DE8A8A458D6A3E7878,
+				20C919196A6365EBC2DB2C69,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		466BADAFD31F083C9E7ADE02  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4EAFA8DF0194C693D4436776  = {
+			isa = PBXBuildFile;
+			fileRef = ED9BA85BF38759FD67931242;
+		};
+		C10BE901BCE06D1B3F921AAA  = {
+			isa = PBXBuildFile;
+			fileRef = 50D5E2EE75626431AAA2BD98;
+		};
+		D6A6A66334E4E9F69C1B9312  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		5B1CA244E9677D2DEDC712CB  = {
+			isa = PBXBuildFile;
+			fileRef = 4FBC244AD919421502A7BBD6;
+		};
+		40389FB387290B69B7F75B32  = {
+			isa = PBXBuildFile;
+			fileRef = F39F44DBA27C2F958D80A7A8;
+		};
+		7DD8028C7AB6DAC5CB686E32  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4EAFA8DF0194C693D4436776,
+				C10BE901BCE06D1B3F921AAA,
+				D6A6A66334E4E9F69C1B9312,
+				5B1CA244E9677D2DEDC712CB,
+				40389FB387290B69B7F75B32,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2C028D12C132D089263D49C6  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed seed and compile Safari rules";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_rules.py\" --part 0 --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		05E940597A2A817688728D96  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Name shared screens Unrot";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/Unrot/rebrand_strings.py\" --bundle \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		07BD9DF104147D3AD671A6DB  = {
+			isa = PBXBuildFile;
+			fileRef = CD5754B2A0541F9804EBE17A;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		327C3E3666B2E6E7ABB3AB9E  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = 158C2786FA1CAC551B639C41;
+			remoteInfo = Hisn1;
+		};
+		D1E4FCA329D644FD577CD0FD  = {
+			isa = PBXTargetDependency;
+			target = 158C2786FA1CAC551B639C41;
+			targetProxy = 327C3E3666B2E6E7ABB3AB9E;
+		};
+		B9031EE20E73F8B23CBE2208  = {
+			isa = PBXBuildFile;
+			fileRef = FF327485B10172D704987CE1;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		9F8868B18DAF2677767893A7  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = 05115B778B0506C7AE023E92;
+			remoteInfo = Hisn2;
+		};
+		35E9C5DBB7E2C80DCCEA91B4  = {
+			isa = PBXTargetDependency;
+			target = 05115B778B0506C7AE023E92;
+			targetProxy = 9F8868B18DAF2677767893A7;
+		};
+		A66C5D9B584A942C463541AE  = {
+			isa = PBXBuildFile;
+			fileRef = 4EBF2B2D008D1DFE6CF00CBB;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		B22D9473F99266D131FA7EB4  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = BB1C2D1BC66CA79222500205;
+			remoteInfo = Hisn3;
+		};
+		81DDA5E19B4549C6C09DF31B  = {
+			isa = PBXTargetDependency;
+			target = BB1C2D1BC66CA79222500205;
+			targetProxy = B22D9473F99266D131FA7EB4;
+		};
+		CC8C4C5A0855CC2BF9919DEB  = {
+			isa = PBXBuildFile;
+			fileRef = 5FB357DD48BE21500641536B;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		C344CEF1FE6930378AFC8A24  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = FB57806DAC021B26192C5C34;
+			remoteInfo = Hisn4;
+		};
+		754080A34F7E9620C11D2F81  = {
+			isa = PBXTargetDependency;
+			target = FB57806DAC021B26192C5C34;
+			targetProxy = C344CEF1FE6930378AFC8A24;
+		};
+		EBEAD2720422C2CB5271FA78  = {
+			isa = PBXBuildFile;
+			fileRef = B21C5A749CD200E79C0CAB5F;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		CA9DD5F9ECC86B9E574121D1  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = 6D5F703C67CE157926357A25;
+			remoteInfo = Hisn5;
+		};
+		32E6D5DE6CF09CF84F6F2A91  = {
+			isa = PBXTargetDependency;
+			target = 6D5F703C67CE157926357A25;
+			targetProxy = CA9DD5F9ECC86B9E574121D1;
+		};
+		901AABA60D6FAB97A72478ED  = {
+			isa = PBXBuildFile;
+			fileRef = 23882EB39BFEF6FBB19EB5B6;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		13B484DC7B9665E414DA677A  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = D2AC943AAA542C8370742C0B;
+			remoteInfo = Hisn6;
+		};
+		4310C5E7D469A43D2F85B25D  = {
+			isa = PBXTargetDependency;
+			target = D2AC943AAA542C8370742C0B;
+			targetProxy = 13B484DC7B9665E414DA677A;
+		};
+		6A65D44DB56DBC698CEB58E7  = {
+			isa = PBXBuildFile;
+			fileRef = 121F4066E0355F6750B62C82;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		BE7E1C3D4B2561E7839EC7CA  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = 00C720EBBC64B62F3D0D6334;
+			remoteInfo = HisnActivityMonitor;
+		};
+		2A8D05279606754AE1533D5D  = {
+			isa = PBXTargetDependency;
+			target = 00C720EBBC64B62F3D0D6334;
+			targetProxy = BE7E1C3D4B2561E7839EC7CA;
+		};
+		72B49A4C39663C2BB16F9412  = {
+			isa = PBXBuildFile;
+			fileRef = 0BC62AF2FE57A9299247DC0B;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		ECEB685ED00151E3588E79BC  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = C9029192E9B2166080E0897B;
+			remoteInfo = HisnText;
+		};
+		A04553ED9954003E161015C8  = {
+			isa = PBXTargetDependency;
+			target = C9029192E9B2166080E0897B;
+			targetProxy = ECEB685ED00151E3588E79BC;
+		};
+		35F957889DF39874011E6FFF  = {
+			isa = PBXBuildFile;
+			fileRef = 3F209F6C2670A953C107C257;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		F31213A6382739D1174B023D  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = F76E4DA0098FC8310DCFD52D;
+			remoteInfo = HisnShieldConfig;
+		};
+		7EEEAD8AADCB3A9C7C22C90D  = {
+			isa = PBXTargetDependency;
+			target = F76E4DA0098FC8310DCFD52D;
+			targetProxy = F31213A6382739D1174B023D;
+		};
+		B3A352C14C747F9E5408F46E  = {
+			isa = PBXBuildFile;
+			fileRef = F465DDDB4A951751894E0139;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		2098DCACC4D8FC75F45EE5C0  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = 6D74AC54990DD6D0A4A04D73;
+			remoteInfo = HisnShieldAction;
+		};
+		F73A9A1C95698501F69151F5  = {
+			isa = PBXTargetDependency;
+			target = 6D74AC54990DD6D0A4A04D73;
+			targetProxy = 2098DCACC4D8FC75F45EE5C0;
+		};
+		691215B63C00A8FBDBD2BD2B  = {
+			isa = PBXBuildFile;
+			fileRef = 25B29FC46A9AB494331B94F0;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		C62A5B0BCB9EDF8E4B9B1610  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = 3BCC72D4E742A9E99BAF5266;
+			remoteInfo = HisnDNSProxy;
+		};
+		796D46022E45BB6BDF539696  = {
+			isa = PBXTargetDependency;
+			target = 3BCC72D4E742A9E99BAF5266;
+			targetProxy = C62A5B0BCB9EDF8E4B9B1610;
+		};
+		FF30F53173E32C0B2BD5EA05  = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				07BD9DF104147D3AD671A6DB,
+				B9031EE20E73F8B23CBE2208,
+				A66C5D9B584A942C463541AE,
+				CC8C4C5A0855CC2BF9919DEB,
+				EBEAD2720422C2CB5271FA78,
+				901AABA60D6FAB97A72478ED,
+				6A65D44DB56DBC698CEB58E7,
+				72B49A4C39663C2BB16F9412,
+				35F957889DF39874011E6FFF,
+				B3A352C14C747F9E5408F46E,
+				691215B63C00A8FBDBD2BD2B,
+			);
+			name = "Embed extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57F282B5B6413F6E6CB7302B  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = "Unrot/Info.plist";
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/Unrot.entitlements;
+				ASSETCATALOG_COMPILER_APPICON_NAME = UnrotIcon;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		D4F0E224576C8A4159C8FE9A  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = "Unrot/Info.plist";
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/Unrot.entitlements;
+				ASSETCATALOG_COMPILER_APPICON_NAME = UnrotIcon;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		2985F7D6C45769A4DA9088DB  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				57F282B5B6413F6E6CB7302B,
+				D4F0E224576C8A4159C8FE9A,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8543CACACBBFD2FDA2C4D379  = {
+			isa = PBXNativeTarget;
+			name = UnrotMobile;
+			productName = UnrotMobile;
+			productReference = 0343326789669083DA747519;
+			productType = "com.apple.product-type.application";
+			buildConfigurationList = 2985F7D6C45769A4DA9088DB;
+			buildPhases = (
+				2DB02DFA2989AB99AA238947,
+				466BADAFD31F083C9E7ADE02,
+				7DD8028C7AB6DAC5CB686E32,
+				2C028D12C132D089263D49C6,
+				FF30F53173E32C0B2BD5EA05,
+				05E940597A2A817688728D96,
+			);
+			dependencies = (
+				D1E4FCA329D644FD577CD0FD,
+				35E9C5DBB7E2C80DCCEA91B4,
+				81DDA5E19B4549C6C09DF31B,
+				754080A34F7E9620C11D2F81,
+				32E6D5DE6CF09CF84F6F2A91,
+				4310C5E7D469A43D2F85B25D,
+				2A8D05279606754AE1533D5D,
+				A04553ED9954003E161015C8,
+				7EEEAD8AADCB3A9C7C22C90D,
+				F73A9A1C95698501F69151F5,
+				796D46022E45BB6BDF539696,
+			);
+			buildRules = ();
+		};
+		4FB9BE9DC4827959A956A4A6  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		12247C38BBBA159AB1CA10C4  = {
+			isa = PBXBuildFile;
+			fileRef = 1349496B0BFBD6AE9C197419;
+		};
+		4CFDCAE0725A26A108DACC63  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		62D9B5AFDFD62FE6B547310F  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
+		AE559C6E4DD0A8EFAA9D9893  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4FB9BE9DC4827959A956A4A6,
+				12247C38BBBA159AB1CA10C4,
+				4CFDCAE0725A26A108DACC63,
+				62D9B5AFDFD62FE6B547310F,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8CB488CDC641241CC0B051CA  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E2CC2903B10A30CEA748783F  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		4FC14C090390CA7877A15965  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2CC2903B10A30CEA748783F,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C6511EA4B73A448E7BF9C07  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed seed and compile Safari rules";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_rules.py\" --part 1 --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		32E22DE8FA865DD6B35F4877  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker1;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 1;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		1E7B1FE799895E64A1022688  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker1;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 1;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		1B7FA0E5CB46A5F50A23251F  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				32E22DE8FA865DD6B35F4877,
+				1E7B1FE799895E64A1022688,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		158C2786FA1CAC551B639C41  = {
+			isa = PBXNativeTarget;
+			name = Hisn1;
+			productName = Hisn1;
+			productReference = CD5754B2A0541F9804EBE17A;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 1B7FA0E5CB46A5F50A23251F;
+			buildPhases = (
+				AE559C6E4DD0A8EFAA9D9893,
+				8CB488CDC641241CC0B051CA,
+				4FC14C090390CA7877A15965,
+				4C6511EA4B73A448E7BF9C07,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		70791EC83FBDDD5E41B4E120  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		2D7760E35E6CCEBC0B1EFCEC  = {
+			isa = PBXBuildFile;
+			fileRef = 1349496B0BFBD6AE9C197419;
+		};
+		256D1CA4F5B4E7C05367AF9E  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		A181B775D5C1864761E51CB3  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
+		0F983949479CBF13EADA8DDD  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				70791EC83FBDDD5E41B4E120,
+				2D7760E35E6CCEBC0B1EFCEC,
+				256D1CA4F5B4E7C05367AF9E,
+				A181B775D5C1864761E51CB3,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A8E6AA03D0957EF74EF4D1F  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		18F28255E1D50BE6DE6A6695  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		A91CCA9789311F5D533A5A74  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				18F28255E1D50BE6DE6A6695,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8F1258AE315C35AFC4C0032E  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed seed and compile Safari rules";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_rules.py\" --part 2 --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8BB0DE65666303CDFDB124EC  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker2;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 2;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		78B57F6BC2F7560797618253  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker2;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 2;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		65CC2DB29FCFBF07BC7288CA  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8BB0DE65666303CDFDB124EC,
+				78B57F6BC2F7560797618253,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		05115B778B0506C7AE023E92  = {
+			isa = PBXNativeTarget;
+			name = Hisn2;
+			productName = Hisn2;
+			productReference = FF327485B10172D704987CE1;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 65CC2DB29FCFBF07BC7288CA;
+			buildPhases = (
+				0F983949479CBF13EADA8DDD,
+				5A8E6AA03D0957EF74EF4D1F,
+				A91CCA9789311F5D533A5A74,
+				8F1258AE315C35AFC4C0032E,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		22D097BC0869889A423D158E  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		CD05155F9BB490283F9FF191  = {
+			isa = PBXBuildFile;
+			fileRef = 1349496B0BFBD6AE9C197419;
+		};
+		9A40372F41FC4D763431C6F9  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		4F8BFE1C4BAE551A831F8797  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
+		A3F32B39CA25B4E853B1A852  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				22D097BC0869889A423D158E,
+				CD05155F9BB490283F9FF191,
+				9A40372F41FC4D763431C6F9,
+				4F8BFE1C4BAE551A831F8797,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3092832C442807940844540B  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B6211AC14893C10C8A550DD9  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		5EB7A6EB62AF05EC2904A4C8  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B6211AC14893C10C8A550DD9,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3935C7A9998EF1E1992B1232  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed seed and compile Safari rules";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_rules.py\" --part 3 --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		580DE303D2133A3635364D09  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker3;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 3;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		310EE8CED30ACDED419E65EF  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker3;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 3;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		276331C730DFE39750C9D72D  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				580DE303D2133A3635364D09,
+				310EE8CED30ACDED419E65EF,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB1C2D1BC66CA79222500205  = {
+			isa = PBXNativeTarget;
+			name = Hisn3;
+			productName = Hisn3;
+			productReference = 4EBF2B2D008D1DFE6CF00CBB;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 276331C730DFE39750C9D72D;
+			buildPhases = (
+				A3F32B39CA25B4E853B1A852,
+				3092832C442807940844540B,
+				5EB7A6EB62AF05EC2904A4C8,
+				3935C7A9998EF1E1992B1232,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		5F3BBE128887243A8673D6B5  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		1C6E6F5812081176DA931911  = {
+			isa = PBXBuildFile;
+			fileRef = 1349496B0BFBD6AE9C197419;
+		};
+		3EFBC4865D5BC5D0A1AB165A  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		18B06DDD3FAE62A75869DBAE  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
+		73559754AB0F2BF0DB4A0A2C  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5F3BBE128887243A8673D6B5,
+				1C6E6F5812081176DA931911,
+				3EFBC4865D5BC5D0A1AB165A,
+				18B06DDD3FAE62A75869DBAE,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9252147894D65B4E181C268  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		07F65BAAA05405454F88EF7E  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		4601908D0903051B75770655  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				07F65BAAA05405454F88EF7E,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A39E7C957437E9B7AA086442  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed seed and compile Safari rules";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_rules.py\" --part 4 --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B1EAF52CD0DF161D5D9F745  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker4;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 4;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		D7B599B0D45CE660F9068AFF  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker4;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 4;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		A58681CF75FE43C476E01980  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B1EAF52CD0DF161D5D9F745,
+				D7B599B0D45CE660F9068AFF,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FB57806DAC021B26192C5C34  = {
+			isa = PBXNativeTarget;
+			name = Hisn4;
+			productName = Hisn4;
+			productReference = 5FB357DD48BE21500641536B;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = A58681CF75FE43C476E01980;
+			buildPhases = (
+				73559754AB0F2BF0DB4A0A2C,
+				C9252147894D65B4E181C268,
+				4601908D0903051B75770655,
+				A39E7C957437E9B7AA086442,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		1C814950FAC6EC0F56269011  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		2DBC60E8747A53B043C2B012  = {
+			isa = PBXBuildFile;
+			fileRef = 1349496B0BFBD6AE9C197419;
+		};
+		4E51D7481A9BE038F9ACD69A  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		87A1B591F90CC4A159204C5C  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
+		6D43E53A0CEA928EEEA84AFB  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1C814950FAC6EC0F56269011,
+				2DBC60E8747A53B043C2B012,
+				4E51D7481A9BE038F9ACD69A,
+				87A1B591F90CC4A159204C5C,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		63CD053E3DB06F8C0B1F4E40  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EDB90E075EB46E495B1DE49D  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		1831992399C9902CC6E75827  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EDB90E075EB46E495B1DE49D,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		48BEF4E42A5483A95574DA6B  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed seed and compile Safari rules";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_rules.py\" --part 5 --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7901C674A581DE40DF154902  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker5;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 5;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		D2AE4D9C9E3D1B4BD054D917  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker5;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 5;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		444D2AEB2D71DC87C169E04E  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7901C674A581DE40DF154902,
+				D2AE4D9C9E3D1B4BD054D917,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6D5F703C67CE157926357A25  = {
+			isa = PBXNativeTarget;
+			name = Hisn5;
+			productName = Hisn5;
+			productReference = B21C5A749CD200E79C0CAB5F;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 444D2AEB2D71DC87C169E04E;
+			buildPhases = (
+				6D43E53A0CEA928EEEA84AFB,
+				63CD053E3DB06F8C0B1F4E40,
+				1831992399C9902CC6E75827,
+				48BEF4E42A5483A95574DA6B,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		CE807D3C56B318BB53196028  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		B911F36D47D7D587D0144E9C  = {
+			isa = PBXBuildFile;
+			fileRef = 1349496B0BFBD6AE9C197419;
+		};
+		CDF6C175C38A11987144D26A  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		BD38DD39C3D8D885F9FF7C1B  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
+		8D7F028464973A5AF2F9F35F  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CE807D3C56B318BB53196028,
+				B911F36D47D7D587D0144E9C,
+				CDF6C175C38A11987144D26A,
+				BD38DD39C3D8D885F9FF7C1B,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6308AAD721D6D5386EF37269  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E30483D3C057CFDA54697B14  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		5BBEED3492739033F2713720  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E30483D3C057CFDA54697B14,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5D91A468D070F8F031D577B3  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed seed and compile Safari rules";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_rules.py\" --part 6 --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6FF28475C4EFB02F1F1FD1AB  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker6;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 6;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		62E2BAE30FAB6638BD271DA2  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.blocker6;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 6;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotBlocker.entitlements;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		5243E3549F2315153145DFC6  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6FF28475C4EFB02F1F1FD1AB,
+				62E2BAE30FAB6638BD271DA2,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D2AC943AAA542C8370742C0B  = {
+			isa = PBXNativeTarget;
+			name = Hisn6;
+			productName = Hisn6;
+			productReference = 23882EB39BFEF6FBB19EB5B6;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 5243E3549F2315153145DFC6;
+			buildPhases = (
+				8D7F028464973A5AF2F9F35F,
+				6308AAD721D6D5386EF37269,
+				5BBEED3492739033F2713720,
+				5D91A468D070F8F031D577B3,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		237E5B65818C876621C43744  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		707A212370C97AEED1AA292D  = {
+			isa = PBXBuildFile;
+			fileRef = 97E3A110C1EF2759EB12FA3D;
+		};
+		B2570C35428D914459EABAD2  = {
+			isa = PBXBuildFile;
+			fileRef = 76CFB910A4011D94CDB9761F;
+		};
+		3105F25D52AF43BA74715842  = {
+			isa = PBXBuildFile;
+			fileRef = D83ACD8756A1B1ABE39CDD3B;
+		};
+		8E027986F7C87BF8C58736D8  = {
+			isa = PBXBuildFile;
+			fileRef = 22ED35E5701488EB13E1DF35;
+		};
+		B8E279F12DD08D93B7935A0E  = {
+			isa = PBXBuildFile;
+			fileRef = C38152135A92032045D3472B;
+		};
+		5818E9A8A757A0D2D0EBC9D9  = {
+			isa = PBXBuildFile;
+			fileRef = F75157D9F3F6FD446D4554B2;
+		};
+		EA1800E47A3296C57DB3A231  = {
+			isa = PBXBuildFile;
+			fileRef = 2E17B90DC84D5B9AA08702DC;
+		};
+		B884913EA88F94EB8FE0036E  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				237E5B65818C876621C43744,
+				707A212370C97AEED1AA292D,
+				B2570C35428D914459EABAD2,
+				3105F25D52AF43BA74715842,
+				8E027986F7C87BF8C58736D8,
+				B8E279F12DD08D93B7935A0E,
+				5818E9A8A757A0D2D0EBC9D9,
+				EA1800E47A3296C57DB3A231,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EE7597E3DD3A1BBB082D1527  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8915D9A239DFFF424E2EE6AA  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		757142E40A7D18ADAB3DB58A  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8915D9A239DFFF424E2EE6AA,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E9227881E7B7BF348997D5F8  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.activity;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = HisnActivityMonitor/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotActivityMonitor.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		B7B45DACF8033200850D8749  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.activity;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = HisnActivityMonitor/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotActivityMonitor.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		C5C5606A61B8632E94CD6243  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E9227881E7B7BF348997D5F8,
+				B7B45DACF8033200850D8749,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		00C720EBBC64B62F3D0D6334  = {
+			isa = PBXNativeTarget;
+			name = HisnActivityMonitor;
+			productName = HisnActivityMonitor;
+			productReference = 121F4066E0355F6750B62C82;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = C5C5606A61B8632E94CD6243;
+			buildPhases = (
+				B884913EA88F94EB8FE0036E,
+				EE7597E3DD3A1BBB082D1527,
+				757142E40A7D18ADAB3DB58A,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		ABCD9AF1764C0285DADFC64A  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		4EC8CBF81BA4B39066F43DA1  = {
+			isa = PBXBuildFile;
+			fileRef = C04E1F33DC7CE7CFD4CD8A41;
+		};
+		47240EB75ED6545AD0D04E78  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ABCD9AF1764C0285DADFC64A,
+				4EC8CBF81BA4B39066F43DA1,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4FA555A2BDAD101894B2FBB0  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F1991EBD6CC778F1248B2C4  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		670CCE18B5D698E658D0AF5F  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3F1991EBD6CC778F1248B2C4,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E6BBF294ADD6B7B944743AA6  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed terms and stage shared Safari scanner";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_web_extension.py\" --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1CFD6B2393AE479CB8D10991  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.HisnText;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = HisnWebExtension/Info.plist;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		850121FBFE73989802F8F379  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.HisnText;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = HisnWebExtension/Info.plist;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		4FB7EC867C6D3CBCA1D8C8C5  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1CFD6B2393AE479CB8D10991,
+				850121FBFE73989802F8F379,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9029192E9B2166080E0897B  = {
+			isa = PBXNativeTarget;
+			name = HisnText;
+			productName = HisnText;
+			productReference = 0BC62AF2FE57A9299247DC0B;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 4FB7EC867C6D3CBCA1D8C8C5;
+			buildPhases = (
+				47240EB75ED6545AD0D04E78,
+				4FA555A2BDAD101894B2FBB0,
+				670CCE18B5D698E658D0AF5F,
+				E6BBF294ADD6B7B944743AA6,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		BDAE08924FA3399A7A8F006F  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		F07BC9141AD0BD252EC356B3  = {
+			isa = PBXBuildFile;
+			fileRef = 39F3D8B658B10DDA9D974CF3;
+		};
+		080A75B6B3AB2BDBA8CE53EB  = {
+			isa = PBXBuildFile;
+			fileRef = 85E4F1747E8749EE39D50512;
+		};
+		CC127576032D8429FDEA13F7  = {
+			isa = PBXBuildFile;
+			fileRef = 76CFB910A4011D94CDB9761F;
+		};
+		895014FB6C3911A2686AE2F9  = {
+			isa = PBXBuildFile;
+			fileRef = D83ACD8756A1B1ABE39CDD3B;
+		};
+		AB9DDB32FFD2C7BA69D6B5F7  = {
+			isa = PBXBuildFile;
+			fileRef = 22ED35E5701488EB13E1DF35;
+		};
+		04EBC161D39D038985561B03  = {
+			isa = PBXBuildFile;
+			fileRef = C38152135A92032045D3472B;
+		};
+		8EE69C2F26B37195C33643F3  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BDAE08924FA3399A7A8F006F,
+				F07BC9141AD0BD252EC356B3,
+				080A75B6B3AB2BDBA8CE53EB,
+				CC127576032D8429FDEA13F7,
+				895014FB6C3911A2686AE2F9,
+				AB9DDB32FFD2C7BA69D6B5F7,
+				04EBC161D39D038985561B03,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A11E948373D8187F4DAE0535  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D89F5A31B564D693A9A1BF02  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		BA3658474C704CBE445354F5  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D89F5A31B564D693A9A1BF02,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		654D6ABB4E9E3329A15EBB01  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.shieldconfig;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = HisnShieldConfig/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotShieldConfig.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		CAAE8A5771B16C21668B9864  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.shieldconfig;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = HisnShieldConfig/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotShieldConfig.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		C6BF224E60CEDB92FEB258CE  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				654D6ABB4E9E3329A15EBB01,
+				CAAE8A5771B16C21668B9864,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F76E4DA0098FC8310DCFD52D  = {
+			isa = PBXNativeTarget;
+			name = HisnShieldConfig;
+			productName = HisnShieldConfig;
+			productReference = 3F209F6C2670A953C107C257;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = C6BF224E60CEDB92FEB258CE;
+			buildPhases = (
+				8EE69C2F26B37195C33643F3,
+				A11E948373D8187F4DAE0535,
+				BA3658474C704CBE445354F5,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		3BB1028978672066CD3B4F9A  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		C1304912898DFB808B5C6F3F  = {
+			isa = PBXBuildFile;
+			fileRef = AE71E87754EB481546D35CD0;
+		};
+		BEE31B9C915C6FA74FA8A0D0  = {
+			isa = PBXBuildFile;
+			fileRef = 85E4F1747E8749EE39D50512;
+		};
+		80C13EE6D22BA9862C82AF85  = {
+			isa = PBXBuildFile;
+			fileRef = 76CFB910A4011D94CDB9761F;
+		};
+		91B980BA0F3649FB42A56BC2  = {
+			isa = PBXBuildFile;
+			fileRef = D83ACD8756A1B1ABE39CDD3B;
+		};
+		EC5E772CB35D09E0D8E45736  = {
+			isa = PBXBuildFile;
+			fileRef = 22ED35E5701488EB13E1DF35;
+		};
+		E957C631F086BA85A933F43A  = {
+			isa = PBXBuildFile;
+			fileRef = C38152135A92032045D3472B;
+		};
+		F7BEF36AC3DCADA09C4E6199  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3BB1028978672066CD3B4F9A,
+				C1304912898DFB808B5C6F3F,
+				BEE31B9C915C6FA74FA8A0D0,
+				80C13EE6D22BA9862C82AF85,
+				91B980BA0F3649FB42A56BC2,
+				EC5E772CB35D09E0D8E45736,
+				E957C631F086BA85A933F43A,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57A83989877560FA11F401B1  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1D603EB40F2097FCE94BEA19  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		01B1E04399E0ED4AC6C77A11  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1D603EB40F2097FCE94BEA19,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1F6DD89D640347992A578E73  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.shieldaction;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = HisnShieldAction/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotShieldAction.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		C0242F4DE0EFCCAE2BE9D5C0  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.shieldaction;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = HisnShieldAction/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotShieldAction.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		B71DD90DA7527BBC48CB4A20  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F6DD89D640347992A578E73,
+				C0242F4DE0EFCCAE2BE9D5C0,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6D74AC54990DD6D0A4A04D73  = {
+			isa = PBXNativeTarget;
+			name = HisnShieldAction;
+			productName = HisnShieldAction;
+			productReference = F465DDDB4A951751894E0139;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = B71DD90DA7527BBC48CB4A20;
+			buildPhases = (
+				F7BEF36AC3DCADA09C4E6199,
+				57A83989877560FA11F401B1,
+				01B1E04399E0ED4AC6C77A11,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		A0979D1298C929AE606921F9  = {
+			isa = PBXBuildFile;
+			fileRef = 0FCF301BA37793E827F2F87F;
+		};
+		D7A84673349CE3F6BEF9A554  = {
+			isa = PBXBuildFile;
+			fileRef = 638A9C0FAC54EBEB2A392F9C;
+		};
+		0AA04F5C56FAAE6C33D27C71  = {
+			isa = PBXBuildFile;
+			fileRef = 7DF9096670FC3E369FFA005C;
+		};
+		C6E325BE07AAEF03ED874070  = {
+			isa = PBXBuildFile;
+			fileRef = 1C67CCB221F0A36EA58D344B;
+		};
+		C2DE1B1330C4602BE22F6433  = {
+			isa = PBXBuildFile;
+			fileRef = E97CEE2199ECC7931DCA55E4;
+		};
+		CB81A32B3388BBEDF50C8EA6  = {
+			isa = PBXBuildFile;
+			fileRef = 03778AF5BC70E1F9637E5716;
+		};
+		09C52D8A57EE05F6EE136C93  = {
+			isa = PBXBuildFile;
+			fileRef = 0963274D2C3FB112D11F221D;
+		};
+		A2842227F24F4D5AA2DD8235  = {
+			isa = PBXBuildFile;
+			fileRef = A5A87FAFDF8C15EA7D961056;
+		};
+		C9B88D9803BA29BEB8BCB15A  = {
+			isa = PBXBuildFile;
+			fileRef = 58F53AAA5B00AC1B3D65000C;
+		};
+		25F769C6A2ADE22B3EA7B66F  = {
+			isa = PBXBuildFile;
+			fileRef = DF6CF61D1D4D4026514AD894;
+		};
+		4F88299B6FEF39A26AEEE99C  = {
+			isa = PBXBuildFile;
+			fileRef = 540F64C242CD2A13F37529C7;
+		};
+		3CBD1708515C362B26BFCB9E  = {
+			isa = PBXBuildFile;
+			fileRef = 64554B05BB9C71A01C19915F;
+		};
+		674C414A12C7EB56C99D0888  = {
+			isa = PBXBuildFile;
+			fileRef = E03F2484738224ABA6D4E770;
+		};
+		B92885CAA260A07052D1A11F  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
+		5D5A01C8727AC68D428607F5  = {
+			isa = PBXBuildFile;
+			fileRef = 1AC01D8272F7B9928ACCA554;
+		};
+		A3684D25E186868CAFB1DE0F  = {
+			isa = PBXBuildFile;
+			fileRef = 22ED35E5701488EB13E1DF35;
+		};
+		71D4F7765837662F235CE10F  = {
+			isa = PBXBuildFile;
+			fileRef = 4AD2C81EF123DB97B20BD752;
+		};
+		4F3A0186EB5B5344ED95BC19  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A0979D1298C929AE606921F9,
+				D7A84673349CE3F6BEF9A554,
+				0AA04F5C56FAAE6C33D27C71,
+				C6E325BE07AAEF03ED874070,
+				C2DE1B1330C4602BE22F6433,
+				CB81A32B3388BBEDF50C8EA6,
+				09C52D8A57EE05F6EE136C93,
+				A2842227F24F4D5AA2DD8235,
+				C9B88D9803BA29BEB8BCB15A,
+				25F769C6A2ADE22B3EA7B66F,
+				4F88299B6FEF39A26AEEE99C,
+				3CBD1708515C362B26BFCB9E,
+				674C414A12C7EB56C99D0888,
+				B92885CAA260A07052D1A11F,
+				5D5A01C8727AC68D428607F5,
+				A3684D25E186868CAFB1DE0F,
+				71D4F7765837662F235CE10F,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		35DF30CC351D94E24869FDCA  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		146C15C45B3DF591EB624D8E  = {
+			isa = PBXBuildFile;
+			fileRef = 6CB3CEF61F360B26D4CD8F00;
+		};
+		E5662A1BB1682E122745CA7B  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				146C15C45B3DF591EB624D8E,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CEEB69296E79E6F50FA5718C  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed seed and compile DNS filter data";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_rules.py\" --dns --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E158A02DE4E073FEB92333BE  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.dnsproxy;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				INFOPLIST_FILE = HisnDNSProxy/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotDNSProxy.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		BCEEB5ACDADA2ACA265D093F  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.dnsproxy;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				INFOPLIST_FILE = HisnDNSProxy/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Unrot/Entitlements/UnrotDNSProxy.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		FF32A7C7AE97716B8319168B  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E158A02DE4E073FEB92333BE,
+				BCEEB5ACDADA2ACA265D093F,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3BCC72D4E742A9E99BAF5266  = {
+			isa = PBXNativeTarget;
+			name = HisnDNSProxy;
+			productName = HisnDNSProxy;
+			productReference = 25B29FC46A9AB494331B94F0;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = FF32A7C7AE97716B8319168B;
+			buildPhases = (
+				4F3A0186EB5B5344ED95BC19,
+				35DF30CC351D94E24869FDCA,
+				E5662A1BB1682E122745CA7B,
+				CEEB69296E79E6F50FA5718C,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		D01B4775B7C5CD689E88B6E7  = {
+			isa = PBXBuildFile;
+			fileRef = 5C25BCCE29FDFB43995D18E4;
+		};
+		B081AEE9C6AD849318D3EF3D  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D01B4775B7C5CD689E88B6E7,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69DF07DEA02E7FD7D536BF78  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5426C2CF5D1815BC9C73B97  = {
+			isa = PBXBuildFile;
+			fileRef = 6A6050B4078DF3D6C6D4F890;
+		};
+		FC71E14033ED22DE3C716B02  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F5426C2CF5D1815BC9C73B97,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D216718E737F4FF022739148  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = 8543CACACBBFD2FDA2C4D379;
+			remoteInfo = UnrotMobile;
+		};
+		898F514B5988FED950DA75A5  = {
+			isa = PBXTargetDependency;
+			target = 8543CACACBBFD2FDA2C4D379;
+			targetProxy = D216718E737F4FF022739148;
+		};
+		A20219EE7FBDF0AFC00761ED  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.tests;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNROT";
+				GENERATE_INFOPLIST_FILE = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnrotMobile.app/UnrotMobile";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+			};
+		};
+		FDB7A09C38CAB2CFA056B3FC  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.unrot.mobile.tests;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = UNROT;
+				GENERATE_INFOPLIST_FILE = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnrotMobile.app/UnrotMobile";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		F4DB5E2EE2EA8A8CF5DFCB77  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A20219EE7FBDF0AFC00761ED,
+				FDB7A09C38CAB2CFA056B3FC,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB909FEDD53944992665E527  = {
+			isa = PBXNativeTarget;
+			name = UnrotMobileTests;
+			productName = UnrotMobileTests;
+			productReference = 500B386ECFE0BC825E155B22;
+			productType = "com.apple.product-type.bundle.unit-test";
+			buildConfigurationList = F4DB5E2EE2EA8A8CF5DFCB77;
+			buildPhases = (
+				B081AEE9C6AD849318D3EF3D,
+				69DF07DEA02E7FD7D536BF78,
+				FC71E14033ED22DE3C716B02,
+			);
+			dependencies = (
+				898F514B5988FED950DA75A5,
+			);
+			buildRules = ();
+		};
+		8B3A49B266233207DB9FB810  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+			};
+		};
+		4F8AA9D92C1AF0AD3A109C57  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 14;
+				MARKETING_VERSION = 1.8.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		BA9AFD1C2B9553C7B0F38956  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8B3A49B266233207DB9FB810,
+				4F8AA9D92C1AF0AD3A109C57,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		97FC7254CB7BA92C8E24EF04  = {
+			isa = PBXProject;
+			attributes = {LastUpgradeCheck = 1600; BuildIndependentTargetsInParallel = 1;};
+			buildConfigurationList = BA9AFD1C2B9553C7B0F38956;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			knownRegions = (en, ar, Base);
+			hasScannedForEncodings = 0;
+			mainGroup = C7F72C0E6EDDC20FF9C16D2F;
+			productRefGroup = B9A01987720A964863B71216;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8543CACACBBFD2FDA2C4D379,
+				158C2786FA1CAC551B639C41,
+				05115B778B0506C7AE023E92,
+				BB1C2D1BC66CA79222500205,
+				FB57806DAC021B26192C5C34,
+				6D5F703C67CE157926357A25,
+				D2AC943AAA542C8370742C0B,
+				00C720EBBC64B62F3D0D6334,
+				C9029192E9B2166080E0897B,
+				F76E4DA0098FC8310DCFD52D,
+				6D74AC54990DD6D0A4A04D73,
+				3BCC72D4E742A9E99BAF5266,
+				BB909FEDD53944992665E527,
+			);
+		};
+	};
+	rootObject = 97FC7254CB7BA92C8E24EF04;
+}

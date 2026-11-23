@@ -21,12 +21,12 @@ final class Notices {
     private static final String[] LIST_FILES = {
             "licenses/StevenBlack-hosts-MIT.txt", "licenses/Sinfonietta-hostfiles-MIT.txt",
             "licenses/GPL-3.0.txt", "licenses/LDNOOBW-CC-BY-4.0.txt",
-            "licenses/litert-Apache-2.0.txt",
+            "licenses/litert-Apache-2.0.txt", "licenses/MediaPipe-BlazeFace-Apache-2.0.txt",
             "licenses/Fraunces-OFL-1.1.txt", "licenses/DMSans-OFL-1.1.txt"};
     private static final int[] LIST_TITLES = {
             R.string.notice_mit_stevenblack, R.string.notice_mit_sinfonietta,
             R.string.notice_gpl, R.string.notice_cc_by, R.string.notice_tensorflow_lite,
-            R.string.notice_font_fraunces, R.string.notice_font_dm_sans};
+            R.string.notice_mediapipe_blazeface, R.string.notice_font_fraunces, R.string.notice_font_dm_sans};
     // Copied with the visual runtime from extension/visual by the copyAndroidVisual task.
     private static final String VISUAL_NOTICES = "visual/notices";
     private static final String VISUAL_LEGAL = "visual/engine.bundle.js.LEGAL.txt";

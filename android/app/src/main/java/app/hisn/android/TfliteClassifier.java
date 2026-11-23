@@ -1,5 +1,7 @@
 package app.hisn.android;
 
+import app.hisn.core.PeopleRegions;
+
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
@@ -181,6 +183,45 @@ final class TfliteClassifier implements VisualRuntime {
 
     private static boolean blocks(float porn, float hentai) {
         return porn >= 0.70f || hentai >= 0.70f || porn + hentai >= 0.85f;
+    }
+
+    /** For each matched face (normalized x, y, w, h repeated), what to blur: the whole person when
+     * the clothes under the face look revealing or explicit, otherwise the face. Never blocks:
+     * the whole-screen adult check does that. Takes ownership
+     * of pixels and clears them. Falls back to the faces alone when the model is not ready. */
+    void people(int[] pixels, int width, int height, float[] faces, Consumer<VisualResult> result) {
+        if (!ready || closed) {
+            Arrays.fill(pixels, 0);
+            result.accept(new VisualResult("allow", true, false, null, null, faces));
+            return;
+        }
+        try {
+            worker.execute(() -> {
+                VisualResult value;
+                try {
+                    float[] out = faces.clone();
+                    for (int i = 0; i + 3 < faces.length; i += 4) {
+                        int[] torso = PeopleRegions.torso(faces[i], faces[i + 1], faces[i + 2], faces[i + 3], width, height);
+                        if (torso == null) continue;
+                        float[] s = scores(pixels, width, height, torso[0], torso[1], torso[2], torso[3], true);
+                        if (PeopleRegions.wholePerson(s)) {
+                            System.arraycopy(PeopleRegions.body(faces[i], faces[i + 1], faces[i + 2], faces[i + 3]), 0, out, i, 4);
+                        }
+                    }
+                    value = new VisualResult("allow", true, false, null, null, out);
+                } catch (Throwable unavailable) {
+                    value = new VisualResult("allow", true, false, null, null, faces);
+                } finally {
+                    Arrays.fill(pixels, 0);
+                    inputFloats.clear();
+                    inputFloats.put(ZEROS);
+                }
+                final VisualResult answer = value;
+                main.post(() -> { if (!closed) result.accept(answer); });
+            });
+        } catch (java.util.concurrent.RejectedExecutionException closing) {
+            Arrays.fill(pixels, 0);
+        }
     }
 
     /** Model scores (Drawing, Hentai, Neutral, Porn, Sexy) for one region of the frame, or null.

@@ -20,16 +20,29 @@ Project, oid, q = writer.Project, writer.oid, writer.q
 BLOCKERS = 6
 
 
+# The Unrot (general) edition's own screens, compiled only into UnrotMobile.xcodeproj.
+UNROT_APP_SOURCES = ["Unrot/UnrotCore.swift", "Unrot/UnrotStore.swift", "Unrot/UnrotTheme.swift",
+                     "Unrot/UnrotRootView.swift", "Unrot/UnrotHomeView.swift", "Unrot/UnrotGlassHero.swift",
+                     "Unrot/UnrotSheets.swift", "Unrot/UnrotBreatheView.swift", "Unrot/UnrotShieldView.swift",
+                     "Unrot/UnrotProgressView.swift", "Unrot/UnrotYouView.swift", "Unrot/UnrotOnboarding.swift",
+                     "Unrot/UnrotLockView.swift"]
+UNROT_TEST_SOURCES = ["HisnTests/UnrotCoreTests.swift"]
+
+
 def main(safari_only: bool = False, domain_only: bool = False,
-         reuse_text_id: bool = False) -> None:
+         reuse_text_id: bool = False, general: bool = False) -> None:
     p = Project()
-    app, tests = ("HisnSafari" if safari_only else "HisnMobile"), "HisnMobileTests"
-    project_name = "HisnSafari.xcodeproj" if safari_only else "HisnMobile.xcodeproj"
+    if general and safari_only:
+        raise SystemExit("--general builds the full app, not the Safari-only candidate")
+    app, tests = ("HisnSafari" if safari_only else "UnrotMobile" if general else "HisnMobile"), \
+        ("UnrotMobileTests" if general else "HisnMobileTests")
+    project_name = ("HisnSafari.xcodeproj" if safari_only else
+                    "UnrotMobile.xcodeproj" if general else "HisnMobile.xcodeproj")
     if domain_only and not safari_only:
         raise SystemExit("--domain-only requires --safari-only")
     if reuse_text_id and not domain_only:
         raise SystemExit("--reuse-text-id-for-part-one requires separate --safari-only --domain-only")
-    app_identifier = "app.hisn.safari" if safari_only else "app.hisn.mobile"
+    app_identifier = "app.hisn.safari" if safari_only else "app.unrot.mobile" if general else "app.hisn.mobile"
     blockers = [f"Hisn{i}" for i in range(1, BLOCKERS + 1)]
     monitor = "HisnActivityMonitor"
     scanner = "HisnText"
@@ -97,6 +110,16 @@ def main(safari_only: bool = False, domain_only: bool = False,
                   "Shared/SafariGenerationRules.swift", "../shared/apple/AdultTldGuard.swift"]
            for name in blockers},
     }
+    # Every target reads its identifiers and App Group from Edition.swift.
+    # The tests reach the app's copy through @testable import.
+    for name in sources:
+        if name != tests:
+            sources[name] = ["Shared/Edition.swift", *sources[name]]
+    if general:
+        # Hisn's tests import HisnMobile; the Unrot test bundle has its own.
+        sources[app] += UNROT_APP_SOURCES
+        sources[monitor] += ["Unrot/UnrotCore.swift"]
+        sources[tests] = UNROT_TEST_SOURCES
     # The Safari-only candidate has no Family Controls entitlement, so it does
     # not build or embed Hisn's shield extensions.
     sources = {name: sources[name] for name in names} if safari_only else sources
@@ -107,8 +130,11 @@ def main(safari_only: bool = False, domain_only: bool = False,
                  monitor: [privacy], scanner: [privacy],
                  shield_config: [privacy], shield_action: [privacy], proxy: [privacy],
                  **{blocker: [privacy] for blocker in blockers}}
+    if general:
+        resources[app].append("Unrot/UnrotArt.xcassets")
     if safari_only:
-        sources[app] = ["HisnSafariOnly/SafariOnlyApp.swift", "../shared/apple/MobileProtectionPolicy.swift"]
+        sources[app] = ["Shared/Edition.swift", "HisnSafariOnly/SafariOnlyApp.swift",
+                        "../shared/apple/MobileProtectionPolicy.swift"]
         sources = {name: sources[name] for name in names}
         resources = {app: resources[app]}
     paths = sorted(set(sum(sources.values(), []) + sum(resources.values(), [])))
@@ -162,7 +188,9 @@ def main(safari_only: bool = False, domain_only: bool = False,
             settings = dict(base, **extra)
             settings.update({"SWIFT_OPTIMIZATION_LEVEL": q("-Onone" if mode == "Debug" else "-O"),
                              "ENABLE_TESTABILITY": "YES" if mode == "Debug" else "NO"})
-            if mode == "Debug": settings["SWIFT_ACTIVE_COMPILATION_CONDITIONS"] = "DEBUG"
+            if mode == "Debug":
+                edition = settings.get("SWIFT_ACTIVE_COMPILATION_CONDITIONS")
+                settings["SWIFT_ACTIVE_COMPILATION_CONDITIONS"] = q(f"DEBUG {edition}") if edition else "DEBUG"
             ids.append(p.add(oid("ios-config", name, mode), "XCBuildConfiguration", {
                 "name": mode, "buildSettings": writer.build_settings(settings),
             }))
@@ -187,10 +215,11 @@ def main(safari_only: bool = False, domain_only: bool = False,
     for name in names:
         phases = [phase(name, "PBXSourcesBuildPhase", [refs[path] for path in sources[name]]),
                   phase(name, "PBXFrameworksBuildPhase", []),
-                  phase(name, "PBXResourcesBuildPhase", [loc, refs["Hisn/Assets.xcassets"], refs[privacy], refs["Hisn/Notices.txt"]] if name == app else
+                  phase(name, "PBXResourcesBuildPhase", [loc, refs["Hisn/Assets.xcassets"], refs[privacy], refs["Hisn/Notices.txt"]]
+                        + ([refs["Unrot/UnrotArt.xcassets"]] if general else []) if name == app else
                         [refs[path] for path in resources.get(name, [])])]
         extra = {"PRODUCT_BUNDLE_IDENTIFIER": q(app_identifier if name == app else
-                 "app.hisn.mobile.tests" if name == tests else "app.hisn.mobile.activity" if name == monitor
+                 f"{app_identifier}.tests" if name == tests else f"{app_identifier}.activity" if name == monitor
                  else f"{app_identifier}.dnsproxy" if name == proxy
                  else f"{app_identifier}.HisnText" if name == scanner
                  else f"{app_identifier}.shieldconfig" if name == shield_config
@@ -199,6 +228,8 @@ def main(safari_only: bool = False, domain_only: bool = False,
         if reuse_text_id and name == blockers[0]:
             extra["PRODUCT_BUNDLE_IDENTIFIER"] = q(f"{app_identifier}.HisnText")
         deps = []
+        if general:
+            extra["SWIFT_ACTIVE_COMPILATION_CONDITIONS"] = "UNROT"
         if name in [app, *blockers]:
             part = 0 if name == app else blockers.index(name) + 1
             script = ('set -eu\nPYTHON="${HISN_PYTHON:-python3}"\n'
@@ -209,14 +240,25 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "files": "()", "inputPaths": "()", "outputPaths": "()", "alwaysOutOfDate": "1",
                 "shellPath": "/bin/sh", "shellScript": q(script).replace("\n", "\\n"),
                 "runOnlyForDeploymentPostprocessing": "0"}))
-            extra["INFOPLIST_FILE"] = q(("HisnSafariOnly/Info.plist" if safari_only else "Hisn/Info.plist") if name == app else "HisnBlocker/Info.plist")
+            extra["INFOPLIST_FILE"] = q(("HisnSafariOnly/Info.plist" if safari_only else
+                                        "Unrot/Info.plist" if general else "Hisn/Info.plist")
+                                       if name == app else "HisnBlocker/Info.plist")
+        if name == app and general:
+            script = ('set -eu\nPYTHON="${HISN_PYTHON:-python3}"\n'
+                      '"$PYTHON" "$SRCROOT/Unrot/rebrand_strings.py" '
+                      '--bundle "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"\n')
+            rebrand = p.add(oid("ios-unrot-rebrand", name), "PBXShellScriptBuildPhase", {
+                "name": q("Name shared screens Unrot"), "buildActionMask": "2147483647",
+                "files": "()", "inputPaths": "()", "outputPaths": "()", "alwaysOutOfDate": "1",
+                "shellPath": "/bin/sh", "shellScript": q(script).replace("\n", "\\n"),
+                "runOnlyForDeploymentPostprocessing": "0"})
         if name == app:
             if safari_only:
                 extra["HISN_SAFARI_DOMAIN_ONLY"] = "YES" if domain_only else "NO"
                 extra["HISN_SAFARI_REUSE_TEXT_ID"] = "YES" if reuse_text_id else "NO"
             if not safari_only:
                 extra["CODE_SIGN_ENTITLEMENTS"] = "Hisn/Hisn.entitlements"
-            extra["ASSETCATALOG_COMPILER_APPICON_NAME"] = "AppIcon"
+            extra["ASSETCATALOG_COMPILER_APPICON_NAME"] = "UnrotIcon" if general else "AppIcon"
             embedded = []
             for blocker in [name for name in names
                             if name in [*blockers, monitor, scanner, shield_config, shield_action, proxy]]:
@@ -227,6 +269,8 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "buildActionMask": "2147483647", "dstPath": '""', "dstSubfolderSpec": "13",
                 "files": writer.plist_array(embedded), "name": q("Embed extensions"),
                 "runOnlyForDeploymentPostprocessing": "0"}))
+            if general:
+                phases.append(rebrand)
         elif name == monitor:
             extra.update({"INFOPLIST_FILE": "HisnActivityMonitor/Info.plist",
                           "CODE_SIGN_ENTITLEMENTS": "HisnActivityMonitor/HisnActivityMonitor.entitlements",
@@ -264,13 +308,15 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "runOnlyForDeploymentPostprocessing": "0"}))
         elif name == tests:
             extra.update({"GENERATE_INFOPLIST_FILE": "YES", "BUNDLE_LOADER": q("$(TEST_HOST)"),
-                          "TEST_HOST": q("$(BUILT_PRODUCTS_DIR)/HisnMobile.app/HisnMobile")})
+                          "TEST_HOST": q(f"$(BUILT_PRODUCTS_DIR)/{app}.app/{app}")})
             deps.append(dependency(name, app))
         else:
             extra.update({"APPLICATION_EXTENSION_API_ONLY": "YES", "SKIP_INSTALL": "YES"})
             extra["HISN_PART"] = str(blockers.index(name) + 1)
             if name in blockers and not safari_only:
                 extra["CODE_SIGN_ENTITLEMENTS"] = "HisnBlocker/HisnBlocker.entitlements"
+        if general and "CODE_SIGN_ENTITLEMENTS" in extra:
+            extra["CODE_SIGN_ENTITLEMENTS"] = "Unrot/Entitlements/" + Path(extra["CODE_SIGN_ENTITLEMENTS"]).name.replace("Hisn", "Unrot", 1)
         p.add(oid("ios-target", name), "PBXNativeTarget", {
             "name": q(name), "productName": q(name), "productReference": products[name],
             "productType": q("com.apple.product-type.application" if name == app else
@@ -313,5 +359,6 @@ if __name__ == "__main__":
     parser.add_argument("--safari-only", action="store_true", help="Separate Personal Team candidate, no DNS/Family Controls/Device Activity")
     parser.add_argument("--domain-only", action="store_true", help="Six Safari domain parts only, no text/visual scanner")
     parser.add_argument("--reuse-text-id-for-part-one", action="store_true", help="Use an existing limited scanner ID for part one; domain-only edition only")
+    parser.add_argument("--general", action="store_true", help="The Unrot (general) edition: UnrotMobile.xcodeproj, app.unrot.mobile, its own App Group")
     args = parser.parse_args()
-    main(args.safari_only, args.domain_only, args.reuse_text_id_for_part_one)
+    main(args.safari_only, args.domain_only, args.reuse_text_id_for_part_one, args.general)

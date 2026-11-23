@@ -41,6 +41,53 @@ public final class GuardFixtureActivity extends Activity {
         title.setText("Hisn harmless protection test");
         layout.addView(title);
         String mode = getIntent().getStringExtra("mode");
+        if ("visual-face-grid".equals(mode)) {
+            // A three-column grid of small portraits, like a profile or search grid: faces about
+            // a ninth of the screen wide, the size a single whole-screen look tends to miss.
+            android.widget.GridLayout grid = new android.widget.GridLayout(this);
+            grid.setColumnCount(3);
+            android.graphics.Bitmap face;
+            try (java.io.InputStream image = getAssets().open("astronaut.png")) {
+                face = android.graphics.BitmapFactory.decodeStream(image);
+            } catch (java.io.IOException unavailable) {
+                throw new IllegalStateException("Portrait fixture missing", unavailable);
+            }
+            int cell = getResources().getDisplayMetrics().widthPixels / 3;
+            for (int i = 0; i < 18; i++) {
+                android.widget.ImageView portrait = new android.widget.ImageView(this);
+                portrait.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+                portrait.setImageBitmap(face);
+                portrait.setContentDescription("Public-domain astronaut portrait");
+                grid.addView(portrait, new android.view.ViewGroup.LayoutParams(cell, cell));
+            }
+            setContentView(grid);
+            return;
+        }
+        if ("visual-face-scroll".equals(mode)) {
+            // A scrolling page with the portrait between plain blocks, for the face blur's scroll tracking.
+            android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+            LinearLayout column = new LinearLayout(this);
+            column.setOrientation(LinearLayout.VERTICAL);
+            android.graphics.Bitmap face;
+            try (java.io.InputStream image = getAssets().open("astronaut.png")) {
+                face = android.graphics.BitmapFactory.decodeStream(image);
+            } catch (java.io.IOException unavailable) {
+                throw new IllegalStateException("Portrait fixture missing", unavailable);
+            }
+            for (int i = 0; i < 4; i++) {
+                android.view.View block = new android.view.View(this);
+                block.setBackgroundColor(i % 2 == 0 ? 0xFFDDE7F0 : 0xFFE8F0DD);
+                column.addView(block, new LinearLayout.LayoutParams(-1, 900));
+                android.widget.ImageView portrait = new android.widget.ImageView(this);
+                portrait.setAdjustViewBounds(true);
+                portrait.setImageBitmap(face);
+                portrait.setContentDescription("Public-domain astronaut portrait");
+                column.addView(portrait, new LinearLayout.LayoutParams(-1, -2));
+            }
+            scroll.addView(column);
+            setContentView(scroll);
+            return;
+        }
         if ("visual-face".equals(mode)) {
             android.widget.ImageView portrait = new android.widget.ImageView(this);
             portrait.setBackgroundColor(android.graphics.Color.BLACK);

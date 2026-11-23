@@ -118,8 +118,14 @@ class UnrotOnboardingTest {
         tap("What does it cost me?")
         rule.onNodeWithText("It doesn’t just take time", substring = true).assertIsDisplayed()
         tap("Why is it so hard?")
+        // The Glasshouse chapter: the four tricks feeds use, then why it isn't willpower.
+        rule.onNodeWithText("Feeds use", substring = true).assertIsDisplayed()
+        tap("Next")
         rule.onNodeWithText("It’s not willpower", substring = true).assertIsDisplayed()
         tap("What does Unrot do?")
+        // What helps, with the glass, before every part gets its answer.
+        rule.onNodeWithText("How Unrot", substring = true).assertIsDisplayed()
+        tap("Next")
         rule.onNodeWithText("Every part of it gets an answer.").assertIsDisplayed()
         tap("Let’s get them back")
         tap("Read")
@@ -172,7 +178,7 @@ class UnrotOnboardingTest {
         show(actions)
         toTheEnd()
         rule.onNodeWithText("Almost set.").assertIsDisplayed()
-        tap("Go to Today")
+        tap("Go to Home")
         assertTrue(actions.finished)
     }
 

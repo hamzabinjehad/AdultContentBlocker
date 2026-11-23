@@ -3,6 +3,7 @@ package app.hisn.android.nativeshell
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.EditNote
+import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.TravelExplore
@@ -26,6 +28,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -226,10 +231,17 @@ internal fun UnrotQuickTools(
     state: HisnState,
     onPause: () -> Unit,
     onNote: () -> Unit,
-    onLock: () -> Unit
+    onOpen: (String) -> Unit
 ) {
     val haptics = rememberHisnHaptics()
     val focusLeft = focusLeftMs()
+    var more by remember { mutableStateOf(false) }
+    if (more) UnrotMoreSheet(
+        onDismiss = { more = false },
+        onPause = onPause,
+        onFocus = { FocusRequest.open.value = true },
+        onOpen = onOpen
+    )
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).riseIn(2)) {
         QuickTool(Icons.Rounded.Pause, R.string.today_tool_breathe, primary = true) { haptics.confirm(); onPause() }
         QuickTool(Icons.Rounded.CenterFocusStrong, R.string.today_tool_focus, primary = focusLeft > 0L,
@@ -237,7 +249,7 @@ internal fun UnrotQuickTools(
             haptics.nav(); FocusRequest.open.value = true
         }
         QuickTool(Icons.Rounded.EditNote, R.string.today_tool_note) { haptics.nav(); onNote() }
-        QuickTool(Icons.Rounded.Lock, R.string.today_tool_lock) { haptics.nav(); onLock() }
+        QuickTool(Icons.Rounded.GridView, R.string.today_tool_more) { haptics.nav(); more = true }
     }
 }
 
@@ -278,7 +290,7 @@ private fun androidx.compose.foundation.layout.RowScope.QuickTool(
             contentAlignment = Alignment.Center
         ) {
             if (art != null) Float3D(art, 46.dp, glow = !primary)
-            else Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(24.dp))
+            else Icon(icon, contentDescription = null, tint = if (primary) content else Color(0xFFF4C34E), modifier = Modifier.size(30.dp))
         }
         Text(
             text ?: stringResource(label),
@@ -297,50 +309,85 @@ private fun androidx.compose.foundation.layout.RowScope.QuickTool(
  * nameless button. A Surface merges the icon and the words into one labelled button.
  */
 @Composable
-internal fun UnrotPauseFab(onPause: () -> Unit, modifier: Modifier = Modifier, expanded: Boolean = true) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+internal fun UnrotPauseFab(
+    onPause: () -> Unit,
+    modifier: Modifier = Modifier,
+    expanded: Boolean = true,
+    onNote: (() -> Unit)? = null,
+    onLock: (() -> Unit)? = null,
+    /** The Glasshouse home: a centred gold pill; while the glass is cracked it says "Breathe to seal it" and glows. */
+    pill: Boolean = false,
+    sealing: Boolean = false
+) {
     val haptics = rememberHisnHaptics()
     val dark = LocalDarkTheme.current
     val interaction = remember { MutableInteractionSource() }
+    // A tap breathes at once, the fastest path in a hard moment; holding offers the other choices.
+    var choices by remember { androidx.compose.runtime.mutableStateOf(false) }
+    val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "seal").animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable<Float>(
+            androidx.compose.animation.core.tween(1400), androidx.compose.animation.core.RepeatMode.Reverse), label = "seal-glow")
+    Box(modifier.then(if (sealing) Modifier.drawBehind {
+        // Two soft rings that breathe, not a slab (mockup .cpbreathe.pulse).
+        val glow = pulse.value
+        listOf(9.dp to .18f, 19.dp to .08f).forEach { (grow, alpha) ->
+            val g = grow.toPx() * (0.7f + 0.3f * glow)
+            drawRoundRect(Color(0xFFF2C14E).copy(alpha = alpha * (0.7f + 0.3f * glow)),
+                topLeft = androidx.compose.ui.geometry.Offset(-g, -g),
+                size = androidx.compose.ui.geometry.Size(size.width + 2 * g, size.height + 2 * g),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2 + g))
+        }
+    } else Modifier)) {
+    androidx.compose.material3.DropdownMenu(expanded = choices, onDismissRequest = { choices = false }) {
+        androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.today_tool_breathe)) },
+            onClick = { choices = false; onPause() })
+        if (onNote != null) androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.today_tool_note)) },
+            onClick = { choices = false; onNote() })
+        if (onLock != null) androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.today_tool_lock)) },
+            onClick = { choices = false; onLock() })
+    }
     androidx.compose.material3.Surface(
-        onClick = {
-            haptics.confirm()
-            onPause()
-        },
-        modifier = modifier.pressScale(interaction),
-        interactionSource = interaction,
-        shape = RoundedCornerShape(20.dp),
-        color = if (dark) Color(0xFFF2C14E) else UnrotInk,
-        contentColor = if (dark) Color(0xFF1F1A0A) else Color(0xFFF5EFE3),
-        shadowElevation = 3.dp
+        modifier = Modifier.pressScale(interaction).combinedClickable(
+            interactionSource = interaction,
+            indication = null,
+            role = Role.Button,
+            onLongClickLabel = stringResource(R.string.fab_more_choices),
+            onLongClick = if (onNote != null || onLock != null) ({ haptics.confirm(); choices = true }) else null,
+            onClick = { haptics.confirm(); onPause() }
+        ),
+        shape = if (pill) CircleShape else RoundedCornerShape(20.dp),
+        color = if (dark || pill) Color(0xFFF2C14E) else UnrotInk,
+        contentColor = if (dark || pill) Color(0xFF1F1A0A) else Color(0xFFF5EFE3),
+        shadowElevation = if (pill) 10.dp else 3.dp
     ) {
-        val label = stringResource(R.string.pause_home_title)
+        // "Breathe", the same word as the tools row, so the two read as one thing.
+        val label = stringResource(if (sealing) R.string.home_breathe_seal else R.string.today_tool_breathe)
         Row(
             Modifier
                 .heightIn(min = 56.dp)
                 .semantics { contentDescription = label }
-                .padding(start = 12.dp, end = if (expanded) 20.dp else 12.dp),
+                .padding(start = if (pill) 18.dp else 12.dp, end = if (expanded) (if (pill) 26.dp else 20.dp) else 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
                 Modifier
                     .size(30.dp)
-                    .background(if (dark) Color(0xFF1F1A0A) else Color(0xFFF4C34E), CircleShape),
+                    .background(if (dark || pill) Color(0xFF1F1A0A) else Color(0xFFF4C34E), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Rounded.Pause,
-                    contentDescription = null,
-                    tint = if (dark) Color(0xFFF2C14E) else UnrotInk,
-                    modifier = Modifier.size(18.dp)
-                )
+                // A breath, not a media pause: a small open ring.
+                Box(Modifier.size(12.dp).border(2.5.dp, if (dark || pill) Color(0xFFF2C14E) else UnrotInk, CircleShape))
             }
             // While the list scrolls the button shrinks to its mark, so it never sits on top of
             // the tools; the label stays for screen readers either way.
             androidx.compose.animation.AnimatedVisibility(visible = expanded) {
-                Text(stringResource(R.string.pause_home_title), style = MaterialTheme.typography.titleMedium)
+                Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = if (pill) androidx.compose.ui.text.font.FontWeight.Bold else null)
             }
         }
+    }
     }
 }
 
@@ -421,7 +468,8 @@ internal fun shieldWorking(state: HisnState): Boolean {
 internal fun ShieldChip(state: HisnState, onClick: () -> Unit) {
     val haptics = rememberHisnHaptics()
     val status = LocalHisnStatusColors.current
-    val working = shieldWorking(state)
+    val stepsLeft = setupStepsLeft(state)
+    val working = shieldWorking(state) && stepsLeft == 0
     Row(
         Modifier
             .padding(end = 12.dp)
@@ -443,7 +491,11 @@ internal fun ShieldChip(state: HisnState, onClick: () -> Unit) {
                     .background(if (working) status.success else status.warning, CircleShape)
             )
             Text(
-                stringResource(if (working) R.string.today_shield_on else R.string.today_shield_needs),
+                when {
+                    stepsLeft > 0 -> setupStepsLeftLabel(stepsLeft)
+                    working -> stringResource(R.string.today_shield_on)
+                    else -> stringResource(R.string.today_shield_needs)
+                },
                 style = MaterialTheme.typography.labelLarge,
                 color = if (working) status.onSuccessContainer else status.onWarningContainer
             )
@@ -566,4 +618,19 @@ private fun TodayCell(value: String, label: String, modifier: Modifier) {
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center)
     }
+}
+
+/** The Glasshouse header's "🌱 Day 2": days with Unrot, green like a new leaf. */
+@Composable
+internal fun DayChip(day: Int) {
+    Text(
+        "🌱 " + stringResource(R.string.personal_day_number, day),
+        style = MaterialTheme.typography.labelLarge,
+        color = Color(0xFF9BE07A),
+        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+        modifier = Modifier
+            .padding(end = 12.dp)
+            .background(Color(0xFF1E3318), CircleShape)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    )
 }

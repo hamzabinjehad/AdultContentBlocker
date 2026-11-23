@@ -50,6 +50,43 @@
         "cd /private/tmp/claude-501/-Users-x-Desktop-GitHub-AdultContentBlocker/f82657af-b019-4cd9-91fc-77c58465719a/scratchpad/site && exec /usr/bin/python3 -m http.server 8765 --bind 127.0.0.1"
       ],
       "port": 8765
+    },
+    {
+      "name": "app-mockup",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /private/tmp/claude-501/-Users-x-Desktop-GitHub-AdultContentBlocker/b371569e-c716-4fc7-b07e-54bf96ec485f/scratchpad/mock && exec /usr/bin/python3 -m http.server 8741 --bind 127.0.0.1"
+      ],
+      "port": 8741
+    },
+    {
+      "name": "home-hero",
+      "runtimeExecutable": "/usr/bin/python3",
+      "runtimeArgs": [
+        "-I",
+        "-c",
+        "import os; os.chdir('/private/tmp/claude-501/-Users-x-Desktop-GitHub-AdultContentBlocker/6a34815b-fce4-437d-af45-9b0cfa17926e/scratchpad/serve'); import http.server; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler, port=8740, bind='127.0.0.1')"
+      ],
+      "port": 8740
+    },
+    {
+      "name": "hisn-lamp",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /private/tmp/claude-501/-Users-x--claude-spares-spare-m2nXhb/1ac89c36-fc26-447e-8c22-7ae4f98a69b5/scratchpad/lamp && exec /usr/bin/python3 -m http.server 8743 --bind 127.0.0.1"
+      ],
+      "port": 8743
+    },
+    {
+      "name": "mac-concept",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /private/tmp/claude-501/-Users-x-Desktop-GitHub-AdultContentBlocker/17111b11-749f-4e3e-819f-78f92ff89ca1/scratchpad/mac && exec /usr/bin/python3 -m http.server 8742 --bind 127.0.0.1"
+      ],
+      "port": 8742
     }
   ]
 }

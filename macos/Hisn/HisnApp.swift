@@ -140,6 +140,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // scene is macOS 13, and the item has to exist on macOS 12 too.
         StatusItemController.shared.start()
         BrowserGuard.shared.start()
+        // Unrot's distraction rules for apps: waits, limits, schedules, Focus.
+        Task { @MainActor in DistractionEnforcer.shared.start() }
         FilterSync.shared.start()
         Task { @MainActor in ScreenGrayscale.shared.start() }
         Task { @MainActor in

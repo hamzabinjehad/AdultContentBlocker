@@ -56,7 +56,6 @@ import app.hisn.android.nativeshell.riseIn
 import app.hisn.android.nativeshell.LocalReduceMotion
 import app.hisn.android.nativeshell.systemReduceMotion
 import app.hisn.android.nativeshell.rememberHisnHaptics
-import app.hisn.android.nativeshell.FeelSound
 import app.hisn.core.ShortVideoSurfaces
 
 /**
@@ -76,7 +75,6 @@ class BlockActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        app.hisn.android.nativeshell.UnrotFeel.warm(this)
         enableEdgeToEdge()
         if (savedInstanceState == null) { ShieldMoments.mark(this); StepIns.record(this, StepIns.CLOSED) }
         // Only an installed app is named: an unknown package would show as a raw ID.
@@ -94,6 +92,7 @@ class BlockActivity : ComponentActivity() {
         }
         if (savedInstanceState == null && (reason == Reason.PAGE_VISUAL || reason == Reason.PAGE_WORD)) {
             StepIns.record(this, StepIns.ADULT)
+            GlassMoments.cracked(this)
         }
         // A rotation is the same block: count it once, like every other pause screen.
         val tally = PauseCount.record(this, savedInstanceState == null).count
@@ -134,15 +133,6 @@ class BlockActivity : ComponentActivity() {
     private fun BlockPage(reason: Reason, feedApp: String?, app: String?, label: String?, note: String, tally: Int, reopens: String?) {
         val colors = MaterialTheme.colorScheme
         val haptics = rememberHisnHaptics()
-        // The stop is felt and heard once: a firm buzz and two calm falling notes, never a siren.
-        val greeted = androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-        androidx.compose.runtime.LaunchedEffect(Unit) {
-            if (!greeted.value) {
-                greeted.value = true
-                haptics.edge()
-                haptics.sound(FeelSound.BLOCK)
-            }
-        }
         val title = when (reason) {
             Reason.FEED -> when (feedApp) {
                 "com.google.android.youtube" -> stringResource(R.string.block_shorts_title)
@@ -268,7 +258,7 @@ class BlockActivity : ComponentActivity() {
                     OutlinedButton(
                         onClick = {
                             haptics.tap()
-                            startActivity(PauseEntry.intent(this@BlockActivity).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                            startActivity(PauseEntry.intent(this@BlockActivity).putExtra(BreatheActivity.EXTRA_QUICK, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                             finish()
                         },
                         shape = RoundedCornerShape(18.dp),

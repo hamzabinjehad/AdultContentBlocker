@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 4,
   "items": [
     {
       "id": "open-for",
@@ -204,6 +204,869 @@
       "en": "Take three slow breaths. Then decide, not before.",
       "source_ar": "",
       "source_en": ""
+    },
+    {
+      "id": "seesaw",
+      "kind": "idea",
+      "topics": [
+        "time",
+        "gaze"
+      ],
+      "ar": "كل متعة سريعة تُميل الكفّة نحو اللذة، فيدفعها دماغك إلى الخلف أبعد قليلًا من التوازن. ذلك الفتور بعد التصفّح هو تلك الدفعة.",
+      "en": "Every quick hit tips a seesaw toward pleasure. Your brain pushes it back, a little past level. The flat feeling after scrolling is that push.",
+      "source_ar": "فكرة من كتاب «أمة الدوبامين» لآنا لمبكي",
+      "source_en": "Idea from Dopamine Nation, Anna Lembke"
+    },
+    {
+      "id": "four-weeks",
+      "kind": "idea",
+      "topics": [
+        "time",
+        "gaze",
+        "heart"
+      ],
+      "ar": "الأيام الأولى من دونه تكون غالبًا أصعب لا أسهل. هذا توازن الكفّة يستقر. ويشعر أكثر الناس بالفرق بعد نحو أربعة أسابيع.",
+      "en": "The first days without it often feel worse, not better. That is the seesaw settling. Most people feel the change after about four weeks.",
+      "source_ar": "فكرة من كتاب «أمة الدوبامين» لآنا لمبكي",
+      "source_en": "Idea from Dopamine Nation, Anna Lembke"
+    },
+    {
+      "id": "self-binding",
+      "kind": "idea",
+      "topics": [
+        "time",
+        "gaze"
+      ],
+      "ar": "أن تضع مسافة بينك وبين المُثير ليس ضعفًا. اختيار الحاجز في يوم هادئ هو ما يجعل الأقوياء يبقون أقوياء.",
+      "en": "Putting distance between you and the trigger isn't weakness. Choosing the barrier on a calm day is how strong people stay strong.",
+      "source_ar": "فكرة من كتاب «أمة الدوبامين» لآنا لمبكي",
+      "source_en": "Idea from Dopamine Nation, Anna Lembke"
+    },
+    {
+      "id": "honest",
+      "kind": "idea",
+      "topics": [
+        "heart",
+        "gaze"
+      ],
+      "ar": "أخبر شخصًا واحدًا بالحقيقة عن مقدار تصفّحك. قولها بصوت عالٍ يُضعف قبضتها.",
+      "en": "Tell one person the truth about how much you scroll. Saying it out loud loosens its grip.",
+      "source_ar": "فكرة من كتاب «أمة الدوبامين» لآنا لمبكي",
+      "source_en": "Idea from Dopamine Nation, Anna Lembke"
+    },
+    {
+      "id": "relief-trap",
+      "kind": "idea",
+      "topics": [
+        "gaze",
+        "time"
+      ],
+      "ar": "الرغبة تبيعك راحة من قلق هي التي صنعته. أنت لا تخسر متعة، بل تُنهي حلقة مفرغة.",
+      "en": "The urge sells you relief from a restlessness it created. You aren't missing a pleasure. You're ending a loop.",
+      "source_ar": "فكرة من طريقة «إيزي واي» لألن كار",
+      "source_en": "Idea from Allen Carr's Easyway"
+    },
+    {
+      "id": "not-giving-up",
+      "kind": "idea",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "أنت لا تتخلّى عن شيء، فليس هناك ما تتخلّى عنه. اشعر بالارتياح لا بالخسارة.",
+      "en": "You aren't giving anything up. There is nothing to give up. Feel relief, not loss.",
+      "source_ar": "فكرة من طريقة «إيزي واي» لألن كار",
+      "source_en": "Idea from Allen Carr's Easyway"
+    },
+    {
+      "id": "small-monster",
+      "kind": "idea",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "الشدّ الجسدي صغير ويخفت في أيام. أما الكبير فهو الاعتقاد بأنك تحتاجه. تخلَّ عن الاعتقاد فلا يجد الشدّ ما يتعلّق به.",
+      "en": "The physical pull is small and fades in days. The big one is the belief that you need it. Drop the belief and the pull has nothing to hold.",
+      "source_ar": "فكرة من طريقة «إيزي واي» لألن كار",
+      "source_en": "Idea from Allen Carr's Easyway"
+    },
+    {
+      "id": "no-willpower",
+      "kind": "idea",
+      "topics": [
+        "gaze"
+      ],
+      "ar": "الإقلاع بقوة الإرادة صراع طويل مع نفسك. أن ترى العادة بوضوح يُنهي الصراع، لأنه لا يبقى شيء تريده.",
+      "en": "Quitting with willpower is a long fight against yourself. Seeing the habit clearly ends the fight, because there's nothing left you want.",
+      "source_ar": "فكرة من طريقة «إيزي بيزي»",
+      "source_en": "Idea from the EasyPeasy method"
+    },
+    {
+      "id": "novelty",
+      "kind": "idea",
+      "topics": [
+        "gaze"
+      ],
+      "ar": "جزء كبير من الجاذبية هو الجِدّة: الشيء التالي، والنافذة التالية. الدماغ يلاحق الجديد لا الجيد.",
+      "en": "Much of the pull is novelty: the next thing, the next tab. The brain chases what's new, not what's good.",
+      "source_ar": "فكرة من طريقة «إيزي بيزي»",
+      "source_en": "Idea from the EasyPeasy method"
+    },
+    {
+      "id": "stopping-cue",
+      "kind": "idea",
+      "topics": [
+        "time"
+      ],
+      "ar": "للكتب نهاية وللحلقات نهاية، أما الخلاصات فبُنيت بلا صفحة أخيرة. عليك أن تضع أنت النهاية.",
+      "en": "Books end, and episodes end. Feeds were built with no last page. You have to bring your own ending.",
+      "source_ar": "فكرة من كتاب «لا يُقاوَم» لآدم ألتر",
+      "source_en": "Idea from Irresistible, Adam Alter"
+    },
+    {
+      "id": "pick-a-stop",
+      "kind": "idea",
+      "topics": [
+        "time"
+      ],
+      "ar": "اختر متى ستتوقف قبل أن تفتح التطبيق: ثلاثة مقاطع، محادثة واحدة، بحث واحد. قرّر عند الباب لا داخل الغرفة.",
+      "en": "Choose where you'll stop before you open the app: three videos, one chat, one search. Decide at the door, not in the room.",
+      "source_ar": "فكرة من كتاب «لا يُقاوَم» لآدم ألتر",
+      "source_en": "Idea from Irresistible, Adam Alter"
+    },
+    {
+      "id": "declutter",
+      "kind": "idea",
+      "topics": [
+        "time"
+      ],
+      "ar": "خذ ثلاثين يومًا بعيدًا عن التطبيقات غير الضرورية، ثم أعِد فقط ما يخدم بوضوح شيئًا يهمّك.",
+      "en": "Take 30 days off optional apps, then let back only what clearly serves something you care about.",
+      "source_ar": "فكرة من كتاب «البساطة الرقمية» لكال نيوبورت",
+      "source_en": "Idea from Digital Minimalism, Cal Newport"
+    },
+    {
+      "id": "fill-the-gap",
+      "kind": "idea",
+      "topics": [
+        "time",
+        "heart"
+      ],
+      "ar": "ترك الخلاصة يترك فراغًا. املأه عن قصد بمشي أو مكالمة أو شيء تصنعه بيديك، وإلا ملأته الخلاصة نيابة عنك.",
+      "en": "Quitting a feed leaves a gap. Fill it on purpose with a walk, a call or something made by hand, or the feed will fill it for you.",
+      "source_ar": "فكرة من كتاب «البساطة الرقمية» لكال نيوبورت",
+      "source_en": "Idea from Digital Minimalism, Cal Newport"
+    },
+    {
+      "id": "ten-minutes",
+      "kind": "idea",
+      "topics": [
+        "time",
+        "gaze"
+      ],
+      "ar": "حين تأتي الرغبة أمهلها عشر دقائق. إن بقيت تريدها بعدها فقرّر حينها. أكثر الرغبات لا تدوم عشر دقائق.",
+      "en": "When the urge comes, give it ten minutes. If you still want it then, decide then. Most urges don't last ten minutes.",
+      "source_ar": "فكرة من كتاب «غير قابل للتشتيت» لنير إيال",
+      "source_en": "Idea from Indistractable, Nir Eyal"
+    },
+    {
+      "id": "what-feeling",
+      "kind": "idea",
+      "topics": [
+        "heart",
+        "time"
+      ],
+      "ar": "كل تصفّح يبدأ بشعور تريد التخلّص منه: ملل، قلق، وحدة. سمِّه، ثم تعامل مع الشعور لا مع التطبيق.",
+      "en": "Every scroll starts with a feeling you want gone: bored, anxious, lonely. Name it. Then deal with the feeling, not the app.",
+      "source_ar": "فكرة من كتاب «غير قابل للتشتيت» لنير إيال",
+      "source_en": "Idea from Indistractable, Nir Eyal"
+    },
+    {
+      "id": "not-your-fault",
+      "kind": "idea",
+      "topics": [
+        "heart",
+        "time"
+      ],
+      "ar": "فقدان التركيز ليس فشلًا شخصيًا. فرق من المهندسين بنت هذه التطبيقات لتُبقيك فيها. المقاومة تصرّف عاقل لا ضعف.",
+      "en": "Losing focus is not a personal failure. Teams of engineers built these apps to keep you there. Fighting back is reasonable, not weak.",
+      "source_ar": "فكرة من كتاب «التركيز المسروق» ليوهان هاري",
+      "source_en": "Idea from Stolen Focus, Johann Hari"
+    },
+    {
+      "id": "flow",
+      "kind": "idea",
+      "topics": [
+        "time"
+      ],
+      "ar": "عكس الذهن المشتّت هو الاستغراق: شيء واحد لوقت يكفي لتنغمس فيه. امنح شيئًا عشرين دقيقة اليوم.",
+      "en": "The opposite of a scattered mind is flow: one thing, long enough to get lost in it. Give something twenty minutes today.",
+      "source_ar": "فكرة من كتاب «التركيز المسروق» ليوهان هاري",
+      "source_en": "Idea from Stolen Focus, Johann Hari"
+    },
+    {
+      "id": "two-weeks-study",
+      "kind": "study",
+      "topics": [
+        "time"
+      ],
+      "ar": "من حجبوا الإنترنت عن هواتفهم أسبوعين صار تركيزهم أفضل، بما يعادل أن يصغروا نحو عشر سنوات. وتحسّن 91% منهم في مقياس واحد على الأقل.",
+      "en": "People who blocked mobile internet for two weeks focused better, on a par with being about ten years younger. 91% improved on at least one measure.",
+      "source_ar": "كاستيلو وآخرون، PNAS Nexus، 2025",
+      "source_en": "Castelo et al., PNAS Nexus, 2025"
+    },
+    {
+      "id": "thirty-minutes-study",
+      "kind": "study",
+      "topics": [
+        "time",
+        "heart"
+      ],
+      "ar": "الطلاب الذين قصروا وسائل التواصل على ثلاثين دقيقة يوميًا لثلاثة أسابيع شعروا بوحدة واكتئاب أقل.",
+      "en": "Students who kept social media to 30 minutes a day for three weeks felt less lonely and less depressed.",
+      "source_ar": "هانت وآخرون، مجلة علم النفس الاجتماعي والسريري، 2018",
+      "source_en": "Hunt et al., J. of Social and Clinical Psychology, 2018"
+    },
+    {
+      "id": "deactivate-study",
+      "kind": "study",
+      "topics": [
+        "time",
+        "heart"
+      ],
+      "ar": "حين أوقف الناس فيسبوك أربعة أسابيع استعادوا نحو ساعة يوميًا، وقضوا وقتًا أكثر مع الأهل والأصدقاء، وشعروا بسعادة أكبر قليلًا.",
+      "en": "When people turned off Facebook for four weeks, they got about an hour a day back, spent more of it with friends and family, and felt a little happier.",
+      "source_ar": "ألكوت وآخرون، المجلة الاقتصادية الأمريكية، 2020",
+      "source_en": "Allcott et al., American Economic Review, 2020"
+    },
+    {
+      "id": "short-video-study",
+      "kind": "study",
+      "topics": [
+        "time"
+      ],
+      "ar": "في 71 دراسة شملت نحو 98 ألف شخص، ارتبط الإكثار من المقاطع القصيرة بضعف الانتباه وضبط النفس. هو ارتباط لا دليل سببية، لكنه ثابت.",
+      "en": "Across 71 studies and about 98,000 people, heavier short-video use went with weaker attention and self-control. It's a link, not proof of cause, but it's consistent.",
+      "source_ar": "نغوين وآخرون، Psychological Bulletin، 2025",
+      "source_en": "Nguyen et al., Psychological Bulletin, 2025"
+    },
+    {
+      "id": "47-seconds-study",
+      "kind": "study",
+      "topics": [
+        "time"
+      ],
+      "ar": "في 2004 كان الناس يبقون على شاشة واحدة نحو دقيقتين ونصف. ومنذ نحو 2016 صار المتوسط قرابة 47 ثانية.",
+      "en": "In 2004, people stayed on one screen for about two and a half minutes. Since about 2016 it has been about 47 seconds.",
+      "source_ar": "غلوريا مارك، «مدى الانتباه»، 2023",
+      "source_en": "Gloria Mark, Attention Span, 2023"
+    },
+    {
+      "id": "phone-nearby-study",
+      "kind": "study",
+      "topics": [
+        "time"
+      ],
+      "ar": "مع وجود الهاتف على المكتب، حتى مقلوبًا وصامتًا، كان أداء الناس في اختبارات التفكير أسوأ مما لو كان في غرفة أخرى.",
+      "en": "With a phone on the desk, even face down and silent, people did worse on thinking tests than when it was in another room.",
+      "source_ar": "وارد وآخرون، 2017",
+      "source_en": "Ward et al., J. of the Association for Consumer Research, 2017"
+    },
+    {
+      "id": "notification-study",
+      "kind": "study",
+      "topics": [
+        "time"
+      ],
+      "ar": "الإشعار الذي لا تردّ عليه أصلًا يقطع تركيزك لبعض الوقت.",
+      "en": "A notification you don't even answer still breaks your concentration for a while.",
+      "source_ar": "ستوثارت وآخرون، 2015",
+      "source_en": "Stothart et al., J. of Experimental Psychology, 2015"
+    },
+    {
+      "id": "residue-study",
+      "kind": "study",
+      "topics": [
+        "time"
+      ],
+      "ar": "حين تنتقل بين المهام يبقى جزء من ذهنك عالقًا في السابقة. كل نظرة سريعة تترك شيئًا منك خلفها.",
+      "en": "When you switch tasks, part of your mind stays on the last one. Every quick check leaves some of you behind.",
+      "source_ar": "لوروا، 2009",
+      "source_en": "Leroy, Organizational Behavior and Human Decision Processes, 2009"
+    },
+    {
+      "id": "smiles-study",
+      "kind": "study",
+      "topics": [
+        "heart"
+      ],
+      "ar": "الغرباء الذين انتظروا معًا تبادلوا ابتسامات أقل حين كانت هواتفهم معهم.",
+      "en": "Strangers waiting together smiled at each other less when they had their phones.",
+      "source_ar": "كوشليف وآخرون، 2019",
+      "source_en": "Kushlev et al., Computers in Human Behavior, 2019"
+    },
+    {
+      "id": "dinner-study",
+      "kind": "study",
+      "topics": [
+        "heart"
+      ],
+      "ar": "الأصدقاء الذين أبقوا هواتفهم على مائدة العشاء استمتعوا بالوجبة أقل ممن أبعدوها.",
+      "en": "Friends who kept their phones out at dinner enjoyed the meal less than those who put them away.",
+      "source_ar": "دواير وآخرون، 2018",
+      "source_en": "Dwyer et al., J. of Experimental Social Psychology, 2018"
+    },
+    {
+      "id": "urge-surf-study",
+      "kind": "study",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "الرغبات تعلو ثم تبلغ ذروتها ثم تهبط وحدها، غالبًا خلال دقائق. أن تراقبها تمرّ دون أن تستجيب مهارة، وتصبح أسهل.",
+      "en": "Cravings rise, peak and fall on their own, often within minutes. Watching one pass without acting on it is a skill, and it gets easier.",
+      "source_ar": "ركوب موجة الرغبة، مارلات وبوين",
+      "source_en": "Urge surfing, Marlatt & Bowen, mindfulness-based relapse prevention"
+    },
+    {
+      "id": "sleep-study",
+      "kind": "study",
+      "topics": [
+        "time"
+      ],
+      "ar": "استخدام الهاتف في السرير من أكثر العوامل ثباتًا في التنبؤ بنوم أسوأ في عشرات الدراسات.",
+      "en": "Phone use in bed is one of the most consistent predictors of worse sleep across dozens of studies.",
+      "source_ar": "تحليل تجميعي، JMIR، 2024",
+      "source_en": "Meta-analysis, J. of Medical Internet Research, 2024"
+    },
+    {
+      "id": "thoreau-animal",
+      "kind": "classic",
+      "topics": [
+        "gaze"
+      ],
+      "ar": "نشعر بحيوانٍ فينا، يستيقظ بقدر ما تغفو طبيعتنا العليا.",
+      "en": "We are conscious of an animal in us, which awakens in proportion as our higher nature slumbers.",
+      "source_ar": "هنري ديفيد ثورو، «والدن»، 1854",
+      "source_en": "Henry David Thoreau, Walden, 1854",
+      "plain_en": "The urge is loudest when you're tired, bored or alone. Wake the better part of you up.",
+      "plain_ar": "الرغبة أعلى صوتًا حين تكون متعبًا أو ضجرًا أو وحيدًا. أيقظ الجزء الأفضل فيك."
+    },
+    {
+      "id": "dhammapada-conquer",
+      "kind": "classic",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "لو هزم رجلٌ في المعركة ألف ألف رجل، وهزم آخرُ نفسه، لكان هذا أعظم المنتصرين.",
+      "en": "If one man conquer in battle a thousand times thousand men, and if another conquer himself, he is the greatest of conquerors.",
+      "source_ar": "الدامّابادا 103، ترجمة ماكس مولر",
+      "source_en": "Dhammapada 103, trans. Max Müller, 1881",
+      "plain_en": "Closing this page is a bigger win than it feels like.",
+      "plain_ar": "إغلاقك هذه الصفحة انتصار أكبر مما تشعر به."
+    },
+    {
+      "id": "laotzu-mighty",
+      "kind": "classic",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "من غلب نفسه فهو القوي.",
+      "en": "He who overcomes himself is mighty.",
+      "source_ar": "لاو تسو، «تاو تي تشينغ» 33، ترجمة جيمس ليغ",
+      "source_en": "Lao Tzu, Tao Te Ching 33, trans. James Legge, 1891",
+      "plain_en": "Real strength is saying no to yourself.",
+      "plain_ar": "القوة الحقيقية أن تقول «لا» لنفسك."
+    },
+    {
+      "id": "ovid-beginnings",
+      "kind": "classic",
+      "topics": [
+        "gaze",
+        "time"
+      ],
+      "ar": "قاوِم البدايات؛ فالدواء يأتي متأخرًا إذا اشتدّ الداء بطول التأخير.",
+      "en": "Resist beginnings; too late is the medicine prepared, when the disease has gained strength by long delay.",
+      "source_ar": "أوفيد، «علاجات الحب»",
+      "source_en": "Ovid, Remedies for Love, trans. J. H. Mozley, 1929",
+      "plain_en": "Stop at the first click, not the tenth. It's easiest at the start.",
+      "plain_ar": "توقّف عند النقرة الأولى لا العاشرة. الأمر أسهل في البداية."
+    },
+    {
+      "id": "epictetus-would-be",
+      "kind": "classic",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "قل لنفسك أولًا ما تريد أن تكون، ثم افعل ما عليك فعله.",
+      "en": "First say to yourself, what you would be; and then do, what you have to do.",
+      "source_ar": "إبكتيتوس، «المحادثات» 3.23",
+      "source_en": "Epictetus, Discourses 3.23, trans. Elizabeth Carter, 1758",
+      "plain_en": "Decide who you want to be, then act like that person right now.",
+      "plain_ar": "قرّر من تريد أن تكون، ثم تصرّف مثله الآن."
+    },
+    {
+      "id": "marcus-dyed",
+      "kind": "classic",
+      "topics": [
+        "gaze",
+        "time"
+      ],
+      "ar": "كما تكون أفكارك المعتادة يكون طبع عقلك؛ فالنفس تُصبَغ بالأفكار.",
+      "en": "Such as are thy habitual thoughts, such also will be the character of thy mind; for the soul is dyed by the thoughts.",
+      "source_ar": "ماركوس أوريليوس، «التأملات» 5.16",
+      "source_en": "Marcus Aurelius, Meditations 5.16, trans. George Long, 1862",
+      "plain_en": "What you look at again and again becomes who you are.",
+      "plain_ar": "ما تنظر إليه مرة بعد مرة يصير جزءًا منك."
+    },
+    {
+      "id": "dhammapada-thought",
+      "kind": "classic",
+      "topics": [
+        "gaze",
+        "heart"
+      ],
+      "ar": "كل ما نحن عليه هو ثمرة ما فكّرنا فيه.",
+      "en": "All that we are is the result of what we have thought.",
+      "source_ar": "الدامّابادا 1، ترجمة ماكس مولر",
+      "source_en": "Dhammapada 1, trans. Max Müller, 1881",
+      "plain_en": "Your mind is built from what you feed it.",
+      "plain_ar": "عقلك يُبنى مما تُطعمه."
+    },
+    {
+      "id": "thoreau-kill-time",
+      "kind": "classic",
+      "topics": [
+        "time"
+      ],
+      "ar": "كأنك تستطيع قتل الوقت دون أن تجرح الأبدية.",
+      "en": "As if you could kill time without injuring eternity.",
+      "source_ar": "هنري ديفيد ثورو، «والدن»، 1854",
+      "source_en": "Henry David Thoreau, Walden, 1854",
+      "plain_en": "\"Just killing time\" still costs you real time.",
+      "plain_ar": "«مجرد تمضية وقت» ما زال يكلّفك وقتًا حقيقيًا."
+    },
+    {
+      "id": "thoreau-tools",
+      "kind": "classic",
+      "topics": [
+        "time"
+      ],
+      "ar": "صار الناس أدواتٍ لأدواتهم.",
+      "en": "Men have become the tools of their tools.",
+      "source_ar": "هنري ديفيد ثورو، «والدن»، 1854",
+      "source_en": "Henry David Thoreau, Walden, 1854",
+      "plain_en": "Is the phone working for you right now, or are you working for it?",
+      "plain_ar": "هل الهاتف يعمل لأجلك الآن، أم أنت تعمل لأجله؟"
+    },
+    {
+      "id": "thoreau-frittered",
+      "kind": "classic",
+      "topics": [
+        "time"
+      ],
+      "ar": "حياتنا تتبدّد في التفاصيل. البساطة، البساطة، البساطة!",
+      "en": "Our life is frittered away by detail. Simplicity, simplicity, simplicity!",
+      "source_ar": "هنري ديفيد ثورو، «والدن»، 1854",
+      "source_en": "Henry David Thoreau, Walden, 1854",
+      "plain_en": "A hundred small checks eat a whole day. Keep fewer things.",
+      "plain_ar": "مئة نظرة صغيرة تأكل يومًا كاملًا. أبقِ أشياء أقل."
+    },
+    {
+      "id": "thoreau-solitude",
+      "kind": "classic",
+      "topics": [
+        "time",
+        "heart"
+      ],
+      "ar": "لم أجد رفيقًا أطيب صحبةً من العزلة.",
+      "en": "I never found the companion that was so companionable as solitude.",
+      "source_ar": "هنري ديفيد ثورو، «والدن»، 1854",
+      "source_en": "Henry David Thoreau, Walden, 1854",
+      "plain_en": "Being alone without a screen is not empty. Try ten minutes of it.",
+      "plain_ar": "أن تكون وحدك بلا شاشة ليس فراغًا. جرّب عشر دقائق."
+    },
+    {
+      "id": "seneca-time",
+      "kind": "classic",
+      "topics": [
+        "time"
+      ],
+      "ar": "لا شيء لنا يا لوسيليوس إلا الوقت.",
+      "en": "Nothing, Lucilius, is ours, except time.",
+      "source_ar": "سينيكا، «رسائل إلى لوسيليوس» 1",
+      "source_en": "Seneca, Letters to Lucilius 1, trans. Richard M. Gummere, 1917",
+      "plain_en": "Your time is the one thing truly yours. Don't give it away free.",
+      "plain_ar": "وقتك هو الشيء الوحيد الذي تملكه حقًا. لا تهبه مجانًا."
+    },
+    {
+      "id": "seneca-everywhere",
+      "kind": "classic",
+      "topics": [
+        "time"
+      ],
+      "ar": "من كان في كل مكان فهو في لا مكان.",
+      "en": "Everywhere means nowhere.",
+      "source_ar": "سينيكا، «رسائل إلى لوسيليوس» 2",
+      "source_en": "Seneca, Letters to Lucilius 2, trans. Richard M. Gummere, 1917",
+      "plain_en": "Jumping between a hundred videos, you're really in none of them.",
+      "plain_ar": "حين تقفز بين مئة مقطع فأنت لست في أيٍّ منها حقًا."
+    },
+    {
+      "id": "seneca-own-company",
+      "kind": "classic",
+      "topics": [
+        "time",
+        "heart"
+      ],
+      "ar": "أول علامة على العقل المنظّم، في رأيي، قدرة المرء على البقاء في مكانه والأنس بصحبة نفسه.",
+      "en": "The primary indication, to my thinking, of a well-ordered mind is a man's ability to remain in one place and linger in his own company.",
+      "source_ar": "سينيكا، «رسائل إلى لوسيليوس» 2",
+      "source_en": "Seneca, Letters to Lucilius 2, trans. Richard M. Gummere, 1917",
+      "plain_en": "A calm mind can sit with itself without reaching for something.",
+      "plain_ar": "العقل الهادئ يستطيع أن يجلس مع نفسه دون أن يمدّ يده إلى شيء."
+    },
+    {
+      "id": "pascal-room",
+      "kind": "classic",
+      "topics": [
+        "time",
+        "heart"
+      ],
+      "ar": "كل شقاء الناس ينشأ من أمر واحد: أنهم لا يستطيعون البقاء بهدوء في غرفهم.",
+      "en": "All the unhappiness of men arises from one single fact, that they cannot stay quietly in their own chamber.",
+      "source_ar": "بليز باسكال، «خواطر» 139",
+      "source_en": "Blaise Pascal, Pensées 139, trans. W. F. Trotter",
+      "plain_en": "Most scrolling is running from a quiet minute. Let the quiet stay.",
+      "plain_ar": "أكثر التصفّح هروب من دقيقة هادئة. دع الهدوء يبقى."
+    },
+    {
+      "id": "james-attend",
+      "kind": "classic",
+      "topics": [
+        "time",
+        "gaze"
+      ],
+      "ar": "تجربتي هي ما أقبل أن أنتبه إليه.",
+      "en": "My experience is what I agree to attend to.",
+      "source_ar": "ويليام جيمس، «مبادئ علم النفس»، 1890",
+      "source_en": "William James, The Principles of Psychology, 1890",
+      "plain_en": "Your life is made of what you pay attention to. Choose it.",
+      "plain_ar": "حياتك مصنوعة مما تنتبه إليه. فاختره."
+    },
+    {
+      "id": "franklin-lost-time",
+      "kind": "classic",
+      "topics": [
+        "time"
+      ],
+      "ar": "الوقت الضائع لا يُعثَر عليه أبدًا.",
+      "en": "Lost time is never found again.",
+      "source_ar": "بنجامين فرانكلين، «تقويم ريتشارد المسكين»، 1748",
+      "source_en": "Benjamin Franklin, Poor Richard Improved, 1748",
+      "plain_en": "The hour in the feed doesn't come back.",
+      "plain_ar": "الساعة التي تقضيها في الخلاصة لا تعود."
+    },
+    {
+      "id": "marcus-ten-thousand",
+      "kind": "classic",
+      "topics": [
+        "time"
+      ],
+      "ar": "لا تتصرّف كأنك ستعيش عشرة آلاف سنة.",
+      "en": "Do not act as if thou wert going to live ten thousand years.",
+      "source_ar": "ماركوس أوريليوس، «التأملات» 4.17",
+      "source_en": "Marcus Aurelius, Meditations 4.17, trans. George Long, 1862",
+      "plain_en": "Your days are not endless. Spend tonight on something that matters.",
+      "plain_ar": "أيامك ليست بلا نهاية. اقضِ هذه الليلة في شيء يستحق."
+    },
+    {
+      "id": "marcus-putting-off",
+      "kind": "classic",
+      "topics": [
+        "time"
+      ],
+      "ar": "تذكّر كم طال تأجيلك لهذه الأمور.",
+      "en": "Remember how long thou hast been putting off these things.",
+      "source_ar": "ماركوس أوريليوس، «التأملات» 2.4",
+      "source_en": "Marcus Aurelius, Meditations 2.4, trans. George Long, 1862",
+      "plain_en": "The thing you keep putting off is waiting. Start it now, for five minutes.",
+      "plain_ar": "الأمر الذي تؤجّله ما زال ينتظرك. ابدأه الآن ولو خمس دقائق."
+    },
+    {
+      "id": "thoreau-deliberately",
+      "kind": "classic",
+      "topics": [
+        "time"
+      ],
+      "ar": "ذهبت إلى الغابة لأني أردت أن أعيش عن قصد.",
+      "en": "I went to the woods because I wished to live deliberately.",
+      "source_ar": "هنري ديفيد ثورو، «والدن»، 1854",
+      "source_en": "Henry David Thoreau, Walden, 1854",
+      "plain_en": "Do the next thing on purpose, not on autopilot.",
+      "plain_ar": "افعل الشيء التالي عن قصد، لا بشكل آلي."
+    },
+    {
+      "id": "james-exception",
+      "kind": "classic",
+      "topics": [
+        "heart",
+        "gaze"
+      ],
+      "ar": "لا تسمح باستثناء واحد حتى تترسّخ العادة الجديدة في حياتك.",
+      "en": "Never suffer an exception to occur till the new habit is securely rooted in your life.",
+      "source_ar": "ويليام جيمس، «مبادئ علم النفس»، 1890",
+      "source_en": "William James, The Principles of Psychology, 1890",
+      "plain_en": "\"Just this once\" is how old habits come back. Not even once, for now.",
+      "plain_ar": "«هذه المرة فقط» هي طريق عودة العادات القديمة. ولا مرة، الآن."
+    },
+    {
+      "id": "james-bundles",
+      "kind": "classic",
+      "topics": [
+        "heart",
+        "time"
+      ],
+      "ar": "لو أدرك الشباب كم سريعًا سيصيرون حِزمًا من العادات تمشي على الأرض، لاعتنوا بسلوكهم ما داموا قابلين للتشكّل.",
+      "en": "Could the young but realize how soon they will become mere walking bundles of habits, they would give more heed to their conduct while in the plastic state.",
+      "source_ar": "ويليام جيمس، «مبادئ علم النفس»، 1890",
+      "source_en": "William James, The Principles of Psychology, 1890",
+      "plain_en": "What you repeat now becomes automatic later. Repeat the good thing.",
+      "plain_ar": "ما تكرّره الآن يصير آليًا لاحقًا. كرّر الشيء الجيد."
+    },
+    {
+      "id": "aristotle-swallow",
+      "kind": "classic",
+      "topics": [
+        "heart"
+      ],
+      "ar": "فسنونو واحد لا يصنع صيفًا، ولا يومٌ واحد.",
+      "en": "For one swallow does not make a summer, nor does one day.",
+      "source_ar": "أرسطو، «الأخلاق النيقوماخية» 1.7",
+      "source_en": "Aristotle, Nicomachean Ethics I.7, trans. W. D. Ross",
+      "plain_en": "One bad day doesn't undo you, and one good day doesn't finish the work. Keep going.",
+      "plain_ar": "يوم سيئ واحد لا يهدمك، ويوم جيد واحد لا يُنهي المهمة. استمر."
+    },
+    {
+      "id": "epictetus-control",
+      "kind": "classic",
+      "topics": [
+        "heart"
+      ],
+      "ar": "بعض الأمور في أيدينا وبعضها ليس كذلك.",
+      "en": "Some things are in our control and others not.",
+      "source_ar": "إبكتيتوس، «المختصر» 1",
+      "source_en": "Epictetus, Enchiridion 1, trans. Thomas W. Higginson, 1865",
+      "plain_en": "You can't control the urge showing up. You can control the next tap.",
+      "plain_ar": "لا تتحكم في ظهور الرغبة، لكنك تتحكم في اللمسة التالية."
+    },
+    {
+      "id": "epictetus-views",
+      "kind": "classic",
+      "topics": [
+        "heart"
+      ],
+      "ar": "لا تُقلق الناسَ الأشياءُ، بل آراؤهم فيها.",
+      "en": "Men are disturbed not by things, but by the views which they take of them.",
+      "source_ar": "إبكتيتوس، «المختصر» 5",
+      "source_en": "Epictetus, Enchiridion 5",
+      "plain_en": "A slip feels like the end because of the story you tell about it. Tell a kinder one.",
+      "plain_ar": "الزلّة تبدو كالنهاية بسبب القصة التي ترويها عنها. احكِ قصة ألطف."
+    },
+    {
+      "id": "marcus-judgment",
+      "kind": "classic",
+      "topics": [
+        "heart"
+      ],
+      "ar": "إن آلمك شيء خارجي، فليس هو ما يقلقك، بل حكمك عليه.",
+      "en": "If thou art pained by any external thing, it is not this thing that disturbs thee, but thy own judgment about it.",
+      "source_ar": "ماركوس أوريليوس، «التأملات» 8.47",
+      "source_en": "Marcus Aurelius, Meditations 8.47, trans. George Long, 1862",
+      "plain_en": "Change how you see it, and it weighs less.",
+      "plain_ar": "غيّر نظرتك إليه فيخفّ ثقله."
+    },
+    {
+      "id": "emerson-peace",
+      "kind": "classic",
+      "topics": [
+        "heart"
+      ],
+      "ar": "لا شيء يجلب لك السلام إلا نفسك.",
+      "en": "Nothing can bring you peace but yourself.",
+      "source_ar": "رالف والدو إمرسون، «الاعتماد على الذات»، 1841",
+      "source_en": "Ralph Waldo Emerson, Self-Reliance, 1841",
+      "plain_en": "No feed will calm you down. You can.",
+      "plain_ar": "لن تهدّئك أي خلاصة. أنت تستطيع."
+    },
+    {
+      "id": "marcus-rising",
+      "kind": "classic",
+      "topics": [
+        "discipline",
+        "time"
+      ],
+      "ar": "في الصباح، حين تنهض متثاقلًا، ليحضرك هذا الخاطر: إني أنهض لعمل إنسان.",
+      "en": "In the morning when thou risest unwillingly, let this thought be present—I am rising to the work of a human being.",
+      "source_ar": "ماركوس أوريليوس، «التأملات» 5.1",
+      "source_en": "Marcus Aurelius, Meditations 5.1, trans. George Long, 1862",
+      "plain_en": "Don't start the day in the feed. Get up for something real.",
+      "plain_ar": "لا تبدأ يومك في الخلاصة. انهض لشيء حقيقي."
+    },
+    {
+      "id": "epictetus-habit",
+      "kind": "classic",
+      "topics": [
+        "discipline",
+        "heart"
+      ],
+      "ar": "كل عادة وقدرة تُحفَظ وتنمو بالأفعال التي تناسبها: عادة المشي بالمشي، وعادة الجري بالجري.",
+      "en": "Every habit and faculty is maintained and increased by the corresponding actions: the habit of walking by walking, the habit of running by running.",
+      "source_ar": "إبكتيتوس، «المحادثات» 2.18",
+      "source_en": "Epictetus, Discourses 2.18, trans. George Long",
+      "plain_en": "Every time you close the app, closing it gets easier.",
+      "plain_ar": "كل مرة تغلق فيها التطبيق يصبح إغلاقه أسهل."
+    },
+    {
+      "id": "plato-victory-self",
+      "kind": "classic",
+      "topics": [
+        "discipline",
+        "gaze"
+      ],
+      "ar": "الانتصار على النفس أول الانتصارات وأفضلها.",
+      "en": "The victory over self is of all victories the first and best.",
+      "source_ar": "أفلاطون، «القوانين»، الكتاب الأول",
+      "source_en": "Plato, Laws I, trans. Benjamin Jowett",
+      "plain_en": "Beating the urge is the win that makes every other win possible.",
+      "plain_ar": "التغلّب على الرغبة هو الانتصار الذي يجعل كل انتصار آخر ممكنًا."
+    },
+    {
+      "id": "douglass-struggle",
+      "kind": "classic",
+      "topics": [
+        "discipline",
+        "heart"
+      ],
+      "ar": "إن لم يكن هناك كفاح، فلا تقدّم.",
+      "en": "If there is no struggle, there is no progress.",
+      "source_ar": "فريدريك دوغلاس، خطاب كاناندايغوا، 1857",
+      "source_en": "Frederick Douglass, speech at Canandaigua, 1857",
+      "plain_en": "If this feels hard, that's because it's working.",
+      "plain_ar": "إن كان هذا صعبًا، فلأنه يُجدي."
+    },
+    {
+      "id": "paine-conflict",
+      "kind": "classic",
+      "topics": [
+        "discipline",
+        "heart"
+      ],
+      "ar": "كلما اشتدّ الصراع، كان النصر أمجد.",
+      "en": "The harder the conflict, the more glorious the triumph.",
+      "source_ar": "توماس بين، «الأزمة الأمريكية»، 1776",
+      "source_en": "Thomas Paine, The American Crisis, 1776",
+      "plain_en": "The hardest nights are the ones worth winning.",
+      "plain_ar": "أصعب الليالي هي التي تستحق أن تنتصر فيها."
+    },
+    {
+      "id": "roosevelt-work",
+      "kind": "classic",
+      "topics": [
+        "discipline",
+        "time"
+      ],
+      "ar": "أعظم جائزة تقدّمها الحياة بفارق كبير هي فرصة أن تعمل بجدّ في عمل يستحق.",
+      "en": "Far and away the best prize that life offers is the chance to work hard at work worth doing.",
+      "source_ar": "ثيودور روزفلت، خطاب سيراكيوز، 1903",
+      "source_en": "Theodore Roosevelt, speech at Syracuse, 1903",
+      "plain_en": "The feed is easy. Work you care about is better.",
+      "plain_ar": "الخلاصة سهلة، لكن العمل الذي يهمّك أفضل."
+    },
+    {
+      "id": "roosevelt-arena",
+      "kind": "classic",
+      "topics": [
+        "discipline",
+        "heart"
+      ],
+      "ar": "الفضل لمن هو في الحلبة فعلًا، من شوّه الغبار والعرق والدم وجهه؛ من يكافح ببسالة؛ من يخطئ ويقصّر مرة بعد مرة.",
+      "en": "The credit belongs to the man who is actually in the arena, whose face is marred by dust and sweat and blood; who strives valiantly; who errs, who comes short again and again.",
+      "source_ar": "ثيودور روزفلت، «المواطنة في جمهورية»، 1910",
+      "source_en": "Theodore Roosevelt, Citizenship in a Republic, 1910",
+      "plain_en": "Falling short while trying counts. Keep showing up.",
+      "plain_ar": "أن تقصّر وأنت تحاول أمر يُحسَب لك. استمر في الحضور."
+    },
+    {
+      "id": "widener-do-what",
+      "kind": "classic",
+      "topics": [
+        "discipline",
+        "heart"
+      ],
+      "ar": "افعل ما تستطيع، بما لديك، حيث أنت.",
+      "en": "Do what you can, with what you've got, where you are.",
+      "source_ar": "بيل وايدنر، في سيرة ثيودور روزفلت الذاتية، 1913",
+      "source_en": "Squire Bill Widener, quoted in Theodore Roosevelt's Autobiography, 1913",
+      "plain_en": "You don't need a perfect day. Do the next small right thing now.",
+      "plain_ar": "لا تحتاج يومًا مثاليًا. افعل الشيء الصغير الصحيح التالي الآن."
+    },
+    {
+      "id": "aristotle-doing",
+      "kind": "classic",
+      "topics": [
+        "discipline"
+      ],
+      "ar": "فالأشياء التي يجب أن نتعلّمها قبل أن نفعلها، نتعلّمها بفعلها.",
+      "en": "For the things we have to learn before we can do them, we learn by doing them.",
+      "source_ar": "أرسطو، «الأخلاق النيقوماخية» 2.1",
+      "source_en": "Aristotle, Nicomachean Ethics II.1, trans. W. D. Ross",
+      "plain_en": "You learn self-control by practising it, one closed app at a time.",
+      "plain_ar": "تتعلّم ضبط النفس بممارسته، تطبيقًا مغلقًا بعد آخر."
+    },
+    {
+      "id": "smiles-self-help",
+      "kind": "classic",
+      "topics": [
+        "discipline"
+      ],
+      "ar": "روح الاعتماد على النفس هي جذر كل نموّ حقيقي في الإنسان.",
+      "en": "The spirit of self-help is the root of all genuine growth in the individual.",
+      "source_ar": "صموئيل سمايلز، «اعتمد على نفسك»، 1859",
+      "source_en": "Samuel Smiles, Self-Help, 1859",
+      "plain_en": "No app can change you for you. It can only help you choose.",
+      "plain_ar": "لا يستطيع تطبيق أن يغيّرك بدلًا منك، بل يساعدك على الاختيار."
+    },
+    {
+      "id": "seneca-each-day",
+      "kind": "classic",
+      "topics": [
+        "discipline",
+        "time"
+      ],
+      "ar": "ابدأ الحياة الآن، واعدد كل يوم حياةً قائمة بذاتها.",
+      "en": "Begin at once to live, and count each separate day as a separate life.",
+      "source_ar": "سينيكا، «رسائل إلى لوسيليوس» 101",
+      "source_en": "Seneca, Letters to Lucilius 101, trans. Richard M. Gummere, 1917",
+      "plain_en": "Don't wait for Monday. Today counts on its own.",
+      "plain_ar": "لا تنتظر يوم الإثنين. اليوم يُحسَب وحده."
+    },
+    {
+      "id": "suntzu-defeat",
+      "kind": "classic",
+      "topics": [
+        "discipline",
+        "gaze"
+      ],
+      "ar": "أن نحصّن أنفسنا من الهزيمة أمر بأيدينا.",
+      "en": "To secure ourselves against defeat lies in our own hands.",
+      "source_ar": "سون تزو، «فن الحرب» 4، ترجمة ليونيل جايلز",
+      "source_en": "Sun Tzu, The Art of War IV, trans. Lionel Giles, 1910",
+      "plain_en": "Set your blocks on a calm day. That is how you win the hard ones.",
+      "plain_ar": "اضبط حواجزك في يوم هادئ؛ هكذا تنتصر في الأيام الصعبة."
     }
   ]
 }

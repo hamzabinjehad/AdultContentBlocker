@@ -8,6 +8,8 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -224,7 +226,8 @@ class ShellNavigationTest {
         // Unrot's pause is the Breathe tool on Today (the floating button shows once it scrolls
         // away); the Islamic edition keeps the card.
         if (unrotEdition) {
-            rule.onNode(hasText("Breathe") and hasClickAction()).performScrollTo().assertIsDisplayed().performClick()
+            // The tools row and the floating button both say Breathe; either opens the same pause.
+            rule.onAllNodes(hasText("Breathe") and hasClickAction()).onFirst().performClick()
         } else {
             rule.onNodeWithText("Feeling the pull?").performScrollTo().assertIsDisplayed()
             rule.onNode(hasText("Take a pause") and hasClickAction()).performScrollTo().performClick()
@@ -235,9 +238,12 @@ class ShellNavigationTest {
     @Test fun homeShowsTheDayCountWithTheNextMilestone() {
         val actions = FakeShellActions().apply {
             personalSummary = PersonalSummary(greeting = "Good evening, Sam", day = 12, pauses = 3)
+            finishUnrotSetup()
         }
         rule.showShell(actions)
-        rule.onNodeWithText("Day 12").performScrollTo().assertIsDisplayed()
+        // Today is a lazy list: bring the card into composition before looking for it.
+        rule.onAllNodes(hasScrollToNodeAction()).onFirst().performScrollToNode(hasText("Day 12"))
+        rule.onNodeWithText("Day 12").assertIsDisplayed()
         rule.onNodeWithText("2 days to day 14").assertIsDisplayed()
         rule.onNodeWithText("3 pauses taken").assertIsDisplayed()
     }
@@ -251,6 +257,7 @@ class ShellNavigationTest {
                 guardExpected = true
             )
             grantedPermissions += "accessibility"
+            finishUnrotSetup()
         }
         rule.showShell(actions)
         rule.onNodeWithText("Protection needs attention").assertIsDisplayed()
@@ -261,6 +268,12 @@ class ShellNavigationTest {
     @Test fun homeOffersARealRouteCheckForActiveWebsiteFiltering() {
         val actions = FakeShellActions().apply {
             liveProtection = ProtectionRuntime(dns = DnsVpnService.State.RUNNING, dnsRequested = true)
+            if (unrotEdition) {
+                // Unrot's checklist stands in for the status until setup is done; finish it with
+                // app protection really connected, so the status is the healthy one.
+                finishUnrotSetup()
+                liveProtection = liveProtection.copy(guardExpected = true, guardReady = true)
+            }
         }
         // Unrot keeps the route check on the Shield tab, under its one-sentence status.
         rule.showShell(actions, tab = if (unrotEdition) RulesTab else 0)
@@ -274,6 +287,7 @@ class ShellNavigationTest {
             liveProtection = ProtectionRuntime(
                 dns = DnsVpnService.State.RUNNING, dnsRequested = true, dnsLockdown = true
             )
+            finishUnrotSetup()
         }
         rule.showShell(actions)
         rule.onNodeWithText("Protection needs attention").assertIsDisplayed()

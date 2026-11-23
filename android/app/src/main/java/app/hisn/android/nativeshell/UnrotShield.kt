@@ -2,6 +2,8 @@ package app.hisn.android.nativeshell
 
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -82,50 +85,70 @@ internal fun UnrotShieldStatus(
     onAction: () -> Unit,
     parts: List<Pair<String, Boolean>> = emptyList()
 ) {
-    val status = LocalHisnStatusColors.current
-    val shape = MaterialTheme.shapes.extraLarge
-    // Healthy: the premium card with the shield as its hero object. Needs attention: warning colours.
-    val container = if (healthy) status.card else status.warningContainer
-    val content = if (healthy) MaterialTheme.colorScheme.onSurface else status.onWarningContainer
+    // Laid out like CleanPath's Blocker: one big object that is the status (our glass), one plain
+    // line, and one big button that fixes it. When something is off the glass gets an amber ring.
+    val shape = RoundedCornerShape(32.dp)
+    val warm = Color(0xFFFFB366)
     Column(
         Modifier
             .fillMaxWidth()
-            .unrotFrame(shape, hero = true)
-            .background(container, shape)
-            .padding(18.dp),
+            .clip(shape)
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    if (healthy) listOf(Color(0xFF3A2810), Color(0xFF140D06), Color(0xFF0B0805))
+                    else listOf(Color(0xFF5A2A0E), Color(0xFF1C0C05), Color(0xFF0B0604))
+                )
+            )
+            .padding(horizontal = 18.dp, vertical = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = if (healthy) Alignment.CenterVertically else Alignment.Top) {
-            val b = if (healthy) breath() else 0f
-            if (healthy) Float3D(R.drawable.unrot_3d_shield, 76.dp, Modifier.graphicsLayer { scaleX = 1f + b * 0.04f; scaleY = 1f + b * 0.04f })
-            else Box(
-                Modifier
-                    .padding(top = 8.dp)
-                    .size(12.dp)
-                    .graphicsLayer { scaleX = 1f + b * 0.4f; scaleY = 1f + b * 0.4f; alpha = 1f - b * 0.3f }
-                    .background(if (healthy) status.success else status.warning, CircleShape)
-            )
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = if (healthy && LocalDarkTheme.current) Color(0xFFF2C94F) else content,
-                    modifier = Modifier.semantics {
-                        heading()
-                        liveRegion = LiveRegionMode.Polite
-                    }
-                )
-                Text(body, style = MaterialTheme.typography.bodyMedium, color = content.copy(alpha = 0.85f))
+        val b = breath()
+        Box(Modifier.size(200.dp), contentAlignment = Alignment.Center) {
+            if (!healthy) {
+                androidx.compose.foundation.Canvas(Modifier.size(196.dp).graphicsLayer { alpha = 0.7f + b * 0.3f }) {
+                    drawCircle(
+                        color = warm,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = 3.dp.toPx(),
+                            pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(14f, 12f))
+                        )
+                    )
+                }
             }
+            androidx.compose.foundation.Image(
+                androidx.compose.ui.res.painterResource(R.drawable.unrot_glass_sprout),
+                contentDescription = null,
+                modifier = Modifier.size(180.dp).clip(CircleShape)
+                    .graphicsLayer { scaleX = 1f + b * 0.02f; scaleY = 1f + b * 0.02f }
+            )
         }
-        if (!healthy) UnrotPartsList(parts, content)
+        Text(
+            title,
+            style = MaterialTheme.typography.headlineSmall,
+            color = if (healthy) Color(0xFFF2C94F) else Color.White,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.semantics {
+                heading()
+                liveRegion = LiveRegionMode.Polite
+            }
+        )
+        Text(
+            body,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFFD8CCB4),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        if (!healthy) UnrotPartsList(parts, Color.White)
         if (action != null) {
             if (healthy) {
-                androidx.compose.material3.TextButton(onClick = onAction, modifier = Modifier.padding(start = 12.dp)) {
-                    Text(action, color = content)
-                }
+                androidx.compose.material3.TextButton(onClick = onAction) { Text(action, color = Color(0xFFF2C94F)) }
             } else {
-                Button(onClick = onAction, modifier = Modifier.padding(start = 24.dp)) { Text(action) }
+                Button(
+                    onClick = onAction,
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = warm, contentColor = Color(0xFF2A1206)),
+                    modifier = Modifier.padding(top = 4.dp).heightIn(min = 52.dp)
+                ) { Text(action, style = MaterialTheme.typography.titleMedium) }
             }
         }
     }
@@ -133,7 +156,7 @@ internal fun UnrotShieldStatus(
 
 /** The protection, sorted by what the person wants. */
 @Composable
-internal fun UnrotShieldLayers(state: HisnState, onOpen: (String) -> Unit, waitingApps: Int) {
+internal fun UnrotShieldLayers(state: HisnState, onOpen: (String) -> Unit, waitingApps: Int, tab: Int = SHIELD_ALL) {
     val context = LocalContext.current
     val resources = androidx.compose.ui.platform.LocalResources.current
     val shape = MaterialTheme.shapes.large
@@ -175,6 +198,15 @@ internal fun UnrotShieldLayers(state: HisnState, onOpen: (String) -> Unit, waiti
     }
     var row = 0
     fun explain(): () -> Unit { val n = row++; return { explaining = n } }
+    // Each row belongs to a tab; "All" shows every row. App access feeds the app rules, so it
+    // sits with Feeds and apps.
+    var shown = 0
+    @Composable
+    fun Part(group: Int, content: @Composable () -> Unit) {
+        if (tab != SHIELD_ALL && tab != group) return
+        if (shown++ > 0) InsetDivider(start = 72.dp)
+        content()
+    }
     fun real(on: Boolean, text: String) = if (on && !access) needsAccess else text
     Column(
         Modifier
@@ -183,42 +215,56 @@ internal fun UnrotShieldLayers(state: HisnState, onOpen: (String) -> Unit, waiti
             .unrotFrame(shape)
             .background(LocalHisnStatusColors.current.card, shape)
     ) {
-        ShieldRow(Icons.AutoMirrored.Rounded.ViewList, TileButter, stringResource(R.string.shield_row_feeds),
+        val e0 = explain()
+        Part(SHIELD_FEEDS) {
+            ShieldRow(Icons.AutoMirrored.Rounded.ViewList, TileButter, stringResource(R.string.shield_row_feeds),
             lockText(state.shortVideos.on, real(state.shortVideos.on,
                 stringResource(if (state.shortVideos.on) R.string.shield_row_feeds_on else R.string.shield_row_off))),
             checked = state.shortVideos.on, onChecked = state.shortVideos::set, lockedOn = locked && state.shortVideos.on,
-            onLongPress = explain())
-        InsetDivider(start = 72.dp)
-        ShieldRow(Icons.Rounded.Pause, TileSky, stringResource(R.string.shield_row_wait),
+            onLongPress = e0)
+        }
+        val e1 = explain()
+        Part(SHIELD_FEEDS) {
+            ShieldRow(Icons.Rounded.Pause, TileSky, stringResource(R.string.shield_row_wait),
             if (waitingApps == 0) stringResource(R.string.shield_row_off) else real(true, apps(waitingApps)),
             onClick = {
                 context.startActivity(Intent(context, app.hisn.android.OpenWaitSettingsActivity::class.java))
             },
-            onLongPress = explain())
-        InsetDivider(start = 72.dp)
-        ShieldRow(Icons.Rounded.Timer, TileSage, stringResource(R.string.shield_row_limits),
+            onLongPress = e1)
+        }
+        val e2 = explain()
+        Part(SHIELD_FEEDS) {
+            ShieldRow(Icons.Rounded.Timer, TileSage, stringResource(R.string.shield_row_limits),
             if (!state.limit.on || limits.isEmpty()) stringResource(R.string.shield_row_off)
                 else if (locked) stringResource(R.string.shield_row_locked_stricter) else real(true, limitLive(limits) ?: apps(limits.size)),
             onClick = { onOpen("limit") },
-            onLongPress = explain())
-        InsetDivider(start = 72.dp)
-        ShieldRow(Icons.Rounded.Bedtime, TilePaper, stringResource(R.string.shield_row_quiet),
+            onLongPress = e2)
+        }
+        val e3 = explain()
+        Part(SHIELD_FEEDS) {
+            ShieldRow(Icons.Rounded.Bedtime, TilePaper, stringResource(R.string.shield_row_quiet),
             if (!schedule.enabled) stringResource(R.string.shield_row_off) else real(true, quietLive(schedule)
                 ?: stringResource(R.string.shield_row_quiet_on, minute(schedule.startMinute), minute(schedule.endMinute))),
             onClick = { onOpen("schedule") },
-            onLongPress = explain())
-        InsetDivider(start = 72.dp)
-        ShieldRow(Icons.Rounded.Language, TileBlush, stringResource(R.string.shield_row_sites),
+            onLongPress = e3)
+        }
+        val e4 = explain()
+        Part(SHIELD_ADULT) {
+            ShieldRow(Icons.Rounded.Language, TileBlush, stringResource(R.string.shield_row_sites),
             lockText(state.dns.on, stringResource(if (state.dns.on) R.string.shield_row_sites_on else R.string.shield_row_off)),
             checked = state.dns.on, onChecked = state.dns::set, lockedOn = locked && state.dns.on,
-            onLongPress = explain())
-        InsetDivider(start = 72.dp)
-        ShieldRow(Icons.Rounded.LocalOffer, TileBlush, stringResource(R.string.shield_row_words),
+            onLongPress = e4)
+        }
+        val e5 = explain()
+        Part(SHIELD_ADULT) {
+            ShieldRow(Icons.Rounded.LocalOffer, TileBlush, stringResource(R.string.shield_row_words),
             stringResource(if (state.tags.on) R.string.shield_row_words_on else R.string.shield_row_off),
             checked = state.tags.on, onChecked = state.tags::set, lockedOn = locked && state.tags.on,
-            onLongPress = explain())
-        InsetDivider(start = 72.dp)
-        ShieldRow(Icons.Rounded.Image, TilePaper, stringResource(R.string.shield_row_images),
+            onLongPress = e5)
+        }
+        val e6 = explain()
+        Part(SHIELD_ADULT) {
+            ShieldRow(Icons.Rounded.Image, TilePaper, stringResource(R.string.shield_row_images),
             stringResource(
                 when {
                     android.os.Build.VERSION.SDK_INT < 34 -> R.string.shield_row_images_unsupported
@@ -227,15 +273,22 @@ internal fun UnrotShieldLayers(state: HisnState, onOpen: (String) -> Unit, waiti
                 }
             ),
             checked = state.images.on, onChecked = state.images::set, lockedOn = locked && state.images.on,
-            onLongPress = explain())
-        InsetDivider(start = 72.dp)
+            onLongPress = e6)
+        }
         // Not an outcome but what the outcomes above run on, so it sits last and says so.
-        ShieldRow(Icons.Rounded.Apps, TilePaper, stringResource(R.string.shield_row_access),
+        val e7 = explain()
+        Part(SHIELD_FEEDS) {
+            ShieldRow(Icons.Rounded.Apps, TilePaper, stringResource(R.string.shield_row_access),
             stringResource(R.string.shield_row_access_body),
             checked = state.apps.on, onChecked = state.apps::set, lockedOn = locked && state.apps.on,
-            onLongPress = explain())
+            onLongPress = e7)
+        }
     }
 }
+
+internal const val SHIELD_ALL = 0
+internal const val SHIELD_FEEDS = 1
+internal const val SHIELD_ADULT = 2
 
 private fun minute(value: Int): String =
     String.format(java.util.Locale.ROOT, "%02d:%02d", value / 60, value % 60)
@@ -531,4 +584,33 @@ internal fun limitLive(limits: Map<String, Int>): String? {
     val (label, left) = tightest ?: return null
     return if (left <= 0L) stringResource(R.string.shield_row_limit_done, label)
         else stringResource(R.string.shield_row_limit_left, label, Wins.short(left))
+}
+
+/** Shield's three tabs, a pill row like CleanPath's Blocker: All · Feeds and apps · Adult. */
+@Composable
+internal fun UnrotShieldTabs(selected: Int, onSelect: (Int) -> Unit) {
+    val labels = listOf(R.string.shield_tab_all, R.string.shield_tab_feeds, R.string.shield_tab_adult)
+    Row(
+        Modifier.fillMaxWidth()
+            .background(Color.White.copy(alpha = .08f), CircleShape)
+            .padding(4.dp)
+            .selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        labels.forEachIndexed { i, res ->
+            val on = i == selected
+            Text(
+                stringResource(res),
+                style = MaterialTheme.typography.labelLarge,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                maxLines = 1,
+                color = if (on) Color(0xFF241708) else Color(0xFFA99D86),
+                modifier = Modifier
+                    .weight(1f)
+                    .background(if (on) Color(0xFFFFF8E6) else Color.Transparent, CircleShape)
+                    .selectable(selected = on, role = androidx.compose.ui.semantics.Role.Tab) { onSelect(i) }
+                    .padding(vertical = 10.dp)
+            )
+        }
+    }
 }

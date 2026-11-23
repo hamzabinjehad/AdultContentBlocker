@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wood_title">غابتك</string>
+    <string name="wood_sub">%1$d شجرة: واحدة لكل يوم مع Unrot. اضغط على أي شجرة.</string>
+    <string name="wood_desc">غابتك: %1$d شجرة، و%2$s استعدته في المجموع</string>
+    <string name="wood_today">اليوم: شتلة ما زالت تنمو</string>
+    <string name="wood_tree">%1$s · استعدت %2$s · %3$s</string>
+    <string name="wood_small">%1$s · يوم ثقيل، وما زالت شجيرة خضراء صغيرة</string>
+    <string name="wood_dry">%1$s · انكسر الزجاج؛ تبقى هذه الشجرة يابسة</string>
+    <string name="wood_next">النوع التالي: %1$s، في اليوم %2$d</string>
+    <string name="wood_oak">بلوط</string>
+    <string name="wood_pine">صنوبر</string>
+    <string name="wood_cherry">كرز</string>
+    <string name="wood_lemon">ليمون</string>
+    <string name="wood_olive">زيتون</string>
+    <string name="wood_willow">صفصاف</string>
+</resources>

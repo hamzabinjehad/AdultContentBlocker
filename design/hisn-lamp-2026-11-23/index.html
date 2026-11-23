@@ -1,0 +1,659 @@
+<meta charset="utf-8">
+<title>Hisn: The Lamp</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Amiri:wght@400;700&display=swap">
+<style>
+/* Layout: a study of Unchaind screen by screen, then Hisn rebuilt in Unchaind's own order with every tool of our general edition, as phones.
+   Dark-first: night emerald with lamp gold. Painted art in img/; icons drawn inline. */
+:root {
+  --bg: #0b1512; --fg: #e9efe9; --muted: #9db0a6; --line: #22352e; --panel: #111f1a;
+  --accent: #e6b75a; --good: #8fd19e; --goodbg: #16301f; --bad: #ff9a82; --badbg: #34201b; --warnbg: #33290f; --warn: #ffcf6e;
+  --display: "Reem Kufi", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --body: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --quran: "Amiri", "Noto Naskh Arabic", serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #eef3ef; --fg: #13221c; --muted: #52665c; --line: #cfdcd4; --panel: #fbfdfb;
+  --accent: #946a12; --good: #2f7a45; --goodbg: #def0e3; --bad: #a33a22; --badbg: #f7e4dd; --warnbg: #fbf0d4; --warn: #8a5a08; color-scheme: light } }
+:root[data-theme="light"] {
+  --bg: #eef3ef; --fg: #13221c; --muted: #52665c; --line: #cfdcd4; --panel: #fbfdfb;
+  --accent: #946a12; --good: #2f7a45; --goodbg: #def0e3; --bad: #a33a22; --badbg: #f7e4dd; --warnbg: #fbf0d4; --warn: #8a5a08; color-scheme: light }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 44px 90px; display: grid; gap: 64px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.15; text-wrap: balance; font-weight: 700; }
+h1 { font-size: clamp(36px, 6vw, 64px); }
+h2 { font-size: clamp(24px, 3.4vw, 32px); }
+h3 { font-size: 18px; }
+p { margin: 0; max-width: 70ch; }
+code { font-size: .9em; }
+.lede { font-size: 18px; color: var(--muted); max-width: 66ch; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+section { display: grid; gap: 22px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 32px; align-items: center; }
+@media (max-width: 760px) { .hero { grid-template-columns: 1fr; } }
+.hero .txt { display: grid; gap: 18px; min-width: 0; }
+.heroart img { width: 100%; max-width: 360px; border-radius: 28px; display: block; margin: 0 auto; box-shadow: 0 30px 70px rgba(0,0,0,.35); }
+.ayah { font-family: var(--quran); font-size: 24px; line-height: 2; direction: rtl; }
+.ayahen { font-size: 15px; color: var(--muted); }
+.src { font-size: 13px; color: var(--muted); }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card p, .card li { font-size: 15px; color: var(--muted); }
+.card b { color: var(--fg); }
+.card ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; }
+.big3 { font-family: var(--display); font-size: 40px; color: var(--accent); line-height: 1; }
+.map { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 900px; font-size: 14.5px; }
+th, td { text-align: start; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+td:nth-child(2) { font-weight: 700; }
+tr.grp td { background: var(--bg); font-family: var(--display); font-size: 15px; color: var(--accent); font-weight: 700; }
+.tag { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
+.t-keep { background: var(--goodbg); color: var(--good); }
+.t-change { background: var(--warnbg); color: var(--warn); }
+.t-drop { background: var(--badbg); color: var(--bad); }
+.t-new { background: var(--line); color: var(--fg); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 14px; color: var(--muted); align-items: center; }
+.paint { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.paint figure { margin: 0; display: grid; gap: 6px; align-content: start; }
+.paint img { width: 100%; aspect-ratio: 357 / 600; object-fit: cover; border-radius: 12px; display: block; border: 1px solid var(--line); }
+.paint figcaption { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.paint figcaption b { color: var(--fg); display: block; }
+
+/* ---------- phones ---------- */
+.screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 34px 24px; align-items: start; }
+.shot { display: grid; gap: 8px; min-width: 0; }
+.shot .from { font-size: 12px; color: var(--accent); font-weight: 700; letter-spacing: .04em; }
+.shot h3 { font-size: 16px; }
+.shot p { font-size: 14px; color: var(--muted); }
+.phone { --pfg: #eef3ea; --pdim: #a3b6ab; --gold: #e6b75a; --gold2: #ffd98a; --leaf: #8fd39a; --warn2: #ffb366; --card: rgba(255,255,255,.055); --cardline: rgba(230,183,90,.16); --navbg: rgba(9,22,17,.94);
+  position: relative; width: 100%; max-width: 300px; aspect-ratio: 9 / 19.5; border-radius: 40px; border: 8px solid #141816; overflow: hidden; color: var(--pfg); box-shadow: 0 22px 50px rgba(0,0,0,.35); container-type: inline-size; font-family: var(--body);
+  background-color: #07130f;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg fill='none' stroke='%23e6b75a' stroke-opacity='.06'%3E%3Crect x='12' y='12' width='20' height='20'/%3E%3Crect x='12' y='12' width='20' height='20' transform='rotate(45 22 22)'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(120% 60% at 50% 18%, #123327 0%, #07130f 70%); }
+.phone.dawn { --pfg: #1d2a22; --pdim: #55665c; --gold: #a8700f; --gold2: #7a4f06; --leaf: #2f7a45; --card: rgba(255,255,255,.66); --cardline: rgba(120,90,40,.2); --navbg: rgba(250,247,238,.95);
+  background-color: #f2ede0; background-image: radial-gradient(120% 60% at 50% 15%, #fff6dc 0%, #efe7d4 70%); }
+.phone.scene { background-size: cover, cover; background-position: center, center 30%; }
+.phone.quiz { background-image: linear-gradient(180deg, rgba(7,19,15,1) 0%, rgba(7,19,15,.92) 55%, rgba(7,19,15,.45) 100%), url(img/home-dawn.jpg); background-size: cover, cover; background-position: center, center bottom; }
+.phone > .in { position: absolute; inset: 0; padding: 9cqw 5.5cqw 22cqw; display: flex; flex-direction: column; gap: 2.8cqw; font-size: 3.55cqw; line-height: 1.45; }
+.phone.nonav > .in { padding-bottom: 7cqw; }
+.sb { position: absolute; top: 2.6cqw; inset-inline: 7cqw; display: flex; justify-content: space-between; font-size: 3.1cqw; color: var(--pdim); font-variant-numeric: tabular-nums; z-index: 4; }
+.hd { display: flex; justify-content: space-between; align-items: center; gap: 2cqw; }
+.hd .t { font-family: var(--display); font-size: 6.2cqw; line-height: 1.1; }
+.hd .s { font-size: 3cqw; color: var(--pdim); }
+.chip { font-size: 2.9cqw; font-weight: 700; padding: 1.3cqw 2.8cqw; border-radius: 99px; background: rgba(143,211,154,.15); color: var(--leaf); white-space: nowrap; display: inline-flex; gap: 1cqw; align-items: center; }
+.chip.warn { background: rgba(255,179,102,.16); color: var(--warn2); }
+.chip.gold { background: rgba(230,183,90,.17); color: var(--gold2); }
+.chip svg { width: 3cqw; height: 3cqw; }
+.pc { background: var(--card); border: 1px solid var(--cardline); border-radius: 4.6cqw; padding: 3.4cqw 3.8cqw; display: grid; gap: 1.5cqw; backdrop-filter: blur(6px); }
+.pc .k { font-size: 2.7cqw; letter-spacing: .1em; text-transform: uppercase; color: var(--pdim); font-weight: 700; }
+[dir="rtl"] .pc .k { letter-spacing: 0; }
+.big { font-family: var(--display); font-size: 7.4cqw; line-height: 1.05; }
+.huge { font-family: var(--display); font-size: 15cqw; line-height: 1; }
+.mid { font-family: var(--display); font-size: 5.3cqw; line-height: 1.22; }
+.dim { color: var(--pdim); font-size: 3.15cqw; }
+.ctr { text-align: center; }
+.strike { text-decoration: line-through; color: var(--pdim); }
+.q { font-family: var(--quran); font-size: 4.9cqw; line-height: 1.9; direction: rtl; text-align: center; }
+.qen { font-size: 3.05cqw; color: var(--pdim); text-align: center; }
+.btn { display: flex; justify-content: center; align-items: center; gap: 2cqw; border-radius: 99px; padding: 3.5cqw; font-weight: 700; font-size: 3.7cqw; background: var(--gold); color: #1b1407; text-align: center; }
+.btn.ghost { background: transparent; color: var(--pfg); border: 1px solid var(--cardline); }
+.btn.soft { background: var(--card); color: var(--pfg); border: 1px solid var(--cardline); }
+.btn.glow { box-shadow: 0 0 0 1.5cqw rgba(230,183,90,.16), 0 0 9cqw rgba(230,183,90,.42); }
+.btn.hold { background: transparent; color: var(--gold2); border: 1.5px solid var(--gold); position: relative; overflow: hidden; }
+.btn.hold::before { content: ""; position: absolute; inset: 0; width: 38%; background: rgba(230,183,90,.25); }
+.btn svg { width: 4.6cqw; height: 4.6cqw; position: relative; }
+.row { display: flex; align-items: center; gap: 3cqw; }
+.row .grow { flex: 1; min-width: 0; }
+.ic { width: 9cqw; height: 9cqw; border-radius: 3cqw; display: grid; place-items: center; background: rgba(230,183,90,.14); color: var(--gold2); flex: none; }
+.ic svg { width: 5cqw; height: 5cqw; }
+.ic.red { background: rgba(226,87,76,.16); color: #ff8a80; }
+.ic.blue { background: rgba(120,170,230,.15); color: #9cc4f0; }
+.ic.green { background: rgba(143,211,154,.15); color: var(--leaf); }
+.tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2cqw; text-align: center; font-size: 2.8cqw; color: var(--pfg); }
+.tools div { display: grid; justify-items: center; gap: 1.2cqw; }
+.tools .ic { width: 12.5cqw; height: 12.5cqw; border-radius: 50%; background: rgba(10,25,19,.7); border: 1px solid var(--cardline); }
+.tools .ic.on { background: var(--gold); color: #1b1407; }
+.bar { height: 1.6cqw; border-radius: 99px; background: rgba(127,127,127,.25); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--gold); border-radius: 99px; }
+.segs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1cqw; }
+.segs i { height: 1.5cqw; border-radius: 99px; background: rgba(127,127,127,.3); }
+.segs i.on { background: var(--gold); }
+.opt { border: 1px solid var(--cardline); background: var(--card); border-radius: 4cqw; padding: 3.2cqw 3.8cqw; display: flex; gap: 3cqw; align-items: center; }
+.opt.sel { border-color: var(--gold); background: rgba(230,183,90,.13); }
+.opt .n { width: 6cqw; height: 6cqw; border-radius: 50%; display: grid; place-items: center; background: rgba(127,127,127,.22); font-size: 2.8cqw; flex: none; }
+.opt.sel .n { background: var(--gold); color: #1b1407; }
+.chips { display: flex; flex-wrap: wrap; gap: 1.6cqw; }
+.chips span { font-size: 3cqw; padding: 1.8cqw 3cqw; border-radius: 99px; border: 1px solid var(--cardline); background: var(--card); }
+.chips span.on { border-color: var(--gold); background: rgba(230,183,90,.15); color: var(--gold2); font-weight: 700; }
+.check { display: flex; gap: 2.4cqw; align-items: center; font-size: 3.25cqw; }
+.check i { width: 5cqw; height: 5cqw; border-radius: 50%; border: 1px solid var(--pdim); flex: none; display: grid; place-items: center; font-style: normal; }
+.check i svg { width: 3.4cqw; height: 3.4cqw; }
+.check.done i { background: var(--leaf); border-color: var(--leaf); color: #0b1a12; }
+.check.done span { color: var(--pdim); text-decoration: line-through; }
+.scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.4cqw; }
+.scale i { height: 6cqw; border-radius: 2cqw; background: rgba(127,127,127,.2); font-style: normal; font-size: 2.8cqw; display: grid; place-items: center; color: var(--pdim); }
+.scale i.on { background: var(--gold); color: #1b1407; font-weight: 700; }
+.nav { position: absolute; inset-inline: 3cqw; bottom: 3cqw; border-radius: 7cqw; background: var(--navbg); border: 1px solid var(--cardline); display: grid; grid-template-columns: repeat(5, 1fr); padding: 2.2cqw 1cqw; text-align: center; font-size: 2.55cqw; color: var(--pdim); z-index: 2; }
+.nav div { display: grid; justify-items: center; gap: .6cqw; }
+.nav b { width: 10.5cqw; height: 6.6cqw; border-radius: 99px; display: grid; place-items: center; }
+.nav b svg { width: 4.4cqw; height: 4.4cqw; }
+.nav .on { color: var(--pfg); font-weight: 700; }
+.nav .on b { background: rgba(230,183,90,.22); color: var(--gold2); }
+.pimg { width: 100%; display: block; border-radius: 5cqw; -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent); mask-image: linear-gradient(180deg, #000 70%, transparent); }
+.pimg.sm { width: 54%; margin: 0 auto; }
+.pimg.xs { width: 36%; margin: 0 auto; }
+.stage { text-align: center; display: grid; gap: .6cqw; }
+.stage .nm { font-family: var(--display); font-size: 5.6cqw; color: var(--gold2); text-shadow: 0 1px 8px rgba(0,0,0,.6); }
+.phone.dawn .stage .nm { color: #6b4708; text-shadow: 0 1px 6px rgba(255,248,230,.9); }
+.timer { display: inline-flex; gap: 1.4cqw; align-items: center; align-self: center; padding: 1.2cqw 3cqw; border-radius: 99px; background: rgba(10,25,19,.75); border: 1px solid var(--cardline); font-variant-numeric: tabular-nums; font-size: 3.1cqw; }
+.timer i { width: 1.8cqw; height: 1.8cqw; border-radius: 50%; background: var(--leaf); }
+.prayers { display: grid; grid-template-columns: repeat(5, 1fr); text-align: center; gap: 1cqw; font-size: 2.6cqw; color: var(--pdim); }
+.prayers div { display: grid; gap: .4cqw; padding: 1.6cqw 0; border-radius: 3cqw; }
+.prayers b { color: var(--pfg); font-size: 3cqw; font-variant-numeric: tabular-nums; }
+.prayers .next { background: rgba(230,183,90,.16); color: var(--gold2); }
+.prayers .done b { color: var(--pdim); }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1.2cqw; text-align: center; font-size: 2.6cqw; color: var(--pdim); }
+.cal span { display: grid; justify-items: center; }
+.cal i { width: 6.6cqw; height: 6.6cqw; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 2.7cqw; color: var(--pfg); border: 1px solid var(--cardline); }
+.cal i.lit { background: radial-gradient(circle, #ffd98a 0%, #c98a2a 70%); color: #2a1a04; border: 0; font-weight: 700; }
+.cal i.pol { background: radial-gradient(circle, #fff3c4 0%, #e6b75a 70%); color: #2a1a04; border: 0; box-shadow: 0 0 2cqw rgba(255,230,160,.7); }
+.cal i.out { background: #2a3530; color: var(--pdim); border: 0; }
+.cal i.today { outline: 2px solid var(--gold); outline-offset: 1px; }
+.mile { display: grid; grid-template-columns: 15cqw 1fr auto; gap: 3cqw; align-items: center; }
+.mile img { width: 15cqw; height: 18cqw; object-fit: cover; border-radius: 3cqw; }
+.mile.lock img { filter: grayscale(.9) brightness(.5); }
+.feed { display: grid; gap: 1.2cqw; }
+.feed .meta { font-size: 2.7cqw; color: var(--pdim); }
+.feed .acts span { font-size: 2.8cqw; padding: 1.2cqw 2.6cqw; border-radius: 99px; background: rgba(230,183,90,.15); color: var(--gold2); font-weight: 700; display: inline-flex; gap: 1cqw; align-items: center; }
+.feed .acts svg { width: 3cqw; height: 3cqw; }
+.coach { position: absolute; inset: 0; background: rgba(3,9,7,.72); z-index: 3; display: flex; flex-direction: column; justify-content: flex-end; padding: 6cqw 6cqw 8cqw; gap: 3cqw; }
+.coach .ring { position: absolute; border: 2px solid var(--gold); box-shadow: 0 0 6cqw rgba(230,183,90,.6); }
+.coach .tip { background: var(--gold); color: #1b1407; border-radius: 4cqw; padding: 3cqw 3.6cqw; font-size: 3.3cqw; display: grid; gap: 1cqw; }
+.coach .tip b { font-family: var(--display); font-size: 4.4cqw; }
+.sheet { position: absolute; inset-inline: 0; bottom: 0; z-index: 3; background: #0d1d17; border-radius: 7cqw 7cqw 0 0; border-top: 1px solid var(--cardline); padding: 3cqw 5.5cqw 7cqw; display: grid; gap: 2.6cqw; }
+.sheet::before { content: ""; width: 10cqw; height: 1.2cqw; border-radius: 99px; background: rgba(255,255,255,.25); justify-self: center; }
+.scrim { position: absolute; inset: 0; background: rgba(3,9,7,.6); z-index: 2; }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2cqw; text-align: center; font-size: 2.6cqw; }
+.tiles div { display: grid; justify-items: center; gap: 1cqw; }
+.tiles .ic { width: 12cqw; height: 12cqw; border-radius: 4cqw; }
+.dots { display: flex; gap: 1.4cqw; justify-content: center; }
+.dots i { width: 1.8cqw; height: 1.8cqw; border-radius: 50%; background: rgba(127,127,127,.4); }
+.dots i.on { width: 5cqw; border-radius: 99px; background: var(--gold); }
+.widget { border-radius: 6cqw; padding: 4cqw; background: linear-gradient(160deg, #143a2c, #0a1914); border: 1px solid var(--cardline); display: grid; grid-template-columns: auto 1fr; gap: 3cqw; align-items: center; }
+.toast { border-radius: 4cqw; padding: 3cqw 3.6cqw; background: rgba(250,250,245,.95); color: #1b221e; display: grid; gap: .8cqw; font-size: 3.05cqw; }
+.toast b { font-size: 3.25cqw; }
+.ring2 { width: 34cqw; height: 34cqw; margin: 0 auto; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--gold) 0 62%, rgba(127,127,127,.25) 62% 100%); }
+.ring2 > div { width: 29cqw; height: 29cqw; border-radius: 50%; background: #0a1a14; display: grid; place-items: center; text-align: center; }
+.sp { flex: 1; }
+.radar svg { width: 100%; height: auto; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+</style>
+
+<div class="wrap">
+
+<section class="hero">
+  <div class="txt">
+    <div class="eyebrow">Hisn · Islamic edition · concept for approval · 23 November 2026</div>
+    <h1>The Lamp</h1>
+    <p class="lede">Unchaind is the best-built faith app for quitting porn, and it is written for Christians. This is a Muslim version of it, screen by screen in Unchaind's own order. It runs on Hisn's blocking engine and carries every tool from our general Android edition, Unrot. Unrot's sprout under glass becomes a lamp in a niche.</p>
+    <div class="ayah">ٱللَّهُ نُورُ ٱلسَّمَٰوَٰتِ وَٱلْأَرْضِ ۚ مَثَلُ نُورِهِۦ كَمِشْكَوٰةٍ فِيهَا مِصْبَاحٌ ۖ ٱلْمِصْبَاحُ فِى زُجَاجَةٍ</div>
+    <p class="ayahen">Allah is the Light of the heavens and the earth. The similitude of His light is as a niche wherein is a lamp. The lamp is in a glass.</p>
+    <p class="src">Qur'an 24:35, Pickthall (public domain). Sūrat an-Nūr also holds the gaze verses (24:30–31) and "follow not the footsteps of the devil" (24:21).</p>
+  </div>
+  <div class="heroart"><img src="img/home-night.jpg" alt="A brass lamp glowing in a green stone niche under a crescent moon"></div>
+</section>
+
+<section>
+  <h2>Unchaind, studied</h2>
+  <p class="lede">All 89 screens the owner captured, in order: a 14-question quiz, a calculated "result", 5 harm slides, 6 benefit slides, goals, 5 pledges, a rating ask, a quit date, 5 paywall screens and FAQ, a tour, then the app itself.</p>
+  <div class="grid3">
+    <div class="card"><div class="big3">5</div><h3>Things that make it work</h3>
+      <ul><li><b>Faith is the reason.</b> A verse on the splash screen, God named on the welcome screen, a verse under every pledge.</li>
+      <li><b>The pledges.</b> Five "hold to commit" promises, each with a verse. It feels like a real moment.</li>
+      <li><b>The panic flow.</b> It reminds you of your promise, offers two doors ("I slipped" or "I'm close"), then breathing, then prayer.</li>
+      <li><b>A daily rhythm.</b> A check-in, a reading with a short summary, a daily vow, a verse of the day.</li>
+      <li><b>Progress you can see.</b> A days counter with a live timer, a calendar, milestones with pictures, a mood radar, a widget.</li></ul></div>
+    <div class="card"><div class="big3">6</div><h3>Things a Muslim app must not copy</h3>
+      <ul><li>A "37% higher dependency" result calculated from nothing.</li>
+      <li>Shame slides ("porn is a drug", "it rewires your body") with no sources.</li>
+      <li>Questions about sexual arousal and age at first exposure.</li>
+      <li>A rating ask and a "you will quit by" date before you have used the app.</li>
+      <li>A paywall with a countdown, repeated on five screens.</li>
+      <li>An AI chat that gives religious guidance. A model must not give rulings.</li></ul></div>
+    <div class="card"><div class="big3">All</div><h3>Of our general edition, Unrot, comes too</h3>
+      <ul><li><b>The living picture.</b> The glass crack and gold seal become the spot and the polish, on the same GlassState code.</li>
+      <li><b>Daily.</b> Today's three, the check-in (mood and what pulls), "Had a hard moment".</li>
+      <li><b>For right now.</b> Breathe (hold it for quick choices), Focus, My notes, Instead.</li>
+      <li><b>Your rules.</b> Your apps, quiet hours, lists, daily limits, Lock, Open Wait, gray screen.</li>
+      <li><b>Numbers.</b> Feeds a day before Hisn against yesterday, time given back, a private "kept out" card.</li>
+      <li><b>Protection.</b> Shield tabs, guardian pairing, health check, the widget, the tile.</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2>Every Unchaind screen, and its Muslim version</h2>
+  <div class="legend"><span class="tag t-keep">keep</span> same idea <span class="tag t-change">change</span> same job, done honestly or Islamically <span class="tag t-drop">drop</span> left out <span class="tag t-new">Unrot</span> from our general edition</div>
+  <div class="map"><table>
+    <thead><tr><th>Unchaind #</th><th>Screen</th><th>What Unchaind does</th><th></th><th>Hisn</th></tr></thead>
+    <tbody>
+    <tr class="grp"><td colspan="5">First run</td></tr>
+    <tr><td>1</td><td>Splash</td><td>1 John 3:1</td><td><span class="tag t-keep">keep</span></td><td>Qur'an 24:30 over the unlit lamp</td></tr>
+    <tr><td>2</td><td>Welcome</td><td>"God has called you to overcome"; three pills</td><td><span class="tag t-keep">keep</span></td><td>"Guard your gaze. Keep your heart lit." Three promises Hisn can keep; no account</td></tr>
+    <tr><td>3–15</td><td>Quiz, 14 questions</td><td>Frequency, age at first exposure, arousal, gender, faith, where you heard of us, name</td><td><span class="tag t-change">change</span></td><td>Seven questions, each changes something: what to guard, where it starts, when it's hardest, your prayers now, how you feel after, how to address you (Arabic grammar needs it), your name. No sexual questions</td></tr>
+    <tr><td>16–17</td><td>"Calculating", 37% result</td><td>Invented chart</td><td><span class="tag t-change">change</span></td><td>"What you told us": your own answers read back, with the step Hisn takes for each</td></tr>
+    <tr><td>18</td><td>Symptoms</td><td>Guilt, far from God</td><td><span class="tag t-change">change</span></td><td>"How do you feel after?", which leads to the Return path</td></tr>
+    <tr><td>19</td><td>Notification ask</td><td>Shows sample notifications first</td><td><span class="tag t-keep">keep</span></td><td>Sample notices: Fajr, the verse, the reflection</td></tr>
+    <tr><td>20–24</td><td>Five harm slides</td><td>Drug, cycle, rewires body, separates from God, you can be free</td><td><span class="tag t-change">change</span></td><td>Three verse slides: footsteps (24:21), the gaze first (24:30), the door is open (39:53)</td></tr>
+    <tr><td>25–30</td><td>Six benefit slides</td><td>Emoji art, "Let's begin"</td><td><span class="tag t-change">change</span></td><td>One screen on how the lamp works, with the painted flames</td></tr>
+    <tr><td>31–32</td><td>Goals</td><td>Energy, mood, faith, relationships, purpose, prayer</td><td><span class="tag t-keep">keep</span></td><td>Pray on time, lower my gaze, Qur'an daily, nearer to Allah, marriage, family, focus, energy</td></tr>
+    <tr><td>33–36</td><td>Five pledges</td><td>Hold to commit, a verse each</td><td><span class="tag t-keep">keep</span></td><td>Five pledges with 1:5, 24:30, 24:21, 65:2, 3:135. Hold to commit; "Not now" is always there</td></tr>
+    <tr><td>37</td><td>Rate us</td><td>Before any use</td><td><span class="tag t-drop">drop</span></td><td>Asked once, after 30 nights</td></tr>
+    <tr><td>38</td><td>Quit date</td><td>"You will quit by 22 Aug"</td><td><span class="tag t-change">change</span></td><td>Your first 40 nights in four parts. The date shown is counting, not a promise</td></tr>
+    <tr><td>39–52</td><td>Paywall × 5, FAQ</td><td>Subscription, countdown, "57,000 users"</td><td><span class="tag t-drop">drop</span></td><td>Free and open source. One optional ṣadaqa screen in You</td></tr>
+    <tr class="grp"><td colspan="5">Home and tools</td></tr>
+    <tr><td>53–57</td><td>Tour</td><td>Five coach marks</td><td><span class="tag t-keep">keep</span></td><td>Three coach marks: the lamp, Help now, the shield chip</td></tr>
+    <tr><td>58–60</td><td>Home</td><td>Days, live timer, tasks, verse, toolbox, progress, red panic, community</td><td><span class="tag t-keep">keep</span></td><td>Painted lamp, nights, live timer, the five prayers, Help now, today's three, verse of the day, Unrot's numbers</td></tr>
+    <tr><td>61–65</td><td>Progress</td><td>Gauge, calendar, milestones, radar, <i>relapse risk "High"</i></td><td><span class="tag t-change">change</span></td><td>Unrot's feed gauge, a calendar of lamps, painted stations, a radar from your own answers. No risk score</td></tr>
+    <tr><td>66</td><td>Community</td><td>Public posts and comments</td><td><span class="tag t-change">change</span></td><td>Du'a wall: anonymous requests, and the only reply is "I made du'a for you"</td></tr>
+    <tr><td>67, 81</td><td>AI chat companion</td><td>"Talk to a companion"</td><td><span class="tag t-change">change</span></td><td>A real companion you choose, who sees nights only (guardian pairing). No AI rulings</td></tr>
+    <tr><td>68–71</td><td>Daily reflection</td><td>Ten-point ratings, journal, reading summary, vow</td><td><span class="tag t-keep">keep</span></td><td>Evening muḥāsaba, morning intention, today's reading, on Unrot's Today's three and check-in</td></tr>
+    <tr><td>72–77</td><td>Widget guide</td><td>Five steps to add it</td><td><span class="tag t-change">change</span></td><td>Android pins the widget in one tap</td></tr>
+    <tr><td>77–78</td><td>Content blocker</td><td>One switch, "43M+ sites"</td><td><span class="tag t-change">change</span></td><td>The fortress: five towers, one per layer; Unrot's Shield tabs below</td></tr>
+    <tr><td>79</td><td>Bible reader</td><td>Full Bible, notes, mark as read</td><td><span class="tag t-keep">keep</span></td><td>The full Qurʾān with Pickthall, reading paths, notes on this phone</td></tr>
+    <tr class="grp"><td colspan="5">Hard moments</td></tr>
+    <tr><td>80–81</td><td>Panic button</td><td>"You promised yourself and God", a list of harms, two doors</td><td><span class="tag t-change">change</span></td><td>Your own pledge and reason, 2:186, three doors. No list of harms</td></tr>
+    <tr><td>82</td><td>Log relapse</td><td>Date, "streak 0 days"</td><td><span class="tag t-change">change</span></td><td>Return: 39:53, istighfār, two rakʿahs of tawbah, one change. Total nights are kept</td></tr>
+    <tr><td>83–84</td><td>Support, take control</td><td>Companion, breathing, then prayer</td><td><span class="tag t-keep">keep</span></td><td>Breathing with dhikr, then wuḍūʾ, two rakʿahs, Unrot's Instead list, your companion</td></tr>
+    <tr class="grp"><td colspan="5">Not in Unchaind, carried over from Unrot</td></tr>
+    <tr><td>—</td><td>Glass crack and gold seal</td><td>—</td><td><span class="tag t-new">Unrot</span></td><td>A spot on the glass; istighfār with three breaths within 10 minutes polishes it (Tirmidhī 3334)</td></tr>
+    <tr><td>—</td><td>Hold Breathe</td><td>—</td><td><span class="tag t-new">Unrot</span></td><td>Hold Help now for quick choices: breathe, My notes, Lock, Focus</td></tr>
+    <tr><td>—</td><td>Focus now</td><td>—</td><td><span class="tag t-new">Unrot</span></td><td>Feeds closed for a set time; it pauses for the adhān and resumes after</td></tr>
+    <tr><td>—</td><td>Instead</td><td>—</td><td><span class="tag t-new">Unrot</span></td><td>Your own ideas plus wuḍūʾ, a page of Qurʾān, a walk, calling your parents. One tap closes feeds for 10 minutes</td></tr>
+    <tr><td>—</td><td>Open Wait</td><td>—</td><td><span class="tag t-new">Unrot</span></td><td>A short wait before chosen apps, with a dhikr to say while it counts down</td></tr>
+    <tr><td>—</td><td>Quiet hours, gray screen</td><td>—</td><td><span class="tag t-new">Unrot</span></td><td>Set by prayer times: after ʿIshāʾ until Fajr, the screen goes gray and feeds rest</td></tr>
+    <tr><td>—</td><td>Feeds before and after, time given back</td><td>—</td><td><span class="tag t-new">Unrot</span></td><td>Kept as they are, with what the time became (Qurʾān read, prayers on time) from your own check-ins</td></tr>
+    <tr><td>—</td><td>Kept out, private</td><td>—</td><td><span class="tag t-new">Unrot</span></td><td>Adult pages closed and blocked requests, on the phone only, never shared</td></tr>
+    <tr><td>—</td><td>Lock, lists, limits, apps, health check</td><td>—</td><td><span class="tag t-new">Unrot</span></td><td>All in the More sheet, as in Unrot</td></tr>
+    <tr class="grp"><td colspan="5">Settings</td></tr>
+    <tr><td>85–89</td><td>Settings, profile</td><td>Account, sync, check-in time, Bible version, goals, target days</td><td><span class="tag t-change">change</span></td><td>No account. Prayer times (method, Asr), translation, Hijri offset, reminders, goals, your pledge, companion, ṣadaqa</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Painted: one lamp, every state</h2>
+  <p class="lede">Made with Figma's image model, in sheets so the style holds. The originals are in "Hisn – The Lamp art" in your Figma drafts.</p>
+  <div class="paint" id="paint"></div>
+</section>
+
+<section><h2>1 · First run, in Unchaind's order</h2><p class="lede">Unchaind takes 52 screens before the app opens. Hisn takes 17 and asks for nothing it doesn't use.</p><div class="screens" id="s-first"></div></section>
+<section><h2>2 · Home, the tour, and Unrot's tools</h2><div class="screens" id="s-home"></div></section>
+<section><h2>3 · Help now, and Return</h2><p class="lede">Unchaind's panic flow, in its order: your promise, the doors, breathing, then prayer.</p><div class="screens" id="s-help"></div></section>
+<section><h2>4 · Daily: intention, reading, reflection</h2><div class="screens" id="s-daily"></div></section>
+<section><h2>5 · Progress, community, shield, you</h2><div class="screens" id="s-tabs"></div></section>
+<section><h2>6 · Outside the app</h2><div class="screens" id="s-out"></div></section>
+
+<section>
+  <h2>Build order once you approve</h2>
+  <div class="grid3">
+    <div class="card"><div class="eyebrow">Step 1</div><h3>Turn Unrot's shell on for Hisn</h3><p>Today, Shield, Progress, You and the More sheet already exist for the general edition. Hisn gets them with its own palette, the painted lamp scenes, a Read tab and the prayer row. The spot and polish reuse GlassState.</p></div>
+    <div class="card"><div class="eyebrow">Step 2</div><h3>Help now and Return</h3><p>Dhikr breathing on the existing Breathe screen, the three doors, the after-steps with Instead, and Return with one change.</p></div>
+    <div class="card"><div class="eyebrow">Step 3</div><h3>First run</h3><p>Seven questions, "What you told us", three verse slides, goals, five pledges, the 40-night plan.</p></div>
+    <div class="card"><div class="eyebrow">Step 4</div><h3>Read and prayer times</h3><p>Qurʾān text and Pickthall as a data pack, four reading paths, prayer times calculated on the phone that drive quiet hours, Focus and Open Wait.</p></div>
+    <div class="card"><div class="eyebrow">Step 5</div><h3>Progress, widget, You</h3><p>The calendar of lamps, painted stations, the radar, the widget pinned in one tap, settings.</p></div>
+    <div class="card"><div class="eyebrow">Needs you</div><h3>Three decisions</h3><p>Is the du'a wall worth a small server? Who reviews the religious text? Should the lamp be repainted at higher resolution, or animated in Rive?</p></div>
+  </div>
+</section>
+</div>
+
+<script>
+/* ---------- icons ---------- */
+const P = {
+  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  tower: '<path d="M5 21V9h2V6h2v3h2V6h2v3h2V6h2v3h2v12zM10 21v-4a2 2 0 0 1 4 0v4"/>',
+  book: '<path d="M4 19V5a2 2 0 0 1 2-2h13v14H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h13"/>',
+  chart: '<path d="M4 20V11M10 20V5M16 20v-6M21 20H3"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  pen: '<path d="M4 20l4-1L19 8l-3-3L5 16zM14 7l3 3"/>',
+  more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  drop: '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/>',
+  door: '<path d="M6 21V3h11v18M3 21h18M13 12h.01"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  heart: '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',
+  hands: '<path d="M9 21v-7L5.5 9.5a1.5 1.5 0 0 1 2.3-1.9L11 11V4.5a1.5 1.5 0 0 1 3 0V11l3.2-3.4a1.5 1.5 0 0 1 2.3 1.9L16 14v7"/>',
+  bell: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  spark: '<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8z"/>',
+  lamp: '<path d="M12 2v3M9 5h6l1 3H8zM8 8c-2.2 4 0 9 4 9s6.2-5 4-9M10 17h4l-1 3h-2z"/>',
+  people: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14.5 20a4.5 4.5 0 0 1 7 0"/>',
+  widget: '<rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="18" height="8" rx="2"/>',
+  fp: '<path d="M7 11a5 5 0 0 1 10 0v2a9 9 0 0 1-1 4M12 11v3a8 8 0 0 1-2 5M9.5 15a10 10 0 0 1-1.5 4M4 9a8 8 0 0 1 15-3M20 11v1a13 13 0 0 1-.5 3.5"/>',
+  walk: '<circle cx="13" cy="4" r="2"/><path d="M9 21l2-6 3 2v4M7 12l3-4 4 1 2 3h3M11 15l-1-5"/>',
+  rug: '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M8 7h8M12 7v3M8 18h8"/>',
+  quran: '<path d="M12 6c-2-1.5-5-2-8-1.5V19c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V4.5C17 4 14 4.5 12 6zM12 6v14.5"/>',
+  wind: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  note: '<path d="M5 3h10l4 4v14H5zM15 3v4h4M8 12h8M8 16h6"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  apps: '<rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
+  timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>',
+  pulse: '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/>',
+  gray: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" fill-opacity=".35"/>',
+  hourglass: '<path d="M6 3h12M6 21h12M7 3c0 5 10 6 10 9s-10 4-10 9M17 3c0 5-10 6-10 9"/>',
+};
+const ico = (n, s) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${s ? ` style="width:${s}cqw;height:${s}cqw"` : ''}>${P[n]}</svg>`;
+
+/* ---------- helpers ---------- */
+const sb = (rtl, t) => `<div class="sb"><span>${t || (rtl ? '٢١:٤٠' : '21:40')}</span><span>▴ ◐ 82</span></div>`;
+const NAV = { en: [['moon','Today'],['tower','Shield'],['book','Read'],['chart','Progress'],['user','You']], ar: [['moon','اليوم'],['tower','الحصن'],['book','اقرأ'],['chart','التقدّم'],['user','أنت']] };
+const nav = (on, rtl) => `<div class="nav">${NAV[rtl ? 'ar' : 'en'].map(([i, t], k) => `<div class="${k === on ? 'on' : ''}"><b>${ico(i)}</b>${t}</div>`).join('')}</div>`;
+const segs = (n) => `<div class="segs">${Array.from({length: 7}, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</div>`;
+const opt = (n, t, sel) => `<div class="opt ${sel ? 'sel' : ''}"><span class="n">${n}</span><span>${t}</span></div>`;
+const qhead = (pct, step) => `<div class="row"><span class="dim">${ico('back', 4.6)}</span><div class="grow bar"><i style="width:${pct}%"></i></div><span class="dim">${step}</span></div>`;
+const anon = `<div class="dim ctr">Your answers stay on this phone</div>`;
+const pimg = (n, cls = '') => `<img class="pimg ${cls}" src="img/lamp-${n}.jpg" alt="">`;
+const sceneBg = (n, dark = true) => `background-image:linear-gradient(180deg, ${dark ? 'rgba(7,19,15,.4) 0%, rgba(7,19,15,0) 20%, rgba(7,19,15,0) 46%, rgba(7,19,15,.94) 70%' : 'rgba(250,244,230,.55) 0%, rgba(250,244,230,0) 20%, rgba(250,244,230,0) 46%, rgba(242,237,224,.96) 70%'}), url(img/${n}.jpg)`;
+const icrow = (i, a, b, extra = '', cls = '') => `<div class="row"><span class="ic ${cls}">${ico(i)}</span><div class="grow"><b>${a}</b>${b ? `<div class="dim">${b}</div>` : ''}</div>${extra}</div>`;
+const prayers = (next = 3) => `<div class="prayers">${[['Fajr','06:12'],['Dhuhr','12:24'],['ʿAṣr','14:31'],['Maghrib','16:43'],['ʿIshāʾ','18:12']].map(([n, t], i) => `<div class="${i === next ? 'next' : i < next ? 'done' : ''}">${n}<b>${t}</b></div>`).join('')}</div>`;
+const close = `<span class="dim">${ico('x', 5)}</span>`;
+const back = `<span class="dim">${ico('back', 5)}</span>`;
+const walls = `<span class="chip">${ico('check')} Walls up</span>`;
+const homeTop = `<div class="hd"><div><div class="t">Today</div><div class="s">Monday · 12 Jumādā II 1448</div></div>${walls}</div>`;
+const homeTools = `<div class="tools"><div><span class="ic">${ico('sun')}</span>Adhkār</div><div><span class="ic">${ico('target')}</span>Focus</div><div><span class="ic">${ico('quran')}</span>Qurʾān</div><div><span class="ic">${ico('more')}</span>More</div></div>`;
+
+/* ---------- screens ---------- */
+const S = {
+first: [
+ { f: 'Unchaind 1', t: 'Splash', w: 'Unchaind opens with a verse. Hisn opens with the gaze verse over an unlit lamp.', nonav: 1, h: `${sb()}
+   <div class="sp"></div>${pimg('out', 'sm')}
+   <div class="q">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ وَيَحْفَظُوا۟ فُرُوجَهُمْ ۚ ذَٰلِكَ أَزْكَىٰ لَهُمْ</div>
+   <div class="qen">Tell the believing men to lower their gaze and be modest. That is purer for them. · 24:30</div><div class="sp"></div>` },
+ { f: 'Unchaind 2', t: 'Welcome', w: 'Same three promises, but ones Hisn can keep. No account, so no sign-in link.', nonav: 1, bg: 'home-night', h: `${sb()}
+   <div class="ctr dim" style="margin-top:2cqw">بِسْمِ ٱللَّهِ</div><div class="big ctr">Guard your gaze.<br>Keep your heart lit.</div>
+   <div class="sp"></div>
+   <div class="chips" style="justify-content:center"><span class="on">Closes adult content</span><span class="on">Help in the hard minute</span><span class="on">Nearer to Allah, daily</span></div>
+   <div class="btn">Start · two minutes</div>${anon}` },
+ { f: 'Unchaind 3–8', t: 'What do you want to guard?', w: 'One question a screen, numbered cards, as in Unchaind. Every choice turns on a real layer.', nonav: 1, cls: 'quiz', h: `${sb()}
+   ${qhead(14, '1/7')}<div class="mid">What do you want to guard?</div><div class="dim">Choose all that fit.</div>
+   ${opt(1, 'My gaze: adult content', 1)}${opt(2, 'My time: Shorts, Reels, feeds', 1)}${opt(3, 'My prayers: the phone at ṣalāh', 0)}${opt(4, 'My nights: scrolling in bed', 1)}
+   <div class="sp"></div><div class="btn">Continue</div>${anon}` },
+ { f: 'Unchaind 11', t: 'How are your prayers now?', w: 'Unchaind asks about your relationship with God. Hisn asks something it can act on: it sets prayer reminders.', nonav: 1, cls: 'quiz', h: `${sb()}
+   ${qhead(43, '3/7')}<div class="mid">How are your five prayers right now?</div><div class="dim">No judgement. This only sets your reminders.</div>
+   ${opt(1, 'All five, mostly on time', 0)}${opt(2, 'Most of them', 1)}${opt(3, 'A few', 0)}${opt(4, 'I want to start again', 0)}
+   <div class="sp"></div><div class="btn">Continue</div>${anon}` },
+ { f: 'Unchaind 18', t: 'How do you feel after?', w: 'Unchaind\'s "symptoms" screen, asked kindly. "Far from Allah" opens the Return path later.', nonav: 1, cls: 'quiz', h: `${sb()}
+   ${qhead(57, '4/7')}<div class="mid">When it happens, how do you feel after?</div>
+   ${opt(1, 'Far from Allah', 1)}${opt(2, 'Guilt that keeps me from prayer', 1)}${opt(3, 'Tired, time wasted', 0)}${opt(4, 'I\'d rather not say', 0)}
+   <div class="sp"></div><div class="btn">Continue</div>${anon}` },
+ { f: 'Unchaind 9', t: 'How should we address you?', w: 'Unchaind asks gender for no visible reason. Arabic needs it to speak to you properly.', nonav: 1, cls: 'quiz', h: `${sb()}
+   ${qhead(86, '6/7')}<div class="mid">How should Hisn speak to you?</div><div class="dim">Arabic changes with this. English doesn't.</div>
+   ${opt(1, 'As a brother · أخي', 1)}${opt(2, 'As a sister · أختي', 0)}${opt(3, 'Neutral', 0)}
+   <div class="sp"></div><div class="btn">Continue</div>${anon}` },
+ { f: 'Unchaind 16–17', t: 'What you told us', w: 'In place of "Calculating… 37% higher dependency", Hisn reads your answers back with the step it takes for each.', nonav: 1, h: `${sb()}
+   <div class="mid">Yusuf, here is what you told us</div>
+   <div class="pc">${icrow('moon', 'Nights are hardest', 'Feeds go quiet after ʿIshāʾ')}</div>
+   <div class="pc">${icrow('rug', 'Most prayers, not all', 'A gentle reminder 10 min before each')}</div>
+   <div class="pc">${icrow('heart', 'You feel far from Allah after', 'Return is one tap away, never a red screen')}</div>
+   <div class="pc">${icrow('phone', 'It starts in Chrome and Instagram', 'Those two are covered first')}</div>
+   <div class="sp"></div><div class="btn">That's right</div>` },
+ { f: 'Unchaind 19', t: 'Reminders, shown first', w: 'Unchaind shows sample notifications before asking. So does Hisn.', nonav: 1, h: `${sb()}
+   <div class="toast"><b>Hisn · Fajr in 10 minutes</b><span>Your lamp grows at Fajr.</span></div>
+   <div class="toast"><b>Hisn · Verse for today</b><span>أَلَمْ يَعْلَم بِأَنَّ ٱللَّهَ يَرَىٰ · 96:14</span></div>
+   <div class="toast"><b>Hisn · One minute tonight?</b><span>How was today?</span></div>
+   <div class="sp"></div><div class="mid ctr">Let us remind you, gently</div>
+   <div class="btn">Yes, remind me</div><div class="dim ctr">Later</div>` },
+ { f: 'Unchaind 20–24', t: 'Why it\'s hard · 1 of 3', w: 'Unchaind\'s five fear slides become three verses. The first explains the gradual pull without claims about the brain.', nonav: 1, h: `${sb()}
+   <div class="sp"></div><div class="ic" style="width:16cqw;height:16cqw;border-radius:50%;margin:0 auto">${ico('walk', 8)}</div>
+   <div class="mid ctr">It never starts with the worst step</div>
+   <div class="q">يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ لَا تَتَّبِعُوا۟ خُطُوَٰتِ ٱلشَّيْطَٰنِ</div>
+   <div class="qen">O ye who believe! Follow not the footsteps of the devil. · 24:21</div>
+   <div class="dim ctr">A feed, then a search, then a page. Hisn breaks the chain at the first steps.</div>
+   <div class="sp"></div><div class="dots"><i class="on"></i><i></i><i></i></div><div class="btn">Next</div>` },
+ { f: 'Unchaind 24', t: 'Why it\'s hard · 3 of 3', w: 'Unchaind ends its slides with "but you can be free". Hisn ends with the door that is always open.', nonav: 1, bg: 'help-room', h: `${sb()}
+   <div class="sp"></div>
+   <div class="mid ctr">The door is never closed</div>
+   <div class="q">لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ ۚ إِنَّ ٱللَّهَ يَغْفِرُ ٱلذُّنُوبَ جَمِيعًا</div>
+   <div class="qen">Despair not of the mercy of Allah, Who forgiveth all sins. · 39:53</div>
+   <div class="dots"><i></i><i></i><i class="on"></i></div><div class="btn">Next</div>` },
+ { f: 'Unchaind 25–30', t: 'Your lamp', w: 'Six benefit slides become one: how the lamp grows, gets a spot, and is polished.', nonav: 1, h: `${sb()}
+   <div class="mid">Your lamp</div>
+   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2cqw;text-align:center" class="dim">
+     <div>${pimg('small')}Clean nights grow it</div><div>${pimg('spot')}A closed page leaves a spot</div><div>${pimg('polished')}Istighfār polishes it</div></div>
+   <div class="pc"><div class="dim">Your total nights of light are never wiped, even after a slip.</div></div>
+   <div class="sp"></div><div class="btn">Next</div>` },
+ { f: 'Unchaind 31–32', t: 'Your goals', w: 'Same goal chips, with Islamic ones first. They tune the verse of the day and the reading paths.', nonav: 1, h: `${sb()}
+   <div class="mid">What do you hope for?</div><div class="dim">Pick any. They shape your daily verse and readings.</div>
+   <div class="chips"><span class="on">Pray on time</span><span class="on">Lower my gaze</span><span>Qurʾān every day</span><span class="on">Nearer to Allah</span><span>A stronger marriage</span><span>Better with family</span><span class="on">Focus</span><span>More energy</span><span>Sleep before midnight</span><span>Fast Mondays and Thursdays</span></div>
+   <div class="sp"></div><div class="btn">Continue</div>` },
+ { f: 'Unchaind 33', t: 'A new beginning', w: 'Unchaind\'s "Today is a new beginning", over the painted dawn.', nonav: 1, bg: 'home-dawn', dawn: 1, h: `${sb()}
+   <div class="sp"></div>
+   <div class="mid ctr">Yusuf, today is a new beginning</div>
+   <div class="dim ctr">Five short promises, to Allah and to yourself. Each one has a verse.</div>
+   <div class="btn">Make my promises</div>` },
+ { f: 'Unchaind 34–36', t: 'Pledge 1 of 5', w: 'Unchaind\'s hold-to-commit pledges, each with a verse. "Not now" is always there, and nothing is locked.', nonav: 1, h: `${sb()}
+   <div class="bar"><i style="width:20%"></i></div><div class="dim ctr">Promise 1 of 5</div><div class="sp"></div>
+   <div class="mid ctr">Will you seek Allah's help, and not only your own strength?</div>
+   <div class="q">إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ</div><div class="qen">Thee (alone) we worship; Thee (alone) we ask for help. · 1:5</div>
+   <div class="sp"></div><div class="btn hold">${ico('fp')}<span style="position:relative">Hold to promise</span></div><div class="dim ctr">Not now</div>` },
+ { f: 'Unchaind 36', t: 'Pledge 5 of 5', w: 'The last promise is about falling and coming back, so a slip later is part of the plan, not the end of it.', nonav: 1, h: `${sb()}
+   <div class="bar"><i style="width:100%"></i></div><div class="dim ctr">Promise 5 of 5</div><div class="sp"></div>
+   <div class="mid ctr">If I fall, will I remember Allah and come back?</div>
+   <div class="q">ذَكَرُوا۟ ٱللَّهَ فَٱسْتَغْفَرُوا۟ لِذُنُوبِهِمْ</div><div class="qen">…remember Allah and implore forgiveness for their sins. · 3:135</div>
+   <div class="sp"></div><div class="btn hold">${ico('fp')}<span style="position:relative">Hold to promise</span></div><div class="dim ctr">Previous</div>` },
+ { f: 'Unchaind 38', t: 'Your first 40 nights', w: 'Unchaind gives a quit date. Hisn gives a plan you can see, and says plainly that the date is only counting.', nonav: 1, h: `${sb()}
+   <div class="mid">Your first 40 nights</div>
+   ${[['1–7', 'Close the doors', 'Walls up, quiet nights'], ['8–14', 'Fill the time', 'Your Instead list'], ['15–30', 'Build the habit', 'Fajr and one page a day'], ['31–40', 'Steady', 'Lamp in glass']].map(([n, a, b], i) => `<div class="pc" style="padding:2.6cqw 3.6cqw"><div class="row"><span class="chip gold">${n}</span><div class="grow"><b>${a}</b><div class="dim">${b}</div></div>${i === 0 ? '<span class="chip">Now</span>' : ''}</div></div>`).join('')}
+   <div class="dim">If every night is clean, your lamp is a lamp in glass on 2 January. A slip doesn't reset the plan.</div>
+   <div class="btn">Begin</div>` },
+ { f: 'Unchaind 39–52', t: 'No paywall', w: 'Unchaind shows five paywall screens with a countdown. Hisn says it once: free, open source, and how to give if you want.', nonav: 1, h: `${sb()}
+   <div class="sp"></div>${pimg('glass', 'xs')}
+   <div class="mid ctr">Hisn is free</div>
+   <div class="dim ctr">No account, no ads, no subscription. The code is open. If it helps you, you can give ṣadaqa later from You.</div>
+   <div class="sp"></div><div class="btn">Open Hisn</div>` },
+],
+home: [
+ { f: 'Unchaind 53–57', t: 'Tour', w: 'Unchaind\'s coach marks, three of them, over the real home.', nav: 0, bg: 'scene-steady', h: `${sb()}
+   ${homeTop}<div class="sp"></div>
+   <div class="coach"><div class="ring" style="left:16%;right:16%;top:13%;height:47%;border-radius:30cqw 30cqw 6cqw 6cqw"></div>
+   <div class="tip"><b>This is your lamp</b><span>Every clean night it grows. A page Hisn closes leaves a spot. Istighfār polishes it.</span></div>
+   <div class="dots"><i class="on"></i><i></i><i></i></div><div class="btn">Next</div><div class="dim ctr" style="color:#ddd">Skip</div></div>` },
+ { f: 'Unchaind 58 · Unrot Today', t: 'Today', w: 'Unchaind\'s home (days, live timer) on Unrot\'s layout. The painted lamp fills the screen; Help now replaces the red panic button.', nav: 0, bg: 'scene-steady', h: `${sb()}
+   ${homeTop}<div class="sp"></div>
+   <div class="stage"><div class="nm">Steady flame</div><div class="dim">9 nights of light · bright lamp in 5</div></div>
+   <div class="timer"><i></i>since Fajr · 15h 28m 04s</div>
+   ${segs(3)}
+   <div class="btn glow">${ico('spark')} Help now</div>
+   ${homeTools}` },
+ { f: 'Unchaind 59–60 · Unrot Today', t: 'Today, scrolled', w: 'Unchaind\'s cards, Unrot\'s numbers and Today\'s three, and the five prayers.', nav: 0, h: `${sb()}
+   <div class="pc">${prayers(3)}<div class="dim ctr">Maghrib in 18 min · feeds pause for 15 min</div></div>
+   <div class="pc"><div class="row"><div class="k grow">Feeds a day · day 9</div><span class="chip">↓ 41%</span></div><div class="row"><div class="grow"><div class="dim">Before Hisn</div><div class="mid strike">3 h 45</div></div><div class="grow"><div class="dim">Yesterday</div><div class="mid">2 h 12</div></div></div></div>
+   <div class="pc"><div class="k">Today's three</div><div class="check done"><i>${ico('check')}</i><span>Morning intention</span></div><div class="check done"><i>${ico('check')}</i><span>Today's reading · 4 min</span></div><div class="check"><i></i><span>Evening reflection</span></div></div>
+   <div class="pc"><div class="row"><div class="k grow">Verse for today</div><span class="chip gold">96:14</span></div><div class="q" style="font-size:5.4cqw">أَلَمْ يَعْلَم بِأَنَّ ٱللَّهَ يَرَىٰ</div><div class="qen">Is he then unaware that Allah seeth?</div></div>` },
+ { f: 'Unrot · More', t: 'Every tool', w: 'Unrot\'s More sheet, with the same three groups and every tool. Nothing from the general edition is lost.', nav: 0, bg: 'scene-steady', h: `${sb()}
+   ${homeTop}<div class="scrim"></div>
+   <div class="sheet"><div class="mid">Every tool</div>
+   <div class="k" style="font-size:2.6cqw;color:var(--pdim);letter-spacing:.1em">FOR RIGHT NOW</div>
+   <div class="tiles"><div><span class="ic">${ico('wind')}</span>Breathe</div><div><span class="ic">${ico('target')}</span>Focus</div><div><span class="ic">${ico('note')}</span>My notes</div><div><span class="ic">${ico('hands')}</span>Instead</div></div>
+   <div class="k" style="font-size:2.6cqw;color:var(--pdim);letter-spacing:.1em">YOUR RULES</div>
+   <div class="tiles"><div><span class="ic green">${ico('apps')}</span>Your apps</div><div><span class="ic blue">${ico('moon')}</span>Quiet nights</div><div><span class="ic red">${ico('lock')}</span>Lock</div><div><span class="ic blue">${ico('timer')}</span>Daily limits</div><div><span class="ic green">${ico('list')}</span>Your lists</div><div><span class="ic green">${ico('hourglass')}</span>Open Wait</div><div><span class="ic blue">${ico('gray')}</span>Gray screen</div><div><span class="ic">${ico('clock')}</span>Prayer times</div></div>
+   <div class="k" style="font-size:2.6cqw;color:var(--pdim);letter-spacing:.1em">YOU AND YOUR PROGRESS</div>
+   <div class="tiles"><div><span class="ic">${ico('chart')}</span>Progress</div><div><span class="ic green">${ico('user')}</span>About you</div><div><span class="ic red">${ico('pulse')}</span>Health check</div><div><span class="ic blue">${ico('help')}</span>How Hisn works</div></div></div>` },
+ { f: 'Unrot · hold Breathe', t: 'Hold Help now', w: 'As in Unrot, holding the main button opens quick choices without leaving Today.', nav: 0, bg: 'scene-steady', h: `${sb()}
+   ${homeTop}<div class="scrim"></div><div class="sp"></div>
+   <div class="pc" style="position:relative;z-index:3;background:#0d1d17">${icrow('wind', 'Breathe with dhikr', '36 seconds')}${icrow('target', 'Focus now', 'Feeds closed for 45 min')}${icrow('note', 'My notes', 'What you wrote for this minute')}${icrow('lock', 'Lock until Fajr', 'Rules can\'t be loosened', '', 'red')}</div>
+   <div class="btn glow" style="position:relative;z-index:3">${ico('spark')} Help now</div>
+   <div style="height:15cqw"></div>` },
+ { f: 'Unrot · Focus', t: 'Focus now', w: 'Unrot\'s Focus with an intention. It knows prayer times: it pauses for the adhān and picks up after.', nonav: 1, h: `${sb()}
+   <div class="hd">${close}<span class="chip gold">Focus</span></div><div class="sp"></div>
+   <div class="ring2"><div><div><div class="big">27:40</div><div class="dim">left</div></div></div></div>
+   <div class="mid ctr">Revise for the exam</div>
+   <div class="dim ctr">Instagram, YouTube and TikTok are closed. Calls and messages still come through.</div>
+   <div class="pc">${icrow('clock', 'Maghrib at 16:43', 'Focus pauses for the prayer, then resumes')}</div>
+   <div class="sp"></div><div class="btn ghost">End early</div>` },
+ { f: 'Unrot · glass crack', t: 'A spot on the glass', w: 'Unrot\'s crack, in the lamp\'s language. When Hisn closes an adult page, the scene shows a spot. Ten minutes to polish it.', nav: 0, bg: 'scene-spot', h: `${sb()}
+   <div class="hd"><div class="t">Today</div><span class="chip warn">Spot · 7:42</span></div>
+   <div class="sp"></div>
+   <div class="stage"><div class="nm" style="color:var(--pfg)">A spot on the glass</div><div class="dim">Hisn closed a page just now. Nothing is lost. Say astaghfirullāh with three breaths and it is polished.</div></div>
+   <div class="btn glow">Polish it · 7:42 left</div>
+   <div class="pc"><div class="q" style="font-size:3.9cqw">فَإِذَا هُوَ نَزَعَ وَٱسْتَغْفَرَ وَتَابَ سُقِلَ قَلْبُهُ</div><div class="qen">If he stops, asks forgiveness and turns back, his heart is polished. · Tirmidhī 3334</div></div>` },
+ { f: 'Unrot · gold seal', t: 'Polished', w: 'After the three breaths the glass gleams for the rest of the day, and the calendar marks the day as polished.', nav: 0, bg: 'scene-polished', h: `${sb()}
+   <div class="hd"><div class="t">Today</div><span class="chip gold">Polished</span></div>
+   <div class="sp"></div>
+   <div class="stage"><div class="nm">Polished</div><div class="dim">You turned back within minutes. That is the whole of it.</div></div>
+   <div class="pc">${icrow('drop', 'Make wuḍūʾ', 'Water and a fresh start')}${icrow('door', 'Leave the room', 'Five minutes is enough')}</div>
+   <div class="btn soft">Back to today</div>` },
+ { f: 'Unchaind 58, Arabic', t: 'اليوم', w: 'The same home right to left, addressed to a brother.', nav: 0, rtl: 1, bg: 'scene-steady', h: `${sb(1)}
+   <div class="hd"><div><div class="t">اليوم</div><div class="s">الاثنين · ١٢ جمادى الآخرة ١٤٤٨</div></div><span class="chip">الأسوار قائمة</span></div>
+   <div class="sp"></div>
+   <div class="stage"><div class="nm">شعلة ثابتة</div><div class="dim">٩ ليالٍ من النور · مصباح مضيء بعد ٥</div></div>
+   <div class="timer"><i></i>منذ الفجر · ١٥س ٢٨د</div>${segs(3)}
+   <div class="btn glow">${ico('spark')} أعنّي الآن يا أخي</div>
+   <div class="tools"><div><span class="ic">${ico('sun')}</span>الأذكار</div><div><span class="ic">${ico('target')}</span>تركيز</div><div><span class="ic">${ico('quran')}</span>المصحف</div><div><span class="ic">${ico('more')}</span>المزيد</div></div>` },
+],
+help: [
+ { f: 'Unchaind 80', t: 'Help now', w: 'Unchaind opens with "You promised yourself and God" and a list of harms. Hisn shows your own promise and reason, then a verse about nearness.', nonav: 1, bg: 'help-room', h: `${sb()}
+   <div class="hd">${close}<span class="chip gold">Help now</span></div>
+   <div class="pc"><div class="k">You promised</div><div>“I will guard my eyes, for Allah.”</div><div class="dim">Your reason: to stand in Fajr with a clear heart.</div></div>
+   <div class="sp"></div>
+   <div class="q">وَإِذَا سَأَلَكَ عِبَادِى عَنِّى فَإِنِّى قَرِيبٌ</div><div class="qen">And when My servants question thee concerning Me, then surely I am nigh. · 2:186</div>
+   <div class="btn glow">I'm close to giving in</div><div class="btn soft">I just want to breathe</div><div class="btn ghost">I slipped</div>` },
+ { f: 'Unchaind 84 · Unrot Breathe', t: 'Breathe with dhikr', w: 'Unrot\'s Breathe flower with dhikr on each out-breath. Three rounds, 36 seconds.', nonav: 1, h: `${sb()}
+   <div class="hd">${close}<span class="dim">Round 2 of 3</span></div><div class="sp"></div>
+   <svg viewBox="0 0 200 200" style="width:78%;display:block;margin:0 auto" aria-hidden="true">${Array.from({length: 8}, (_, i) => `<ellipse cx="100" cy="60" rx="22" ry="42" fill="#e6b75a" fill-opacity=".13" stroke="#e6b75a" stroke-opacity=".55" transform="rotate(${i * 45} 100 100)"/>`).join('')}<circle cx="100" cy="100" r="20" fill="#ffd98a" fill-opacity=".55"/></svg>
+   <div class="big ctr">Breathe out</div><div class="q" style="font-size:6cqw">أَسْتَغْفِرُ ٱللَّٰهَ</div><div class="qen">Astaghfirullāh · in for four, out for six</div><div class="sp"></div><div class="btn ghost">Stop</div>` },
+ { f: 'Unchaind 83 · Unrot Instead', t: 'It passed. Now move.', w: 'Unchaind\'s "continue to prayer" with Unrot\'s Instead list. One tap closes feeds for 10 minutes.', nonav: 1, h: `${sb()}
+   <div class="hd">${close}<span class="chip">It passed</span></div>
+   <div class="mid">Well done. One more step makes it stay passed.</div>
+   <div class="pc">${icrow('drop', 'Make wuḍūʾ', 'Water and a reset')}</div>
+   <div class="pc">${icrow('rug', 'Pray two rakʿahs', 'Hisn stays quiet for 10 minutes')}</div>
+   <div class="pc">${icrow('walk', 'Walk to the shop', 'Your own idea')}</div>
+   <div class="pc">${icrow('phone', 'Call Ahmad', 'Your companion')}</div>
+   <div class="pc">${icrow('hands', 'A du\'a for steadfastness', 'يا مقلّب القلوب ثبّت قلبي على دينك')}</div>` },
+ { f: 'Unchaind 82', t: 'Return', w: 'Unchaind: "It\'s okay, tomorrow is a new day", then the streak drops to 0. Hisn: what Allah says, three steps, and your total kept.', nonav: 1, h: `${sb()}
+   <div class="hd">${close}<span class="chip gold">Return</span></div>
+   ${pimg('wick', 'xs')}
+   <div class="q" style="font-size:4.4cqw">قُلْ يَٰعِبَادِىَ ٱلَّذِينَ أَسْرَفُوا۟ عَلَىٰٓ أَنفُسِهِمْ لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ</div>
+   <div class="qen">Say: O My slaves who have been prodigal to their own hurt! Despair not of the mercy of Allah. · 39:53</div>
+   <div class="pc"><div class="check"><i></i><span>Istighfār, meant from the heart</span></div><div class="check"><i></i><span>Wuḍūʾ and two rakʿahs of tawbah (Abū Dāwūd 1521)</span></div><div class="check"><i></i><span>One change, next screen</span></div></div>
+   <div class="pc"><div class="k">Kept</div><div><b>41 nights of light</b> stay yours. The lamp is lit again tonight.</div></div>` },
+ { f: 'Unrot · had a hard moment', t: 'One change', w: 'The slip teaches one thing, and the answer becomes a rule at once. Hisn keeps the date, never what was seen.', nonav: 1, h: `${sb()}
+   <div class="hd">${back}<span class="dim">Return · 3 of 3</span><span></span></div>
+   <div class="mid">What led here?</div><div class="dim">Pick one. Hisn changes one thing for you.</div>
+   ${opt(1, 'A browser I don\'t usually use → block it', 1)}${opt(2, 'Scrolling in bed → quiet after ʿIshāʾ', 0)}${opt(3, 'An app\'s search → close search in it', 0)}${opt(4, 'Something else → write it in My notes', 0)}
+   <div class="sp"></div><div class="btn">Light the lamp again</div>` },
+ { f: 'Unchaind 80, Arabic', t: 'أعنّي الآن', w: 'Help now in Arabic.', nonav: 1, rtl: 1, bg: 'help-room', h: `${sb(1)}
+   <div class="hd">${close}<span class="chip gold">أعنّي الآن</span></div>
+   <div class="pc"><div class="k">وعدتَ</div><div>«سأحفظ بصري لله.»</div></div>
+   <div class="sp"></div>
+   <div class="q">وَإِذَا سَأَلَكَ عِبَادِى عَنِّى فَإِنِّى قَرِيبٌ</div><div class="qen">البقرة ١٨٦</div>
+   <div class="btn glow">أوشكتُ أن أضعف</div><div class="btn soft">أريد أن أتنفّس فقط</div><div class="btn ghost">وقعتُ</div>` },
+],
+daily: [
+ { f: 'Unchaind 69 · Unrot Today\'s three', t: 'Morning', w: 'Unchaind\'s daily vow as a morning intention. After Fajr the scene turns to dawn and the lamp shows its new stage.', nav: 0, dawn: 1, bg: 'home-dawn', h: `${sb(0, '06:20')}
+   <div class="hd"><div><div class="t">Ṣabāḥ al-khayr</div><div class="s">After Fajr</div></div><span class="chip">Walls up</span></div>
+   <div class="sp"></div>
+   <div class="stage"><div class="nm">The flame grew: bright lamp</div><div class="dim">14 nights of light</div></div>
+   <div class="pc"><div class="k">Today's intention</div><div>“Guard my gaze on the way to work.”</div></div>
+   <div class="pc"><div class="row"><div class="grow"><b>Morning adhkār</b><div class="dim">Āyat al-Kursī · 3 Quls · 100 tasbīḥ</div></div><span class="chip gold">2/3</span></div></div>` },
+ { f: 'Unchaind 71', t: 'Today\'s reading', w: 'Unchaind\'s reading summary card, with a source on every line.', nav: 2, h: `${sb()}
+   <div class="hd">${back}<span class="dim">Lowering the gaze · 3 of 7</span><span class="dim">Aa</span></div>
+   <div class="pc"><div class="k">In short</div><div class="dim">The command comes before the reward: lower the gaze, then "that is purer for them". Your part is the lowering; the purity is the gift.</div></div>
+   <div class="q">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ وَيَحْفَظُوا۟ فُرُوجَهُمْ ۚ ذَٰلِكَ أَزْكَىٰ لَهُمْ</div>
+   <div class="qen" style="text-align:start">Tell the believing men to lower their gaze and be modest. That is purer for them. · 24:30</div>
+   <div class="q">وَقُل لِّلْمُؤْمِنَٰتِ يَغْضُضْنَ مِنْ أَبْصَٰرِهِنَّ</div>
+   <div class="qen" style="text-align:start">And tell the believing women to lower their gaze. · 24:31</div>
+   <div class="sp"></div><div class="btn">${ico('check')} Mark as read</div>` },
+ { f: 'Unchaind 79', t: 'Read', w: 'Unchaind\'s Bible reader becomes the Read tab: paths, then the whole Qurʾān.', nav: 2, h: `${sb()}
+   <div class="hd"><div class="t">Read</div></div>
+   <div class="pc"><div class="k">Continue</div>${icrow('book', 'Lowering the gaze', 'Day 3 of 7 · 4 min')}<div class="bar"><i style="width:43%"></i></div></div>
+   ${[['Turning back', 'Tawbah in seven readings'], ['Fasting is a shield', 'Bukhārī 5066 · Mondays and Thursdays'], ['Ṣabr', 'Patience when it is hard'], ['Ibn al-Qayyim', 'From al-Dāʾ wa al-Dawāʾ']].map(([a, b]) => `<div class="pc" style="padding:2.8cqw 3.6cqw">${icrow('lamp', a, b)}</div>`).join('')}
+   <div class="btn soft">${ico('quran')} Open the Qurʾān</div>` },
+ { f: 'Unchaind 68–70 · Unrot check-in', t: 'Evening reflection', w: 'Unchaind\'s five ratings and Unrot\'s check-in, as muḥāsaba. They feed the radar.', nonav: 1, h: `${sb()}
+   <div class="hd">${close}<span class="dim">Muḥāsaba · 1 minute</span></div>
+   <div class="mid">How was today?</div>
+   ${[['Prayers on time', 4], ['Guarding my gaze', 5], ['Qurʾān and dhikr', 3], ['Calm', 3], ['Energy', 2]].map(([n, v]) => `<div style="display:grid;gap:1cqw"><b>${n}</b><div class="scale">${[1,2,3,4,5].map(i => `<i class="${i === v ? 'on' : ''}">${i}</i>`).join('')}</div></div>`).join('')}
+   <div class="pc"><div class="dim">What pulled at you today?</div><div class="chips"><span class="on">Boredom</span><span>Tired</span><span>Alone</span><span>Stress</span></div></div>
+   <div class="btn">Save · stays on this phone</div>` },
+],
+tabs: [
+ { f: 'Unchaind 61–63 · Unrot Progress', t: 'Progress', w: 'Unrot\'s feed gauge on top, Unchaind\'s calendar below with lamps for days. No relapse-risk score.', nav: 3, h: `${sb()}
+   <div class="hd"><div class="t">Progress</div><span class="dim">${ico('help', 5)}</span></div>
+   <div class="pc ctr"><div class="k">Nights of light</div><div class="huge">41</div><div class="dim">since 13 Rabīʿ II · never wiped</div></div>
+   <div class="pc"><div class="row"><div class="k grow">Jumādā II</div><span class="dim">November</span></div>
+   <div class="cal">${['M','T','W','T','F','S','S'].map(d => `<span>${d}</span>`).join('')}${['lit','lit','pol','lit','out','lit','lit','lit','pol','lit','lit','lit','lit','lit','lit','lit','lit','pol','lit','lit','lit','lit today'].map((c, i) => `<span><i class="${c}">${i + 2}</i></span>`).join('')}</div></div>
+   <div class="row" style="gap:2cqw"><div class="pc grow ctr"><div class="k">Given back</div><div class="mid">38 h</div></div><div class="pc grow ctr"><div class="k">Polished</div><div class="mid">3</div></div><div class="pc grow ctr"><div class="k">Check-ins</div><div class="mid">18</div></div></div>` },
+ { f: 'Unchaind 64', t: 'Stations', w: 'Unchaind\'s milestones with pictures. Here each station is a painted lamp, the next one dimmed.', nav: 3, h: `${sb()}
+   <div class="hd">${back}<span class="dim">Stations</span><span></span></div>
+   ${[['steady', 'Steady flame', '7 nights', 'done'], ['bright', 'Bright lamp', '14 nights', 'done'], ['glass', 'Lamp in glass', '30 nights', 'done'], ['star', 'Shining star', '60 nights · 19 to go', 'next'], ['light', 'Light upon light', '90 nights', 'lock']].map(([img, a, b, s]) => `<div class="mile ${s === 'lock' ? 'lock' : ''}"><img src="img/lamp-${img}.jpg" alt=""><div><b>${a}</b><div class="dim">${b}</div>${s === 'next' ? '<div class="bar" style="margin-top:1cqw"><i style="width:68%"></i></div>' : ''}</div>${s === 'done' ? `<span class="chip">${ico('check')}</span>` : ''}</div>`).join('')}` },
+ { f: 'Unchaind 65 · Unrot kept out', t: 'From your reflections', w: 'Unchaind\'s radar, drawn only from your evening answers, and Unrot\'s private "kept out" card.', nav: 3, h: `${sb()}
+   <div class="hd">${back}<span class="dim">30 days</span><span></span></div>
+   <div class="radar"><svg viewBox="0 0 200 190" aria-label="Radar of five self-ratings">
+     ${[1, .66, .33].map(s => `<polygon points="${[0,1,2,3,4].map(i => { const a = -Math.PI/2 + i*2*Math.PI/5; return (100+70*s*Math.cos(a)).toFixed(1)+','+(100+70*s*Math.sin(a)).toFixed(1); }).join(' ')}" fill="none" stroke="#a3b6ab" stroke-opacity=".3"/>`).join('')}
+     <polygon points="${[.8,.95,.6,.6,.45].map((v, i) => { const a = -Math.PI/2 + i*2*Math.PI/5; return (100+70*v*Math.cos(a)).toFixed(1)+','+(100+70*v*Math.sin(a)).toFixed(1); }).join(' ')}" fill="#e6b75a" fill-opacity=".3" stroke="#e6b75a"/>
+     ${['Prayer','Gaze','Qurʾān','Calm','Energy'].map((n, i) => { const a = -Math.PI/2 + i*2*Math.PI/5; return `<text x="${(100+86*Math.cos(a)).toFixed(1)}" y="${(104+84*Math.sin(a)).toFixed(1)}" fill="#a3b6ab" font-size="10" text-anchor="middle">${n}</text>`; }).join('')}
+   </svg></div>
+   <div class="pc"><div class="dim">On days you prayed ʿIshāʾ at the masjid, "guarding my gaze" was 4.8. On other days, 3.6.</div></div>
+   <div class="pc"><div class="row"><div class="k grow">Kept out this month</div><span class="chip">${ico('lock')} Private</span></div><div class="row"><div class="grow"><div class="mid">27</div><div class="dim">adult pages closed</div></div><div class="grow"><div class="mid">112</div><div class="dim">site requests blocked</div></div></div></div>` },
+ { f: 'Unchaind 66', t: 'Du\'a wall', w: 'Unchaind\'s community feed, made safe: anonymous requests, and the only reply is a du\'a. No comments, no profiles, nothing about what anyone saw.', nav: 0, h: `${sb()}
+   <div class="hd"><div class="t">Du'a wall</div><span class="chip gold">Anonymous</span></div>
+   ${[['A brother · 2 h', 'Day 12. Please make du\'a I hold on through exams.', 214], ['A sister · 5 h', 'I came back after a long time away. Du\'a that I stay.', 388], ['A brother · 9 h', 'Pray for my marriage. I want to be better for her.', 159]].map(([m, t, n]) => `<div class="pc feed"><div class="meta">${m}</div><div>${t}</div><div class="acts"><span>${ico('hands')} I made du'a · ${n}</span></div></div>`).join('')}
+   <div class="btn">Ask for du'a</div>` },
+ { f: 'Unchaind 77–78 · Unrot Shield', t: 'Shield: the fortress', w: 'Unchaind\'s blocker is one switch. Ḥiṣn means fortress: five towers, one per layer, Unrot\'s tabs, and one fix for an open tower.', nav: 1, h: `${sb()}
+   <div class="hd"><div class="t">Shield</div><span class="chip warn">1 tower open</span></div>
+   <img src="img/fortress.jpg" alt="A fortress with five towers, one window open" style="width:100%;border-radius:4.6cqw;display:block">
+   <div class="chips"><span class="on">All</span><span>Feeds and apps</span><span>Adult</span></div>
+   ${[['Adult sites', 'DNS filter · 395k names', 1], ['Apps and feeds', '6 apps with a rule', 1], ['Adult words', 'In 9 apps', 1], ['Images', 'Off in Telegram', 0], ['Lock', 'Until 1 Ramaḍān', 1]].map(([a, b, ok]) => `<div class="row"><span class="ic ${ok ? '' : 'red'}">${ico(ok ? 'check' : 'x')}</span><div class="grow"><b>${a}</b><div class="dim">${b}</div></div></div>`).join('')}
+   <div class="btn">Close the open tower</div>` },
+ { f: 'Unchaind 85–89', t: 'You', w: 'Unchaind\'s settings and profile, with no account. Prayer times, translation and a real companion take its place.', nav: 4, h: `${sb()}
+   <div class="hd"><div class="t">You</div></div>
+   <div class="pc"><div class="k">Your promise</div><div>“I will guard my eyes, for Allah.”</div></div>
+   ${[['clock', 'Prayer times', 'Amsterdam · MWL · on this phone'], ['quran', 'Translation', 'Pickthall · or Arabic only'], ['phone', 'Companion', 'Ahmad sees nights of light only'], ['bell', 'Reminders', 'Fajr · verse 07:00 · reflection 21:30'], ['moon', 'Quiet nights', 'After ʿIshāʾ until Fajr'], ['heart', 'Give ṣadaqa', 'Hisn is free and open source']].map(([i, a, b]) => icrow(i, a, b, '<span class="dim">›</span>')).join('')}` },
+],
+out: [
+ { f: 'Unrot · Open Wait', t: 'Before Instagram opens', w: 'Unrot\'s Open Wait: a short pause before apps you chose, here with a dhikr to say while it counts down.', nonav: 1, h: `${sb()}
+   <div class="sp"></div><div class="ring2"><div><div class="big">7</div></div></div>
+   <div class="mid ctr">Instagram opens in 7 seconds</div>
+   <div class="q" style="font-size:6cqw">سُبْحَانَ ٱللَّٰهِ وَبِحَمْدِهِ</div><div class="qen">Say it while you wait</div>
+   <div class="dim ctr">Opened 3 times today · 4 waits you didn't need</div>
+   <div class="sp"></div><div class="btn">I don't need it</div><div class="btn ghost">Open Instagram</div>` },
+ { f: 'Unchaind 72–77', t: 'Widget, one tap', w: 'Unchaind takes five screens to explain adding a widget. Android lets Hisn pin it with one tap.', nonav: 1, h: `${sb()}
+   <div class="sp"></div>
+   <div class="widget"><img src="img/lamp-steady.jpg" alt="" style="width:17cqw;height:21cqw;object-fit:cover;border-radius:3cqw"><div><div class="big">9 nights</div><div class="dim">of light</div><div class="chip gold" style="margin-top:1.6cqw">${ico('spark')} Help now</div></div></div>
+   <div class="widget" style="grid-template-columns:1fr"><div class="q" style="font-size:4.2cqw">وَٱصْبِرْ وَمَا صَبْرُكَ إِلَّا بِٱللَّهِ</div><div class="qen">Endure thou patiently. Thine endurance is only by (the help of) Allah. · 16:127</div></div>
+   <div class="sp"></div><div class="btn">Add to home screen</div>` },
+ { f: 'Unrot · notices', t: 'Notices', w: 'Prayer times are worked out on the phone; feeds pause around each prayer.', nonav: 1, h: `${sb()}
+   <div class="toast"><b>Hisn · Maghrib in 10 minutes</b><span>Feeds pause until 15 minutes after the adhān.</span></div>
+   <div class="toast"><b>Hisn · A spot on the glass</b><span>A page was closed. Tap to polish it, 9 minutes left.</span></div>
+   <div class="toast"><b>Hisn · Someone made du'a for you</b><span>214 people so far.</span></div>
+   <div class="toast"><b>Hisn · Quiet night</b><span>ʿIshāʾ is prayed. The screen is gray until Fajr.</span></div>
+   <div class="sp"></div>` },
+ { f: 'Unrot · tile', t: 'Quick settings tile', w: 'Help now from the pulled-down shade, where the urge usually starts: inside another app.', nonav: 1, h: `${sb()}
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:2cqw">${['Wi-Fi', 'Bluetooth', 'Do not disturb'].map(t => `<div class="pc" style="padding:4cqw"><b>${t}</b></div>`).join('')}<div class="pc" style="padding:4cqw;background:rgba(230,183,90,.22);border-color:var(--gold)"><b style="color:var(--gold2)">${ico('spark', 3.4)} Help now</b><div class="dim">Hisn</div></div></div>
+   <div class="sp"></div>` },
+],
+};
+
+function render(key) {
+  document.getElementById('s-' + key).innerHTML = S[key].map(d => `<div class="shot">
+    <div class="phone${d.dawn ? ' dawn' : ''}${d.nonav ? ' nonav' : ''}${d.bg ? ' scene' : ''}${d.cls ? ' ' + d.cls : ''}" ${d.bg ? `style="${sceneBg(d.bg, !d.dawn)}"` : ''} ${d.rtl ? 'dir="rtl" lang="ar"' : ''}><div class="in">${d.h}</div>${d.nonav ? '' : nav(d.nav, d.rtl)}</div>
+    <div class="from">${d.f}</div><h3>${d.t}</h3><p>${d.w}</p></div>`).join('');
+}
+Object.keys(S).forEach(render);
+document.getElementById('paint').innerHTML = [
+  ['out', 'Out', 'Before the first night'], ['wick', 'Wick', 'Night 1, or relit after Return'], ['small', 'Small flame', '3 nights'], ['steady', 'Steady flame', '7 nights'],
+  ['bright', 'Bright lamp', '14 nights'], ['glass', 'Lamp in glass', '30 nights'], ['star', 'Shining star', '60 nights'], ['light', 'Light upon light', '90 nights'],
+  ['spot', 'A spot', 'A page was closed'], ['polished', 'Polished', 'Istighfār within 10 min'],
+].map(([n, a, b]) => `<figure><img src="img/lamp-${n}.jpg" alt=""><figcaption><b>${a}</b>${b}</figcaption></figure>`).join('')
+ + [['scene-steady', 'Home, steady'], ['scene-spot', 'Home, spot'], ['scene-polished', 'Home, polished'], ['home-dawn', 'Home, dawn'], ['help-room', 'Help now room'], ['fortress', 'Shield fortress']].map(([n, a]) => `<figure><img src="img/${n}.jpg" alt=""><figcaption><b>${a}</b>Full scene</figcaption></figure>`).join('');
+</script>

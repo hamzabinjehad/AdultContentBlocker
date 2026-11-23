@@ -360,6 +360,11 @@ internal fun UnrotBeforeNowCard(summary: WinsSummary, onOpen: () -> Unit) {
             Spacer(Modifier.height(10.dp))
             Text(stringResource(R.string.wins_heavier), style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant)
+        } else {
+            // The two numbers above, said as a sentence for anyone who does not read the layout.
+            Spacer(Modifier.height(10.dp))
+            Text(stringResource(R.string.wins_plain, Wins.short(summary.nowFeedMs), Wins.short(summary.base.feedMs)),
+                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         }
         if (summary.daily.size >= 2) {
             Spacer(Modifier.height(12.dp))

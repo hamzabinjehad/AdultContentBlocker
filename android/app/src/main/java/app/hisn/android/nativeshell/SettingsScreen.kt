@@ -3,7 +3,6 @@ package app.hisn.android.nativeshell
 import app.hisn.android.Edition
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Vibration
-import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.ui.res.stringResource
@@ -340,20 +339,7 @@ fun SettingsScreen(
                 )
                 if (unrotEdition) {
                     val feelContext = androidx.compose.ui.platform.LocalContext.current
-                    var sounds by remember { mutableStateOf(UnrotFeel.soundsOn(feelContext)) }
                     var vibration by remember { mutableStateOf(UnrotFeel.vibrationOn(feelContext)) }
-                    InsetDivider()
-                    SwitchRow(
-                        icon = Icons.AutoMirrored.Rounded.VolumeUp,
-                        title = stringResource(R.string.feel_sounds),
-                        supporting = stringResource(R.string.feel_sounds_body),
-                        checked = sounds,
-                        onCheckedChange = {
-                            sounds = it
-                            UnrotFeel.setSounds(feelContext, it)
-                            if (it) UnrotFeel.play(feelContext, FeelSound.ON)
-                        }
-                    )
                     InsetDivider()
                     SwitchRow(
                         icon = Icons.Rounded.Vibration,

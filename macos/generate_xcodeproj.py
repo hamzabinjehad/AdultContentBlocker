@@ -122,6 +122,12 @@ APP_SOURCES = SHARED + [
     "Hisn/ScreenGrayscale.swift",
     # A private breathing pause, available from the menu bar and Overview.
     "Hisn/Pause.swift",
+    # Unrot's distraction rules: limits, waits, schedules, Focus, feeds only,
+    # strictness and the usage ledger. Pure decisions; enforcers ask them.
+    "Hisn/DistractionRules.swift",
+    # The saved rule book, and the app watcher with its wait / closed panel.
+    "Hisn/DistractionStore.swift",
+    "Hisn/DistractionEnforcer.swift",
 ]
 
 # Every string the app shows, in English and Arabic. A String Catalog: Xcode
@@ -167,6 +173,9 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/ExtraSitesTests.swift",
                 "HisnTests/NetworkDNSProbeTests.swift",
                 "HisnTests/PauseTests.swift",
+                "HisnTests/DistractionRulesTests.swift",
+                "HisnTests/DistractionStoreTests.swift",
+                "HisnTests/DistractionPanelTests.swift",
                 "HisnTests/PrivateBrowsingTests.swift",
                 "HisnTests/ManagedModeTests.swift",
                 "HisnTests/SiteCheckerTests.swift",

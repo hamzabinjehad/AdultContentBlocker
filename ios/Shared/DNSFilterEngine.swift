@@ -80,7 +80,7 @@ enum DNSFilterAssets {
     /// reason to disable the seed list.
     static let customSitesKey = "hisn.dns.customSites"
     /// The App Group shared by the app and its extensions.
-    static let group = "group.app.hisn.mobile"
+    static let group = Edition.appGroup
     static let schema = 1
     static let maximumTermsBytes = 2 << 20
 

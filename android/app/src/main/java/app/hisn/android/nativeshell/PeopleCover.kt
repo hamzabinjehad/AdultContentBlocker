@@ -34,7 +34,7 @@ import app.hisn.android.PolicyStore
 import app.hisn.android.R
 
 private val PeopleModes = listOf(PersonBlur.OFF, PersonBlur.ALL, PersonBlur.WOMEN, PersonBlur.MEN)
-private val PeopleResponses = listOf(PersonBlur.BACK, PersonBlur.COVER)
+private val PeopleResponses = listOf(PersonBlur.FACES, PersonBlur.BACK, PersonBlur.COVER)
 
 /**
  * The opt-in people cover: which faces (off, all, women or men, estimated) and what happens when

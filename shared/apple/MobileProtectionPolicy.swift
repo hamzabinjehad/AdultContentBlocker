@@ -2,7 +2,7 @@ import Foundation
 
 /// Shared, platform-neutral configuration. No macOS enforcement assumptions.
 enum MobileProtectionPolicy {
-    static let appIdentifier = "app.hisn.mobile"
+    static let appIdentifier = Edition.appIdentifier
     /// Six blockers of the proven 40,000-rule size. The bundled core is
     /// capped to `perBlockerRuleLimit * blockerIdentifiers.count`.
     static let blockerIdentifiers = (1...6).map { "\(appIdentifier).blocker\($0)" }
@@ -10,7 +10,7 @@ enum MobileProtectionPolicy {
     static let bundledRuleLimit = perBlockerRuleLimit * blockerIdentifiers.count
     /// Hisn's DNS proxy extension. The provider bundle identifier is the only
     /// evidence iOS gives the app that the running configuration is Hisn's.
-    static let dnsProviderBundleIdentifier = "app.hisn.mobile.dnsproxy"
+    static let dnsProviderBundleIdentifier = "\(Edition.appIdentifier).dnsproxy"
 
     enum DNSState: Equatable {
         case unknown, absent, saved, enabled, differentConfiguration, unavailable

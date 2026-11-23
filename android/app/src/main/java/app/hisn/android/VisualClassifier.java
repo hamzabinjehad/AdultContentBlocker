@@ -158,7 +158,11 @@ final class VisualClassifier implements VisualRuntime {
                         org.json.JSONArray faces = evaluate ? value.optJSONArray("e") : null;
                         float[] found = boxes ? boxes(value.optJSONArray("b")) : null;
                         if (boxes && found == null) { failed(); return; }
-                        finishFrame(new VisualResult(verdict, person, strong, faces == null ? null : faces.toString(), found));
+                        // Matched faces' positions, for the face-only blur. Malformed reads as null,
+                        // and the guard then covers the whole screen instead.
+                        float[] matched = person ? boxes(value.optJSONArray("r")) : null;
+                        finishFrame(new VisualResult(verdict, person, strong, faces == null ? null : faces.toString(),
+                                found, matched));
                     } else failed();
                 } catch (org.json.JSONException malformed) { failed(); }
             });

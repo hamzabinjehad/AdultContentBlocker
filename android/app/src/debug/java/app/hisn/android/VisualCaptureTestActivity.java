@@ -26,13 +26,14 @@ public final class VisualCaptureTestActivity extends Activity {
             if (!"app.hisn.android.visualcheck".equals(getPackageName()))
                 throw new IllegalStateException("Isolated test package required");
             PolicyStore store = PolicyStore.get(this);
-            if ("configure".equals(action) || "configure-people-back".equals(action)) {
+            if ("configure".equals(action) || "configure-people-back".equals(action)
+                    || "configure-people-faces".equals(action)) {
                 if (store.remainingMillis() != 0 || !store.snapshot().blockedApps.isEmpty()
                         || !store.domainText().isEmpty() || !store.wordText().isEmpty())
                     throw new IllegalStateException("Test copy must have no other restrictions");
                 store.update("", "", Collections.emptySet(), Collections.singleton(getPackageName() + ".test"), false);
                 PersonBlur.set(this, "configure".equals(action) ? PersonBlur.OFF : PersonBlur.ALL);
-                PersonBlur.setResponse(this, PersonBlur.BACK);
+                PersonBlur.setResponse(this, "configure-people-faces".equals(action) ? PersonBlur.FACES : PersonBlur.BACK);
                 store.updateVisual(true);
             } else if ("stop".equals(action)) {
                 VisualTestHooks.clear();

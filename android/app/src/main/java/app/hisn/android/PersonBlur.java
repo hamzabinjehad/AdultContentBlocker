@@ -12,11 +12,12 @@ import android.content.SharedPreferences;
  */
 public final class PersonBlur {
     public static final String OFF = "off", ALL = "all", WOMEN = "female", MEN = "male";
-    /** A matched face sends the app back to the previous page; the alternative is a full cover. */
-    public static final String BACK = "back", COVER = "cover";
+    /** A matched face sends the app back to the previous page, covers the whole screen, or is
+     * blurred where it is while the rest of the app stays usable. */
+    public static final String BACK = "back", COVER = "cover", FACES = "faces";
     private static final String FILE = "hisn_person_blur", KEY = "mode", RESPONSE = "response";
     private static final String[] MODES = {OFF, ALL, WOMEN, MEN};
-    private static final String[] RESPONSES = {BACK, COVER};
+    private static final String[] RESPONSES = {BACK, COVER, FACES};
 
     private PersonBlur() { }
 
@@ -53,6 +54,7 @@ public final class PersonBlur {
     }
 
     public static int responseLabel(String response) {
+        if (FACES.equals(response)) return R.string.person_response_faces;
         return COVER.equals(response) ? R.string.person_response_cover : R.string.person_response_back;
     }
 

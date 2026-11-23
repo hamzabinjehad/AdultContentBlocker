@@ -13,7 +13,7 @@ import Foundation
 enum SafariGenerationRules {
     static let parts = 6
     static let ruleLimit = 40_000
-    static let group = "group.app.hisn.mobile"
+    static let group = Edition.appGroup
     static let folder = "list-generations"
     static let domainsName = "dns-domains.txt"
     static let metadataName = "dns-metadata.json"

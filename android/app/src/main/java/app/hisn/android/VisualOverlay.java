@@ -20,7 +20,7 @@ import android.widget.TextView;
  * <p>It is an accessibility overlay, not an app window: no SYSTEM_ALERT_WINDOW permission is
  * needed and the app underneath cannot receive taps while the cover is up. The cover uses a
  * heavily downscaled snapshot of the frame (enough to look like blur, not enough to read) on a
- * dark scrim. It is removed only by a later clean match, a window change, screen off, disabling
+ * light scrim, with the words on their own card. It is removed only by a later clean match, a window change, screen off, disabling
  * the visual layer, or leaving the app. Its one button goes Home: it can take a person away from
  * the covered screen, never reveal it. Nothing is written to disk.</p>
  */
@@ -37,13 +37,40 @@ final class VisualOverlay implements AutoCloseable {
     private Allow allow;
     private Bitmap snapshot;
     private boolean shown;
+    /** Face-only blur, the see-through alternative to this cover. Only one of the two shows. */
+    private final FaceBlurLayer faces;
 
     VisualOverlay(AccessibilityService service) {
         this.service = service;
         this.windows = service.getSystemService(WindowManager.class);
+        this.faces = new FaceBlurLayer(service, windows);
     }
 
     boolean shown() { return shown; }
+
+    boolean facesShown() { return faces.shown(); }
+
+    /** Blurs only the given people; see {@link FaceBlurLayer#show}. Replaces a full cover. */
+    void showFaces(android.graphics.Rect window, float[] regions, Bitmap colors) {
+        if (windows == null) return;
+        if (shown) hideCover();
+        if (faces.show(window, regions, colors)) shows++;
+    }
+
+    void shift(int dx, int dy) { faces.shift(dx, dy); }
+
+    /** Face-only blur: veil the whole window until a screenshot checks it. */
+    void veilAll(android.graphics.Rect window) { if (!shown) faces.veilAll(window); }
+
+    /** Face-only blur: the window was just checked; only what scrolled in since stays veiled. */
+    void checked(android.graphics.Rect window, int dx, int dy) { faces.checked(window, dx, dy); }
+
+    /** Face-only blur: the page moved; patches follow and new strips are veiled. */
+    void scrolled(int dx, int dy) { faces.scrolled(dx, dy); }
+
+    void moving() { faces.moving(); }
+
+
 
     /** Shows or refreshes a face cover using an already reduced snapshot. */
     void show(Bitmap colors) {
@@ -73,6 +100,7 @@ final class VisualOverlay implements AutoCloseable {
 
     private void show(Bitmap colors, int title, int body, int hint) {
         if (windows == null) return;
+        faces.hide();
         if (root == null) build();
         if (safeButton != null) safeButton.setVisibility(View.GONE);
         titleView.setText(title);
@@ -97,6 +125,11 @@ final class VisualOverlay implements AutoCloseable {
     }
 
     void hide() {
+        faces.hide();
+        hideCover();
+    }
+
+    private void hideCover() {
         if (!shown) {
             recycle();
             return;
@@ -113,19 +146,63 @@ final class VisualOverlay implements AutoCloseable {
         if (snapshot != null) { snapshot.recycle(); snapshot = null; }
     }
 
-    /** A 10-pixel long-edge copy is colors only at full screen: no face or clothing survives. */
+    /** Long edge of the kept snapshot. At 32 pixels a face is a few pixels wide, and the box blur
+     * below spreads each of those over its neighbours: shapes and colors stay, no face or clothing
+     * detail survives. The overlay then smooths it at full screen so it reads as frosted glass. */
+    static final int SNAPSHOT_EDGE = 32;
+
     static Bitmap blur(Bitmap frame) {
+        Bitmap current = frame;
         try {
             int width = frame.getWidth(), height = frame.getHeight();
             if (width < 1 || height < 1) return null;
-            double scale = Math.min(1.0, 10.0 / Math.max(width, height));
+            // Halve with filtering until close, so each kept pixel averages its area instead of
+            // sampling one point of it.
+            while (Math.max(width, height) > SNAPSHOT_EDGE * 2) {
+                width = Math.max(1, width / 2);
+                height = Math.max(1, height / 2);
+                Bitmap next = Bitmap.createScaledBitmap(current, width, height, true);
+                if (current != frame && current != next) current.recycle();
+                current = next;
+            }
+            double scale = Math.min(1.0, (double) SNAPSHOT_EDGE / Math.max(width, height));
             int w = Math.max(1, (int) Math.round(width * scale));
             int h = Math.max(1, (int) Math.round(height * scale));
-            Bitmap smaller = Bitmap.createScaledBitmap(frame, w, h, false);
-            return smaller == frame ? frame.copy(Bitmap.Config.ARGB_8888, false) : smaller;
+            Bitmap small = Bitmap.createScaledBitmap(current, w, h, true);
+            if (current != frame && current != small) current.recycle();
+            current = null;
+            int[] pixels = new int[w * h];
+            small.getPixels(pixels, 0, w, 0, 0, w, h);
+            if (small == frame) small = null; else small.recycle();
+            boxBlur(pixels, w, h);
+            boxBlur(pixels, w, h);
+            Bitmap out = Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888);
+            java.util.Arrays.fill(pixels, 0);
+            return out;
         } catch (RuntimeException | OutOfMemoryError unavailable) {
+            if (current != null && current != frame) current.recycle();
             return null;
         }
+    }
+
+    /** One 3x3 average pass, edges clamped. */
+    static void boxBlur(int[] pixels, int w, int h) {
+        int[] source = pixels.clone();
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int r = 0, g = 0, b = 0, n = 0;
+                for (int dy = -1; dy <= 1; dy++) {
+                    int yy = Math.min(h - 1, Math.max(0, y + dy));
+                    for (int dx = -1; dx <= 1; dx++) {
+                        int xx = Math.min(w - 1, Math.max(0, x + dx));
+                        int c = source[yy * w + xx];
+                        r += (c >> 16) & 0xFF; g += (c >> 8) & 0xFF; b += c & 0xFF; n++;
+                    }
+                }
+                pixels[y * w + x] = 0xFF000000 | (r / n) << 16 | (g / n) << 8 | (b / n);
+            }
+        }
+        java.util.Arrays.fill(source, 0);
     }
 
     private void build() {
@@ -139,18 +216,31 @@ final class VisualOverlay implements AutoCloseable {
         snapshotView.setScaleType(ImageView.ScaleType.FIT_XY);
         snapshotView.setAlpha(1f);
         snapshotView.setVisibility(View.INVISIBLE);
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            // Smooths the tiny snapshot's pixel steps into an even frosted blur. The privacy
+            // comes from the 32-pixel source, not from this effect.
+            float radius = dp(28);
+            snapshotView.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(
+                    radius, radius, android.graphics.Shader.TileMode.CLAMP));
+        }
         root.addView(snapshotView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
         View scrim = new View(service);
-        scrim.setBackgroundColor(0xE6000000);
+        // Light enough that the blurred screen shows through, dark enough to settle it.
+        scrim.setBackgroundColor(0x59000000);
         root.addView(scrim, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
         LinearLayout copy = new LinearLayout(service);
         copy.setOrientation(LinearLayout.VERTICAL);
         copy.setGravity(Gravity.CENTER_HORIZONTAL);
-        copy.setPadding(dp(28), dp(28), dp(28), dp(28));
+        copy.setPadding(dp(24), dp(24), dp(24), dp(20));
+        // The words sit on their own card so they stay readable over any blurred colors.
+        android.graphics.drawable.GradientDrawable card = new android.graphics.drawable.GradientDrawable();
+        card.setColor(0xD9141414);
+        card.setCornerRadius(dp(28));
+        copy.setBackground(card);
         int side = dp(28);
         FrameLayout.LayoutParams copyParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT,

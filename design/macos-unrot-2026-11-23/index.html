@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unrot for Mac — the Glasshouse on the desktop</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+:root{
+  --bg:#0f0d0a; --win:#17130e; --side:#1c1711; --card:#221c14; --card2:#2a2218; --line:#3a2f21;
+  --ink:#f4ead6; --ink2:#c9bba0; --mute:#8d7f68; --gold:#e9b44c; --gold2:#f6d27e; --amber:#e8873a; --calm:#7fb38a; --red:#d96a5a;
+  --serif:"Fraunces","New York",Georgia,serif; --sans:"DM Sans",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#0b0a08;color:var(--ink);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
+.page{max-width:1240px;margin:0 auto;padding:48px 32px 120px}
+h1{font:600 44px/1.1 var(--serif);margin:0 0 10px}
+h2{font:600 28px/1.2 var(--serif);margin:72px 0 8px}
+.lead{color:var(--ink2);max-width:760px;font-size:16px}
+.note{color:var(--mute);font-size:13px;max-width:820px}
+.tag{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);border:1px solid #5a4423;border-radius:99px;padding:3px 9px;margin-bottom:14px}
+
+/* desktop + window chrome */
+.desk{margin-top:22px;border-radius:14px;padding:40px 36px 36px;background:radial-gradient(1200px 500px at 70% -10%,#3b2c18,#120f0b 60%);position:relative;overflow:hidden}
+.menubar{position:absolute;left:0;right:0;top:0;height:26px;background:rgba(20,16,11,.75);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:0 14px;font-size:12.5px;color:#eadfc8}
+.menubar .mb-glass{display:flex;align-items:center;gap:6px;background:rgba(233,180,76,.16);padding:1px 8px;border-radius:6px;color:var(--gold2)}
+.win{background:var(--win);border:1px solid #2e261b;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.55);display:flex;overflow:hidden;min-height:640px;position:relative}
+.side{width:216px;background:var(--side);border-right:1px solid #2b2319;padding:12px 10px;display:flex;flex-direction:column}
+.lights{display:flex;gap:8px;padding:4px 6px 18px}.lights i{width:12px;height:12px;border-radius:50%;background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.brand{display:flex;gap:9px;align-items:center;padding:0 8px 16px}
+.brand .dot{width:26px;height:26px;border-radius:8px;background:linear-gradient(145deg,#f2c766,#c48a2a);display:grid;place-items:center;color:#2a1d08;font-weight:800;font-size:12px}
+.brand b{font-size:14px}.brand small{display:block;color:var(--mute);font-size:11px}
+.nav a{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;color:var(--ink2);text-decoration:none;font-size:13.5px}
+.nav a.on{background:rgba(233,180,76,.14);color:var(--ink)}
+.nav a .ic{width:18px;text-align:center;color:var(--gold)}
+.nav .grp{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);padding:14px 10px 6px}
+.side .foot{margin-top:auto;border-top:1px solid #2b2319;padding:12px 8px 4px;font-size:12px;color:var(--ink2)}
+.foot .pill{display:inline-flex;gap:6px;align-items:center;color:var(--calm)}
+.main{flex:1;padding:22px 28px 28px;overflow:hidden}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.toolbar h3{margin:0;font:600 26px var(--serif)}
+.toolbar .sub{color:var(--mute);font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:99px;background:#1f2a1f;color:#a8d6b0;font-size:12.5px;border:1px solid #2f4431}
+.chip.amber{background:#2d2012;color:#f1b77a;border-color:#5a3a1a}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;border:1px solid var(--line);background:var(--card2);color:var(--ink)}
+.btn.gold{background:linear-gradient(180deg,#f3c869,#dca43e);color:#2a1b05;border-color:#c99437}
+.btn.ghost{background:transparent}
+kbd{font:11px var(--sans);color:var(--mute);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px}
+
+.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
+.card{background:var(--card);border:1px solid #30271b;border-radius:14px;padding:16px}
+.card h4{margin:0 0 10px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.hero{position:relative;border-radius:16px;overflow:hidden;background:radial-gradient(90% 55% at 50% 18%,#3a2810,#120c06 70%);min-height:330px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.hero img{width:230px;height:230px;object-fit:cover;margin:4px 0 -6px;mask-image:radial-gradient(closest-side,#000 70%,transparent 100%)}
+.hero .txt{padding:0 22px 20px;width:100%;display:flex;flex-direction:column;align-items:center}.hero .seg{width:70%}.hero .tools{width:100%}
+.laurel{color:var(--gold2);font:600 13px var(--serif);letter-spacing:.06em}
+.big{font:600 46px/1 var(--serif);margin:10px 0 4px}
+.big span{font-size:24px;color:var(--ink2)}
+.muted{color:var(--mute);font-size:12.5px}
+.seg{display:flex;gap:4px;margin:14px 0 6px}.seg i{flex:1;height:6px;border-radius:3px;background:#3a2f20}.seg i.f{background:var(--gold)}.seg i.h{background:linear-gradient(90deg,var(--gold) 60%,#3a2f20 60%)}
+.tools{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:auto}
+.tool{background:var(--card2);border:1px solid #3a2f21;border-radius:12px;padding:10px 8px;text-align:center;font-size:12px;color:var(--ink2)}
+.tool .g{font-size:20px;display:block;margin-bottom:3px}
+.tool.main-t{background:linear-gradient(180deg,#f3c869,#dca43e);color:#2a1b05;border-color:#c99437;font-weight:700}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #2e261b}
+.row:first-of-type{border-top:0}
+.row .ri{width:30px;height:30px;border-radius:8px;background:#2f2619;display:grid;place-items:center;color:var(--gold)}
+.row .rt{flex:1}.row .rt b{display:block;font-size:13.5px;font-weight:600}.row .rt small{color:var(--mute);font-size:12px}
+.row .rv{color:var(--ink2);font-size:12.5px}
+.bar{height:6px;border-radius:3px;background:#3a2f20;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--gold)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.stats b{display:block;font:600 26px var(--serif)}.stats small{color:var(--mute);font-size:12px}
+.quote{font:600 19px/1.35 var(--serif)}
+.callouts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.co{background:#16120d;border:1px solid #2b2319;border-radius:12px;padding:14px;font-size:13px;color:var(--ink2)}
+.co b{color:var(--ink);display:block;margin-bottom:4px}
+.co .n{color:var(--gold);font-weight:700;margin-right:6px}
+
+/* overlay */
+.yt{position:absolute;inset:26px 0 0 0;background:#0e0e0e;display:flex;flex-direction:column}
+.yt .bar2{height:38px;background:#202020;display:flex;align-items:center;padding:0 14px;gap:8px;color:#aaa;font-size:12px}
+.yt .addr{flex:1;background:#2c2c2c;border-radius:8px;padding:5px 12px}
+.yt .thumbs{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px;filter:blur(14px) saturate(.6);opacity:.6}
+.yt .thumbs i{background:linear-gradient(135deg,#a33,#335);border-radius:10px;height:120px}
+.yt .thumbs i:nth-child(3n){background:linear-gradient(135deg,#2a6,#a62)}
+.wait{position:absolute;inset:26px 0 0 0;display:grid;place-items:center;background:rgba(10,8,5,.55)}
+.waitcard{width:480px;background:rgba(28,22,15,.92);border:1px solid #4a3a24;border-radius:22px;padding:30px 32px;text-align:center;box-shadow:0 40px 120px rgba(0,0,0,.6);backdrop-filter:blur(30px)}
+.ring{width:120px;height:120px;border-radius:50%;margin:4px auto 16px;background:conic-gradient(var(--gold) 0 62%,#3a2f20 62% 100%);display:grid;place-items:center}
+.ring div{width:104px;height:104px;border-radius:50%;background:#1d170f;display:grid;place-items:center;font:600 34px var(--serif)}
+.waitcard h5{font:600 24px/1.25 var(--serif);margin:4px 0 6px}
+.dots{display:flex;gap:6px;justify-content:center;margin:12px 0}.dots i{width:9px;height:9px;border-radius:50%;background:var(--gold)}.dots i.o{background:#3a2f20}
+.choices{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:16px 0 8px}
+.choices span{border:1px solid #4a3a24;border-radius:99px;padding:6px 12px;font-size:12.5px;color:var(--ink2)}
+.choices span.on{background:rgba(233,180,76,.16);color:var(--gold2);border-color:#7a5a24}
+
+/* popover */
+.pop{position:absolute;right:120px;top:32px;width:330px;background:rgba(30,24,16,.92);backdrop-filter:blur(30px);border:1px solid #4a3a24;border-radius:14px;padding:14px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.pop .ph{display:flex;gap:12px;align-items:center}
+.pop img{width:72px;height:72px;border-radius:12px;object-fit:cover}
+.pop .pr{display:flex;justify-content:space-between;padding:8px 2px;border-top:1px solid #3a2f21;font-size:13px}
+/* focus pill */
+.fpill{position:absolute;left:50%;top:40px;transform:translateX(-50%);background:rgba(28,22,15,.94);border:1px solid #5a4423;border-radius:99px;padding:8px 10px 8px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.fpill b{font:600 20px var(--serif);color:var(--gold2)}
+.sapling{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 50% 60%,#7fb38a 0 30%,#2f2619 32%)}
+/* widgets */
+.widgets{display:flex;gap:16px;margin-top:18px}
+.wg{background:rgba(30,24,16,.8);border:1px solid #3a2f21;border-radius:20px;padding:14px;backdrop-filter:blur(20px)}
+.wg.s{width:170px;height:170px}.wg.m{width:356px;height:170px;display:flex;gap:12px}
+.wg img{border-radius:12px;object-fit:cover}
+/* garden */
+.garden{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.pot{background:#1f1911;border:1px solid #30271b;border-radius:12px;padding:8px;text-align:center;font-size:11px;color:var(--mute)}
+.pot img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px}
+.pot.today{border-color:#7a5a24}
+.bars{display:flex;align-items:flex-end;gap:10px;height:120px;padding-top:10px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--mute)}
+.bars i{width:100%;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#f3c869,#b9852f)}
+.bars i.over{background:linear-gradient(180deg,#e8873a,#8a4e1f)}
+.line{position:relative}
+/* panes */
+.panes{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:6px 0 14px}
+.pane{border-radius:12px;padding:12px;background:#1e2a20;border:1px solid #31503a;font-size:12px;color:#b7d9bd;min-height:96px}
+.pane b{display:block;color:var(--ink);font-size:13px;margin:6px 0 2px}
+.pane.off{background:#2d2012;border:1px dashed #a66a2c;color:#f1b77a}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:14px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #2b2319;vertical-align:top}
+th{color:var(--mute);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em}
+td.y{color:var(--calm)}td.n{color:#8d7f68}td.p{color:#f1b77a}
+.plan li{margin:6px 0;color:var(--ink2)} .plan b{color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+</style>
+</head>
+<body>
+<div class="page">
+<span class="tag">Mac · concept for approval · 23 Nov 2026</span>
+<h1>Unrot for Mac: the Glasshouse on the desktop</h1>
+<p class="lead">Today the Mac app is a strong adult-content shield (system filter, hosts list, browser guard, private windows, lock, partner) but it knows nothing about feeds, apps or time. This concept brings the Android Unrot edition to the Mac — the sprout under glass, Breathe, Wait before opening, Focus, limits and Progress — and keeps every shield feature that already works.</p>
+<p class="note">Native SwiftUI + AppKit, macOS 12 and later, no account, everything stays on the Mac. Painted art is the same as Android (<code>paint-*.jpg</code>). Look: dark, warm, gold, like the phone.</p>
+
+<!-- ============ 1. TODAY ============ -->
+<h2>1 · Today</h2>
+<p class="note">The window opens on the same scene as the phone. The sidebar replaces the bottom tabs; everything else maps one to one.</p>
+<div class="desk">
+  <div class="menubar"><span class="mb-glass">🌱 1h 06m</span><span>Wi‑Fi</span><span>Mon 23 Nov 15:19</span></div>
+  <div class="win">
+    <div class="side">
+      <div class="lights"><i></i><i></i><i></i></div>
+      <div class="brand"><div class="dot">U</div><div><b>Unrot</b><small>Shield on</small></div></div>
+      <div class="nav">
+        <a class="on"><span class="ic">◐</span>Today</a>
+        <a><span class="ic">⛉</span>Shield</a>
+        <a><span class="ic">▥</span>Progress</a>
+        <a><span class="ic">◎</span>You</a>
+        <div class="grp">Rules</div>
+        <a><span class="ic">⏳</span>Limits</a>
+        <a><span class="ic">⏸</span>Wait before opening</a>
+        <a><span class="ic">◷</span>Schedules</a>
+        <a><span class="ic">🔒</span>Lock</a>
+        <div class="grp">Tools</div>
+        <a><span class="ic">✎</span>My notes</a>
+        <a><span class="ic">⌕</span>Check a website</a>
+      </div>
+      <div class="foot"><span class="pill">● All five panes closed</span><br><span class="muted">Lock until Fri 18:00</span></div>
+    </div>
+    <div class="main">
+      <div class="toolbar">
+        <div><h3>Today</h3><span class="sub">Monday, 23 November</span></div>
+        <div style="display:flex;gap:10px;align-items:center"><span class="chip">● Shield on</span><span class="btn gold">⏸ Breathe <kbd>⌥⌘B</kbd></span></div>
+      </div>
+      <div class="grid">
+        <div class="hero card" style="padding:0">
+          <img src="img/paint-2.jpg" alt="">
+          <div class="txt">
+            <span class="laurel">❦ STAGE 2 · SPROUT ❦</span>
+            <div class="big">1<span>d</span> 4<span>h</span> 12<span>m</span></div>
+            <span class="muted">time given back since 2 Nov, on this Mac and your phone</span>
+            <div class="seg"><i class="f"></i><i class="h"></i><i></i><i></i><i></i><i></i><i></i></div>
+            <span class="muted">Young plant in 3h 48m</span>
+            <div class="tools" style="margin-top:22px">
+              <div class="tool main-t"><span class="g">⏸</span>Breathe</div>
+              <div class="tool"><span class="g">◎</span>Focus</div>
+              <div class="tool"><span class="g">✎</span>Notes</div>
+              <div class="tool"><span class="g">🔒</span>Lock</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <h4>Today on this Mac</h4>
+            <div class="stats"><div><b>38m</b><small>in feeds · aim 1h</small></div><div><b>6</b><small>waits, 4 closed</small></div><div><b>2</b><small>kept out</small></div></div>
+            <div class="bar"><i style="width:38%"></i></div>
+          </div>
+          <div class="card">
+            <h4>Your rules now</h4>
+            <div class="row"><div class="ri">⏳</div><div class="rt"><b>YouTube, X, Reddit</b><small>38m used · 22m left today</small></div><span class="rv">›</span></div>
+            <div class="row"><div class="ri">⏸</div><div class="rt"><b>Wait before Discord, Steam</b><small>10 s pause · 2 of 5 opens left</small></div><span class="rv">›</span></div>
+            <div class="row"><div class="ri">◷</div><div class="rt"><b>Work hours 9–17</b><small>Feeds closed · ends in 1h 41m</small></div><span class="rv">›</span></div>
+          </div>
+          <div class="card"><h4>From you</h4><div class="quote">“You’ll be tired tomorrow.”</div><span class="muted">The pull is usually strongest around 15:00 on this Mac.</span></div>
+        </div>
+      </div>
+      <div class="callouts">
+        <div class="co"><b><span class="n">A</span>One number, both devices</b>Time given back counts this Mac too. No account: the phone and Mac pair once with a QR code over the local network (later step).</div>
+        <div class="co"><b><span class="n">B</span>Breathe from anywhere</b>⌥⌘B, the menu bar, or a Shortcut. Same flower, same gold seal on a crack.</div>
+        <div class="co"><b><span class="n">C</span>Rules are the home</b>Limits, waits and schedules sit on Today, like Android, with one click to edit.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2. WAIT ============ -->
+<h2>2 · Wait before opening (apps and sites)</h2>
+<p class="note">The Mac version of Open Wait: when you switch to a chosen app or open a chosen site, a calm sheet covers that window only. Closing is always the big easy choice. Works for apps (watched with NSWorkspace) and sites (the existing extension and Safari extension).</p>
+<div class="desk" style="height:600px;padding:0">
+  <div class="menubar"><span class="mb-glass">🌱 1h 06m</span><span>Mon 23 Nov 15:21</span></div>
+  <div class="yt"><div class="bar2">● ● ● <span class="addr">youtube.com</span></div><div class="thumbs"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div class="wait"><div class="waitcard">
+    <div class="ring"><div>7</div></div>
+    <h5>You opened YouTube.<br>What did you come for?</h5>
+    <span class="muted">Breathe out while the ring fills.</span>
+    <div class="choices"><span class="on">A video I need</span><span>Just bored</span><span>A break</span><span>Habit</span></div>
+    <div class="dots"><i></i><i></i><i class="o"></i><i class="o"></i><i class="o"></i></div>
+    <span class="muted">3 of 5 opens left today · 22m left</span>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:18px">
+      <span class="btn gold" style="padding:11px 22px">Close YouTube</span>
+      <span class="btn ghost" style="opacity:.55">Open for 10 min in 7s</span>
+    </div>
+    <p class="muted" style="margin:14px 0 0">“Just bored” offers your Instead list: walk, water, call mum.</p>
+  </div></div>
+</div>
+<div class="callouts">
+  <div class="co"><b><span class="n">1</span>Answer, not guilt</b>The reason chip is kept as a count only (“bored” 4×), shown in Progress. No URLs, no titles.</div>
+  <div class="co"><b><span class="n">2</span>Feeds only, if you want</b>Per site: block the whole site, or only the feed (YouTube home, Shorts, X “For you”, Reddit front page) while search and links still work.</div>
+  <div class="co"><b><span class="n">3</span>Re-check</b>After the chosen 10 minutes the sheet comes back once: “Still on purpose?”</div>
+</div>
+
+<h2>2b · When adult content is tried: crack, then gold</h2>
+<p class="note">Same rule as the phone. The filter or extension stops an adult page → the glass on Today and in the menu bar cracks and the sprout droops. Breathe within 10 minutes seals it with a gold seam that stays. If something gets through (a pane was open, or “Had a hard moment”), the glass breaks: new glass and seed, total time and garden kept.</p>
+<div class="states3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px">
+<figure style="margin:0"><img src="img/paint-7.jpg" style="width:100%;border-radius:14px"><figcaption class="muted"><b style="color:var(--ink)">Cracked</b> · menu bar icon gets a hairline · “Breathe to seal it · 6:49”</figcaption></figure>
+<figure style="margin:0"><img src="img/paint-8.jpg" style="width:100%;border-radius:14px"><figcaption class="muted"><b style="color:var(--ink)">Sealed with gold</b> · after the breaths finish in the Breathe window</figcaption></figure>
+<figure style="margin:0"><img src="img/paint-5.jpg" style="width:100%;border-radius:14px"><figcaption class="muted"><b style="color:var(--ink)">Night</b> · quiet hours: feeds closed, sprout asleep, menu bar moon</figcaption></figure>
+</div>
+
+<!-- ============ 3. MENU BAR + FOCUS ============ -->
+<h2>3 · Menu bar, Focus and widgets</h2>
+<p class="note">On a Mac the app is mostly closed, so the menu bar is the real home. Opal’s Mac app must stay open and shows only today; ours runs in the background and keeps the history.</p>
+<div class="desk" style="height:560px">
+  <div class="menubar"><span class="mb-glass">🌱 ◎ 24:12</span><span>Wi‑Fi</span><span>Mon 23 Nov 15:30</span></div>
+  <div class="fpill"><div class="sapling"></div><div><b>24:12</b> <span class="muted">Focus · Write the report</span></div><span class="btn ghost" style="padding:5px 10px">+5</span><span class="btn ghost" style="padding:5px 10px">End</span></div>
+  <div class="pop">
+    <div class="ph"><img src="img/paint-2.jpg" alt=""><div><b style="font:600 20px var(--serif)">1d 4h 12m</b><br><span class="muted">given back · Sprout</span><br><span class="chip" style="margin-top:6px">● Shield on</span></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">
+      <span class="btn gold" style="justify-content:center">⏸ Breathe</span><span class="btn" style="justify-content:center">◎ Focus 25m</span>
+    </div>
+    <div class="pr"><span>Feeds today</span><span class="muted">38m of 1h</span></div>
+    <div class="pr"><span>Work hours</span><span class="muted">ends 17:00</span></div>
+    <div class="pr"><span>Lock</span><span class="muted">until Fri 18:00</span></div>
+    <div class="pr"><span>Gray screen</span><span class="muted">Off</span></div>
+    <div class="pr"><span>Open Unrot…</span><span class="muted">⌘O</span></div>
+  </div>
+  <div style="position:absolute;left:36px;bottom:30px">
+    <div class="widgets">
+      <div class="wg s"><img src="img/paint-2.jpg" style="width:84px;height:84px"><div style="font:600 18px var(--serif);margin-top:6px">1d 4h</div><span class="muted">given back</span></div>
+      <div class="wg m"><img src="img/paint-6.jpg" style="width:140px;height:140px"><div><span class="muted">THIS WEEK</span><div style="font:600 22px var(--serif)">−42%</div><span class="muted">feed time vs your before</span><div class="bars" style="height:60px"><div><i style="height:30px"></i></div><div><i style="height:44px"></i></div><div><i style="height:22px"></i></div><div><i class="over" style="height:56px"></i></div><div><i style="height:18px"></i></div></div></div></div>
+    </div>
+    <p class="muted" style="margin-top:8px">Desktop widgets (macOS 14+) · Notification Center on 12–13</p>
+  </div>
+</div>
+<div class="callouts">
+  <div class="co"><b><span class="n">1</span>Focus</b>Pick a length and what it is for. Feeds and chosen apps close; a sapling grows in the pill and is planted in your wood when it ends. Breaks earned by finishing, not by snoozing.</div>
+  <div class="co"><b><span class="n">2</span>macOS Focus filter</b>Turning on the system “Work” Focus can start an Unrot schedule automatically (App Intents Focus filter, macOS 13+). Shortcuts actions: Breathe, Start Focus, Add to Instead.</div>
+  <div class="co"><b><span class="n">3</span>Mid-scroll nudge</b>After 15 min in a feed, a small banner at the top: “15 minutes on X. Keep going or Breathe?” No sound, one click away.</div>
+</div>
+
+<!-- ============ 4. SHIELD ============ -->
+<h2>4 · Shield: the five panes</h2>
+<p class="note">The same five panes as the phone’s Glasshouse concept. The existing Overview and Protected Setup become this page. Each pane is a layer; an open pane is amber and has one fix button. Nothing from today’s setup is removed — it moves under the pane it belongs to.</p>
+<div class="desk" style="padding:30px">
+  <div class="win" style="min-height:520px">
+    <div class="side"><div class="lights"><i></i><i></i><i></i></div><div class="brand"><div class="dot">U</div><div><b>Unrot</b><small>1 pane open</small></div></div>
+      <div class="nav"><a><span class="ic">◐</span>Today</a><a class="on"><span class="ic">⛉</span>Shield</a><a><span class="ic">▥</span>Progress</a><a><span class="ic">◎</span>You</a></div></div>
+    <div class="main">
+      <div class="toolbar"><div><h3>Shield</h3><span class="sub">4 of 5 panes closed</span></div><span class="chip amber">● 1 pane open</span></div>
+      <div style="display:flex;gap:6px;margin-bottom:14px"><span class="btn" style="background:rgba(233,180,76,.16)">All</span><span class="btn ghost">Feeds and apps</span><span class="btn ghost">Adult</span></div>
+      <div class="panes">
+        <div class="pane">✓<b>Feeds</b>12 sites · feed-only on YouTube, X · in every browser</div>
+        <div class="pane">✓<b>Adult sites</b>System filter, every app · 236,586 sites · SafeSearch</div>
+        <div class="pane off">!<b>Limits and quiet hours</b>Unrot can’t see app switches yet<br><span class="btn gold" style="margin-top:8px;padding:4px 10px;font-size:12px">Allow</span></div>
+        <div class="pane">✓<b>Adult words</b>Searches and page text · private windows closed</div>
+        <div class="pane">✓<b>Images</b>Browser image check on</div>
+      </div>
+      <div class="two">
+        <div class="card"><h4>Kept out this week · private</h4>
+          <div class="row"><div class="ri">⛉</div><div class="rt"><b>14 adult pages closed</b><small>Never shown on share cards</small></div></div>
+          <div class="row"><div class="ri">⏳</div><div class="rt"><b>31 feed opens closed</b><small>by waits and limits</small></div></div>
+          <div class="row"><div class="ri">◷</div><div class="rt"><b>3 schedule blocks</b><small>Work hours, Bedtime</small></div></div></div>
+        <div class="card"><h4>Also here</h4>
+          <div class="row"><div class="ri">⚙</div><div class="rt"><b>Protected setup</b><small>the full 10-step checklist, as today</small></div><span class="rv">›</span></div>
+          <div class="row"><div class="ri">⌂</div><div class="rt"><b>Router and DNS</b><small>whole-network guide</small></div><span class="rv">›</span></div>
+          <div class="row"><div class="ri">✉</div><div class="rt"><b>Partner</b><small>alerts if a pane opens</small></div><span class="rv">›</span></div>
+          <div class="row"><div class="ri">▦</div><div class="rt"><b>Organization / MDM</b><small>profile layers</small></div><span class="rv">›</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 5. PROGRESS ============ -->
+<h2>5 · Progress: a garden of days</h2>
+<p class="note">The Mac has the room the phone lacks: the week and the garden side by side. Numbers are facts the Mac measured (frontmost app time and feed tabs), never projections.</p>
+<div class="desk" style="padding:30px">
+  <div class="win" style="min-height:470px">
+    <div class="side"><div class="lights"><i></i><i></i><i></i></div><div class="brand"><div class="dot">U</div><div><b>Unrot</b><small>Shield on</small></div></div>
+      <div class="nav"><a><span class="ic">◐</span>Today</a><a><span class="ic">⛉</span>Shield</a><a class="on"><span class="ic">▥</span>Progress</a><a><span class="ic">◎</span>You</a></div></div>
+    <div class="main">
+      <div class="toolbar"><div><h3>Progress</h3><span class="sub">Week of 17 November</span></div><span class="btn ghost">Share growth…</span></div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="card"><h4>Feed time on this Mac</h4>
+          <div style="font:600 34px var(--serif)">−42% <span class="muted" style="font:13px var(--sans)">vs your before (1h 45m a day)</span></div>
+          <div class="bars"><div><i style="height:60px"></i>M</div><div><i style="height:82px"></i>T</div><div><i style="height:40px"></i>W</div><div><i class="over" style="height:104px"></i>T</div><div><i style="height:34px"></i>F</div><div><i style="height:20px"></i>S</div><div><i style="height:38px"></i>S</div></div>
+          <div class="row" style="margin-top:8px"><div class="rt"><b>Top pulls</b><small>YouTube 2h 10m · X 1h 4m · Reddit 40m</small></div></div>
+          <div class="row"><div class="rt"><b>Why you opened</b><small>bored 9× · habit 6× · a video I need 4×</small></div></div>
+        </div>
+        <div class="card"><h4>Garden</h4>
+          <div class="garden">
+            <div class="pot"><img src="img/paint-2.jpg">M</div><div class="pot"><img src="img/paint-2.jpg">T</div><div class="pot"><img src="img/paint-6.jpg">W</div><div class="pot"><img src="img/paint-1.jpg">T</div><div class="pot"><img src="img/paint-6.jpg">F</div><div class="pot"><img src="img/paint-8.jpg">S</div><div class="pot today"><img src="img/paint-2.jpg">Today</div>
+          </div>
+          <p class="muted">A heavy day is a small plant, never a dead one. Saturday’s gold seam: a crack sealed with Breathe.</p>
+          <div class="stats" style="margin-top:10px"><div><b>22</b><small>days with Unrot</small></div><div><b>41</b><small>breaths taken</small></div><div><b>6h 20m</b><small>in Focus</small></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 6. COMPARISON ============ -->
+<h2>6 · Where this puts Unrot on the Mac</h2>
+<p class="note">From the Opal Mac help centre, one sec’s platform page, Cold Turkey’s feature list and Clearspace’s site (read 23 Nov 2026).</p>
+<table>
+<tr><th>Feature</th><th>Opal Mac</th><th>one sec Mac</th><th>Cold Turkey</th><th>Clearspace</th><th>Unrot Mac (this plan)</th></tr>
+<tr><td>Works without an account</td><td class="n">No (phone account)</td><td class="p">Partly</td><td class="y">Yes</td><td class="n">No</td><td class="y">Yes</td></tr>
+<tr><td>Tracks time with the app closed, keeps history</td><td class="n">No, today only</td><td class="n">–</td><td class="y">Yes</td><td class="n">Phone</td><td class="y">Yes, menu bar agent</td></tr>
+<tr><td>Pause before opening apps / sites</td><td class="p">Open limits</td><td class="y">Yes</td><td class="p">Delay to unlock</td><td class="y">Breathe to scroll</td><td class="y">Yes, with reason and opens left</td></tr>
+<tr><td>Block the feed, keep the site</td><td class="n">No</td><td class="n">No</td><td class="p">URL wildcards</td><td class="n">No</td><td class="y">Yes</td></tr>
+<tr><td>Several rules at once</td><td class="n">One session</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+<tr><td>System-wide adult filter, every app</td><td class="n">No</td><td class="n">No</td><td class="p">Lists</td><td class="n">No</td><td class="y">Yes (already built)</td></tr>
+<tr><td>Hard lock / can’t uninstall</td><td class="p">Pro “hardcore”</td><td class="n">No</td><td class="y">Yes</td><td class="n">No</td><td class="y">Yes (already built)</td></tr>
+<tr><td>Calm growth, no streak reset</td><td class="p">Gems</td><td class="n">No</td><td class="n">No</td><td class="p">Streaks</td><td class="y">Sprout + garden</td></tr>
+<tr><td>Menu bar, widgets, Shortcuts, Focus filter</td><td class="p">Menu bar</td><td class="p">Menu bar</td><td class="p">Menu bar</td><td class="n">–</td><td class="y">All four</td></tr>
+</table>
+
+<!-- ============ 7. PLAN ============ -->
+<h2>7 · Build plan (in this order)</h2>
+<div class="two">
+<ol class="plan">
+<li><b>Unrot look on Mac:</b> dark gold theme, Today / Shield / Progress / You sidebar, painted glass hero, time given back. Hisn edition keeps its look (second Mac scheme, like Android flavors).</li>
+<li><b>Usage engine:</b> frontmost-app time (NSWorkspace) + feed tab time from the extension; stored per day on the Mac; tests.</li>
+<li><b>Rules:</b> limits, wait before opening (apps and sites), schedules; shared rule model with tests; one editor sheet.</li>
+<li><b>Wait sheet</b> over apps (overlay panel) and sites (extension page), reason chips, opens left, re-check.</li>
+<li><b>Feed-only blocking</b> for YouTube, X, Reddit, Instagram, Facebook, TikTok in the extensions.</li>
+</ol>
+<ol class="plan" start="6">
+<li><b>Breathe</b> window (flower, rounds, gold seal) + ⌥⌘B + Instead list + My notes.</li>
+<li><b>Focus</b> sessions with the floating pill and sapling.</li>
+<li><b>Menu bar popover</b> rebuilt; desktop widgets; Shortcuts actions; macOS Focus filter.</li>
+<li><b>Progress</b>: week, top pulls, reasons, garden, private “kept out”.</li>
+<li><b>First run</b> in the phone’s order (one question a screen, your picture, pledge), then the permission steps that exist today.</li>
+</ol>
+</div>
+<p class="note">Kept, each with a home: system filter, hosts list, browser guard, private windows, Safari extension, site check, extra sites, keywords, lock + schedules + partner, gray screen, router/DNS guide, MDM/organization mode, Arabic. Later: phone ↔ Mac pairing on the local network, more painted states.</p>
+</div>
+</body>
+</html>

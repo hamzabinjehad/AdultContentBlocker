@@ -63,6 +63,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -107,7 +109,6 @@ import app.hisn.core.BreathPattern
 class BreatheActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        app.hisn.android.nativeshell.UnrotFeel.warm(this)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT)
@@ -120,13 +121,19 @@ class BreatheActivity : ComponentActivity() {
         val reason = if (profile.hasReason()) PersonalStore.reasonLabel(this, profile) else ""
         val prefs = getSharedPreferences(PauseCount.PREFS, MODE_PRIVATE)
         val saved = BreathPattern.fromKey(prefs.getString(PATTERN_KEY, null))
+        val savedRounds = prefs.getInt(ROUNDS_KEY, BreathPattern.BREATHS).takeIf { it in RoundChoices } ?: BreathPattern.BREATHS
+        // Opened from a block screen in a hard moment: no choices, straight into 3 · 2 · 1.
+        val quick = intent?.getBooleanExtra(EXTRA_QUICK, false) == true
         setContent {
             HisnTheme(darkTheme = true) {
                 BreatheScreen(
                     pausesToday = tally.count,
                     reason = reason,
                     initialPattern = saved,
+                    initialRounds = savedRounds,
+                    quick = quick,
                     onPatternChosen = { prefs.edit { putString(PATTERN_KEY, it.key) } },
+                    onRoundsChosen = { prefs.edit { putInt(ROUNDS_KEY, it) } },
                     onBreathing = { breathing ->
                         if (breathing) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -137,14 +144,29 @@ class BreatheActivity : ComponentActivity() {
         }
     }
 
-    private companion object {
-        const val PATTERN_KEY = "pattern"
+    companion object {
+        /**
+         * Set by a block or pause screen: the person is in a hard moment, so Unrot skips the start
+         * screen and goes straight to the get-ready count with the saved rounds and pattern.
+         */
+        const val EXTRA_QUICK = "app.hisn.android.extra.BREATHE_QUICK"
+        private const val PATTERN_KEY = "pattern"
+        private const val ROUNDS_KEY = "rounds"
     }
 }
 
 private val Gold = Color(0xFFF4C34E)
 private val Cream = Color(0xFFF5EFE3)
 private val InkText = Color(0xFF1F2A23)
+
+/** How many breaths the Unrot start screen offers; three is the thirty seconds Today promises. */
+private val RoundChoices = listOf(3, 5, 10)
+
+// Unrot's steps before the breathing; the Islamic edition always starts on BREATHING.
+private const val STAGE_START = 0
+private const val STAGE_READY = 1
+private const val STAGE_BREATHING = 2
+private const val COUNTDOWN_MILLIS = 3_000L
 
 @Composable
 private fun breatheBackground(): Color =
@@ -156,16 +178,27 @@ private fun BreatheScreen(
     pausesToday: Int,
     reason: String,
     initialPattern: BreathPattern,
+    initialRounds: Int,
+    quick: Boolean,
     onPatternChosen: (BreathPattern) -> Unit,
+    onRoundsChosen: (Int) -> Unit,
     onBreathing: (Boolean) -> Unit,
     onClose: () -> Unit
 ) {
+    val unrot = !app.hisn.android.Edition.islamic
     var patternKey by rememberSaveable { mutableStateOf(initialPattern.key) }
     var done by rememberSaveable { mutableStateOf(false) }
     var run by rememberSaveable { mutableIntStateOf(0) }
+    // The Islamic edition keeps its fixed three breaths and starts breathing at once.
+    var rounds by rememberSaveable { mutableIntStateOf(if (unrot) initialRounds else BreathPattern.BREATHS) }
+    var stage by rememberSaveable {
+        mutableIntStateOf(if (!unrot) STAGE_BREATHING else if (quick) STAGE_READY else STAGE_START)
+    }
     val pattern = BreathPattern.fromKey(patternKey)
 
-    LaunchedEffect(done) { onBreathing(!done) }
+    val glassContext = androidx.compose.ui.platform.LocalContext.current
+    // Keep the display awake from the count until the last breath, not while choosing.
+    LaunchedEffect(done, stage) { onBreathing(!done && stage != STAGE_START) }
 
     Box(
         Modifier
@@ -178,13 +211,39 @@ private fun BreatheScreen(
                 pausesToday = pausesToday,
                 onAgain = {
                     run++
+                    // Unrot: once more goes through the short count again, not the choices.
+                    if (unrot) stage = STAGE_READY
                     done = false
                 },
+                onClose = onClose
+            )
+        } else if (stage == STAGE_START) {
+            StartBreathing(
+                pattern = pattern,
+                rounds = rounds,
+                onPattern = {
+                    if (it != pattern) {
+                        patternKey = it.key
+                        onPatternChosen(it)
+                    }
+                },
+                onRounds = {
+                    rounds = it
+                    onRoundsChosen(it)
+                },
+                onStart = { stage = STAGE_READY },
+                onClose = onClose
+            )
+        } else if (stage == STAGE_READY) {
+            GetReady(
+                run = run,
+                onReady = { stage = STAGE_BREATHING },
                 onClose = onClose
             )
         } else {
             Breathing(
                 pattern = pattern,
+                rounds = rounds,
                 run = run,
                 reason = reason,
                 onPattern = {
@@ -194,7 +253,8 @@ private fun BreatheScreen(
                         run++
                     }
                 },
-                onFinished = { done = true },
+                // A finished breath, not an opened screen, is what seals a crack with gold.
+                onFinished = { GlassMoments.breathed(glassContext); done = true },
                 onClose = onClose
             )
         }
@@ -204,6 +264,7 @@ private fun BreatheScreen(
 @Composable
 private fun Breathing(
     pattern: BreathPattern,
+    rounds: Int,
     run: Int,
     reason: String,
     onPattern: (BreathPattern) -> Unit,
@@ -213,29 +274,29 @@ private fun Breathing(
     val context = LocalContext.current
     val reduceMotion = remember { systemReduceMotion(context) }
     val haptics = rememberHisnHaptics()
-    var elapsed by remember(run, pattern) { mutableLongStateOf(0L) }
+    var elapsed by remember(run, pattern, rounds) { mutableLongStateOf(0L) }
+    val totalMillis = pattern.breathMillis() * rounds
 
     // The clock is the frame clock: no timers to drift, and it stops with the screen.
-    LaunchedEffect(run, pattern) {
+    LaunchedEffect(run, pattern, rounds) {
         val start = withFrameMillis { it }
         while (true) {
             val now = withFrameMillis { it }
             elapsed = now - start
-            if (elapsed >= pattern.totalMillis()) break
+            if (elapsed >= totalMillis) break
         }
         haptics.celebrate()
         onFinished()
     }
 
-    val position = pattern.at(elapsed)
-    LaunchedEffect(run, pattern, position.breath, position.index) {
+    val breath = breathAt(pattern, rounds, elapsed)
+    val position = positionAt(pattern, rounds, elapsed)
+    LaunchedEffect(run, pattern, breath, position.index) {
         haptics.quietTick()
-        // One soft tone at the start of each breath in, so eyes can close.
-        if (position.index == 0) haptics.sound(app.hisn.android.nativeshell.FeelSound.BREATH)
     }
 
     val scale = if (reduceMotion) 0.84f else ringScale(pattern, position)
-    val progress = elapsed.toFloat() / pattern.totalMillis().toFloat()
+    val progress = elapsed.toFloat() / totalMillis.toFloat()
     val word = when (position.phase) {
         BreathPattern.Phase.IN -> R.string.breathe_in
         BreathPattern.Phase.TOP_UP -> R.string.breathe_top_up
@@ -249,7 +310,7 @@ private fun Breathing(
         else -> R.string.breathe_out_hint
     }
     val resources = LocalResources.current
-    val total = (pattern.totalMillis() / 1000).toInt()
+    val total = (totalMillis / 1000).toInt()
     val secondsIn = (elapsed / 1000).toInt().coerceAtMost(total)
 
     Column(
@@ -313,7 +374,7 @@ private fun Breathing(
         StepChips(pattern, position)
         Spacer(Modifier.height(10.dp))
         Text(
-            stringResource(R.string.pause_breath_step, position.breath + 1, BreathPattern.BREATHS),
+            stringResource(R.string.pause_breath_step, breath + 1, rounds),
             style = MaterialTheme.typography.labelMedium,
             color = Cream.copy(alpha = 0.6f)
         )
@@ -327,6 +388,217 @@ private fun Breathing(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
+    }
+}
+
+/** Which breath (0-based) the session is on after [elapsed] ms of [rounds] breaths. */
+private fun breathAt(pattern: BreathPattern, rounds: Int, elapsed: Long): Int {
+    val clamped = elapsed.coerceIn(0L, pattern.breathMillis() * rounds)
+    return (clamped / pattern.breathMillis()).toInt().coerceAtMost(rounds - 1)
+}
+
+/**
+ * The step inside the current breath. [BreathPattern] itself counts its fixed three breaths, so
+ * any number of rounds is read one breath at a time; the very end is the last step, complete.
+ */
+private fun positionAt(pattern: BreathPattern, rounds: Int, elapsed: Long): BreathPattern.Position {
+    val clamped = elapsed.coerceIn(0L, pattern.breathMillis() * rounds)
+    val within = clamped - breathAt(pattern, rounds, clamped) * pattern.breathMillis()
+    return if (within >= pattern.breathMillis()) pattern.at(pattern.totalMillis()) else pattern.at(within)
+}
+
+/**
+ * Unrot's start (Glasshouse br1, CleanPath's meditation start): one calm sentence, the flower
+ * closed and still, the pattern, how many rounds, and one big Start.
+ */
+@Composable
+private fun StartBreathing(
+    pattern: BreathPattern,
+    rounds: Int,
+    onPattern: (BreathPattern) -> Unit,
+    onRounds: (Int) -> Unit,
+    onStart: () -> Unit,
+    onClose: () -> Unit
+) {
+    val haptics = rememberHisnHaptics()
+    val resources = LocalResources.current
+    Column(Modifier.fillMaxSize()) {
+        Column(
+            Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                CloseButton(onClose)
+                Spacer(Modifier.weight(1f))
+                PatternSwitch(pattern, onPattern)
+            }
+            Spacer(Modifier.height(28.dp))
+            Text(
+                stringResource(R.string.brs_start_line),
+                style = MaterialTheme.typography.headlineSmall.storySerif(),
+                color = Cream,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .semantics { heading() }
+            )
+            Spacer(Modifier.height(28.dp))
+            // The flower waits closed: it only opens once the first breath begins.
+            Box(Modifier.size(220.dp)) { BreathRing(scale = BreathPattern.REST, progress = 0f) }
+            Spacer(Modifier.height(28.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.brs_rounds_label).uppercase(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Cream.copy(alpha = 0.7f)
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    sessionLength(resources, pattern.breathMillis() * rounds),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Gold
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .selectableGroup(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                RoundChoices.forEach { option ->
+                    val selected = option == rounds
+                    val description = pluralStringResource(R.plurals.brs_rounds_option, option, option)
+                    val shape = RoundedCornerShape(18.dp)
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .heightIn(min = 56.dp)
+                            .background(if (selected) Gold else Cream.copy(alpha = 0.07f), shape)
+                            .border(1.5.dp, if (selected) Gold else Cream.copy(alpha = 0.16f), shape)
+                            .selectable(selected = selected, role = Role.RadioButton) {
+                                if (!selected) {
+                                    haptics.tap()
+                                    onRounds(option)
+                                }
+                            }
+                            .semantics { contentDescription = description },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "$option",
+                            style = MaterialTheme.typography.headlineSmall.storySerif(),
+                            color = if (selected) InkText else Cream
+                        )
+                    }
+                }
+            }
+        }
+        val startDescription = pluralStringResource(R.plurals.brs_start_description, rounds, rounds)
+        Button(
+            onClick = { haptics.confirm(); onStart() },
+            colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = InkText),
+            shape = CircleShape,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, bottom = 16.dp, top = 8.dp)
+                .heightIn(min = 60.dp)
+                .semantics { contentDescription = startDescription }
+        ) {
+            Text(stringResource(R.string.brs_start), style = MaterialTheme.typography.titleLarge)
+        }
+    }
+}
+
+/** "30 sec", "1 min", "1 min 40 sec": how long the chosen rounds take. */
+private fun sessionLength(resources: android.content.res.Resources, millis: Long): String {
+    val seconds = (millis / 1000).toInt()
+    return when {
+        seconds < 60 -> resources.getString(R.string.brs_length_sec, seconds)
+        seconds % 60 == 0 -> resources.getString(R.string.brs_length_min, seconds / 60)
+        else -> resources.getString(R.string.brs_length_min_sec, seconds / 60, seconds % 60)
+    }
+}
+
+/**
+ * Unrot's get-ready count (Glasshouse br2): 3 · 2 · 1 over the closed flower, each number easing
+ * in a little large and settling, then the first breath. With animations off the numbers simply
+ * change. Driven by the frame clock, like the breathing, so nothing depends on animator scale.
+ */
+@Composable
+private fun GetReady(run: Int, onReady: () -> Unit, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val reduceMotion = remember { systemReduceMotion(context) }
+    val haptics = rememberHisnHaptics()
+    var elapsed by remember(run) { mutableLongStateOf(0L) }
+    LaunchedEffect(run) {
+        val start = withFrameMillis { it }
+        while (true) {
+            val now = withFrameMillis { it }
+            elapsed = now - start
+            if (elapsed >= COUNTDOWN_MILLIS) break
+        }
+        onReady()
+    }
+    val number = (3 - (elapsed / 1000).toInt()).coerceIn(1, 3)
+    LaunchedEffect(run, number) { haptics.quietTick() }
+    val fraction = ((elapsed % 1000) / 1000f).coerceIn(0f, 1f)
+    val numberScale = if (reduceMotion) 1f else 1.18f - 0.18f * FastOutSlowInEasing.transform(fraction)
+    val numberAlpha = if (reduceMotion) 1f else when {
+        fraction < 0.2f -> fraction / 0.2f
+        fraction > 0.85f -> (1f - fraction) / 0.15f
+        else -> 1f
+    }.coerceIn(0f, 1f)
+    val announcement = stringResource(R.string.brs_countdown_number, number)
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            CloseButton(onClose)
+            Spacer(Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(28.dp))
+        Box(Modifier.size(260.dp), contentAlignment = Alignment.Center) {
+            BreathRing(scale = BreathPattern.REST, progress = 0f)
+            Text(
+                "$number",
+                style = MaterialTheme.typography.displayLarge.storySerif(),
+                color = InkText,
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = numberScale
+                        scaleY = numberScale
+                        alpha = numberAlpha
+                    }
+                    .semantics {
+                        contentDescription = announcement
+                        liveRegion = LiveRegionMode.Polite
+                    }
+            )
+        }
+        Spacer(Modifier.height(24.dp))
+        Text(
+            stringResource(R.string.brs_get_ready),
+            style = MaterialTheme.typography.displaySmall.storySerif(),
+            color = Cream,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() }
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            stringResource(R.string.brs_get_ready_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = Cream.copy(alpha = 0.75f),
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -361,6 +633,30 @@ private fun BreathRing(scale: Float, progress: Float) {
             style = Stroke(stroke, cap = StrokeCap.Round)
         )
         val inner = radius - 18.dp.toPx()
+        if (!app.hisn.android.Edition.islamic) {
+            // Unrot (Glasshouse mockup): a gold flower of five layers that opens on the in-breath
+            // and closes on the out-breath, like CleanPath's meditation flower.
+            val colours = listOf(Color(0xFFC98D22), Color(0xFFE0A832), Gold, Color(0xFFFFD978), Color(0xFFFFF1C4))
+            drawCircle(
+                androidx.compose.ui.graphics.Brush.radialGradient(listOf(Gold.copy(alpha = 0.35f * scale.coerceIn(0.4f, 1f)), Color.Transparent),
+                    center = centre, radius = inner * 1.05f),
+                inner * 1.05f, centre
+            )
+            listOf(1f, 0.8f, 0.6f, 0.41f, 0.22f).forEachIndexed { i, r ->
+                val big = inner * r * (0.62f + 0.38f * scale)
+                val path = androidx.compose.ui.graphics.Path()
+                for (deg in 0..360 step 3) {
+                    val t = Math.toRadians(deg.toDouble())
+                    val rr = big * (0.8f + 0.2f * Math.pow(kotlin.math.abs(kotlin.math.cos(2.5 * t)), 0.55).toFloat())
+                    val x = centre.x + rr * kotlin.math.cos(t - Math.PI / 2).toFloat()
+                    val y = centre.y + rr * kotlin.math.sin(t - Math.PI / 2).toFloat()
+                    if (deg == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                path.close()
+                drawPath(path, colours[i])
+            }
+            return@Canvas
+        }
         // Premium: three fine rings, a glow that breathes, and a polished gold orb with a highlight.
         listOf(1f to 0.16f, 0.82f to 0.26f, 0.64f to 0.45f).forEach { (r, a) ->
             drawCircle(Gold.copy(alpha = a), inner * r * (0.9f + 0.1f * scale), centre, style = Stroke(1.dp.toPx()))
@@ -493,7 +789,24 @@ private fun AfterPause(pausesToday: Int, onAgain: () -> Unit, onClose: () -> Uni
                 }
             }
             Spacer(Modifier.height(28.dp))
-            Box(
+            // Unrot: the glass itself says what the breath did. Sealed just now shows the gold seam.
+            val glassContext = androidx.compose.ui.platform.LocalContext.current
+            val sealedNow = remember { GlassMoments.sealedWithin(glassContext, 60_000L) }
+            if (!app.hisn.android.Edition.islamic) {
+                androidx.compose.foundation.Image(
+                    androidx.compose.ui.res.painterResource(if (sealedNow) R.drawable.unrot_glass_gold else R.drawable.unrot_glass_sprout),
+                    contentDescription = null,
+                    modifier = Modifier.size(200.dp).clip(CircleShape)
+                )
+                if (sealedNow) {
+                    Text(
+                        stringResource(R.string.breathe_glass_sealed),
+                        style = MaterialTheme.typography.titleMedium.storySerif(),
+                        color = Gold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else Box(
                 Modifier
                     .size(124.dp)
                     .background(Gold.copy(alpha = 0.06f), CircleShape)

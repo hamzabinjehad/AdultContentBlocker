@@ -368,17 +368,30 @@ public final class TextGuardService extends AccessibilityService {
 
     /** Application windows of selected apps, active first (rule and tests in core {@link GuardWindows}),
      * or null when no window could be read at all. Reads only each window root's package name. */
+    /** Window id to app, for the windows on screen now. */
+    private static final java.util.Map<Integer, String> WINDOW_APPS = new java.util.HashMap<>();
+
     static List<GuardWindows.Window> selectedWindows(AccessibilityService service, Set<String> excluded,
             Predicate<String> selected) {
         List<GuardWindows.Window> all = new ArrayList<>();
+        java.util.Set<Integer> listed = new java.util.HashSet<>();
         for (AccessibilityWindowInfo window : service.getWindows()) {
             boolean application = window.getType() == AccessibilityWindowInfo.TYPE_APPLICATION;
-            AccessibilityNodeInfo root = application ? metadataRoot(window) : null;
-            try {
-                all.add(new GuardWindows.Window(window.getId(), packageOf(root), application, window.isActive(),
-                        window.isFocused(), Compat.inPictureInPicture(window)));
-            } finally { if (root != null) root.recycle(); }
+            listed.add(window.getId());
+            // A window never changes app. Asking its app waits on that app's UI thread, which is
+            // slow while it scrolls, so each window's app is asked once.
+            String app;
+            synchronized (WINDOW_APPS) { app = application ? WINDOW_APPS.get(window.getId()) : null; }
+            if (application && app == null) {
+                AccessibilityNodeInfo root = metadataRoot(window);
+                try { app = packageOf(root); }
+                finally { if (root != null) root.recycle(); }
+                if (app != null) synchronized (WINDOW_APPS) { WINDOW_APPS.put(window.getId(), app); }
+            }
+            all.add(new GuardWindows.Window(window.getId(), app, application, window.isActive(),
+                    window.isFocused(), Compat.inPictureInPicture(window)));
         }
+        if (!listed.isEmpty()) synchronized (WINDOW_APPS) { WINDOW_APPS.keySet().retainAll(listed); }
         if (all.isEmpty()) {
             // No window list from Android: only the active window, as before 0.5.5.
             AccessibilityNodeInfo root = metadataRoot(service);
@@ -549,7 +562,13 @@ public final class TextGuardService extends AccessibilityService {
             // still covers text that appears without a text-bearing event.
             textDirty |= labelChanged || newWindow || event.getEventType() == AccessibilityEvent.TYPE_VIEW_SCROLLED;
             // Scrolling or changing content in a selected window brings the next image sample forward.
-            if (visual != null && rules.visualEnabled && scans(rules, name)) visual.activity();
+            if (visual != null && rules.visualEnabled && scans(rules, name)) {
+                // A scroll says how far the content moved, so blurred faces can follow it at once.
+                if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_SCROLLED && Build.VERSION.SDK_INT >= 28) {
+                    visual.scrolled(event.getWindowId(), event.getScrollDeltaX(), event.getScrollDeltaY());
+                }
+                visual.activity();
+            }
             pendingPackage = name;
             inspectionOutcome = "scheduled";
             handler.removeCallbacks(heartbeat);

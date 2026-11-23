@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unrot for Mac · v2 · a Mac app, not a phone on a desk</title>
+<style>
+/* ======================================================================
+   Unrot for Mac, v2. Drawn as a macOS 27 app: Liquid Glass sidebar and
+   toolbar, SF Pro text, New York for the few big numbers, system controls,
+   an inspector, Swift Charts. Gold is only the app's accent colour.
+   ====================================================================== */
+:root{
+  --sf:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
+  --ny:"New York","Iowan Old Style",Georgia,serif;
+  --gold:#c98a12; --gold-hi:#f0b93c; --leaf:#34a853; --amber:#e07b1f; --red:#e5484d; --blue:#0a84ff;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:13px/1.4 var(--sf);-webkit-font-smoothing:antialiased;background:#f2efe9;color:#1d1b17}
+.doc{max-width:1280px;margin:0 auto;padding:56px 32px 140px}
+.doc>h1{font:700 46px/1.05 var(--ny);letter-spacing:-.01em;margin:6px 0 12px}
+.doc>h2{font:700 30px/1.15 var(--ny);margin:88px 0 6px}
+.doc>p,.lead{max-width:780px;color:#5c564b;font-size:15px;margin:0 0 6px}
+.lead{font-size:17px;color:#4a443a}
+.eyebrow{font:600 11px var(--sf);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.why{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.why div{background:#fff;border:1px solid #e3ddd1;border-radius:14px;padding:14px 16px;font-size:13px;color:#5c564b}
+.why b{display:block;color:#1d1b17;font-size:13.5px;margin-bottom:3px}
+.principles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}
+.principles div{background:#fff;border:1px solid #e3ddd1;border-radius:14px;padding:16px;font-size:13px;color:#5c564b}
+.principles b{display:block;font:700 17px var(--ny);color:#1d1b17;margin-bottom:6px}
+
+/* ---------- desktop ---------- */
+.desk{position:relative;margin-top:22px;border-radius:18px;overflow:hidden;padding:52px 44px 44px;min-height:200px}
+.desk.light{background:radial-gradient(900px 500px at 15% 0%,#ffd9a0 0%,transparent 60%),radial-gradient(900px 600px at 100% 100%,#a9c7ff 0%,transparent 55%),linear-gradient(135deg,#f7e8d2,#dfe7f5)}
+.desk.dark{background:radial-gradient(900px 500px at 20% 0%,#5a3a12 0%,transparent 60%),radial-gradient(900px 600px at 100% 100%,#1d2f55 0%,transparent 55%),linear-gradient(135deg,#1a140d,#0c0f18)}
+.mbar{position:absolute;left:0;right:0;top:0;height:28px;display:flex;align-items:center;gap:18px;padding:0 16px;font-size:13px;font-weight:500;backdrop-filter:blur(30px) saturate(1.4)}
+.light .mbar{background:rgba(255,255,255,.28);color:#1d1b17}
+.dark .mbar{background:rgba(0,0,0,.22);color:#f2ede4}
+.mbar .sp{flex:1}
+.mbar .apple{font-size:15px}
+.mbar b{font-weight:700}
+.mbar .ext{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:6px}
+.mbar .ext.on{background:rgba(255,255,255,.35)}
+.dark .mbar .ext.on{background:rgba(255,255,255,.16)}
+.mbar svg{width:15px;height:15px}
+.notch{position:absolute;left:50%;top:0;transform:translateX(-50%);width:190px;height:30px;background:#000;border-radius:0 0 12px 12px;z-index:5}
+
+/* ---------- window (Liquid Glass) ---------- */
+.win{--wbg:#fbfaf8;--side:rgba(255,255,255,.55);--ink:#1d1b17;--ink2:#5f594e;--ink3:#948c7e;--sep:rgba(0,0,0,.08);--fill:rgba(0,0,0,.045);--card:#fff;--cardline:rgba(0,0,0,.07);--sel:rgba(201,138,18,.16);--glass:rgba(255,255,255,.62);
+  position:relative;display:flex;border-radius:22px;background:var(--wbg);color:var(--ink);box-shadow:0 0 0 .5px rgba(0,0,0,.22),0 30px 80px rgba(40,25,0,.28),0 8px 20px rgba(0,0,0,.08);overflow:hidden;min-height:660px}
+.win.dk{--wbg:#1e1b17;--side:rgba(46,40,33,.55);--ink:#f3eee6;--ink2:#bdb3a3;--ink3:#857b6c;--sep:rgba(255,255,255,.08);--fill:rgba(255,255,255,.06);--card:#28241f;--cardline:rgba(255,255,255,.07);--sel:rgba(240,185,60,.2);--glass:rgba(40,35,28,.6);box-shadow:0 0 0 .5px rgba(255,255,255,.14),0 30px 80px rgba(0,0,0,.6)}
+.sidebar{position:relative;margin:8px;width:224px;flex:none;border-radius:16px;background:var(--side);backdrop-filter:blur(40px) saturate(1.8);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.55),0 0 0 .5px var(--sep),0 4px 18px rgba(0,0,0,.06);padding:10px 8px;display:flex;flex-direction:column}
+.light .sidebar,.win:not(.dk) .sidebar{background:linear-gradient(180deg,rgba(250,240,222,.85),rgba(244,236,224,.8))}
+.dk .sidebar{background:linear-gradient(180deg,rgba(58,48,36,.8),rgba(40,35,29,.8));box-shadow:inset 0 0 0 .5px rgba(255,255,255,.1),0 4px 18px rgba(0,0,0,.25)}
+.lights{display:flex;gap:8px;padding:4px 6px 14px}.lights i{width:12px;height:12px;border-radius:50%;background:#ff5f57;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.sb-sec{font-size:11px;font-weight:600;color:var(--ink3);padding:12px 10px 4px}
+.sb a{display:flex;align-items:center;gap:9px;height:30px;padding:0 10px;border-radius:9px;color:var(--ink);font-size:13px;text-decoration:none}
+.sb a svg{width:17px;height:17px;color:var(--gold)}
+.dk .sb a svg{color:var(--gold-hi)}
+.sb a.on{background:var(--sel);font-weight:600}
+.sb a .ct{margin-left:auto;color:var(--ink3);font-size:12px;font-variant-numeric:tabular-nums}
+.sb a .bd{margin-left:auto;width:7px;height:7px;border-radius:50%;background:var(--amber)}
+.sb-foot{margin-top:auto;padding:10px;border-radius:12px;background:var(--fill);display:flex;gap:10px;align-items:center;font-size:12px;color:var(--ink2)}
+.sb-foot img{width:34px;height:34px;border-radius:9px;object-fit:cover}
+.sb-foot b{display:block;color:var(--ink);font-size:12.5px}
+.content{flex:1;display:flex;flex-direction:column;min-width:0}
+.tbar{height:52px;display:flex;align-items:center;gap:10px;padding:0 14px 0 12px}
+.tbar .ttl{font-size:15px;font-weight:700}
+.tbar .sub{font-size:11.5px;color:var(--ink3);font-weight:400}
+.tbar .sp{flex:1}
+.gbtn{white-space:nowrap;height:32px;min-width:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;border-radius:99px;background:var(--glass);backdrop-filter:blur(20px);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.7),0 0 0 .5px var(--sep),0 2px 8px rgba(0,0,0,.06);font-size:12.5px;font-weight:500;color:var(--ink)}
+.dk .gbtn{box-shadow:inset 0 0 0 .5px rgba(255,255,255,.14),0 0 0 .5px rgba(0,0,0,.4),0 2px 8px rgba(0,0,0,.2)}
+.gbtn svg{width:16px;height:16px}
+.gbtn.tint{background:linear-gradient(180deg,#f3c25a,#d99a1f);color:#2b1c03;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 0 0 .5px rgba(120,70,0,.4),0 3px 10px rgba(201,138,18,.35);font-weight:600}
+.gseg{display:inline-flex;height:32px;padding:3px;border-radius:99px;background:var(--glass);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.6),0 0 0 .5px var(--sep)}
+.gseg span{display:grid;place-items:center;padding:0 12px;border-radius:99px;font-size:12.5px;color:var(--ink2)}
+.gseg span.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.dk .gseg span.on{background:rgba(255,255,255,.14)}
+.search{height:32px;width:180px;border-radius:99px;background:var(--glass);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.6),0 0 0 .5px var(--sep);display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--ink3);font-size:12.5px}
+.search svg{width:14px;height:14px}
+.body{flex:1;display:flex;min-height:0}
+.main{flex:1;padding:6px 22px 24px;min-width:0}
+.insp{width:290px;flex:none;border-left:.5px solid var(--sep);padding:14px 16px 20px;display:flex;flex-direction:column;gap:14px}
+kbd{font:11px var(--sf);color:inherit;opacity:.6;margin-left:2px}
+
+/* ---------- common content parts ---------- */
+.k{font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:.02em;margin:0 0 6px}
+.box{background:var(--card);border-radius:14px;box-shadow:0 0 0 .5px var(--cardline),0 1px 2px rgba(0,0,0,.04)}
+.group{background:var(--card);border-radius:12px;box-shadow:0 0 0 .5px var(--cardline)}
+.group .r{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 12px;border-top:.5px solid var(--sep);font-size:13px}
+.group .r:first-child{border-top:0}
+.group .r .t{flex:1;min-width:0}
+.group .r .t small{display:block;color:var(--ink3);font-size:11.5px}
+.group .r .v{color:var(--ink2);font-size:12.5px}
+.ic{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;color:#fff;flex:none}
+.ic svg{width:15px;height:15px}
+.ic.g{background:linear-gradient(180deg,#f3c25a,#d08d14)} .ic.o{background:linear-gradient(180deg,#ff9f4a,#e0701a)} .ic.p{background:linear-gradient(180deg,#a98bff,#7a5cf0)} .ic.b{background:linear-gradient(180deg,#5aa8ff,#1c74e8)} .ic.gr{background:linear-gradient(180deg,#5ed27a,#2aa148)} .ic.rd{background:linear-gradient(180deg,#ff7a7f,#e5484d)} .ic.n{background:linear-gradient(180deg,#8e8e93,#636366)} .ic.i{background:linear-gradient(180deg,#5e6ad2,#3b45b0)}
+.tog{width:32px;height:19px;border-radius:99px;background:rgba(120,120,128,.32);position:relative;flex:none}
+.tog::after{content:"";position:absolute;left:2px;top:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.tog.on{background:var(--gold-hi)} .tog.on::after{left:15px}
+.pop{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 6px 0 9px;border-radius:6px;background:var(--fill);box-shadow:0 0 0 .5px var(--sep);font-size:12.5px;color:var(--ink)}
+.pop::after{content:"⌃⌄";font-size:8px;letter-spacing:-1px;writing-mode:vertical-lr;color:var(--ink3)}
+.chev{color:var(--ink3);font-size:14px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:99px;font-size:11.5px;font-weight:600}
+.pill.ok{background:rgba(52,168,83,.14);color:#1f8a3e}.dk .pill.ok{color:#6fdc8c}
+.pill.warn{background:rgba(224,123,31,.15);color:#b85d0d}.dk .pill.warn{color:#ffb070}
+.pill.gold{background:rgba(201,138,18,.15);color:#9a6a08}.dk .pill.gold{color:var(--gold-hi)}
+.pill i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.num{font:700 34px/1 var(--ny);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.num small{font:600 17px var(--ny);color:var(--ink3);margin:0 3px 0 1px}
+.mut{color:var(--ink3);font-size:12px}
+.bar{height:6px;border-radius:3px;background:var(--fill);overflow:hidden}.bar i{display:block;height:100%;border-radius:3px;background:var(--gold-hi)}
+.bar i.o{background:var(--amber)}
+
+/* hero */
+.hero{position:relative;border-radius:18px;overflow:hidden;display:grid;grid-template-columns:250px minmax(0,1fr);min-height:300px;background:radial-gradient(70% 90% at 22% 20%,#5a3c12,#22170b 60%,#140d06)}
+.hero img{width:250px;height:250px;margin-top:20px;object-fit:cover;-webkit-mask-image:radial-gradient(closest-side,#000 74%,transparent 100%);mask-image:radial-gradient(closest-side,#000 74%,transparent 100%)}
+.hero .tx{padding:28px 26px 22px 6px;color:#f6eedc;display:flex;flex-direction:column}
+.hero .stage{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--gold-hi);text-transform:uppercase}
+.hero .num{font-size:44px;white-space:nowrap;margin:10px 0 6px;color:#fff7e6}
+.hero .num small{color:#bfae8e;font-size:24px}
+.hero .cap{color:#cdbd9e;font-size:13px}
+.steps{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:18px 0 6px}
+.steps i{height:5px;border-radius:3px;background:rgba(255,255,255,.14)}
+.steps i.f{background:var(--gold-hi)}
+.steps i.h{background:linear-gradient(90deg,var(--gold-hi) 55%,rgba(255,255,255,.14) 55%)}
+.hero .acts{margin-top:auto;display:flex;gap:8px}
+.hero .gbtn{background:rgba(255,255,255,.12);color:#fff6e2;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.22)}
+.hero .gbtn.tint{background:linear-gradient(180deg,#f3c25a,#d99a1f);color:#2b1c03}
+.hero .info{position:absolute;right:14px;top:14px;color:#cdbd9e;font-size:12px;display:flex;gap:6px;align-items:center}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.tile{padding:14px}
+.tile .num{font-size:28px;margin:6px 0 4px}
+.rules .r .t b{font-weight:600}
+.quote{font:600 18px/1.3 var(--ny)}
+/* swift-charts-like */
+.chart{position:relative;height:150px;display:flex;align-items:flex-end;gap:10px;padding:10px 0 20px;border-bottom:.5px solid var(--sep)}
+.chart::before{content:"";position:absolute;left:0;right:0;bottom:calc(20px + 62%);border-top:1px dashed var(--ink3);opacity:.6}
+.chart .lbl{position:absolute;right:0;bottom:calc(20px + 62% + 2px);font-size:10.5px;color:var(--ink3)}
+.chart div{flex:1;position:relative;height:100%;display:flex;align-items:flex-end}
+.chart div i{width:100%;border-radius:5px 5px 2px 2px;background:var(--gold-hi)}
+.chart div i.o{background:var(--amber)}
+.chart div i.e{background:repeating-linear-gradient(45deg,var(--fill) 0 4px,transparent 4px 8px);box-shadow:inset 0 0 0 .5px var(--sep)}
+.chart div span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10.5px;color:var(--ink3)}
+.heat{display:grid;grid-template-columns:28px repeat(24,1fr);gap:3px;font-size:10px;color:var(--ink3);align-items:center}
+.heat i{aspect-ratio:1;border-radius:3px;background:var(--fill)}
+.garden{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.garden div{text-align:center;font-size:11px;color:var(--ink3)}
+.garden img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block;margin-bottom:4px}
+.garden .t img{box-shadow:0 0 0 2px var(--gold-hi)}
+
+/* list / table */
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.tbl th{font-size:11.5px;font-weight:600;color:var(--ink3);text-align:left;padding:6px 10px;border-bottom:.5px solid var(--sep)}
+.tbl td{padding:9px 10px;border-bottom:.5px solid var(--sep);vertical-align:middle}
+.tbl tr.sel td{background:var(--gold-hi);color:#2b1c03}
+.tbl tr.sel td:first-child{border-radius:8px 0 0 8px}.tbl tr.sel td:last-child{border-radius:0 8px 8px 0}
+.tbl tr.sel .mut{color:#5a3e05}
+.tbl td .nm{display:flex;align-items:center;gap:9px;font-weight:600}
+.fav{width:18px;height:18px;border-radius:5px;display:inline-grid;place-items:center;font-size:10px;font-weight:800;color:#fff;margin-right:-3px;box-shadow:0 0 0 1.5px var(--card)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.week span{height:24px;border-radius:6px;display:grid;place-items:center;font-size:11.5px;background:var(--fill);color:var(--ink2)}
+.week span.on{background:var(--gold-hi);color:#2b1c03;font-weight:600}
+.slider{position:relative;height:4px;border-radius:2px;background:var(--fill);margin:10px 0}
+.slider i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--gold-hi)}
+.slider b{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 0 .5px rgba(0,0,0,.2),0 2px 5px rgba(0,0,0,.2)}
+.tl{position:relative;height:30px;border-radius:8px;background:var(--fill);overflow:hidden}
+.tl i{position:absolute;top:4px;bottom:4px;border-radius:5px;background:rgba(201,138,18,.35);box-shadow:inset 0 0 0 1px var(--gold)}
+.tl i.n{background:rgba(94,106,210,.3);box-shadow:inset 0 0 0 1px #5e6ad2}
+.tl u{position:absolute;top:0;bottom:0;width:2px;background:var(--red)}
+.tlx{display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);margin-top:3px}
+
+/* sheets & panels */
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.18);border-radius:22px}
+.sheet{position:absolute;left:50%;top:50px;transform:translateX(-50%);width:700px;background:var(--wbg);border-radius:20px;box-shadow:0 0 0 .5px rgba(0,0,0,.2),0 30px 90px rgba(0,0,0,.35);padding:20px}
+.tpl{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.tpl>div{border-radius:14px;padding:14px;background:var(--card);box-shadow:0 0 0 .5px var(--cardline);display:flex;flex-direction:column;gap:10px;align-items:flex-start;font-size:12px;color:var(--ink2)}
+.tpl>div.on{box-shadow:0 0 0 2px var(--gold-hi)}
+.tpl b{display:block;color:var(--ink);font-size:13.5px;margin-bottom:2px}
+.tpl .ic{width:34px;height:34px;border-radius:10px}.tpl .ic svg{width:19px;height:19px}
+.sheetfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.mbtn{height:28px;padding:0 14px;border-radius:99px;display:inline-flex;align-items:center;font-size:13px;font-weight:500;background:var(--fill);box-shadow:0 0 0 .5px var(--sep);color:var(--ink)}
+.mbtn.def{background:linear-gradient(180deg,#f3c25a,#d99a1f);color:#2b1c03;font-weight:600;box-shadow:0 0 0 .5px rgba(120,70,0,.4)}
+
+/* browser window under the wait panel */
+.safari{position:relative;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.25),0 30px 80px rgba(0,0,0,.35);height:560px}
+.saf-top{height:52px;display:flex;align-items:center;gap:12px;padding:0 14px;background:#f6f5f3;border-bottom:.5px solid rgba(0,0,0,.1)}
+.saf-url{flex:1;max-width:520px;margin:0 auto;height:32px;border-radius:99px;background:rgba(0,0,0,.05);display:grid;place-items:center;font-size:13px;color:#333}
+.saf-page{position:absolute;inset:52px 0 0;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:20px;filter:blur(18px) saturate(.7);opacity:.75}
+.saf-page i{border-radius:12px;height:130px;background:linear-gradient(135deg,#e44,#55c)}
+.saf-page i:nth-child(3n){background:linear-gradient(135deg,#2b8,#e93)}
+.saf-page i:nth-child(4n){background:linear-gradient(135deg,#fb3,#c3c)}
+.waitp{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%);width:440px;border-radius:26px;padding:26px 28px 22px;text-align:center;color:#1d1b17;background:rgba(255,253,248,.72);backdrop-filter:blur(40px) saturate(1.8);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.9),0 0 0 .5px rgba(0,0,0,.12),0 40px 100px rgba(0,0,0,.3)}
+.waitp .app{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#6b6355;font-weight:600}
+.waitp h3{font:700 25px/1.2 var(--ny);margin:12px 0 6px}
+.ringw{width:84px;height:84px;margin:12px auto 6px;border-radius:50%;background:conic-gradient(var(--gold-hi) 0 64%,rgba(0,0,0,.08) 64%);display:grid;place-items:center}
+.ringw div{width:72px;height:72px;border-radius:50%;background:rgba(255,253,248,.95);display:grid;place-items:center;font:700 26px var(--ny)}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:12px 0}
+.chips span{height:28px;padding:0 12px;border-radius:99px;display:inline-flex;align-items:center;font-size:12.5px;background:rgba(0,0,0,.05);box-shadow:0 0 0 .5px rgba(0,0,0,.08)}
+.chips span.on{background:rgba(201,138,18,.18);box-shadow:0 0 0 1px rgba(201,138,18,.5);color:#7a5205;font-weight:600}
+.dots{display:flex;justify-content:center;gap:5px;margin:8px 0 4px}.dots i{width:8px;height:8px;border-radius:50%;background:var(--gold-hi)}.dots i.o{background:rgba(0,0,0,.12)}
+.wbtns{display:grid;gap:8px;margin-top:14px}
+.wbtns span{height:38px;border-radius:99px;display:grid;place-items:center;font-size:14px;font-weight:600}
+.wbtns .a{background:linear-gradient(180deg,#f3c25a,#d99a1f);color:#2b1c03;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 14px rgba(201,138,18,.35)}
+.wbtns .b{color:#8b8374;font-weight:500;font-size:13px;height:28px}
+
+/* menu bar extra */
+.mbx{position:absolute;top:34px;width:340px;border-radius:18px;padding:12px;backdrop-filter:blur(40px) saturate(1.8);font-size:13px}
+.light .mbx{background:rgba(250,247,242,.78);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.9),0 0 0 .5px rgba(0,0,0,.14),0 24px 60px rgba(0,0,0,.25);color:#1d1b17}
+.dark .mbx{background:rgba(38,33,27,.78);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.14),0 0 0 .5px rgba(0,0,0,.5),0 24px 60px rgba(0,0,0,.5);color:#f3eee6}
+.mbx .hd{display:flex;gap:12px;align-items:center;padding:4px 4px 12px}
+.mbx .hd img{width:58px;height:58px;border-radius:14px;object-fit:cover}
+.mbx .hd .num{font-size:24px}
+.mbx .ctl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mbx .ctl>div{border-radius:14px;padding:10px;display:flex;align-items:center;gap:9px;font-weight:600}
+.light .mbx .ctl>div{background:rgba(0,0,0,.05)} .dark .mbx .ctl>div{background:rgba(255,255,255,.08)}
+.mbx .ctl>div small{display:block;font-weight:400;font-size:11px;opacity:.6}
+.mbx .ctl .c{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none}
+.mbx .ctl .c svg{width:16px;height:16px}
+.light .mbx .ctl .on .c,.dark .mbx .ctl .on .c{background:var(--gold-hi);color:#2b1c03}
+.light .mbx .ctl .c{background:rgba(0,0,0,.08)} .dark .mbx .ctl .c{background:rgba(255,255,255,.12)}
+.mbx .ln{display:flex;justify-content:space-between;align-items:center;padding:7px 6px;border-radius:7px;font-size:13px}
+.mbx .ln span:last-child{opacity:.55;font-size:12px}
+.mbx hr{border:0;border-top:.5px solid rgba(127,127,127,.25);margin:8px 4px}
+.mbx .mt{font-size:11px;font-weight:600;opacity:.5;padding:4px 6px}
+/* notch live activity */
+.island{position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:6;background:#000;color:#fff;border-radius:0 0 22px 22px;display:flex;align-items:center;gap:14px;padding:6px 18px 10px}
+.island .l{display:flex;gap:8px;align-items:center}
+.island img{width:26px;height:26px;border-radius:50%;object-fit:cover}
+.island b{font:700 17px var(--ny);color:var(--gold-hi);font-variant-numeric:tabular-nums}
+.island .ringm{width:22px;height:22px;border-radius:50%;background:conic-gradient(var(--gold-hi) 0 38%,#333 38%);-webkit-mask:radial-gradient(circle,transparent 7px,#000 7.5px);mask:radial-gradient(circle,transparent 7px,#000 7.5px)}
+.island.big{width:420px;flex-direction:column;align-items:stretch;padding:12px 20px 16px;border-radius:0 0 28px 28px;gap:10px}
+.island.big .row{display:flex;align-items:center;gap:12px}
+.island.big .row .sp{flex:1}
+.island.big .bt{display:flex;gap:8px}
+.island.big .bt span{flex:1;height:30px;border-radius:99px;background:#2a2a2a;display:grid;place-items:center;font-size:12.5px;font-weight:600}
+.island.big .bt span.g{background:var(--gold-hi);color:#2b1c03}
+
+/* notification banner */
+.notif{position:absolute;right:16px;top:40px;width:360px;border-radius:18px;padding:12px 14px;display:flex;gap:10px;backdrop-filter:blur(40px) saturate(1.8);font-size:13px}
+.light .notif{background:rgba(250,247,242,.8);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.9),0 0 0 .5px rgba(0,0,0,.12),0 16px 40px rgba(0,0,0,.2)}
+.dark .notif{background:rgba(38,33,27,.8);color:#f3eee6;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.14),0 16px 40px rgba(0,0,0,.5)}
+.notif .ai{width:36px;height:36px;border-radius:9px;flex:none;background:linear-gradient(160deg,#3a2810,#140d06);display:grid;place-items:center}
+.notif .ai i{width:14px;height:14px;border-radius:50%;background:var(--gold-hi);box-shadow:0 0 0 3px rgba(240,185,60,.3)}
+.notif b{display:block}
+.notif .acts{display:flex;gap:6px;margin-top:8px}
+.notif .acts span{height:24px;padding:0 10px;border-radius:99px;display:inline-flex;align-items:center;font-size:12px;font-weight:600;background:rgba(127,127,127,.16)}
+.notif .acts span.g{background:var(--gold-hi);color:#2b1c03}
+
+/* widgets */
+.wgs{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.wg{border-radius:24px;padding:14px;position:relative;overflow:hidden;color:#fff6e2;background:radial-gradient(80% 80% at 50% 20%,#5a3c12,#1a1108)}
+.wg.s{width:170px;height:170px}.wg.m{width:356px;height:170px}.wg.l{width:356px;height:356px}
+.wg.glass{background:rgba(255,255,255,.22);backdrop-filter:blur(30px);color:#1d1b17;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.8)}
+.wg img.bgi{position:absolute;right:-20px;bottom:-24px;width:150px;opacity:.95;-webkit-mask-image:radial-gradient(closest-side,#000 70%,transparent 100%);mask-image:radial-gradient(closest-side,#000 70%,transparent 100%)}
+.wg .num{font-size:26px;color:inherit}
+.wg .wl{font-size:11px;font-weight:600;opacity:.7;letter-spacing:.04em;text-transform:uppercase}
+.ctrls{display:flex;gap:12px}
+.cc{width:76px;height:76px;border-radius:22px;display:grid;place-items:center;background:rgba(255,255,255,.2);backdrop-filter:blur(30px);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.6)}
+.cc.on{background:var(--gold-hi);color:#2b1c03}
+.cc svg{width:26px;height:26px}
+.ccl{font-size:11px;text-align:center;margin-top:5px;color:#3c372e}
+.spot{width:640px;border-radius:26px;padding:10px;background:rgba(250,247,242,.72);backdrop-filter:blur(40px) saturate(1.8);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.9),0 0 0 .5px rgba(0,0,0,.12),0 30px 80px rgba(0,0,0,.25)}
+.spot .q{height:48px;display:flex;align-items:center;gap:12px;padding:0 10px;font-size:22px;color:#1d1b17}
+.spot .q svg{width:22px;height:22px;color:#8a8275}
+.spot .res{border-top:.5px solid rgba(0,0,0,.1);padding:8px 4px 2px}
+.spot .res div{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;font-size:13.5px}
+.spot .res div.on{background:var(--gold-hi);color:#2b1c03}
+.spot .res div span:last-child{margin-left:auto;font-size:12px;opacity:.6}
+
+/* breathe */
+.breathe{position:relative;height:560px;border-radius:18px;overflow:hidden;background:radial-gradient(60% 70% at 50% 45%,#7a5414 0%,#2a1906 55%,#0b0703);display:grid;place-items:center;color:#fff3d6}
+.flower{position:relative;width:300px;height:300px}
+.flower i{position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(255,225,150,.55),rgba(240,185,60,.12) 70%);mix-blend-mode:screen}
+.flower i:nth-child(1){transform:translate(0,-55px)}.flower i:nth-child(2){transform:rotate(60deg) translate(0,-55px)}.flower i:nth-child(3){transform:rotate(120deg) translate(0,-55px)}.flower i:nth-child(4){transform:rotate(180deg) translate(0,-55px)}.flower i:nth-child(5){transform:rotate(240deg) translate(0,-55px)}.flower i:nth-child(6){transform:rotate(300deg) translate(0,-55px)}
+.breathe .w{position:absolute;bottom:70px;left:0;right:0;text-align:center;font:700 34px var(--ny)}
+.breathe .s{position:absolute;bottom:44px;left:0;right:0;text-align:center;font-size:13px;color:#cdb78e}
+.breathe .tp{position:absolute;top:18px;left:20px;right:20px;display:flex;justify-content:space-between;font-size:12.5px;color:#cdb78e}
+.breathe .seg3{display:flex;gap:4px}.breathe .seg3 i{width:30px;height:4px;border-radius:2px;background:rgba(255,255,255,.2)}.breathe .seg3 i.f{background:#fff}
+
+/* settings window */
+.sett{width:720px;margin:0 auto}
+.sett .stb{display:flex;justify-content:center;gap:4px;padding:8px 0 12px}
+.sett .stb div{width:74px;display:grid;justify-items:center;gap:3px;padding:6px 0;border-radius:10px;font-size:11px;color:var(--ink2)}
+.sett .stb div svg{width:22px;height:22px;color:var(--ink2)}
+.sett .stb div.on{background:var(--fill);color:var(--ink)}
+.sett .stb div.on svg{color:var(--gold)}
+
+/* onboarding */
+.ob{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);min-height:540px}
+.ob .art{background:radial-gradient(80% 70% at 50% 40%,#5a3c12,#1a1108 70%);display:grid;place-items:center;position:relative}
+.ob .art img{width:78%;-webkit-mask-image:radial-gradient(closest-side,#000 72%,transparent 100%);mask-image:radial-gradient(closest-side,#000 72%,transparent 100%)}
+.ob .q{padding:44px 40px 28px;display:flex;flex-direction:column}
+.ob h3{font:700 30px/1.15 var(--ny);margin:10px 0 8px}
+.ob .opts{display:grid;gap:8px;margin-top:16px}
+.ob .opts div{height:46px;border-radius:12px;display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--card);box-shadow:0 0 0 .5px var(--cardline);font-size:14px;font-weight:500}
+.ob .opts div.on{box-shadow:0 0 0 2px var(--gold-hi);background:rgba(240,185,60,.08)}
+.ob .opts .cb{width:18px;height:18px;border-radius:5px;box-shadow:inset 0 0 0 1.5px var(--ink3);margin-left:auto}
+.ob .opts .on .cb{background:var(--gold-hi);box-shadow:none}
+.prog{display:flex;gap:4px}.prog i{flex:1;height:4px;border-radius:2px;background:var(--fill)}.prog i.f{background:var(--gold-hi)}
+.ob .ft{margin-top:auto;display:flex;justify-content:space-between;align-items:center}
+
+/* annotations */
+.notes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.notes div{font-size:13px;color:#5c564b;padding:12px 14px;border-left:3px solid var(--gold-hi);background:#fff;border-radius:0 10px 10px 0}
+.notes b{color:#1d1b17;display:block;margin-bottom:2px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.cmp{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 0 0 1px #e3ddd1}
+.cmp th,.cmp td{padding:10px 12px;border-bottom:1px solid #eee7da;text-align:left;vertical-align:top}
+.cmp th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8d8577;background:#faf7f1}
+.cmp td:first-child{font-weight:600}
+.cmp .y{color:#1f8a3e}.cmp .n{color:#a69c8c}
+ol.plan{columns:2;column-gap:36px;padding-left:20px;color:#4a443a;font-size:14px}
+ol.plan li{margin:0 0 10px;break-inside:avoid}
+ol.plan b{color:#1d1b17}
+</style>
+</head>
+<body>
+<div class="doc">
+
+<span class="eyebrow">Unrot for Mac · design v2 · 23 Nov 2026</span>
+<h1>A Mac app, not a phone on a desk</h1>
+<p class="lead">v1 put the phone’s screens into a window. v2 starts from how people use a Mac: the app is closed most of the day, work happens in browsers and full-screen apps, and the menu bar, the notch, notifications, Spotlight and widgets are where a Mac app lives. The Glasshouse idea stays. The look is macOS 27: Liquid Glass, SF Pro, system controls, gold as the accent colour.</p>
+
+<div class="principles">
+  <div><b>Mostly invisible</b>Runs as a menu bar agent from login. The window is for setting things up and looking back, not for living in.</div>
+  <div><b>Native first</b>Sidebar, toolbar, inspector, sheets, tables, Settings with ⌘,, menus with shortcuts, light and dark, right-to-left Arabic.</div>
+  <div><b>Gentle at the moment</b>The pause appears over the one window you opened, not the whole screen. Closing is always the easy button.</div>
+  <div><b>Facts, kept here</b>Only what the Mac measured. No account, no cloud, nothing on a share card about adult content.</div>
+</div>
+
+<!-- =================================================================== -->
+<h2>1 · The main window</h2>
+<p>Three-column layout like Mail or Music: floating glass sidebar, content, and an inspector that can be hidden (⌥⌘I). The sprout is a picture in the content, not a phone screen.</p>
+
+<div class="desk light">
+  <div class="mbar"><span class="apple"></span><b>Unrot</b><span>File</span><span>Edit</span><span>View</span><span>Rules</span><span>Window</span><span>Help</span><span class="sp"></span><span class="ext on" data-i="leaf">1h 06m</span><span data-i="wifi"></span><span>Mon 23 Nov 15:19</span></div>
+  <div class="win">
+    <div class="sidebar">
+      <div class="lights"><i></i><i></i><i></i></div>
+      <div class="sb">
+        <a class="on"><span data-i="sun"></span>Today</a>
+        <a><span data-i="chart"></span>Progress</a>
+        <div class="sb-sec">Rules</div>
+        <a><span data-i="hourglass"></span>Limits<span class="ct">3</span></a>
+        <a><span data-i="pause"></span>Wait before opening<span class="ct">4</span></a>
+        <a><span data-i="calendar"></span>Schedules<span class="ct">2</span></a>
+        <a><span data-i="target"></span>Focus</a>
+        <div class="sb-sec">Protection</div>
+        <a><span data-i="shield"></span>Shield<span class="bd"></span></a>
+        <a><span data-i="lock"></span>Lock</a>
+        <div class="sb-sec">You</div>
+        <a><span data-i="note"></span>Notes and reasons</a>
+        <a><span data-i="list"></span>Instead list</a>
+      </div>
+      <div class="sb-foot"><img src="img/paint-2.jpg" alt=""><div><b>Sprout</b>Stage 2 of 7</div></div>
+    </div>
+    <div class="content">
+      <div class="tbar"><span data-i="sidebar" class="gbtn"></span><div><div class="ttl">Today</div><div class="sub">Monday, 23 November</div></div><span class="sp"></span><span class="pill warn"><i></i>1 pane open</span><span class="gbtn" data-i="target">Focus</span><span class="gbtn tint" data-i="wind">Breathe<kbd>⌥⌘B</kbd></span><span class="gbtn" data-i="inspector"></span></div>
+      <div class="body">
+        <div class="main">
+          <div class="hero">
+            <img src="img/paint-2.jpg" alt="">
+            <div class="tx">
+              <span class="stage">Sprout · stage 2 of 7</span>
+              <div class="num">1<small>d</small>4<small>h</small>12<small>m</small></div>
+              <span class="cap">given back since 2 November, on this Mac</span>
+              <div class="steps"><i class="f"></i><i class="h"></i><i></i><i></i><i></i><i></i><i></i></div>
+              <span class="cap">Young plant in 3 h 48 m</span>
+              <div class="acts"><span class="gbtn tint" data-i="wind">Breathe</span><span class="gbtn" data-i="drop">Check in</span></div><span class="cap" style="margin-top:10px;font-size:12px;opacity:.8;text-decoration:underline;text-underline-offset:3px">Had a hard moment?</span>
+            </div>
+            <span class="info" data-i="info">How it grows</span>
+          </div>
+          <div class="three">
+            <div class="box tile"><div class="k">In feeds today</div><div class="num">38<small>m</small></div><div class="bar"><i style="width:63%"></i></div><div class="mut" style="margin-top:6px">Aim 1 h · usually 1 h 45 m</div></div>
+            <div class="box tile"><div class="k">Pauses</div><div class="num">6</div><div class="mut">4 times you closed it</div></div>
+            <div class="box tile"><div class="k">Kept out</div><div class="num">2</div><div class="mut">Private · never shared</div></div>
+          </div>
+          <div class="k" style="margin-top:18px">Running now</div>
+          <div class="group rules">
+            <div class="r"><span class="ic g" data-i="hourglass"></span><div class="t"><b>Feeds</b><small>YouTube, X, Reddit · 22 m left today</small></div><div style="width:120px" class="bar"><i style="width:63%"></i></div><span class="chev">›</span></div>
+            <div class="r"><span class="ic o" data-i="pause"></span><div class="t"><b>Wait before Discord and Steam</b><small>10 s pause · 2 of 5 opens left</small></div><span class="chev">›</span></div>
+            <div class="r"><span class="ic i" data-i="calendar"></span><div class="t"><b>Work hours</b><small>Feeds closed until 17:00</small></div><span class="pill gold"><i></i>On</span><span class="chev">›</span></div>
+          </div>
+        </div>
+        <div class="insp">
+          <div><div class="k">Today, hour by hour</div>
+            <div class="heat" style="grid-template-columns:repeat(24,1fr)">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i style="background:rgba(240,185,60,.25)"></i><i style="background:rgba(240,185,60,.4)"></i><i></i><i></i><i style="background:rgba(240,185,60,.3)"></i><i style="background:rgba(240,185,60,.55)"></i><i style="background:rgba(240,185,60,.9)"></i><i style="background:rgba(240,185,60,.7)"></i><i style="box-shadow:inset 0 0 0 1.5px var(--gold)"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div class="tlx"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
+          </div>
+          <div><div class="k">Top pulls</div>
+            <div class="group">
+              <div class="r"><span class="fav" style="background:#e33">▶</span><div class="t">YouTube</div><span class="v">21 m</span></div>
+              <div class="r"><span class="fav" style="background:#111">X</span><div class="t">X</div><span class="v">11 m</span></div>
+              <div class="r"><span class="fav" style="background:#ff4500">r</span><div class="t">Reddit</div><span class="v">6 m</span></div>
+            </div>
+          </div>
+          <div class="box" style="padding:14px"><div class="k">From you, this morning</div><div class="quote">“You’ll be tired tomorrow.”</div><div class="mut" style="margin-top:6px">The pull is strongest around 13:00 on this Mac.</div></div>
+          <div class="box" style="padding:12px;display:flex;gap:10px;align-items:center"><span class="ic gr" data-i="iphone"></span><div style="flex:1"><b style="font-size:12.5px">Phone not paired</b><div class="mut">Add your phone’s time to one total</div></div><span class="mbtn">Pair…</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="notes">
+  <div><b>Rules in the sidebar</b>Like mailboxes in Mail: each kind of rule has its own list and a count. Today shows only what is running now.</div>
+  <div><b>Inspector, not more cards</b>Hour-by-hour, top pulls and your own words sit in a hideable column, so the hero has room.</div>
+  <div><b>Hard moments are one click</b>“Had a hard moment?” sits under the sprout, quiet but always there, and also in the Today menu.</div>
+</div>
+
+<!-- dark -->
+<div class="desk dark" style="margin-top:28px">
+  <div class="mbar"><span class="apple"></span><b>Unrot</b><span>File</span><span>Edit</span><span>View</span><span>Rules</span><span>Window</span><span>Help</span><span class="sp"></span><span class="ext on" data-i="leafcrack">6:49</span><span data-i="wifi"></span><span>Mon 23 Nov 22:07</span></div>
+  <div class="win dk">
+    <div class="sidebar">
+      <div class="lights"><i></i><i></i><i></i></div>
+      <div class="sb">
+        <a class="on"><span data-i="sun"></span>Today</a>
+        <a><span data-i="chart"></span>Progress</a>
+        <div class="sb-sec">Rules</div>
+        <a><span data-i="hourglass"></span>Limits<span class="ct">3</span></a>
+        <a><span data-i="pause"></span>Wait before opening<span class="ct">4</span></a>
+        <a><span data-i="calendar"></span>Schedules<span class="ct">2</span></a>
+        <a><span data-i="target"></span>Focus</a>
+        <div class="sb-sec">Protection</div>
+        <a><span data-i="shield"></span>Shield</a>
+        <a><span data-i="lock"></span>Lock</a>
+      </div>
+      <div class="sb-foot"><img src="img/paint-7.jpg" alt=""><div><b>Glass cracked</b>Breathe to seal it</div></div>
+    </div>
+    <div class="content">
+      <div class="tbar"><span data-i="sidebar" class="gbtn"></span><div><div class="ttl">Today</div><div class="sub">Monday, 23 November</div></div><span class="sp"></span><span class="pill ok"><i></i>Shield on</span><span class="gbtn tint" data-i="wind">Breathe<kbd>⌥⌘B</kbd></span></div>
+      <div class="body">
+        <div class="main">
+          <div class="hero" style="background:radial-gradient(70% 90% at 22% 20%,#3d2c12,#1a1208 60%,#0e0905)">
+            <img src="img/paint-7.jpg" alt="">
+            <div class="tx">
+              <span class="stage" style="color:#ffb070">The glass cracked at 22:01</span>
+              <div class="num">6<small>m</small>49<small>s</small></div>
+              <span class="cap">An adult page was stopped. Nothing is lost. Breathe in the next 7 minutes and the crack is sealed with gold, for good.</span>
+              <div class="acts" style="margin-top:22px"><span class="gbtn tint" data-i="wind">Breathe to seal it</span><span class="gbtn">Not now</span></div>
+            </div>
+          </div>
+          <div class="three">
+            <div class="box tile"><div class="k">Given back</div><div class="num">1<small>d</small>4<small>h</small></div><div class="mut">Still growing</div></div>
+            <div class="box tile"><div class="k">Quiet hours</div><div class="num">22:00</div><div class="mut">Feeds close in bed mode</div></div>
+            <div class="box tile"><div class="k">Partner</div><div class="num" style="font-size:20px;margin-top:12px">Not told</div><div class="mut">Only if a pane opens</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="notes">
+  <div><b>Cracked, in dark mode</b>The menu bar leaf gets a hairline and shows the countdown, so the moment is visible without the window.</div>
+  <div><b>Kind words</b>“Nothing is lost” is said first. Sealing is an invitation, with “Not now” right next to it.</div>
+  <div><b>Night</b>After quiet hours start, the hero swaps to the sleeping sprout (paint-5) and Breathe turns blue.</div>
+</div>
+
+<!-- =================================================================== -->
+<h2>2 · Rules, like a real Mac list</h2>
+<p>One table per kind of rule, sortable, with the selected rule edited in the inspector. New rules start from a template sheet. All rule kinds can run at once (Opal on Mac allows one session).</p>
+<div class="desk light">
+  <div class="mbar"><span class="apple"></span><b>Unrot</b><span>File</span><span>Edit</span><span>View</span><span>Rules</span><span class="sp"></span><span class="ext on" data-i="leaf">1h 06m</span><span>Mon 23 Nov 15:22</span></div>
+  <div class="win">
+    <div class="sidebar">
+      <div class="lights"><i></i><i></i><i></i></div>
+      <div class="sb">
+        <a><span data-i="sun"></span>Today</a>
+        <a><span data-i="chart"></span>Progress</a>
+        <div class="sb-sec">Rules</div>
+        <a><span data-i="hourglass"></span>Limits<span class="ct">3</span></a>
+        <a class="on"><span data-i="pause"></span>Wait before opening<span class="ct">4</span></a>
+        <a><span data-i="calendar"></span>Schedules<span class="ct">2</span></a>
+        <a><span data-i="target"></span>Focus</a>
+        <div class="sb-sec">Protection</div>
+        <a><span data-i="shield"></span>Shield<span class="bd"></span></a>
+        <a><span data-i="lock"></span>Lock</a>
+      </div>
+    </div>
+    <div class="content">
+      <div class="tbar"><span data-i="sidebar" class="gbtn"></span><div><div class="ttl">Wait before opening</div><div class="sub">4 rules · 6 pauses today</div></div><span class="sp"></span><span class="search"><span data-i="search"></span>Search</span><span class="gbtn" data-i="plus"></span></div>
+      <div class="body">
+        <div class="main">
+          <table class="tbl">
+            <tr><th>Name</th><th>Apps and sites</th><th>Pause</th><th>Opens left</th><th>Days</th></tr>
+            <tr class="sel"><td><div class="nm"><span class="ic o" data-i="pause"></span>Games and chat</div></td><td><span class="fav" style="background:#5865f2">D</span><span class="fav" style="background:#1b2838">S</span> <span class="mut">Discord, Steam</span></td><td>10 s</td><td>2 of 5</td><td>Every day</td></tr>
+            <tr><td><div class="nm"><span class="ic o" data-i="pause"></span>Short videos</div></td><td><span class="fav" style="background:#e33">▶</span><span class="fav" style="background:#111">T</span> <span class="mut">YouTube Shorts, TikTok</span></td><td>15 s</td><td>3 of 3</td><td>Every day</td></tr>
+            <tr><td><div class="nm"><span class="ic o" data-i="pause"></span>News</div></td><td><span class="fav" style="background:#222">N</span> <span class="mut">3 sites</span></td><td>5 s</td><td>No limit</td><td>Mon–Fri</td></tr>
+            <tr><td><div class="nm"><span class="ic o" data-i="pause"></span>Shopping</div></td><td><span class="fav" style="background:#f90">a</span> <span class="mut">amazon, 2 more</span></td><td>20 s</td><td>No limit</td><td>Every day</td></tr>
+          </table>
+          <div class="box" style="margin-top:18px;padding:14px;display:flex;gap:14px;align-items:center"><span class="ic p" data-i="sparkles" style="width:34px;height:34px;border-radius:10px"></span><div style="flex:1"><b>Suggested from this week</b><div class="mut">You opened Twitch 14 times, mostly after 22:00. Add it to “Games and chat”?</div></div><span class="mbtn">Not now</span><span class="mbtn def">Add</span></div>
+        </div>
+        <div class="insp">
+          <div style="display:flex;gap:10px;align-items:center"><span class="ic o" data-i="pause" style="width:34px;height:34px;border-radius:10px"></span><div><b style="font-size:15px">Games and chat</b><div class="mut">Wait before opening</div></div><span class="tog on" style="margin-left:auto"></span></div>
+          <div><div class="k">Apps and sites</div><div class="group">
+            <div class="r"><span class="fav" style="background:#5865f2">D</span><div class="t">Discord</div><span class="mut">App + site</span></div>
+            <div class="r"><span class="fav" style="background:#1b2838">S</span><div class="t">Steam</div><span class="mut">App</span></div>
+            <div class="r" style="color:var(--gold)">+ Add app or site…</div></div></div>
+          <div><div class="k">Pause</div><div class="group">
+            <div class="r"><div class="t">Breathe for</div><span class="v">10 seconds</span></div>
+            <div class="r" style="display:block"><div class="slider"><i style="width:30%"></i><b style="left:30%"></b></div></div>
+            <div class="r"><div class="t">Ask why I opened it</div><span class="tog on"></span></div>
+            <div class="r"><div class="t">Opens a day</div><span class="pop">5</span></div>
+            <div class="r"><div class="t">Each open lasts</div><span class="pop">10 minutes</span></div>
+            <div class="r"><div class="t">Ask again after</div><span class="pop">10 minutes</span></div>
+          </div></div>
+          <div><div class="k">Days</div><div class="week"><span class="on">M</span><span class="on">T</span><span class="on">W</span><span class="on">T</span><span class="on">F</span><span class="on">S</span><span class="on">S</span></div></div>
+          <div><div class="k">When I’m locked</div><div class="group"><div class="r"><div class="t">Can’t loosen this rule<small>Lock is on until Friday 18:00</small></div><span data-i="lock" style="color:var(--ink3)"></span></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="dim" style="display:none"></div>
+  </div>
+</div>
+
+<div class="desk light" style="margin-top:28px;min-height:560px">
+  <div class="win" style="min-height:500px;filter:saturate(.9)">
+    <div class="sidebar"><div class="lights"><i></i><i></i><i></i></div><div class="sb"><a><span data-i="sun"></span>Today</a><a><span data-i="chart"></span>Progress</a><div class="sb-sec">Rules</div><a class="on"><span data-i="hourglass"></span>Limits</a></div></div>
+    <div class="content"><div class="tbar"><div class="ttl">Limits</div></div></div>
+    <div class="dim"></div>
+    <div class="sheet">
+      <div style="font-size:15px;font-weight:700">New rule</div>
+      <div class="mut">Start from what you want less of. You can change everything after.</div>
+      <div class="tpl">
+        <div class="on"><span class="ic g" data-i="hourglass"></span><div><b>Daily limit</b>Up to 1 hour a day on feeds, then they close until tomorrow.</div></div>
+        <div><span class="ic o" data-i="pause"></span><div><b>Wait before opening</b>A short breath and a question before an app or site opens.</div></div>
+        <div><span class="ic i" data-i="calendar"></span><div><b>Schedule</b>Close chosen apps and sites at set hours, like work or bedtime.</div></div>
+        <div><span class="ic p" data-i="feed"></span><div><b>Feeds only</b>Keep YouTube search and links, hide the home feed and Shorts.</div></div>
+        <div><span class="ic b" data-i="target"></span><div><b>Focus session</b>A timed block you start yourself, with a sapling that grows.</div></div>
+        <div><span class="ic n" data-i="moon"></span><div><b>Quiet hours</b>Everything distracting closes, the screen turns gray.</div></div>
+      </div>
+      <div class="sheetfoot"><span class="mbtn">Cancel</span><span class="mbtn def">Continue</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<h2>3 · The moment: wait before opening</h2>
+<p>A glass panel over the one window that was opened (Safari here). The rest of the screen keeps working. For apps, the app is hidden behind the same panel until you choose. Closing is the big button; opening waits for the ring.</p>
+<div class="desk light" style="padding-top:60px">
+  <div class="mbar"><span class="apple"></span><b>Safari</b><span>File</span><span>Edit</span><span>View</span><span>History</span><span class="sp"></span><span class="ext on" data-i="leaf">1h 06m</span><span>Mon 23 Nov 15:21</span></div>
+  <div class="safari">
+    <div class="saf-top"><div class="lights" style="padding:0"><i></i><i></i><i></i></div><span class="saf-url">youtube.com</span></div>
+    <div class="saf-page"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="waitp">
+      <span class="app"><span class="fav" style="background:#e33">▶</span> YouTube · Short videos</span>
+      <div class="ringw"><div>7</div></div>
+      <h3>What did you come for?</h3>
+      <div style="color:#7a7264;font-size:13px">Breathe out slowly while the ring fills.</div>
+      <div class="chips"><span class="on">A video I need</span><span>Bored</span><span>A break</span><span>Just habit</span></div>
+      <div class="dots"><i></i><i></i><i class="o"></i></div>
+      <div style="font-size:12px;color:#8b8374">1 of 3 opens left today</div>
+      <div class="wbtns"><span class="a">Close YouTube</span><span class="b">Open for 10 minutes · in 7 s</span></div>
+    </div>
+  </div>
+</div>
+<div class="notes">
+  <div><b>Over one window</b>Built as a non-activating panel pinned to the browser window, so it never steals another app’s full-screen space.</div>
+  <div><b>“Bored” offers Instead</b>Picking “Bored” or “Just habit” shows your own Instead list (walk, water, call someone) in place of the open button.</div>
+  <div><b>Counts, not content</b>Only the chip is counted (“bored” 9× this week). No addresses, no titles, no screenshots.</div>
+</div>
+
+<div class="desk dark" style="min-height:240px">
+  <div class="mbar"><span class="apple"></span><b>Safari</b><span>File</span><span>Edit</span><span class="sp"></span><span class="ext on" data-i="leaf">1h 22m</span><span>Mon 23 Nov 16:02</span></div>
+  <div class="notif" style="left:50%;right:auto;transform:translateX(-50%);top:46px;width:420px"><div class="ai"><i></i></div><div style="flex:1"><b>15 minutes on X</b><span style="opacity:.75">You said “A break”. Still a break?</span><div class="acts"><span class="g">Close X</span><span>Breathe</span><span>5 more minutes</span></div></div></div>
+  <p style="position:absolute;left:44px;bottom:28px;margin:0;color:#cdbd9e;font-size:13px;max-width:560px">The mid-scroll nudge is a normal macOS notification with actions, so Focus modes and notification settings apply to it.</p>
+</div>
+
+<!-- =================================================================== -->
+<h2>4 · Where Unrot lives all day</h2>
+<p>The menu bar extra is the real home: one glance, two big controls, everything else one click deep. On a MacBook with a notch, a running Focus sits around the notch like a live activity.</p>
+<div class="split">
+  <div class="desk light" style="min-height:560px">
+    <div class="mbar"><span class="apple"></span><b>Pages</b><span>File</span><span>Edit</span><span class="sp"></span><span class="ext on" data-i="leaf">1h 06m</span><span data-i="wifi"></span><span>15:30</span></div>
+    <div class="mbx" style="right:60px">
+      <div class="hd"><img src="img/paint-2.jpg" alt=""><div style="flex:1"><div class="num">1<small>d</small>4<small>h</small>12<small>m</small></div><div style="font-size:12px;opacity:.6">given back · Sprout</div></div><span class="pill ok"><i></i>On</span></div>
+      <div class="ctl"><div class="on"><span class="c" data-i="wind"></span><div>Breathe<small>⌥⌘B</small></div></div><div><span class="c" data-i="target"></span><div>Focus<small>25 min</small></div></div></div>
+      <hr>
+      <div class="mt">Running</div>
+      <div class="ln"><span>Feeds</span><span>38 m of 1 h</span></div>
+      <div class="ln"><span>Work hours</span><span>until 17:00</span></div>
+      <div class="ln"><span>Lock</span><span>until Fri 18:00</span></div>
+      <hr>
+      <div class="ln"><span>Gray screen</span><span class="tog"></span></div>
+      <div class="ln"><span>Check a website…</span><span></span></div>
+      <div class="ln"><span>Open Unrot</span><span>⌘O</span></div>
+    </div>
+  </div>
+  <div class="desk dark" style="min-height:560px">
+    <div class="island big">
+      <div class="row"><img src="img/paint-1.jpg" alt=""><div><div style="font-size:12px;opacity:.6">Focus · Write the report</div><b style="font-size:24px">24:12</b></div><span class="sp"></span><span class="ringm" style="width:34px;height:34px"></span></div>
+      <div class="bt"><span>+5 min</span><span class="g">Pause feeds 1 min</span><span>End</span></div>
+    </div>
+    <div class="mbar" style="background:transparent"><span class="apple"></span><b>Xcode</b><span>File</span><span class="sp"></span><span data-i="wifi"></span><span>15:31</span></div>
+    <div style="position:absolute;left:30px;right:30px;top:150px;height:200px;border-radius:14px;background:rgba(30,30,34,.85);box-shadow:0 0 0 .5px rgba(255,255,255,.1),0 20px 50px rgba(0,0,0,.5);padding:14px;font:12px ui-monospace,Menlo,monospace;color:#8a8f99;line-height:1.7"><div class="lights" style="padding:0 0 10px"><i></i><i></i><i></i></div><span style="color:#ff7ab2">func</span> report() {<br>&nbsp;&nbsp;<span style="color:#67b7a4">let</span> week = load()<br>&nbsp;&nbsp;…<br>}</div><div class="island" style="top:auto;bottom:30px;border-radius:22px"><div class="l"><span class="ringm"></span><b>24:12</b></div><span style="font-size:12px;opacity:.6">compact, when not hovered</span></div>
+    <p style="position:absolute;left:36px;right:36px;bottom:84px;margin:0;color:#cdbd9e;font-size:13px">Hover the notch to expand. On Macs without a notch the same pill floats under the menu bar and can be dragged. A sapling grows inside it, and is planted in your garden when the Focus ends.</p>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<h2>5 · Breathe</h2>
+<p>Its own full-screen space (like Keynote playing), so it feels like stepping away. Esc leaves at any time. Three rounds by default; the gold seal plays at the end if the glass was cracked.</p>
+<div class="breathe">
+  <div class="tp"><span>Round 2 of 3</span><span class="seg3"><i class="f"></i><i class="f"></i><i></i></span><span>esc to leave</span></div>
+  <div class="flower"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="w">Breathe in</div>
+  <div class="s">4 seconds in · 6 seconds out</div>
+</div>
+
+<!-- =================================================================== -->
+<h2>6 · Shield</h2>
+<p>Laid out like System Settings: a status header, the five panes as grouped rows, each opening its own detail. All of today’s setup (system filter, hosts, browser guard, private windows, SafeSearch, router, MDM) lives under the pane it protects.</p>
+<div class="desk dark">
+  <div class="win dk">
+    <div class="sidebar">
+      <div class="lights"><i></i><i></i><i></i></div>
+      <div class="sb"><a><span data-i="sun"></span>Today</a><a><span data-i="chart"></span>Progress</a><div class="sb-sec">Protection</div><a class="on"><span data-i="shield"></span>Shield<span class="bd"></span></a><a><span data-i="lock"></span>Lock</a></div>
+    </div>
+    <div class="content">
+      <div class="tbar"><span data-i="sidebar" class="gbtn"></span><div class="ttl">Shield</div><span class="sp"></span><span class="gbtn" data-i="search">Check a website</span></div>
+      <div class="body"><div class="main" style="max-width:720px;margin:0 auto">
+        <div style="display:flex;gap:18px;align-items:center;padding:6px 0 18px">
+          <svg viewBox="0 0 120 120" width="112" height="112">
+            <defs><linearGradient id="gl" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#9fe0b0" stop-opacity=".55"/><stop offset="1" stop-color="#3a8a55" stop-opacity=".25"/></linearGradient></defs>
+            <path d="M16 100 A44 60 0 0 1 104 100 Z" fill="none" stroke="#5a4a32" stroke-width="2"/>
+            <path d="M16 100 A44 60 0 0 1 28 64 L42 100Z" fill="url(#gl)" stroke="#8fd19e" stroke-width="1.2"/>
+            <path d="M28 64 A44 60 0 0 1 46 44 L52 100 L42 100Z" fill="url(#gl)" stroke="#8fd19e" stroke-width="1.2"/>
+            <path d="M46 44 A44 60 0 0 1 74 44 L68 100 L52 100Z" fill="rgba(224,123,31,.2)" stroke="#ffb070" stroke-width="1.6" stroke-dasharray="4 3"/>
+            <path d="M74 44 A44 60 0 0 1 92 64 L78 100 L68 100Z" fill="url(#gl)" stroke="#8fd19e" stroke-width="1.2"/>
+            <path d="M92 64 A44 60 0 0 1 104 100 L78 100Z" fill="url(#gl)" stroke="#8fd19e" stroke-width="1.2"/>
+            <rect x="10" y="100" width="100" height="10" rx="4" fill="#4a3d2c"/>
+            <circle cx="60" cy="26" r="5" fill="#f0b93c"/>
+          </svg>
+          <div><div style="font:700 26px var(--ny)">4 of 5 panes closed</div><div class="mut" style="font-size:13px">Limits and quiet hours can’t see which app is in front.</div><span class="mbtn def" style="margin-top:10px">Allow in System Settings…</span></div>
+        </div>
+        <div class="group">
+          <div class="r"><span class="ic p" data-i="feed"></span><div class="t">Feeds<small>12 sites · feed only on YouTube and X · Safari, Chrome, Arc</small></div><span class="pill ok"><i></i>Closed</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic rd" data-i="shield"></span><div class="t">Adult sites<small>System filter for every app · 236,586 sites · SafeSearch</small></div><span class="pill ok"><i></i>Closed</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic i" data-i="calendar"></span><div class="t">Limits and quiet hours<small>Needs permission to see the app in front</small></div><span class="pill warn"><i></i>Open</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic o" data-i="text"></span><div class="t">Adult words<small>Searches and page text · private windows closed</small></div><span class="pill ok"><i></i>Closed</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic b" data-i="photo"></span><div class="t">Images<small>Browser image check, on this Mac only</small></div><span class="pill ok"><i></i>Closed</span><span class="chev">›</span></div>
+        </div>
+        <div class="k" style="margin-top:18px">Kept out this week · stays on this Mac</div>
+        <div class="group">
+          <div class="r"><div class="t">Adult pages stopped</div><span class="v">14</span></div>
+          <div class="r"><div class="t">Feed opens closed by waits and limits</div><span class="v">31</span></div>
+          <div class="r"><div class="t">Times a browser was closed for missing its extension</div><span class="v">1</span></div>
+        </div>
+        <div class="k" style="margin-top:18px">More protection</div>
+        <div class="group">
+          <div class="r"><span class="ic n" data-i="list"></span><div class="t">Protected setup checklist</div><span class="chev">›</span></div>
+          <div class="r"><span class="ic n" data-i="wifi"></span><div class="t">Router and network DNS</div><span class="chev">›</span></div>
+          <div class="r"><span class="ic n" data-i="person"></span><div class="t">Accountability partner</div><span class="v">Sara</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic n" data-i="building"></span><div class="t">Organization and device management</div><span class="chev">›</span></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<h2>7 · Progress</h2>
+<p>Swift Charts for the week, a calendar heat strip for the hours, and the garden of days. A Mac screen is wide, so the week and the garden sit together.</p>
+<div class="desk light">
+  <div class="win">
+    <div class="sidebar"><div class="lights"><i></i><i></i><i></i></div><div class="sb"><a><span data-i="sun"></span>Today</a><a class="on"><span data-i="chart"></span>Progress</a></div></div>
+    <div class="content">
+      <div class="tbar"><span data-i="sidebar" class="gbtn"></span><div class="ttl">Progress</div><span class="sp"></span><span class="gseg"><span>Day</span><span class="on">Week</span><span>Month</span><span>Year</span></span><span class="gbtn" data-i="share">Share growth</span></div>
+      <div class="body"><div class="main">
+        <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:14px">
+          <div class="box" style="padding:16px">
+            <div class="k">Feed time on this Mac</div>
+            <div style="display:flex;align-items:baseline;gap:10px"><div class="num">−42%</div><span class="mut" style="font-size:13px">vs your before, 1 h 45 m a day</span></div>
+            <div class="chart"><span class="lbl">your before</span>
+              <div><i style="height:40%"></i><span>Mon</span></div><div><i style="height:55%"></i><span>Tue</span></div><div><i style="height:28%"></i><span>Wed</span></div><div><i class="o" style="height:78%"></i><span>Thu</span></div><div><i style="height:24%"></i><span>Fri</span></div><div><i style="height:14%"></i><span>Sat</span></div><div><i style="height:30%"></i><span>Sun</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:22px;text-align:center">
+              <div><div class="num" style="font-size:22px">5 h 10 m</div><div class="mut">given back</div></div>
+              <div><div class="num" style="font-size:22px">41</div><div class="mut">pauses</div></div>
+              <div><div class="num" style="font-size:22px">6 h 20 m</div><div class="mut">in Focus</div></div>
+              <div><div class="num" style="font-size:22px">22</div><div class="mut">days with Unrot</div></div>
+            </div>
+          </div>
+          <div class="box" style="padding:16px">
+            <div class="k">Your garden</div>
+            <div class="garden">
+              <div><img src="img/paint-2.jpg">M</div><div><img src="img/paint-2.jpg">T</div><div><img src="img/paint-6.jpg">W</div><div><img src="img/paint-1.jpg">T</div><div><img src="img/paint-6.jpg">F</div><div><img src="img/paint-8.jpg">S</div><div class="t"><img src="img/paint-2.jpg">Today</div>
+            </div>
+            <div class="mut" style="margin-top:10px">Thursday was heavy, so its plant is small. Plants never die. Saturday keeps a gold seam.</div>
+            <div class="k" style="margin-top:16px">Why you opened feeds</div>
+            <div class="group">
+              <div class="r"><div class="t">Bored</div><div style="width:110px" class="bar"><i style="width:90%"></i></div><span class="v">9</span></div>
+              <div class="r"><div class="t">Just habit</div><div style="width:110px" class="bar"><i style="width:60%"></i></div><span class="v">6</span></div>
+              <div class="r"><div class="t">Something I needed</div><div style="width:110px" class="bar"><i style="width:40%"></i></div><span class="v">4</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="box" style="padding:16px;margin-top:14px">
+          <div class="k">When the pull comes · last 4 weeks</div>
+          <div class="heat">
+            <span>Mon</span><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i style="background:rgba(240,185,60,.2)"></i><i style="background:rgba(240,185,60,.3)"></i><i></i><i></i><i></i><i style="background:rgba(240,185,60,.6)"></i><i style="background:rgba(240,185,60,.9)"></i><i style="background:rgba(240,185,60,.5)"></i><i></i><i></i><i></i><i></i><i></i><i style="background:rgba(240,185,60,.4)"></i><i style="background:rgba(240,185,60,.7)"></i><i style="background:rgba(240,185,60,.5)"></i><i></i>
+            <span>Wed</span><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i style="background:rgba(240,185,60,.2)"></i><i></i><i></i><i></i><i style="background:rgba(240,185,60,.5)"></i><i style="background:rgba(240,185,60,.7)"></i><i></i><i></i><i></i><i></i><i></i><i></i><i style="background:rgba(240,185,60,.3)"></i><i style="background:rgba(240,185,60,.8)"></i><i style="background:rgba(240,185,60,.9)"></i><i style="background:rgba(240,185,60,.3)"></i>
+            <span>Fri</span><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i style="background:rgba(240,185,60,.3)"></i><i style="background:rgba(240,185,60,.4)"></i><i></i><i></i><i></i><i></i><i></i><i></i><i style="background:rgba(240,185,60,.5)"></i><i style="background:rgba(240,185,60,.9)"></i><i style="background:rgba(240,185,60,1)"></i><i style="background:rgba(240,185,60,.6)"></i>
+          </div>
+          <div class="mut" style="margin-top:10px">Late evenings are the hardest. <a style="color:var(--gold);font-weight:600">Start quiet hours at 21:30?</a></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<h2>8 · Outside the app</h2>
+<p>The parts of macOS people already use: desktop widgets, Control Center controls, Spotlight actions, Shortcuts and the system Focus filter.</p>
+<div class="desk light" style="min-height:620px">
+  <div class="mbar"><span class="apple"></span><b>Finder</b><span>File</span><span>Edit</span><span class="sp"></span><span class="ext" data-i="leaf">1h 06m</span><span>15:40</span></div>
+  <div class="wgs">
+    <div class="wg s"><div class="wl">Given back</div><div class="num">1d 4h</div><div style="font-size:12px;opacity:.7">Sprout</div><img class="bgi" src="img/paint-2.jpg" alt=""></div>
+    <div class="wg m"><div class="wl">This week</div><div class="num">−42%</div><div style="font-size:12px;opacity:.7">feed time vs your before</div><div class="chart" style="height:60px;border:0;width:160px;padding:6px 0 0;--fill:rgba(255,255,255,.15);--ink3:transparent"><div><i style="height:40%"></i></div><div><i style="height:55%"></i></div><div><i style="height:28%"></i></div><div><i class="o" style="height:78%"></i></div><div><i style="height:24%"></i></div><div><i style="height:14%"></i></div><div><i class="e" style="height:100%"></i></div></div><img class="bgi" src="img/paint-6.jpg" alt="" style="width:170px"></div>
+    <div class="wg s glass"><div class="wl" style="color:#7a5205">Breathe</div><div style="display:grid;place-items:center;height:96px"><span class="cc on" style="width:66px;height:66px;border-radius:50%" data-i="wind"></span></div><div style="font-size:11.5px;text-align:center;opacity:.7">Click to start</div></div>
+  </div>
+  <div style="display:flex;gap:28px;margin-top:26px;align-items:flex-start">
+    <div><div class="ctrls"><div><span class="cc on" data-i="wind"></span><div class="ccl">Breathe</div></div><div><span class="cc" data-i="target"></span><div class="ccl">Focus 25</div></div><div><span class="cc" data-i="moon"></span><div class="ccl">Quiet hours</div></div><div><span class="cc" data-i="gray"></span><div class="ccl">Gray screen</div></div></div><div class="mut" style="color:#5c564b;margin-top:8px">Control Center and menu bar controls</div></div>
+    <div class="spot">
+      <div class="q"><span data-i="search"></span>focus 45</div>
+      <div class="res">
+        <div class="on"><span data-i="target"></span>Start Unrot Focus · 45 minutes<span>↩</span></div>
+        <div><span data-i="wind"></span>Breathe with Unrot<span>⌥⌘B</span></div>
+        <div><span data-i="list"></span>Add to Instead list…<span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes" style="margin-top:22px">
+    <div><b>System Focus filter</b>When macOS “Work” Focus turns on, Unrot’s Work hours schedule starts. Set up in System Settings › Focus, using App Intents.</div>
+    <div><b>Shortcuts</b>Start Focus, Breathe, Turn quiet hours on, Get time given back. Usable in automations.</div>
+    <div><b>Login item</b>Unrot starts with the Mac and stays in the menu bar. If it is quit while locked, the guard brings it back.</div>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<h2>9 · Settings (⌘,)</h2>
+<p>A standard Settings window with toolbar tabs. The rarely touched parts live here so the main window stays about your day.</p>
+<div class="desk dark">
+  <div class="win dk sett" style="min-height:520px;display:block">
+    <div class="lights" style="padding:14px 16px 0"><i></i><i></i><i></i></div>
+    <div style="text-align:center;font-weight:700;font-size:13px;margin-top:-14px">General</div>
+    <div class="stb">
+      <div class="on"><span data-i="gear"></span>General</div><div><span data-i="sun"></span>Today</div><div><span data-i="shield"></span>Shield</div><div><span data-i="lock"></span>Lock</div><div><span data-i="person"></span>Partner</div><div><span data-i="iphone"></span>Devices</div><div><span data-i="sliders"></span>Advanced</div>
+    </div>
+    <div style="padding:0 28px 28px;display:grid;gap:16px">
+      <div class="group">
+        <div class="r"><div class="t">Open at login</div><span class="tog on"></span></div>
+        <div class="r"><div class="t">Show in menu bar<small>Time given back, or only the leaf</small></div><span class="pop">Time given back</span></div>
+        <div class="r"><div class="t">Show Focus around the notch</div><span class="tog on"></span></div>
+        <div class="r"><div class="t">Breathe shortcut</div><span class="pop">⌥⌘B</span></div>
+      </div>
+      <div class="group">
+        <div class="r"><div class="t">Feeds aim per day</div><span class="pop">1 hour</span></div>
+        <div class="r"><div class="t">Nudge after scrolling for</div><span class="pop">15 minutes</span></div>
+        <div class="r"><div class="t">Quiet hours</div><span class="v">22:00 – 07:00</span><span class="chev">›</span></div>
+        <div class="r"><div class="t">Turn the screen gray in quiet hours</div><span class="tog on"></span></div>
+      </div>
+      <div class="group">
+        <div class="r"><div class="t">Language</div><span class="pop">System (English)</span></div>
+        <div class="r"><div class="t">Your data<small>Everything stays on this Mac. Export or erase it any time.</small></div><span class="mbtn">Export…</span><span class="mbtn">Erase…</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<h2>10 · First run</h2>
+<p>A single window in the style of Setup Assistant: one question a page, a progress line, the painted glass on the left. Ends with the permissions that really matter on a Mac, each with one sentence of why.</p>
+<div style="display:grid;grid-template-columns:1fr;gap:4px">
+<div class="desk light" style="padding:44px 90px">
+  <div class="win" style="min-height:540px;display:block">
+    <div class="ob">
+      <div class="art"><div class="lights" style="position:absolute;left:14px;top:14px"><i></i><i></i><i></i></div><img src="img/paint-1.jpg" alt=""></div>
+      <div class="q">
+        <div class="prog"><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i></div>
+        <span class="eyebrow" style="margin-top:22px">About you · 2 of 6</span>
+        <h3>On this Mac, what pulls you away?</h3>
+        <div class="mut" style="font-size:13px">Pick all that fit. We’ll suggest rules from your answers.</div>
+        <div class="opts">
+          <div class="on"><span class="fav" style="background:#e33">▶</span>YouTube and short videos<span class="cb"></span></div>
+          <div class="on"><span class="fav" style="background:#111">X</span>Social feeds<span class="cb"></span></div>
+          <div><span class="fav" style="background:#5865f2">D</span>Chat and games<span class="cb"></span></div>
+          <div><span class="fav" style="background:#222">N</span>News<span class="cb"></span></div>
+          <div class="on"><span class="fav" style="background:#e5484d">!</span>Adult content<span class="cb"></span></div>
+        </div>
+        <div class="ft"><span class="mbtn">Back</span><span class="mbtn def">Continue</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="desk dark" style="padding:44px 90px">
+  <div class="win dk" style="min-height:540px;display:block">
+    <div class="ob">
+      <div class="art"><div class="lights" style="position:absolute;left:14px;top:14px"><i></i><i></i><i></i></div><img src="img/paint-2.jpg" alt=""></div>
+      <div class="q">
+        <div class="prog"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i></div>
+        <span class="eyebrow" style="margin-top:22px">Your glass · 5 of 6</span>
+        <h3>Three permissions, then you’re protected</h3>
+        <div class="group" style="margin-top:14px">
+          <div class="r"><span class="ic rd" data-i="shield"></span><div class="t"><b>Content filter</b><small>Stops adult sites in every app. Nothing leaves the Mac.</small></div><span class="pill ok"><i></i>Done</span></div>
+          <div class="r"><span class="ic p" data-i="feed"></span><div class="t"><b>Browser extensions</b><small>Lets Unrot pause feeds in Safari, Chrome and Arc.</small></div><span class="mbtn def">Add</span></div>
+          <div class="r"><span class="ic i" data-i="eye"></span><div class="t"><b>See the app in front</b><small>Needed for limits on apps like Discord. Only the app name is read.</small></div><span class="mbtn">Allow…</span></div>
+        </div>
+        <div class="ft"><span class="mbtn">Back</span><span class="mbtn def">Continue</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- =================================================================== -->
+<h2>11 · What changed from v1</h2>
+<table class="cmp">
+<tr><th>Area</th><th>v1 (phone in a window)</th><th>v2 (a Mac app)</th></tr>
+<tr><td>Frame</td><td>Flat dark panels, web-like cards</td><td>Liquid Glass sidebar and toolbar, system controls, light and dark</td></tr>
+<tr><td>Navigation</td><td>Today / Shield / Progress / You tabs</td><td>Mail-style sidebar: Today, Progress, each rule kind, Shield, Lock</td></tr>
+<tr><td>Editing rules</td><td>Rows that link somewhere</td><td>Sortable table + inspector + template sheet</td></tr>
+<tr><td>The pause</td><td>Dims the whole screen</td><td>Glass panel over the one window, notification for the nudge</td></tr>
+<tr><td>Focus</td><td>Floating pill</td><td>Around the notch, live activity style, with a sapling</td></tr>
+<tr><td>Breathe</td><td>A sheet</td><td>Its own full-screen space, Esc to leave</td></tr>
+<tr><td>System</td><td>Menu bar and widgets</td><td>Menu bar extra, widgets, Control Center controls, Spotlight, Shortcuts, Focus filter, login item</td></tr>
+<tr><td>Settings</td><td>Mixed into pages</td><td>Standard ⌘, window with tabs</td></tr>
+<tr><td>First run</td><td>Not drawn</td><td>Setup Assistant style, Mac-specific questions and three permissions</td></tr>
+</table>
+
+<h2>12 · Build order</h2>
+<ol class="plan">
+<li><b>App shell:</b> SwiftUI NavigationSplitView with inspector, Liquid Glass on macOS 26+, fallback materials on 12–25. Unrot and Hisn as two schemes.</li>
+<li><b>Menu bar agent and login item</b> (SMAppService), MenuBarExtra window.</li>
+<li><b>Usage engine:</b> app in front (NSWorkspace) and feed tab time from the extensions, per day, on disk; tests.</li>
+<li><b>Rule model</b> for limits, waits, schedules, feeds-only, quiet hours; one store, tests; tables and inspector.</li>
+<li><b>Wait panel</b> over app and browser windows; site version in the extensions.</li>
+<li><b>Feeds only</b> rules for YouTube, X, Reddit, Instagram, Facebook, TikTok.</li>
+<li><b>Glass state</b> (grow, crack, gold, break) shared with Android’s rules; hero and menu bar icon.</li>
+<li><b>Breathe</b> full-screen, ⌥⌘B global shortcut.</li>
+<li><b>Focus</b> with notch live view and sapling.</li>
+<li><b>Progress</b> with Swift Charts, heat strip, garden.</li>
+<li><b>Shield</b> page wrapping all of today’s protection screens.</li>
+<li><b>Widgets, controls, App Intents</b> (Spotlight, Shortcuts, Focus filter).</li>
+<li><b>Settings window</b> and <b>first run</b>.</li>
+<li><b>Verify</b>: build, unit tests, both schemes, light/dark/Arabic screenshots on this Mac.</li>
+</ol>
+</div>
+
+<script>
+// Small SF-Symbols-like icon set, drawn as strokes so they follow the text colour.
+const I={
+sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+hourglass:'<path d="M6 2h12M6 22h12M7 2c0 6 10 6 10 10S7 16 7 22M17 2c0 6-10 6-10 10s10 4 10 10"/>',
+pause:'<rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/>',
+calendar:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+lock:'<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 018 0v3"/>',
+note:'<path d="M5 3h10l4 4v14H5z"/><path d="M9 12h6M9 16h4"/>',
+list:'<path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+sidebar:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
+inspector:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M15 4v16"/>',
+wind:'<path d="M3 8h11a3 3 0 10-3-3M3 12h15a3 3 0 11-3 3M3 16h8"/>',
+drop:'<path d="M12 3c4 5 6 8 6 11a6 6 0 01-12 0c0-3 2-6 6-11z"/>',
+heart:'<path d="M12 20s-8-5-8-11a4.5 4.5 0 018-2.5A4.5 4.5 0 0120 9c0 6-8 11-8 11z"/>',
+info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+iphone:'<rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/>',
+search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/>',
+plus:'<path d="M12 5v14M5 12h14"/>',
+sparkles:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+feed:'<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+moon:'<path d="M20 14.5A8 8 0 119.5 4a6.5 6.5 0 0010.5 10.5z"/>',
+text:'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>',
+photo:'<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 8"/>',
+wifi:'<path d="M2 9a15 15 0 0120 0M5 12.5a10 10 0 0114 0M8.5 16a5 5 0 017 0"/><circle cx="12" cy="19" r="1"/>',
+person:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>',
+building:'<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+share:'<path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>',
+gear:'<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M4.2 6l2.6 1.5M17.2 16.5l2.6 1.5M4.2 18l2.6-1.5M17.2 7.5L19.8 6"/>',
+sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+gray:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18" /><path d="M12 3a9 9 0 010 18z" fill="currentColor"/>',
+leaf:'<path d="M5 19c0-8 5-14 15-15-1 10-7 15-15 15z"/><path d="M5 19l7-7"/>',
+leafcrack:'<path d="M5 19c0-8 5-14 15-15-1 10-7 15-15 15z"/><path d="M11 8l2 3-2 2 2 3"/>'
+};
+document.querySelectorAll('[data-i]').forEach(el=>{
+  const svg='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(I[el.dataset.i]||'')+'</svg>';
+  el.insertAdjacentHTML('afterbegin',svg);
+});
+</script>
+</body>
+</html>

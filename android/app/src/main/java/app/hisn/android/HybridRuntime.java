@@ -15,8 +15,10 @@ import java.util.function.Consumer;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** People mode with the adult check kept native: TFLite judges adult content while the WebView
- * engine, loaded faces-only, looks for faces. The two run at the same time on the same capture.
+/** People mode with every model native: TFLite judges adult content while BlazeFace finds faces
+ * and FaceRes estimates women/men on a second worker. The two run at the same time on the same
+ * capture. The WebView engine, loaded faces-only, is used only when the native face models cannot
+ * load (or for the non-native appearance settings of debug accuracy runs).
  *
  * <p>Before this, people mode sent every frame through the WebView, so the adult check ran on
  * TensorFlow.js at the 384 px face frame instead of on the native model at 224 px with the
@@ -28,22 +30,30 @@ import org.json.JSONObject;
  * existing cover on unknown and adds a new one only in Cover mode. The face pipeline takes one
  * frame at a time, so a frame that arrives
  * while an earlier face check is still running (possible only after an early block) waits for it
- * as a private copy, and only the newest such frame is kept. The WebView and native
- * FaceRes share that frame's pixel extraction.</p>
+ * as a private copy, and only the newest such frame is kept. Face finding and FaceRes share
+ * that frame's pixel extraction.</p>
  */
 final class HybridRuntime implements VisualRuntime {
     /** Native FaceRes: a face is shown only when it leans the other way at least this strongly.
      * Same values and reasons as decisions.js FACERES_OPPOSITE (women 0.80, men 0.60). */
     static final float WOMEN_SHOW_MALE = 0.80f, MEN_SHOW_FEMALE = 0.60f;
     private final TfliteClassifier adult;
+    /** The WebView face engine: only for non-native appearance settings, or as the fallback
+     * when the native detector cannot load. Null while the native detector is in use. */
     private VisualClassifier faces;
+    /** Native BlazeFace, on {@link #worker} with FaceRes. Null until loaded, or when unavailable. */
+    private NativeFaceDetector detector;
     private FaceresClassifier faceres;
     private final ExecutorService worker;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final String personMode;
     private final boolean evaluate;
     private Consumer<String> loaded;
-    private boolean adultReady, facesReady, faceresLoading, closed;
+    /** Set by the guard each sample: the face-only blur also checks each matched person's clothes. */
+    private boolean bodies;
+
+    void bodies(boolean on) { bodies = on; }
+    private boolean adultReady, facesReady, faceresLoading, detectorLoading, closed;
     private FaceFrame activeFaces, queuedFaces;
     private final FaceResultCache faceCache = new FaceResultCache();
     private String backend = "tflite-cpu+wasm";
@@ -88,12 +98,20 @@ final class HybridRuntime implements VisualRuntime {
         final Consumer<VisualResult> result;
         VisualResult adultResult, faceResult;
         boolean answered;
+        /** The people frame, kept only for the body check of the face-only blur. */
+        int[] people;
+        int peopleWidth, peopleHeight;
         Request(Consumer<VisualResult> result) { this.result = result; }
+
+        void clearPeople() {
+            if (people != null) Arrays.fill(people, 0);
+            people = null;
+        }
 
         void adult(VisualResult value) {
             if (closed || answered) return;
             adultResult = value;
-            if ("block".equals(value.verdict)) { answered = true; result.accept(value); return; }
+            if ("block".equals(value.verdict)) { answered = true; clearPeople(); result.accept(value); return; }
             finishIfBoth();
         }
 
@@ -107,7 +125,22 @@ final class HybridRuntime implements VisualRuntime {
             if (adultResult == null || faceResult == null) return;
             answered = true;
             boolean known = "allow".equals(adultResult.verdict) && "allow".equals(faceResult.verdict);
-            result.accept(known ? new VisualResult("allow", faceResult.personBlur, false, faceResult.detail)
+            if (known && faceResult.personBlur && faceResult.blurBoxes != null && faceResult.blurBoxes.length > 0
+                    && people != null) {
+                // Face-only blur: look at each matched person's clothes before answering.
+                int[] pixels = people;
+                people = null;
+                final VisualResult face = faceResult;
+                adult.people(pixels, peopleWidth, peopleHeight, face.blurBoxes, found -> {
+                    if (closed) return;
+                    result.accept("block".equals(found.verdict) ? found
+                            : new VisualResult("allow", true, false, face.detail, null, found.blurBoxes));
+                });
+                return;
+            }
+            clearPeople();
+            result.accept(known ? new VisualResult("allow", faceResult.personBlur, false, faceResult.detail,
+                    null, faceResult.blurBoxes)
                     : new VisualResult("unknown", false));
         }
     }
@@ -121,17 +154,20 @@ final class HybridRuntime implements VisualRuntime {
         this.loaded = loaded;
         this.personMode = personMode;
         this.evaluate = evaluate;
-        faceresLoading = "native".equals(appearance)
-                && (PersonBlur.WOMEN.equals(personMode) || PersonBlur.MEN.equals(personMode));
-        worker = !faceresLoading ? null : Executors.newSingleThreadExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "hisn-faceres");
+        boolean nativeFaces = "native".equals(appearance);
+        boolean gender = PersonBlur.WOMEN.equals(personMode) || PersonBlur.MEN.equals(personMode);
+        detectorLoading = nativeFaces;
+        faceresLoading = nativeFaces && gender;
+        // One worker runs face finding and the women/men estimate back to back for each frame.
+        worker = !nativeFaces ? null : Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "hisn-people");
             thread.setDaemon(true);
             return thread;
         });
         adult = new TfliteClassifier(context, verdict -> loadedPart(true, verdict));
         try {
-            faces = createFaces(context, worker == null && "native".equals(appearance) ? "oarriaga" : appearance);
-            if (worker != null) worker.execute(() -> loadFaceres(context));
+            if (nativeFaces) worker.execute(() -> loadNative(context, gender));
+            else faces = createFaces(context, appearance);
         } catch (RuntimeException | LinkageError unavailable) {
             close();
             throw unavailable;
@@ -144,31 +180,49 @@ final class HybridRuntime implements VisualRuntime {
                 evaluate && !"native".equals(appearance), verdict -> loadedPart(false, verdict));
     }
 
-    /** Start native model initialization in parallel with both existing loaders. */
-    private void loadFaceres(Context context) {
-        FaceresClassifier model;
-        try { model = new FaceresClassifier(context); }
-        catch (IOException | RuntimeException | LinkageError | OutOfMemoryError unavailable) { model = null; }
-        final FaceresClassifier found = model;
+    /** Loads the native face models on the worker, in parallel with the adult model. Falls back to
+     * the WebView engine when the detector (or, for women/men, FaceRes) cannot load. */
+    private void loadNative(Context context, boolean gender) {
+        NativeFaceDetector found = null;
+        FaceresClassifier estimate = null;
+        try { found = new NativeFaceDetector(context); }
+        catch (IOException | RuntimeException | LinkageError | OutOfMemoryError unavailable) { found = null; }
+        if (gender) {
+            try { estimate = new FaceresClassifier(context); }
+            catch (IOException | RuntimeException | LinkageError | OutOfMemoryError unavailable) { estimate = null; }
+        }
+        final NativeFaceDetector detected = found;
+        final FaceresClassifier judged = estimate;
         main.post(() -> {
             if (closed || loaded == null) {
-                if (found != null) found.close();
+                closeOnWorker(detected, judged);
                 return;
             }
+            detectorLoading = false;
             faceresLoading = false;
-            faceres = found;
-            if (faceres == null) {
-                // The release ships the WebView's small 64x64 estimator as its fallback.
-                facesReady = false;
-                faces.close();
-                try { faces = createFaces(context, "oarriaga"); }
-                catch (RuntimeException | LinkageError unavailable) {
-                    loadedPart(false, "unknown");
-                    return;
-                }
+            faceres = judged;
+            if (detected != null && (!gender || judged != null)) {
+                detector = detected;
+                facesReady = true;
+                finishLoading();
+                return;
             }
-            finishLoading();
+            // The WebView finds the faces instead: boxes for native FaceRes when it loaded, or the
+            // release's small 64x64 estimator when it did not.
+            closeOnWorker(detected, null);
+            try { faces = createFaces(context, gender && judged != null ? "native" : "oarriaga"); }
+            catch (RuntimeException | LinkageError unavailable) { loadedPart(false, "unknown"); }
         });
+    }
+
+    private void closeOnWorker(NativeFaceDetector found, FaceresClassifier estimate) {
+        if (found == null && estimate == null) return;
+        try {
+            worker.execute(() -> {
+                if (found != null) found.close();
+                if (estimate != null) estimate.close();
+            });
+        } catch (RejectedExecutionException shutDown) { /* The worker is gone; nothing runs on them. */ }
     }
 
     private void loadedPart(boolean native_, String verdict) {
@@ -184,8 +238,8 @@ final class HybridRuntime implements VisualRuntime {
     }
 
     private void finishLoading() {
-        if (loaded != null && adultReady && facesReady && !faceresLoading) {
-            backend = adult.actualBackend() + "+" + faces.actualBackend();
+        if (loaded != null && adultReady && facesReady && !faceresLoading && !detectorLoading) {
+            backend = adult.actualBackend() + "+" + (faces != null ? faces.actualBackend() : "blazeface-tflite");
             Consumer<String> report = loaded;
             loaded = null;
             report.accept("ready");
@@ -205,7 +259,7 @@ final class HybridRuntime implements VisualRuntime {
 
     /** adultContext, when present, is the uncropped view used to corroborate the adult crop. */
     void inspect(Bitmap adultFrame, Bitmap adultContext, Bitmap peopleFrame, Consumer<VisualResult> result) {
-        if (closed || !adultReady || !facesReady || faceresLoading) {
+        if (closed || !adultReady || !facesReady || faceresLoading || detectorLoading) {
             result.accept(new VisualResult("unknown", false));
             return;
         }
@@ -217,6 +271,11 @@ final class HybridRuntime implements VisualRuntime {
         catch (RuntimeException | OutOfMemoryError unavailable) {
             request.faces(new VisualResult("unknown", false));
             return;
+        }
+        if (bodies && frame.pixels != null) {
+            request.people = frame.pixels.clone();
+            request.peopleWidth = frame.width;
+            request.peopleHeight = frame.height;
         }
         if (activeFaces == null && queuedFaces == null) {
             startFaces(frame);
@@ -240,6 +299,10 @@ final class HybridRuntime implements VisualRuntime {
             return;
         }
         activeFaces = frame;
+        if (detector != null) {
+            findNatively(frame);
+            return;
+        }
         try {
             faces.inspect(frame.pixels, frame.width, frame.height, found -> {
                 if (faceres == null || frame.request.answered) {
@@ -270,31 +333,22 @@ final class HybridRuntime implements VisualRuntime {
         }
     }
 
-    /** Women/men for each box the WebView found, on the FaceRes worker; the answer returns on main. */
-    private void judgeNatively(FaceFrame frame, float[] boxes) {
+    /** Native path: find faces, then (women/men) estimate each, on the worker; answer on main. */
+    private void findNatively(FaceFrame frame) {
         int[] pixels = frame.takePixels();
+        NativeFaceDetector found = detector;
         FaceresClassifier model = faceres;
+        // The face-only blur also looks closer: a wrong small match costs one soft patch there,
+        // where a full cover or Back would take the whole screen.
+        boolean closer = bodies;
         try {
             worker.execute(() -> {
                 VisualResult answer;
                 try {
-                    boolean covered = false;
-                    JSONArray detail = evaluate ? new JSONArray() : null;
-                    for (int i = 0; i + 3 < boxes.length; i += 4) {
-                        float male = model.maleProbability(pixels, frame.width, frame.height,
-                                boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3]);
-                        if (!(male >= 0f && male <= 1f)) throw new IllegalStateException("Invalid FaceRes score");
-                        boolean shown = PersonBlur.WOMEN.equals(personMode)
-                                ? male >= WOMEN_SHOW_MALE : 1 - male >= MEN_SHOW_FEMALE;
-                        if (detail != null) detail.put(new JSONObject().put("x", boxes[i]).put("y", boxes[i + 1])
-                                .put("w", boxes[i + 2]).put("h", boxes[i + 3]).put("faceresMale", male));
-                        if (!shown) {
-                            covered = true;
-                            // One face that stays covered settles the screen; skip the rest.
-                            if (detail == null) break;
-                        }
-                    }
-                    answer = new VisualResult("allow", covered, false, detail == null ? null : detail.toString());
+                    float[] boxes = found.detect(pixels, frame.width, frame.height, closer);
+                    if (boxes.length == 0) answer = new VisualResult("allow", false, false, evaluate ? "[]" : null);
+                    else if (model != null) answer = judge(model, pixels, frame.width, frame.height, boxes);
+                    else answer = new VisualResult("allow", true, false, null, null, boxes);
                 } catch (Throwable failure) {
                     answer = new VisualResult("unknown", false);
                 } finally {
@@ -309,6 +363,49 @@ final class HybridRuntime implements VisualRuntime {
         }
     }
 
+    /** Women/men for each box the WebView found, on the FaceRes worker; the answer returns on main. */
+    private void judgeNatively(FaceFrame frame, float[] boxes) {
+        int[] pixels = frame.takePixels();
+        FaceresClassifier model = faceres;
+        try {
+            worker.execute(() -> {
+                VisualResult answer;
+                try { answer = judge(model, pixels, frame.width, frame.height, boxes); }
+                catch (Throwable failure) { answer = new VisualResult("unknown", false); }
+                finally { Arrays.fill(pixels, 0); }
+                final VisualResult result = answer;
+                main.post(() -> finishFaces(frame, result));
+            });
+        } catch (RejectedExecutionException closing) {
+            Arrays.fill(pixels, 0);
+            finishFaces(frame, new VisualResult("unknown", false));
+        }
+    }
+
+    /** The faces the selected setting covers, judged one by one with FaceRes. Worker thread only. */
+    private VisualResult judge(FaceresClassifier model, int[] pixels, int width, int height, float[] boxes)
+            throws org.json.JSONException {
+        boolean covered = false;
+        JSONArray detail = evaluate ? new JSONArray() : null;
+        float[] matched = new float[boxes.length];
+        int kept = 0;
+        for (int i = 0; i + 3 < boxes.length; i += 4) {
+            float male = model.maleProbability(pixels, width, height, boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3]);
+            if (!(male >= 0f && male <= 1f)) throw new IllegalStateException("Invalid FaceRes score");
+            boolean shown = PersonBlur.WOMEN.equals(personMode) ? male >= WOMEN_SHOW_MALE : 1 - male >= MEN_SHOW_FEMALE;
+            if (detail != null) detail.put(new JSONObject().put("x", boxes[i]).put("y", boxes[i + 1])
+                    .put("w", boxes[i + 2]).put("h", boxes[i + 3]).put("faceresMale", male));
+            if (!shown) {
+                covered = true;
+                // Every matched face is judged: the face-only blur needs each position.
+                System.arraycopy(boxes, i, matched, kept, 4);
+                kept += 4;
+            }
+        }
+        return new VisualResult("allow", covered, false, detail == null ? null : detail.toString(),
+                null, Arrays.copyOf(matched, kept));
+    }
+
     @Override public String actualBackend() { return faceres == null ? backend : backend + "+faceres-tflite"; }
 
     @Override public void close() {
@@ -321,7 +418,7 @@ final class HybridRuntime implements VisualRuntime {
         adult.close();
         if (faces != null) faces.close();
         if (worker != null) {
-            if (faceres != null) worker.execute(faceres::close);
+            closeOnWorker(detector, faceres);
             worker.shutdown();
         }
     }

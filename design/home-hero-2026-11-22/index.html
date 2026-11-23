@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Unrot Today Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+/* Layout: a working phone on one side, the controls and notes on the other. The phone is the
+   proposed Unrot Today: a sprout under glass (Opal's object-on-a-stone, CleanPath's named stage
+   and next-stage bar), one number, three chips, one pill, one Breathe button. */
+:root {
+  --bg: #f4efe4; --fg: #221d14; --muted: #6d6557; --line: #ddd5c4; --panel: #fffdf8;
+  --accent: #9a6b00; --good: #2f7a45; --goodbg: #e3f1e6;
+  --display: "Fraunces", Georgia, serif; --body: "DM Sans", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #100e0b; --fg: #efe8da; --muted: #a59c8b; --line: #322c25; --panel: #1a1712;
+  --accent: #f2c14e; --good: #8fd19e; --goodbg: #1b3122; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #100e0b; --fg: #efe8da; --muted: #a59c8b; --line: #322c25; --panel: #1a1712;
+  --accent: #f2c14e; --good: #8fd19e; --goodbg: #1b3122; color-scheme: dark }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 36px 70px; display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 44px; align-items: start; }
+@media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } .stick { position: static !important; } }
+.side { display: grid; gap: 26px; min-width: 0; }
+h1 { font-family: var(--display); font-size: clamp(28px, 4.4vw, 40px); line-height: 1.12; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-size: 20px; margin: 0; }
+p { margin: 0; max-width: 64ch; }
+.lede { color: var(--muted); font-size: 17px; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: grid; gap: 14px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { font: inherit; font-weight: 700; font-size: 14px; padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+label { font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; gap: 10px; }
+label output { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: #c98d22; }
+.tries { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.why { display: grid; gap: 10px; }
+.why div { display: grid; grid-template-columns: 26px 1fr; gap: 8px; font-size: 14px; }
+.why b { color: var(--accent); }
+.stick { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); justify-self: center; }
+
+/* ---------- the phone ---------- */
+.phone { --pfg: #f6eedd; --pdim: #a99d86; --gold: #f2c14e; --gold2: #ffdf8a; --leaf: #8fd39a; --card: rgba(255,255,255,.06); --cardline: rgba(255,255,255,.08); --navbg: rgba(28,24,18,.86); --sheet: #17130d;
+  position: relative; width: 380px; max-width: 100%; aspect-ratio: 9 / 19.5; border-radius: 46px; border: 9px solid #18181a; overflow: hidden; background: #070605; color: var(--pfg); box-shadow: 0 30px 70px rgba(0,0,0,.35); container-type: inline-size; font-size: 13px; }
+.phone > * { font-size: 3.4cqw; }
+.phone[data-look="light"] { --pfg: #2a2116; --pdim: #7c6d55; --gold: #c98d22; --gold2: #a8700f; --leaf: #3f8a52; --card: rgba(255,255,255,.55); --cardline: rgba(120,90,40,.15); --navbg: rgba(255,250,240,.86); --sheet: #fbf6ec; background: #f3e6cf; }
+.status { position: absolute; top: 0; left: 0; right: 0; height: 9cqw; display: flex; justify-content: space-between; align-items: center; padding: 0 7cqw; font-size: 3.3cqw; font-weight: 700; z-index: 6; }
+.scroll { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+.hero { position: relative; height: 100cqh; min-height: 216cqw; }
+.hero svg.scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hero .ui { position: relative; min-height: 216cqw; display: flex; flex-direction: column; padding: 13cqw 6cqw 36cqw; }
+.bar { display: flex; justify-content: space-between; align-items: center; }
+.brand { font-family: var(--display); font-size: 8.2cqw; letter-spacing: -.01em; }
+.chip { display: inline-flex; align-items: center; gap: 1.5cqw; padding: 1.6cqw 3.2cqw; border-radius: 99px; background: rgba(242,193,78,.18); color: var(--gold2); font-weight: 700; font-size: 3.5cqw; border: 0; font-family: inherit; }
+.tapzone { position: absolute; left: 24cqw; right: 24cqw; top: 26cqw; height: 66cqw; border-radius: 40%; cursor: pointer; background: transparent; border: 0; z-index: 2; touch-action: pan-y; }
+.peek { position: absolute; top: 48cqw; width: 20cqw; height: 34cqw; border: 0; background: transparent; cursor: pointer; padding: 0; z-index: 2; opacity: .55; }
+.peek svg { width: 100%; height: 100%; }
+.peek.l { left: 0; } .peek.r { right: 0; }
+.peek.r svg { filter: brightness(.28) saturate(0); }
+.dots { display: flex; justify-content: center; gap: 1.4cqw; margin-bottom: 2.6cqw; }
+.dots i { width: 1.6cqw; height: 1.6cqw; border-radius: 99px; background: rgba(127,127,127,.4); transition: width .3s; }
+.dots i.on { width: 5cqw; background: var(--gold2); }
+.dots i.got { background: rgba(242,193,78,.55); }
+svg.scene.locked { filter: brightness(.42) saturate(.2); }
+.acts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2cqw; margin-top: 4.6cqw; }
+.act { display: grid; justify-items: center; gap: 1.2cqw; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 0; }
+.act .c { width: 13cqw; height: 13cqw; border-radius: 50%; background: var(--card); border: 1px solid var(--cardline); display: grid; place-items: center; }
+.act .c svg { width: 5.6cqw; height: 5.6cqw; stroke: var(--gold2); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.act > span:last-child { font-size: 3cqw; color: var(--pdim); }
+.trackrow { display: flex; align-items: center; gap: 2.4cqw; }
+.trackrow .track { flex: 1; }
+.waterbtn { flex: none; border: 1px solid rgba(159,199,232,.55); background: rgba(120,180,235,.18); color: #cfe6fb; border-radius: 99px; padding: 1.4cqw 3cqw; font: inherit; font-weight: 700; font-size: 3.3cqw; cursor: pointer; box-shadow: 0 0 12px rgba(159,199,232,.35); }
+.phone[data-look="light"] .waterbtn { color: #1f5f8f; }
+#backNow { margin: 3.6cqw auto 0; }
+.chip.ok { background: rgba(110,190,125,.16); color: var(--leaf); }
+.chip.warn { background: rgba(214,120,40,.22); color: #ffd3a1; }
+.phone[data-look="light"] .chip.warn { color: #8a4a0c; }
+.chip.night { background: rgba(140,150,230,.18); color: #cdd3ff; }
+.chip { cursor: pointer; }
+.pills .pill { margin: 0; }
+.pill.water { background: rgba(120,180,235,.18); border-color: rgba(159,199,232,.55); color: #cfe6fb; }
+.phone[data-look="light"] .pill.water { color: #1f5f8f; background: rgba(120,180,235,.22); }
+.pill.back { background: var(--card); border-color: var(--cardline); color: var(--pfg); }
+.drop { position: absolute; width: 2.2cqw; height: 3.2cqw; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: #9fc7e8; box-shadow: 0 0 6px rgba(159,199,232,.8); z-index: 3; animation: fall 1.1s ease-in forwards; pointer-events: none; }
+@keyframes fall { from { transform: translateY(0); opacity: 0 } 15% { opacity: 1 } to { transform: translateY(46cqw); opacity: 0 } }
+.mid { margin-top: 64cqw; display: grid; justify-items: center; text-align: center; cursor: pointer; background: none; border: 0; color: inherit; font: inherit; padding: 0; }
+.stage-name { font-size: 3.3cqw; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: var(--gold2); display: flex; align-items: center; gap: 2cqw; }
+.stage-name::before, .stage-name::after { content: ""; width: 8cqw; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
+.stage-name::after { transform: scaleX(-1); }
+.big { font-family: var(--display); font-size: 15cqw; line-height: 1; margin-top: 1.5cqw; font-variant-numeric: tabular-nums; }
+.under { font-size: 3.9cqw; color: var(--pdim); margin-top: 1.4cqw; }
+.next { width: 100%; margin-top: 3.4cqw; display: grid; gap: 1.3cqw; padding: 0 5cqw; }
+.track { height: 1.8cqw; border-radius: 99px; background: rgba(127,127,127,.18); overflow: hidden; }
+.track i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #c98d22, var(--gold2)); box-shadow: 0 0 10px rgba(242,193,78,.6); transition: width .6s ease; }
+.next .row { display: flex; justify-content: space-between; font-size: 3.2cqw; color: var(--pdim); }
+.next .row b { color: var(--pfg); }
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3cqw; margin-top: 4cqw; text-align: center; }
+.trio .t { display: grid; justify-items: center; gap: 1.2cqw; }
+.trio .o { display: inline-flex; align-items: center; gap: 1.6cqw; padding: 2cqw 3.6cqw; border-radius: 99px; background: var(--card); border: 1px solid var(--cardline); font-weight: 700; font-size: 4.2cqw; }
+.trio .o i { width: 2.4cqw; height: 2.4cqw; border-radius: 50%; display: inline-block; }
+.trio span { font-size: 3cqw; color: var(--pdim); }
+.pill { margin: 0 auto; display: inline-flex; align-items: center; gap: 2cqw; padding: 2.2cqw 4.2cqw; border-radius: 99px; font-weight: 700; font-size: 3.6cqw; cursor: pointer; border: 1px solid; font-family: inherit; }
+.pill.warn { background: rgba(214,120,40,.22); border-color: rgba(242,160,78,.5); color: #ffd3a1; }
+.phone[data-look="light"] .pill.warn { color: #8a4a0c; background: rgba(240,170,90,.25); }
+.pill.ok { background: rgba(110,190,125,.16); border-color: rgba(143,211,154,.4); color: var(--leaf); }
+.pill.night { background: rgba(140,150,230,.16); border-color: rgba(170,180,240,.35); color: #cdd3ff; }
+.fold { padding: 4cqw 5cqw 44cqw; display: grid; gap: 3.4cqw; background: linear-gradient(180deg, transparent, rgba(0,0,0,.15) 30%); }
+.phone[data-look="light"] .fold { background: linear-gradient(180deg, transparent, rgba(255,255,255,.4) 30%); }
+.card { background: var(--card); border: 1px solid var(--cardline); border-radius: 5cqw; padding: 4cqw; display: grid; gap: 1.6cqw; backdrop-filter: blur(6px); }
+.card .lbl { font-size: 2.9cqw; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--pdim); }
+.card h4 { margin: 0; font-family: var(--display); font-size: 5cqw; font-weight: 600; }
+.card .row { display: flex; justify-content: space-between; align-items: center; font-size: 3.6cqw; }
+.card .row span { color: var(--pdim); }
+.card .btn { justify-self: start; padding: 2cqw 4cqw; border-radius: 99px; background: rgba(242,193,78,.18); color: var(--gold2); font-weight: 700; font-size: 3.4cqw; }
+.tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3cqw; }
+.tools div { background: var(--card); border: 1px solid var(--cardline); border-radius: 4cqw; padding: 3.4cqw 1cqw; text-align: center; font-size: 3.3cqw; font-weight: 700; }
+.celebrate { display: flex; align-items: center; gap: 3cqw; }
+.flame { width: 13cqw; height: 13cqw; border-radius: 50%; background: radial-gradient(circle at 50% 60%, #ffe39a, #f2c14e 45%, rgba(242,193,78,0) 70%); flex: none; display: grid; place-items: center; font-family: var(--display); font-size: 5cqw; color: #2a1c02; }
+.dock { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 5cqw 4cqw; display: grid; gap: 3cqw; z-index: 5; pointer-events: none; }
+.dock > * { pointer-events: auto; }
+.breathe { display: flex; align-items: center; justify-content: center; gap: 2.4cqw; padding: 3.8cqw; border-radius: 99px; font-weight: 700; font-size: 4.6cqw; color: #2a1c02; background: radial-gradient(120% 140% at 50% 0%, #ffe39a, #f2c14e 55%, #d99a26); box-shadow: 0 6px 24px rgba(242,193,78,.45), inset 0 1px 0 rgba(255,255,255,.6); border: 0; cursor: pointer; font-family: inherit; }
+.breathe .dot { width: 5.4cqw; height: 5.4cqw; border-radius: 50%; background: #2a1c02; display: grid; place-items: center; }
+.breathe .dot::after { content: ""; width: 2.2cqw; height: 2.2cqw; border-radius: 50%; border: .6cqw solid #f2c14e; }
+.nav { display: grid; grid-template-columns: repeat(4, 1fr); padding: 2.2cqw; border-radius: 99px; background: var(--navbg); border: 1px solid var(--cardline); backdrop-filter: blur(12px); text-align: center; font-size: 3cqw; color: var(--pdim); }
+.nav span { padding: 1.8cqw 0; border-radius: 99px; }
+.nav .on { background: rgba(242,193,78,.16); color: var(--gold2); font-weight: 700; }
+
+/* overlays */
+.layer { position: absolute; inset: 0; z-index: 10; display: none; }
+.layer.open { display: block; }
+.scrim { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 86%; overflow-y: auto; background: var(--sheet); color: var(--pfg); border-radius: 7cqw 7cqw 0 0; padding: 3cqw 6cqw 8cqw; display: grid; gap: 3cqw; animation: up .35s cubic-bezier(.2,.8,.2,1); }
+.sheet.full { top: 0; max-height: none; border-radius: 0; padding-top: 12cqw; }
+@keyframes up { from { transform: translateY(40%); opacity: 0 } to { transform: none; opacity: 1 } }
+.grab { width: 11cqw; height: 1.2cqw; border-radius: 99px; background: rgba(127,127,127,.4); justify-self: center; }
+.sheet h3 { margin: 0; font-family: var(--display); font-size: 6.4cqw; }
+.sheet p { font-size: 3.7cqw; color: var(--pdim); }
+.back { justify-self: start; background: var(--card); border: 1px solid var(--cardline); color: var(--pfg); border-radius: 99px; padding: 2cqw 4cqw; font: inherit; font-weight: 700; font-size: 3.4cqw; cursor: pointer; }
+.arcwrap { display: grid; justify-items: center; position: relative; }
+.arcwrap .num { position: absolute; top: 44%; text-align: center; }
+.arcwrap .num b { font-family: var(--display); font-size: 11cqw; display: block; line-height: 1; }
+.arcwrap .num span { font-size: 3.4cqw; color: var(--pdim); }
+.cmp { display: grid; gap: 1.2cqw; }
+.cmp .row { display: flex; justify-content: space-between; font-size: 3.6cqw; }
+.cmp .row b { color: var(--leaf); }
+.cmp .bars { position: relative; height: 1.8cqw; border-radius: 99px; background: rgba(127,127,127,.18); }
+.cmp .bars i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 99px; background: var(--leaf); }
+.cmp .bars u { position: absolute; top: -1cqw; bottom: -1cqw; width: .6cqw; background: #e5553a; border-radius: 2px; }
+.cmp small { color: var(--pdim); font-size: 3cqw; }
+.stepl { display: grid; gap: 2.4cqw; }
+.stepl div { display: grid; grid-template-columns: 7cqw 1fr auto; gap: 3cqw; align-items: center; font-size: 3.8cqw; }
+.stepl .d { width: 6.4cqw; height: 6.4cqw; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 3.2cqw; border: .6cqw solid var(--gold); color: var(--gold2); }
+.stepl .d.ok { background: var(--leaf); border-color: var(--leaf); color: #10210f; }
+.stepl .done { color: var(--pdim); }
+.stepl .go { background: rgba(242,193,78,.18); color: var(--gold2); border-radius: 99px; padding: 1.6cqw 3.4cqw; font-weight: 700; font-size: 3.2cqw; }
+.primary { background: var(--gold); color: #2a1c02; border: 0; border-radius: 99px; padding: 3.6cqw; font: inherit; font-weight: 700; font-size: 4.2cqw; cursor: pointer; }
+.stagelist { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2cqw; }
+.stagelist div { text-align: center; font-size: 2.8cqw; color: var(--pdim); background: var(--card); border: 1px solid var(--cardline); border-radius: 3cqw; padding: 1.4cqw .6cqw; }
+.stagelist div.got { color: var(--pfg); }
+.stagelist div.cur { border-color: var(--gold); color: var(--gold2); font-weight: 700; }
+.levelup { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; background: radial-gradient(circle at 50% 42%, rgba(242,193,78,.35), #070605 62%), #070605; }
+.phone[data-look="light"] .levelup { background: radial-gradient(circle at 50% 42%, rgba(242,193,78,.45), #f3e6cf 65%), #f3e6cf; }
+.levelup .inner { display: grid; gap: 3cqw; justify-items: center; padding: 0 8cqw; }
+.levelup svg { width: 70cqw; height: 70cqw; }
+.levelup h3 { font-family: var(--display); font-size: 9cqw; margin: 0; }
+.levelup p { color: var(--pdim); font-size: 4cqw; }
+.rays { position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg at 50% 42%, rgba(255,223,138,.10) 0 6deg, transparent 6deg 18deg); }
+.breathing { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; background: radial-gradient(circle at 50% 45%, #1d2a22, #070605 70%); color: #eef5ee; }
+.phone[data-look="light"] .breathing { background: radial-gradient(circle at 50% 45%, #e9f3e6, #f3e6cf 75%); color: #22301f; }
+.orb { width: 34cqw; height: 34cqw; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #d9f5cf, #79c98a 60%, #2f6e43); box-shadow: 0 0 40px rgba(143,211,154,.5); margin: 0 auto 8cqw; transform: scale(.7); transition: transform 4s ease-in-out; }
+.orb.in { transform: scale(1.25); }
+.breathing h3 { font-family: var(--display); font-size: 8cqw; margin: 0; }
+.breathing p { font-size: 3.8cqw; opacity: .75; margin-top: 2cqw; }
+@media (prefers-reduced-motion: reduce) {
+  .sheet { animation: none; } .orb { transition: none; } .track i { transition: none; } .glow { animation: none !important; }
+}
+.glow { animation: pulse 5s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: .82 } 50% { opacity: 1 } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="side">
+    <header style="display:grid;gap:12px">
+      <span class="eyebrow">Unrot for Android · Today · prototype v2 · 23 Nov 2026</span>
+      <h1>The new Today, working: a sprout under glass</h1>
+      <p class="lede">Opal's object-on-a-stone home and CleanPath's named stage with a bar to the next one, rebuilt around Unrot's own sprout. Change the state on the right, drag the time, and tap things inside the phone.</p>
+    </header>
+
+    <div class="panel">
+      <h2>Try it</h2>
+      <div>
+        <div class="eyebrow" style="margin-bottom:6px">Moment</div>
+        <div class="seg" id="moment">
+          <button type="button" data-v="day" aria-pressed="true">Afternoon</button>
+          <button type="button" data-v="first" aria-pressed="false">Day 1, setup left</button>
+          <button type="button" data-v="night" aria-pressed="false">Night, quiet hours</button>
+        </div>
+      </div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:6px">Theme</div>
+        <div class="seg" id="look">
+          <button type="button" data-v="dark" aria-pressed="true">Dark</button>
+          <button type="button" data-v="light" aria-pressed="false">Light (dawn)</button>
+        </div>
+      </div>
+      <div>
+        <label for="given">Time given back <output id="givenOut">16 m</output></label>
+        <input type="range" id="given" min="0" max="16" step="1" value="4">
+      </div>
+      <div>
+        <label for="pauses">Pauses taken today <output id="pausesOut">3</output></label>
+        <input type="range" id="pauses" min="0" max="6" step="1" value="3">
+      </div>
+      <div>
+        <label for="waterReady" style="justify-content:flex-start;gap:8px"><input type="checkbox" id="waterReady" checked> Yesterday's water is ready</label>
+      </div>
+      <ol class="tries">
+        <li>Tap <b>💧 +8 m</b> beside the bar: yesterday's real time given back pours in, drops fall, and the bar and number grow. A daily ritual (Bloom, Finch), but nothing ever wilts.</li>
+        <li><b>Swipe</b> the sprout or tap the shapes at its sides: earlier stages, and the next one as a locked shadow (QUITTR, CleanPath).</li>
+        <li>Drag <b>Time given back</b> past 1 h: a new stage arrives with a celebration.</li>
+        <li>Tap the <b>sprout or the number</b>: “Your sprout” opens, like Opal's score page.</li>
+        <li>Tap the <b>chip at the top right</b>: on Day 1 it says “2 steps left” and opens the setup checklist.</li>
+        <li>Tap <b>Breathe</b>: the breathing screen. Scroll inside the phone for the rest of Today.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h2>What comes from where</h2>
+      <div class="why">
+        <div><b>O</b><span><b>Opal:</b> full-screen dark scene, one object on a stone, three rounded chips under the number, tap for the why, a floating pill for problems, a celebration card lower down.</span></div>
+        <div><b>C</b><span><b>CleanPath:</b> the stage name between laurels, the bar to the next stage, one big named button for the hard moment, a floating tab bar, a full-screen moment when you reach a new stage.</span></div>
+        <div><b>B</b><span><b>Bloom and Finch:</b> a small daily ritual. Bloom earns a watering can each day you keep your rules; we pour in yesterday's real time given back.</span></div>
+        <div><b>Q</b><span><b>QUITTR:</b> swipe the hero to see the stages around it, with the next one locked, and four round actions right under the numbers.</span></div>
+        <div><b>U</b><span><b>Unrot's own:</b> the sprout from our icon, growth that never resets, dewdrops for today's pauses, the sprout sleeping in quiet hours, honest numbers from this phone only.</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Rules it keeps</h2>
+      <ul class="tries">
+        <li>One tool for all three: endless scrolling, adult content, and phone time. Each gets one chip under the sprout and a row on its page.</li>
+        <li>Only real numbers from this phone: time given back, feed time, adult content kept out, phone time, pauses. Nothing guessed.</li>
+        <li>Growth never goes down. A heavy day just grows less (Marlatt and Gordon's abstinence violation effect).</li>
+        <li>Setup starts partly full: onboarding counts (Nunes and Drèze's endowed progress).</li>
+        <li>The next stage is always close enough to see (goal gradient).</li>
+        <li>Drawn in code, so it runs on Android 6 and follows light and dark.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="stick">
+    <div class="phone" id="phone" data-look="dark" role="region" aria-label="Unrot Today prototype">
+      <div class="status"><span>13:52</span><span>▲ ● ▮</span></div>
+      <div class="scroll" id="scroll">
+        <div class="hero">
+          <svg class="scene" id="scene" viewBox="0 0 360 780" preserveAspectRatio="xMidYMin slice" aria-hidden="true"></svg>
+          <button class="tapzone" type="button" id="tapSprout" aria-label="Open your sprout"></button>
+          <button class="peek l" type="button" id="peekL" aria-label="Previous stage"><svg id="peekLs" viewBox="0 0 240 300" aria-hidden="true"></svg></button>
+          <button class="peek r" type="button" id="peekR" aria-label="Next stage"><svg id="peekRs" viewBox="0 0 240 300" aria-hidden="true"></svg></button>
+          <div class="ui">
+            <div class="bar"><span class="brand">Unrot</span><button class="chip" type="button" id="statusChip">● Shield on</button></div>
+            <button class="mid" type="button" id="tapNumber" aria-label="Open your sprout">
+              <span class="dots" id="dots" aria-hidden="true"></span>
+              <span class="stage-name" id="stageName">Two leaves</span>
+              <span class="big" id="bigNum">16 m</span>
+              <span class="under" id="under">given back since 20 Nov</span>
+            </button>
+            <div class="next" id="nextBox"><div class="trackrow"><div class="track"><i id="nextFill" style="width:27%"></i></div><button class="waterbtn" type="button" id="water">💧 +8 m</button></div><div class="row"><span id="nextName">Young plant</span><b id="nextLeft">44 m to go</b></div></div>
+            <button class="pill back" type="button" id="backNow" hidden>‹ Back to now</button>
+            <div class="trio" id="trio">
+              <div class="t"><span class="o"><i style="background:#8fd39a"></i>0 m</span><span>endless feeds</span></div>
+              <div class="t"><span class="o"><i style="background:#e58f7a"></i>12</span><span>adult kept out</span></div>
+              <div class="t"><span class="o"><i style="background:#9fc7e8"></i>2 h 10</span><span>phone today</span></div>
+            </div>
+            <div class="acts" id="acts">
+              <button class="act" type="button"><span class="c"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></span><span>Focus</span></button>
+              <button class="act" type="button"><span class="c"><svg viewBox="0 0 24 24"><path d="M6 4h9l3 3v13H6z"/><path d="M9 11h6M9 15h6"/></svg></span><span>My notes</span></button>
+              <button class="act" type="button"><span class="c"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Lock</span></button>
+              <button class="act" type="button" id="actInsights"><span class="c"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span><span>Insights</span></button>
+            </div>
+
+          </div>
+        </div>
+        <div class="fold" id="fold">
+          <div class="card"><span class="lbl">Next for you</span><h4>Set quiet hours</h4><span style="color:var(--pdim)">Pick the hours your feeds stay closed, like bedtime.</span><span class="btn">Set quiet hours</span></div>
+          <div class="card"><span class="lbl">Today's plan</span><div class="row"><b>Feeds closed</b><span>56 times today</span></div><div class="row"><b>Quiet hours</b><span>22:00–07:00</span></div></div>
+          <div class="card celebrate"><span class="flame">3</span><div><h4>Three days with Unrot</h4><span style="color:var(--pdim)">16 minutes back already. Most of it in the afternoon.</span></div></div>
+          <div class="card"><span class="lbl">From you</span><h4>“Go to sleep. Tomorrow-you has a big day.”</h4></div>
+        </div>
+      </div>
+      <div class="dock">
+        <button class="breathe" type="button" id="breathe"><span class="dot"></span>Breathe</button>
+        <div class="nav"><span class="on">Today</span><span>Shield</span><span>Progress</span><span>You</span></div>
+      </div>
+
+      <div class="layer" id="detail"><div class="sheet full">
+        <button class="back" type="button" data-close>‹ Today</button>
+        <div class="arcwrap">
+          <svg viewBox="0 0 300 200" width="88%" aria-hidden="true">
+            <path d="M30 170 A120 120 0 0 1 270 170" fill="none" stroke="rgba(127,127,127,.22)" stroke-width="14" stroke-linecap="round"/>
+            <path id="arc" d="M30 170 A120 120 0 0 1 270 170" fill="none" stroke="#f2c14e" stroke-width="14" stroke-linecap="round" pathLength="100" stroke-dasharray="27 100"/>
+          </svg>
+          <div class="num"><b id="dNum">16 m</b><span id="dStage">Two leaves · 44 m to a young plant</span></div>
+        </div>
+        <h3>What is time given back?</h3>
+        <p>The minutes you did not spend in endless feeds, compared with your “before” of 8 m a day. Counted on this phone only, from Android's own usage record. It only ever goes up.</p>
+        <div class="cmp"><div class="row"><span>Feed time a day</span><b>↓ 8 m</b></div><div class="bars"><i style="width:4%"></i><u style="left:60%"></u></div><small>now 0 m · red mark is your before</small></div>
+        <div class="cmp"><div class="row"><span>Opens a day</span><b>↓ 6</b></div><div class="bars"><i style="width:3%"></i><u style="left:50%"></u></div><small>now 0 · before 6</small></div>
+        <div class="cmp"><div class="row"><span>Adult content kept out</span><b>12 today</b></div><div class="bars"><i style="width:40%"></i></div><small>sites, searches and images stopped before they opened</small></div>
+        <div class="cmp"><div class="row"><span>Phone time today</span><b>↓ 1 h 5</b></div><div class="bars"><i style="width:45%"></i><u style="left:68%"></u></div><small>now 2 h 10 · before 3 h 15</small></div>
+        <div class="cmp"><div class="row"><span>Pauses taken</span><b>36 in all</b></div><div class="bars"><i style="width:72%"></i></div><small>each one adds a little growth</small></div>
+        <h3 style="font-size:5cqw">Stages</h3>
+        <div class="stagelist" id="stagelist"></div>
+      </div></div>
+
+      <div class="layer" id="setup"><div class="scrim" data-close></div><div class="sheet">
+        <div class="grab"></div>
+        <h3>Finish setup</h3>
+        <div class="track"><i style="width:60%"></i></div>
+        <p>3 of 5 done · about 2 minutes</p>
+        <div class="stepl">
+          <div><span class="d ok">✓</span><span class="done">Answer a few questions</span><span></span></div>
+          <div><span class="d ok">✓</span><span class="done">Pick your feed apps</span><span></span></div>
+          <div><span class="d ok">✓</span><span class="done">Block adult websites</span><span></span></div>
+          <div><span class="d">4</span><span><b>Let Unrot see which app is open</b><br><span style="color:var(--pdim);font-size:3.2cqw">Without this, feeds stay open.</span></span><span class="go">Show me</span></div>
+          <div><span class="d">5</span><span>Stop Samsung from pausing Unrot</span><span style="color:var(--pdim)">›</span></div>
+        </div>
+        <button class="primary" type="button" data-close>Continue</button>
+      </div></div>
+
+      <div class="layer" id="levelup"><div class="levelup"><div class="rays"></div><div class="inner">
+        <svg id="luScene" viewBox="0 0 360 360" aria-hidden="true"></svg>
+        <div class="stage-name" id="luName">New stage</div>
+        <h3 id="luTitle">Young plant</h3>
+        <p id="luBody">One hour given back. That's a film you didn't scroll away.</p>
+        <button class="primary" type="button" data-close style="padding:3.4cqw 10cqw">Keep growing</button>
+      </div></div></div>
+
+      <div class="layer" id="breath"><div class="breathing"><div>
+        <div class="orb" id="orb"></div>
+        <h3 id="bWord">Breathe in</h3>
+        <p id="bSub">The pull passes. Usually in under a minute.</p>
+        <button class="primary" type="button" data-close style="margin-top:8cqw;padding:3.2cqw 9cqw">I'm okay now</button>
+      </div></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const ns = 'http://www.w3.org/2000/svg';
+  let uid = 0;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function el(p, tag, a, text) { const e = document.createElementNS(ns, tag); for (const k in a) e.setAttribute(k, a[k]); if (text) e.textContent = text; p.appendChild(e); return e; }
+
+  // Palettes for the three looks: day (dark), night (quiet hours), light (dawn).
+  const PAL = {
+    day:   { sky0: '#3a2810', sky1: '#160f07', sky2: '#070605', glow: '#f2c14e', ga: .55, stone0: '#5a4a36', stone1: '#33291d', rim: '#6e5a40', rim2: '#3d3122', glassTint: '#ffe7a8', edge: 'rgba(255,240,200,.45)', leaf0: '#d4f5c4', leaf1: '#86cf8c', leaf2: '#3f8a52', stem: '#79bf78', dust: '#ffe2a0', knob: '#d9a640' },
+    night: { sky0: '#1c2142', sky1: '#0d1022', sky2: '#070605', glow: '#9aa6ff', ga: .28, stone0: '#3a3d52', stone1: '#23253a', rim: '#45496a', rim2: '#2b2e46', glassTint: '#9aa6ff', edge: 'rgba(200,210,255,.35)', leaf0: '#9cc3a8', leaf1: '#5f8f71', leaf2: '#2f5440', stem: '#5f8f71', dust: '#dfe3ff', knob: '#8d93b8' },
+    light: { sky0: '#fff3d6', sky1: '#f6dfb4', sky2: '#eccb95', glow: '#ffb84a', ga: .55, stone0: '#c9b28c', stone1: '#a88e66', rim: '#dcc6a0', rim2: '#b89c72', glassTint: '#ffffff', edge: 'rgba(140,100,40,.35)', leaf0: '#c3ebb2', leaf1: '#6cbf78', leaf2: '#2f7a45', stem: '#5fa86b', dust: '#fff', knob: '#c98d22' }
+  };
+
+  function drawScene(svg, stage, look, opts) {
+    svg.innerHTML = '';
+    const P = PAL[look], id = 'u' + (uid++);
+    const o = Object.assign({ cx: 180, cy: 296, s: 1.08, sky: true, w: 360, h: 780, dew: 0 }, opts || {});
+    const night = look === 'night';
+    const defs = el(svg, 'defs', {});
+    defs.innerHTML = `
+      <radialGradient id="${id}sky" cx="50%" cy="40%" r="78%"><stop offset="0" stop-color="${P.sky0}"/><stop offset=".55" stop-color="${P.sky1}"/><stop offset="1" stop-color="${P.sky2}"/></radialGradient>
+      <radialGradient id="${id}halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="${P.glow}" stop-opacity="${P.ga}"/><stop offset=".45" stop-color="${P.glow}" stop-opacity="${P.ga * .3}"/><stop offset="1" stop-color="${P.glow}" stop-opacity="0"/></radialGradient>
+      <linearGradient id="${id}ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${P.glow}" stop-opacity="0"/><stop offset=".6" stop-color="${P.glow}" stop-opacity="${night ? .05 : .14}"/><stop offset="1" stop-color="${P.glow}" stop-opacity="0"/></linearGradient>
+      <linearGradient id="${id}stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${P.stone0}"/><stop offset=".3" stop-color="${P.stone1}"/><stop offset="1" stop-color="${look === 'light' ? '#8a7150' : '#0c0a08'}"/></linearGradient>
+      <radialGradient id="${id}glass" cx="38%" cy="28%" r="80%"><stop offset="0" stop-color="#ffffff" stop-opacity="${look === 'light' ? .5 : .22}"/><stop offset=".5" stop-color="${P.glassTint}" stop-opacity=".07"/><stop offset="1" stop-color="#ffffff" stop-opacity=".03"/></radialGradient>
+      <linearGradient id="${id}leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${P.leaf0}"/><stop offset=".5" stop-color="${P.leaf1}"/><stop offset="1" stop-color="${P.leaf2}"/></linearGradient>
+      <radialGradient id="${id}soil" cx="50%" cy="30%" r="70%"><stop offset="0" stop-color="#7a5532"/><stop offset="1" stop-color="#3a2614"/></radialGradient>
+      <filter id="${id}blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+      <filter id="${id}soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4"/></filter>`;
+    const { cx, cy, s } = o;
+    if (o.sky) {
+      el(svg, 'rect', { x: 0, y: 0, width: o.w, height: o.h, fill: `url(#${id}sky)` });
+      [-70, -38, -10, 18, 46, 78].forEach((dx, i) => el(svg, 'path', { d: `M${cx + dx * .3} -20 L${cx + dx * 1.9 - 18} ${cy + 40} L${cx + dx * 1.9 + 18} ${cy + 40} Z`, fill: `url(#${id}ray)`, opacity: i % 2 ? .7 : 1 }));
+      [[40, 110], [300, 90], [70, 230], [320, 260], [150, 80], [260, 170], [30, 350], [335, 400], [110, 160]].forEach(([x, y], i) => el(svg, 'circle', { cx: x, cy: y, r: i % 3 ? 1.2 : 1.8, fill: P.dust, opacity: night ? .8 : .45 }));
+      if (night) { el(svg, 'circle', { cx: 285, cy: 140, r: 22, fill: '#ecebd9' }); el(svg, 'circle', { cx: 296, cy: 133, r: 20, fill: '#151a35' }); }
+      if (look === 'light') el(svg, 'circle', { cx: 180, cy: 250, r: 60, fill: '#fff6dc', opacity: .7, filter: `url(#${id}blur)` });
+    }
+    const g = el(svg, 'g', { transform: `translate(${cx} ${cy}) scale(${s})` });
+    el(g, 'ellipse', { class: reduce ? '' : 'glow', cx: 0, cy: -70, rx: 150, ry: 150, fill: `url(#${id}halo)` });
+    el(g, 'ellipse', { cx: 0, cy: 46, rx: 120, ry: 20, fill: '#000', opacity: look === 'light' ? .2 : .55, filter: `url(#${id}blur)` });
+    el(g, 'path', { d: 'M-104 8 C-96 -6 96 -6 104 8 L94 40 C70 56 -70 56 -94 40 Z', fill: `url(#${id}stone)` });
+    el(g, 'ellipse', { cx: 0, cy: 6, rx: 104, ry: 16, fill: P.rim });
+    el(g, 'ellipse', { cx: 0, cy: 4, rx: 92, ry: 11, fill: P.rim2 });
+    el(g, 'ellipse', { cx: 0, cy: 2, rx: 66, ry: 9, fill: `url(#${id}soil)` });
+    plant(g, stage, id, P, o.dew);
+    el(g, 'path', { d: 'M-72 4 L-72 -92 C-72 -172 72 -172 72 -92 L72 4', fill: `url(#${id}glass)`, stroke: P.edge, 'stroke-width': 1.6 });
+    el(g, 'path', { d: 'M-56 -20 L-56 -96 C-56 -138 -30 -150 -12 -152', fill: 'none', stroke: '#fff', 'stroke-opacity': .32, 'stroke-width': 5, 'stroke-linecap': 'round', filter: `url(#${id}soft)` });
+    el(g, 'path', { d: 'M54 -60 L54 -96', fill: 'none', stroke: '#fff', 'stroke-opacity': .2, 'stroke-width': 3, 'stroke-linecap': 'round' });
+    el(g, 'ellipse', { cx: 0, cy: 4, rx: 74, ry: 7, fill: 'none', stroke: P.edge, 'stroke-width': 2 });
+    el(g, 'circle', { cx: 0, cy: -162, r: 6, fill: P.knob });
+    if (night) el(g, 'text', { x: 30, y: -96, fill: '#cdd3ff', 'font-size': 14, 'font-family': 'DM Sans, sans-serif', opacity: .85 }, 'z z');
+  }
+  function plant(g, stage, id, P, dew) {
+    const leaf = (x, y, dx, dy) => el(g, 'path', { d: `M${x} ${y} C${x + dx * .15} ${y - dy} ${x + dx * .85} ${y - dy * 1.05} ${x + dx} ${y - dy} C${x + dx * .95} ${y - dy * .15} ${x + dx * .45} ${y + 5} ${x} ${y} Z`, fill: `url(#${id}leaf)` });
+    const vein = (x, y, dx, dy) => el(g, 'path', { d: `M${x} ${y} Q${x + dx * .5} ${y - dy * .75} ${x + dx * .92} ${y - dy * .96}`, stroke: '#fff', 'stroke-opacity': .25, 'stroke-width': 1, fill: 'none' });
+    if (stage === 0) {
+      el(g, 'ellipse', { cx: 0, cy: -3, rx: 11, ry: 7, fill: '#c89b5a' });
+      el(g, 'path', { d: 'M2 -9 q3 -12 12 -15', stroke: '#9fe0a2', 'stroke-width': 3.4, fill: 'none', 'stroke-linecap': 'round' });
+      el(g, 'circle', { cx: 0, cy: -6, r: 26, fill: P.glow, opacity: .16 });
+      return;
+    }
+    const h = [0, 34, 62, 82, 98, 106, 120][stage], top = -h;
+    el(g, 'path', { d: `M0 0 C-2 ${top * .4} 3 ${top * .7} 0 ${top}`, stroke: P.stem, 'stroke-width': stage >= 6 ? 10 : 5, fill: 'none', 'stroke-linecap': 'round' });
+    const spots = [];
+    if (stage >= 1) { leaf(0, top + 4, 30, 24); vein(0, top + 4, 30, 24); spots.push([24, top - 15]); }
+    if (stage >= 2) { leaf(0, top + 16, -34, 24); vein(0, top + 16, -34, 24); spots.push([-24, top - 2], [12, top - 12]); }
+    if (stage >= 3) { leaf(0, top + 40, 38, 18); leaf(0, top + 46, -38, 16); spots.push([30, top + 26], [-30, top + 34]); }
+    if (stage >= 4) el(g, 'ellipse', { cx: 0, cy: top - 8, rx: 7, ry: 11, fill: '#f0a9a0' });
+    if (stage >= 5) { [0, 72, 144, 216, 288].forEach(a => el(g, 'ellipse', { cx: 0, cy: top - 16, rx: 7, ry: 13, fill: '#ffd36a', transform: `rotate(${a} 0 ${top - 6})` })); el(g, 'circle', { cx: 0, cy: top - 6, r: 6, fill: '#d0802f' }); }
+    if (stage >= 6) { [[0, -12, 46], [-30, 4, 28], [30, 4, 28]].forEach(([x, y, r]) => el(g, 'circle', { cx: x, cy: top + y, r, fill: `url(#${id}leaf)` })); [[-14, -20], [16, -4], [-30, 8], [26, 14]].forEach(([x, y]) => el(g, 'circle', { cx: x, cy: top + y, r: 4, fill: '#ffd36a' })); spots.push([-20, top - 30], [20, top - 26]); }
+    for (let i = 0; i < Math.min(dew, spots.length); i++) {
+      el(g, 'circle', { cx: spots[i][0], cy: spots[i][1], r: 4, fill: '#d9efff', stroke: '#8ec2ea', 'stroke-width': 1 });
+      el(g, 'circle', { cx: spots[i][0] - 1.2, cy: spots[i][1] - 1.4, r: 1.2, fill: '#fff' });
+    }
+  }
+
+  // Minutes given back along the slider, and the stage thresholds.
+  const STEPS = [0, 2, 5, 10, 16, 30, 45, 60, 90, 120, 180, 300, 480, 720, 1440, 2000, 2880];
+  const STAGES = [['Seed', 0], ['Sprout', 5], ['Two leaves', 15], ['Young plant', 60], ['Bud', 180], ['Flower', 480], ['Tree', 1440]];
+  const LINES = {
+    1: 'Five minutes back. The first green.',
+    2: 'Fifteen minutes back. Two leaves now.',
+    3: "One hour given back. That's a film you didn't scroll away.",
+    4: 'Three hours back. A bud is forming.',
+    5: 'Eight hours back. A whole working day.',
+    6: 'A whole day given back. Your sprout is a tree.'
+  };
+  const fmt = m => m < 60 ? `${m} m` : (m % 60 ? `${Math.floor(m / 60)} h ${m % 60}` : `${m / 60} h`);
+  const stageOf = m => { let s = 0; STAGES.forEach(([, t], i) => { if (m >= t) s = i; }); return s; };
+
+  const $ = id => document.getElementById(id);
+  const state = { moment: 'day', look: 'dark', given: 16, pauses: 3, view: null, water: true, gain: 8, justWatered: false };
+  let lastStage = stageOf(16);
+
+  function render() {
+    const phone = $('phone');
+    const sceneLook = state.moment === 'night' ? 'night' : (state.look === 'light' ? 'light' : 'day');
+    phone.dataset.look = state.look === 'light' && state.moment !== 'night' ? 'light' : 'dark';
+    const first = state.moment === 'first';
+    const m = first ? 0 : state.given;
+    const st = stageOf(m);
+    const viewing = state.view !== null && state.view !== st && !first;
+    const shown = viewing ? state.view : st;
+    drawScene($('scene'), shown, sceneLook, { dew: state.moment === 'night' || viewing ? 0 : state.pauses });
+    $('scene').classList.toggle('locked', viewing && shown > st);
+    // the stages either side, plant only and small
+    const pl = shown - 1, pr = shown + 1;
+    $('peekL').hidden = first || pl < 0; $('peekR').hidden = first || pr > 6;
+    if (pl >= 0) drawScene($('peekLs'), pl, sceneLook, { sky: false, cx: 120, cy: 260, s: .9 });
+    if (pr <= 6) drawScene($('peekRs'), pr, sceneLook, { sky: false, cx: 120, cy: 260, s: .9 });
+    $('dots').innerHTML = first ? '' : STAGES.map((_, i) => `<i class="${i === shown ? 'on' : i <= st ? 'got' : ''}"></i>`).join('');
+    const chip = $('statusChip');
+    chip.className = 'chip ' + (first ? 'warn' : state.moment === 'night' ? 'night' : 'ok');
+    chip.textContent = first ? '● 2 steps left' : state.moment === 'night' ? '☾ until 07:00' : '● Shield on';
+    $('stageName').textContent = state.moment === 'night' && !viewing ? 'Resting' : STAGES[shown][0];
+    $('bigNum').textContent = first ? 'Planted' : viewing ? (shown > st ? '🔒 ' + fmt(STAGES[shown][1]) : (STAGES[shown][1] ? fmt(STAGES[shown][1]) : 'Day 1')) : fmt(m);
+    $('under').textContent = first ? 'Stops endless scrolling, blocks adult content, cuts phone time'
+      : viewing ? (shown > st ? `unlocks at ${fmt(STAGES[shown][1])} given back · ${fmt(STAGES[shown][1] - m)} to go` : 'reached · it never shrinks')
+      : state.justWatered ? `watered · +${fmt(state.gain)} from yesterday`
+      : state.moment === 'night' ? 'given back · your sprout is asleep · quiet hours' : 'given back since 20 Nov · day 3';
+    $('trio').hidden = first || state.moment === 'night';
+    const nb = $('nextBox');
+    nb.hidden = state.moment === 'night' || viewing;
+    $('acts').hidden = first || state.moment === 'night';
+    $('water').hidden = !(state.water && state.moment === 'day' && !viewing);
+    $('water').textContent = `💧 +${fmt(state.gain)}`;
+    $('water').setAttribute('aria-label', `Pour in yesterday's ${fmt(state.gain)}`);
+    $('backNow').hidden = !viewing;
+    if (first) {
+      $('nextFill').style.width = '60%'; $('nextName').textContent = 'Setup'; $('nextLeft').textContent = '3 of 5 done';
+    } else if (st < 6) {
+      const [n, t] = STAGES[st + 1], from = STAGES[st][1];
+      $('nextFill').style.width = Math.max(3, Math.round((m - from) / (t - from) * 100)) + '%';
+      $('nextName').textContent = n; $('nextLeft').textContent = fmt(t - m) + ' to go';
+    } else {
+      $('nextFill').style.width = '100%'; $('nextName').textContent = 'Blossoms'; $('nextLeft').textContent = 'one per extra day back';
+    }
+    $('fold').hidden = first;
+    $('givenOut').textContent = fmt(state.given);
+    $('pausesOut').textContent = state.pauses;
+    // detail page
+    const pct = st < 6 ? Math.round((m - STAGES[st][1]) / (STAGES[st + 1][1] - STAGES[st][1]) * 100) : 100;
+    $('arc').setAttribute('stroke-dasharray', `${Math.max(2, pct)} 100`);
+    $('dNum').textContent = fmt(m);
+    $('dStage').textContent = st < 6 ? `${STAGES[st][0]} · ${fmt(STAGES[st + 1][1] - m)} to ${STAGES[st + 1][0].toLowerCase()}` : 'Tree · blossoms from here';
+    $('stagelist').innerHTML = STAGES.map(([n, t], i) => `<div class="${i < st ? 'got' : i === st ? 'cur' : ''}">${i <= st ? '✓ ' : ''}${n}<br>${t ? fmt(t) : 'day 1'}</div>`).join('') + '<div>Blossoms<br>+1 a day</div>';
+    return st;
+  }
+
+  function open(id) { $(id).classList.add('open'); const f = $(id).querySelector('button'); if (f) f.focus({ preventScroll: true }); }
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => { b.closest('.layer').classList.remove('open'); stopBreath(); }));
+
+  function levelUp(st) {
+    drawScene($('luScene'), st, state.look === 'light' ? 'light' : 'day', { sky: false, cx: 180, cy: 300, s: 1.25 });
+    $('luName').textContent = 'New stage';
+    $('luTitle').textContent = STAGES[st][0];
+    $('luBody').textContent = LINES[st] || '';
+    open('levelup');
+  }
+
+  function seg(id, key) {
+    $(id).addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+      state[key] = b.dataset.v; lastStage = render();
+    });
+  }
+  seg('moment', 'moment'); seg('look', 'look');
+  $('given').addEventListener('input', e => {
+    state.given = STEPS[+e.target.value]; state.justWatered = false; state.view = null;
+    if (state.moment === 'first') { state.moment = 'day'; document.querySelectorAll('#moment button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === 'day' ? 'true' : 'false')); }
+    const st = render();
+    if (st > lastStage && state.moment === 'day') levelUp(st);
+    lastStage = st;
+  });
+  $('pauses').addEventListener('input', e => { state.pauses = +e.target.value; render(); });
+  $('tapSprout').addEventListener('click', () => open('detail'));
+  $('tapNumber').addEventListener('click', () => open('detail'));
+  $('statusChip').addEventListener('click', () => { if (state.moment === 'first') open('setup'); });
+  $('actInsights').addEventListener('click', () => open('detail'));
+  function look(d) {
+    const st = stageOf(state.moment === 'first' ? 0 : state.given);
+    const cur = state.view === null ? st : state.view;
+    const n = Math.min(6, Math.max(0, cur + d));
+    state.view = n === st ? null : n;
+    render();
+  }
+  $('peekL').addEventListener('click', () => look(-1));
+  $('peekR').addEventListener('click', () => look(1));
+  $('backNow').addEventListener('click', () => { state.view = null; render(); });
+  // Swipe on the sprout; a plain tap still opens "Your sprout".
+  let sx = null, swiped = false;
+  $('tapSprout').addEventListener('pointerdown', e => { sx = e.clientX; swiped = false; });
+  $('tapSprout').addEventListener('pointerup', e => {
+    if (sx !== null && Math.abs(e.clientX - sx) > 30) { swiped = true; look(e.clientX < sx ? 1 : -1); }
+    sx = null;
+  });
+  $('tapSprout').addEventListener('click', e => { if (swiped) { swiped = false; e.stopImmediatePropagation(); } }, true);
+  $('waterReady').addEventListener('change', e => { state.water = e.target.checked; state.justWatered = false; render(); });
+  $('water').addEventListener('click', () => {
+    const hero = document.querySelector('.hero');
+    if (!reduce) for (let i = 0; i < 9; i++) {
+      const d = document.createElement('span'); d.className = 'drop';
+      d.style.left = (40 + Math.random() * 20) + '%'; d.style.top = (14 + Math.random() * 6) + '%';
+      d.style.animationDelay = (i * 0.08) + 's';
+      hero.appendChild(d); setTimeout(() => d.remove(), 1700);
+    }
+    setTimeout(() => {
+      const before = stageOf(state.given);
+      state.given += state.gain; state.water = false; state.justWatered = true;
+      $('waterReady').checked = false;
+      $('givenOut').textContent = fmt(state.given);
+      const st = render();
+      if (st > before) levelUp(st);
+      lastStage = st;
+    }, reduce ? 0 : 900);
+  });
+
+  // Breathe: in for 4 s, out for 4 s, three times.
+  let timer = null;
+  function stopBreath() { clearTimeout(timer); timer = null; $('orb').classList.remove('in'); }
+  $('breathe').addEventListener('click', () => {
+    open('breath');
+    let n = 0;
+    const step = () => {
+      const inhale = n % 2 === 0;
+      $('orb').classList.toggle('in', inhale);
+      $('bWord').textContent = n >= 6 ? 'Well done' : inhale ? 'Breathe in' : 'Breathe out';
+      if (n >= 6) { $('bSub').textContent = 'Three breaths. The pull is smaller now.'; return; }
+      $('bSub').textContent = 'The pull passes. Usually in under a minute.';
+      n++; timer = setTimeout(step, reduce ? 1500 : 4000);
+    };
+    step();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.layer.open').forEach(l => { l.classList.remove('open'); stopBreath(); }); });
+  render();
+})();
+</script>
+</body>
+</html>

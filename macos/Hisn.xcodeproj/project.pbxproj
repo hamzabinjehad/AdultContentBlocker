@@ -131,6 +131,24 @@
 			path = ContentView.swift;
 			sourceTree = "<group>";
 		};
+		7C89149F0A798DC6B1A851ED /* DistractionEnforcer.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = DistractionEnforcer.swift;
+			sourceTree = "<group>";
+		};
+		BADFD7CF8686EA54DD61B319 /* DistractionRules.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = DistractionRules.swift;
+			sourceTree = "<group>";
+		};
+		D00A89B237150DCED9AF357E /* DistractionStore.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = DistractionStore.swift;
+			sourceTree = "<group>";
+		};
 		638C07E6A6C63DB2FEDE498C /* ExtensionPresence.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -491,6 +509,24 @@
 			path = CompatibilityTests.swift;
 			sourceTree = "<group>";
 		};
+		4A5D98A809D8341A402887C1 /* DistractionPanelTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = DistractionPanelTests.swift;
+			sourceTree = "<group>";
+		};
+		31BD0B3958310E5AB6FD94D6 /* DistractionRulesTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = DistractionRulesTests.swift;
+			sourceTree = "<group>";
+		};
+		9799D1391742441D7016CA9F /* DistractionStoreTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = DistractionStoreTests.swift;
+			sourceTree = "<group>";
+		};
 		B020FF3DA9D3038B39BDB467 /* ExtraSitesTests.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -743,6 +779,9 @@
 				F5F21851827D78F1D8AAB642,
 				29485861D4702CB826FD6A55,
 				A1954A7D9F26A7718A4AAAD4,
+				7C89149F0A798DC6B1A851ED,
+				BADFD7CF8686EA54DD61B319,
+				D00A89B237150DCED9AF357E,
 				638C07E6A6C63DB2FEDE498C,
 				D684139EF30AD4884636E2D9,
 				2003FF2B4E8542A39860724B,
@@ -831,6 +870,9 @@
 				80C98DE5808DA52CC4D9E0DD,
 				D6D64E38C469B55C566EB0A8,
 				D065DE2FCE298E43522633CF,
+				4A5D98A809D8341A402887C1,
+				31BD0B3958310E5AB6FD94D6,
+				9799D1391742441D7016CA9F,
 				B020FF3DA9D3038B39BDB467,
 				2098ACD4010E242DD587819B,
 				5CEF7A7205FB28ED41D63CB3,
@@ -2024,6 +2066,18 @@
 			isa = PBXBuildFile;
 			fileRef = F1F3ABF175AE23E6BFC6A001;
 		};
+		C950A416EF672E6AEACAF0C5 /* DistractionRules.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = BADFD7CF8686EA54DD61B319;
+		};
+		8CCEE261F5007CDA7D8CD637 /* DistractionStore.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = D00A89B237150DCED9AF357E;
+		};
+		C23D42C99034F09D8BE1D25B /* DistractionEnforcer.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 7C89149F0A798DC6B1A851ED;
+		};
 		079A944B3E87101645898B0C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -2082,6 +2136,9 @@
 				F3CFEAB96B0EB2308922F407,
 				445CDE5B1C0DEB3A5A286469,
 				2D7DAC562EBC96FCF48C820B,
+				C950A416EF672E6AEACAF0C5,
+				8CCEE261F5007CDA7D8CD637,
+				C23D42C99034F09D8BE1D25B,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2398,6 +2455,18 @@
 			isa = PBXBuildFile;
 			fileRef = 708E2F63E584E40A388AE0EC;
 		};
+		91ECB4990A3D7397001BEA29 /* DistractionRulesTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 31BD0B3958310E5AB6FD94D6;
+		};
+		8D9F194DFE3FB0E1A29E57B8 /* DistractionStoreTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 9799D1391742441D7016CA9F;
+		};
+		68CF226993FDE73ADCD8A6C3 /* DistractionPanelTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 4A5D98A809D8341A402887C1;
+		};
 		68520968104C0634F50C3BE1 /* PrivateBrowsingTests.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 304B590C73D8453EC7F4F5A2;
@@ -2450,6 +2519,9 @@
 				EF536B779287CE2B3B0FACE1,
 				DC37F31CB2E6CC1AFC5011B7,
 				DDE01959A6C065554BD72EB4,
+				91ECB4990A3D7397001BEA29,
+				8D9F194DFE3FB0E1A29E57B8,
+				68CF226993FDE73ADCD8A6C3,
 				68520968104C0634F50C3BE1,
 				4E6C5C69E4FA72F6AF339BF8,
 				0DB6DC25129D35047897F85A,

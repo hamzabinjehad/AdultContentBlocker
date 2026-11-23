@@ -8,10 +8,10 @@ struct HisnMobileApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MobileRootView(protection: protection, language: $language)
+            root
                 .environment(\.locale, language == "system" ? .autoupdatingCurrent : Locale(identifier: language))
                 .environment(\.layoutDirection, isArabic ? .rightToLeft : .leftToRight)
-                .tint(HnPalette.accent)
+                .tint(Edition.isUnrot ? Color(red: 0.949, green: 0.757, blue: 0.306) : HnPalette.accent)
                 .task { await protection.refresh() }
                 .onChange(of: phase) { next in
                     if next == .active { Task { await protection.refresh() } }
@@ -19,6 +19,15 @@ struct HisnMobileApp: App {
                 .onAppear { storeShieldLanguage() }
                 .onChange(of: language) { _ in storeShieldLanguage() }
         }
+    }
+
+    /// Unrot (the general edition) has its own face on the same protection.
+    @ViewBuilder private var root: some View {
+        #if UNROT
+        UnrotRootView(protection: protection, language: $language)
+        #else
+        MobileRootView(protection: protection, language: $language)
+        #endif
     }
 
     /// The shield extensions run in their own processes, so the language choice

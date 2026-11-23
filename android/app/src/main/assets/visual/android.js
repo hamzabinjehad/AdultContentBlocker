@@ -34,6 +34,10 @@ async function shaped(id, width, height, rgba) {
     return view?.state === 'ready' && view.adult?.inspected === true ? view.adult : null;
   } catch { return null; }
 }
+// Where the matched faces are, so the app can blur only them. Positions only, at most ten.
+function regions(persons) {
+  return (persons?.regions ?? []).slice(0, 10).map(r => [r.x, r.y, r.width, r.height]);
+}
 window.hisnInspect = async (id, width, height, rgba) => {
   try {
     const result = await engine.inspect(id, { id, width, height, rgba }, preferences);
@@ -42,7 +46,8 @@ window.hisnInspect = async (id, width, height, rgba) => {
       const done = result?.state === 'ready' && result.persons && result.persons.state !== 'not-inspected';
       HisnResult.result(id, done ? JSON.stringify({ v: 'allow', p: result.persons.blur === true, s: false,
         ...(evaluate ? { e: result.persons.evaluation ?? [] } : {}),
-        ...(boxes ? { b: (result.persons.regions ?? []).map(r => [r.x, r.y, r.width, r.height]) } : {}) }) : 'unknown');
+        ...(boxes ? { b: (result.persons.regions ?? []).map(r => [r.x, r.y, r.width, r.height]) }
+          : result.persons.blur === true ? { r: regions(result.persons) } : {}) }) : 'unknown');
       return;
     }
     let verdict = result?.state === 'ready' && result.adult?.inspected === true
@@ -84,6 +89,7 @@ window.hisnInspect = async (id, width, height, rgba) => {
     }
     const personBlur = persons?.blur === true;
     HisnResult.result(id, JSON.stringify({ v: verdict, p: personBlur, s: strong,
+      ...(personBlur ? { r: regions(persons) } : {}),
       ...(evaluate ? { e: persons?.evaluation ?? [] } : {}) }));
   } catch { HisnResult.result(id, 'unknown'); }
   finally { rgba = null; }

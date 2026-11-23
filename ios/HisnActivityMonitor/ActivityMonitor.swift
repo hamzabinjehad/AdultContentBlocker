@@ -11,6 +11,12 @@ final class ActivityMonitor: DeviceActivityMonitor {
     private let window = ManagedSettingsStore(named: .init(AppUsageConfiguration.windowStoreName))
     private let guardStore = ManagedSettingsStore(named: .init(AppUsageConfiguration.guardStoreName))
     private let pause = ManagedSettingsStore(named: .init(AppUsageConfiguration.pauseStoreName))
+    #if UNROT
+    /// Must match UnrotRootView's Focus activity and UnrotStore.Key.feed.
+    static let focusActivity = "unrot.focus"
+    static let feedKey = "unrot.feed.days"
+    static let focusUntilKey = "unrot.focus.until"
+    #endif
     /// Apple's time over HTTPS, only when the saved reading cannot settle a day.
     private let serverWait: TimeInterval = 5
 
@@ -57,6 +63,14 @@ final class ActivityMonitor: DeviceActivityMonitor {
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
+        #if UNROT
+        // Unrot's Focus ends on its own: lift only its own shield.
+        if activity.rawValue == Self.focusActivity {
+            ManagedSettingsStore(named: .init(Self.focusActivity)).clearAllSettings()
+            UserDefaults(suiteName: AppUsageConfiguration.group)?.set(0, forKey: Self.focusUntilKey)
+            return
+        }
+        #endif
         // A pause activity covers the whole day; its end is a second chance to
         // put the shield back if a threshold callback was missed.
         if activity.rawValue == AppUsageConfiguration.pauseSessionActivity {
@@ -122,6 +136,18 @@ final class ActivityMonitor: DeviceActivityMonitor {
     }
 
     override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
+        #if UNROT
+        // Unrot's feed watch: keep the day's highest step. Only a number per day
+        // is stored, never which app or when.
+        if activity.rawValue == FeedWatch.activity, let minutes = FeedWatch.minutes(event: event.rawValue) {
+            if let defaults = UserDefaults(suiteName: AppUsageConfiguration.group) {
+                let record = defaults.dictionary(forKey: Self.feedKey) as? [String: Int] ?? [:]
+                defaults.set(FeedWatch.recording(minutes, day: UnrotFormat.dayKey(Date()), into: record),
+                             forKey: Self.feedKey)
+            }
+            return
+        }
+        #endif
         defer { checkLayers() }
         if event.rawValue == AppUsageConfiguration.pauseSessionEvent,
            activity.rawValue == AppUsageConfiguration.pauseSessionActivity {

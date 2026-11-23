@@ -1,5 +1,13 @@
 package app.hisn.android.nativeshell
 
+import androidx.compose.material.icons.outlined.Home
+
+import androidx.compose.material.icons.filled.Home
+
+import androidx.compose.foundation.border
+
+import androidx.compose.ui.graphics.Brush
+
 import androidx.lifecycle.repeatOnLifecycle
 import android.app.Activity
 import android.os.Bundle
@@ -367,7 +375,7 @@ private fun HisnScaffold(
     val tagline = if (unrotTabs) todayLine() else copy.tagline
     val navItems = if (unrotTabs) {
         listOf(
-            NavItem(titles[0], Icons.Filled.Today, Icons.Outlined.Today),
+            NavItem(titles[0], Icons.Filled.Home, Icons.Outlined.Home),
             NavItem(titles[1], Icons.Filled.Shield, Icons.Outlined.Shield),
             NavItem(titles[2], Icons.Filled.InsertChart, Icons.Outlined.InsertChart),
             NavItem(titles[3], Icons.Filled.Person, Icons.Outlined.Person)
@@ -486,11 +494,12 @@ private fun HisnScaffold(
                                 label = { Text(item.label) },
                                 colors = if (floating) NavigationBarItemDefaults.colors(
                                     // Premium bar: black in Ivory, warm charcoal at night; gold marks the tab.
-                                    selectedIconColor = UnrotInk,
-                                    selectedTextColor = if (dark) Color(0xFFF2C94F) else Color(0xFFF7F1E4),
-                                    indicatorColor = Color(0xFFF2C94F),
-                                    unselectedIconColor = Color(0xFFF7F1E4).copy(alpha = 0.62f),
-                                    unselectedTextColor = Color(0xFFF7F1E4).copy(alpha = 0.62f)
+                                    // Glasshouse dock: a soft gold wash marks the tab, not a solid slab.
+                                    selectedIconColor = Color(0xFFFFDF8A),
+                                    selectedTextColor = Color(0xFFFFDF8A),
+                                    indicatorColor = Color(0x29F2C14E),
+                                    unselectedIconColor = Color(0xFFA99D86),
+                                    unselectedTextColor = Color(0xFFA99D86)
                                 ) else NavigationBarItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                     selectedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -503,17 +512,17 @@ private fun HisnScaffold(
                     }
                     if (unrotEdition) {
                         // Unrot: a floating rounded bar over the page.
-                        val barShape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp)
+                        val barShape = androidx.compose.foundation.shape.CircleShape
                         androidx.compose.foundation.layout.Box(
                             Modifier
                                 .navigationBarsPadding()
-                                .padding(start = 14.dp, end = 14.dp, bottom = 10.dp)
+                                .padding(start = 12.dp, end = 12.dp, bottom = 10.dp)
                         ) {
                             NavigationBar(
                                 modifier = Modifier
-                                    .unrotFrame(barShape, hero = true)
-                                    .clip(barShape),
-                                containerColor = if (LocalDarkTheme.current) Color(0xFF1E1C17) else Color(0xFF1B1A16),
+                                    .clip(barShape)
+                                    .border(1.dp, Color.White.copy(alpha = 0.08f), barShape),
+                                containerColor = Color(0xFF1E1A16).copy(alpha = 0.94f),
                                 tonalElevation = 0.dp,
                                 windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
                             ) { items(true) }
@@ -574,6 +583,8 @@ private fun HisnTopBar(
         actions = {
             if (shieldChip != null && state != null) {
                 Box(Modifier.tourTarget("shield")) { ShieldChip(state, shieldChip) }
+                // The day pill joins once setup is done; until then the steps pill says what matters.
+                if (unrotEdition && state.personal.day > 0 && setupStepsLeft(state) == 0) DayChip(state.personal.day)
             }
             if (onHelp != null) {
                 androidx.compose.material3.IconButton(onClick = onHelp) {
@@ -651,9 +662,22 @@ private fun HisnTopBar(
             }
         },
         scrollBehavior = scrollBehavior,
+        // Unrot: no hard band once the page scrolls; the page fades out under the title instead.
+        modifier = if (unrotEdition) {
+            val bg = MaterialTheme.colorScheme.background
+            Modifier.drawBehind {
+                val f = scrollBehavior.state.overlappedFraction.coerceIn(0f, 1f)
+                if (f > 0f) drawRect(
+                    Brush.verticalGradient(
+                        0f to bg.copy(alpha = f), 0.72f to bg.copy(alpha = f), 1f to Color.Transparent
+                    ),
+                    size = size.copy(height = size.height + 28.dp.toPx())
+                )
+            }
+        } else Modifier,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = if (unrotEdition) Color.Transparent else MaterialTheme.colorScheme.background,
-            scrolledContainerColor = if (unrotEdition) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surfaceContainer
+            scrolledContainerColor = if (unrotEdition) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
         )
     )
 }

@@ -54,6 +54,17 @@ sys.path.insert(0, str(Path(__file__).parent))
 import make_profile as mac  # noqa: E402  (shared payload helpers and resolvers)
 
 ID_PREFIX = "app.hisn.profile.ios"
+# The edition the profile is for: Hisn, or Unrot (the general edition, built with
+# `ios/generate_xcodeproj.py --general`). Names and identifiers only; the
+# protection is the same. Unrot's own prefix lets both profiles sit on one device.
+EDITIONS = {
+    "hisn": {"prefix": ID_PREFIX, "name": "Hisn", "app": "app.hisn.mobile",
+             "display": "Hisn Phone Protection", "out": "../dist/hisn-iphone.mobileconfig"},
+    "general": {"prefix": "app.unrot.profile.ios", "name": "Unrot", "app": "app.unrot.mobile",
+                "display": "Unrot Phone Protection", "out": "../dist/unrot-iphone.mobileconfig"},
+}
+_prefix = ID_PREFIX
+_name = "Hisn"
 # Apple documents DenyListURLs as "no more than 500 URLs".
 MAX_DENY_URLS = 500
 
@@ -105,7 +116,7 @@ SHORT_VIDEO_URLS = sorted([
 
 def payload(ptype: str, identifier: str, name: str, description: str, **extra) -> dict:
     p = mac.payload(ptype, identifier, name, description, **extra)
-    p["PayloadIdentifier"] = f"{ID_PREFIX}.{identifier}"
+    p["PayloadIdentifier"] = f"{_prefix}.{identifier}"
     return p
 
 
@@ -155,8 +166,8 @@ def p_hisn_dns_proxy(app_id: str, provider_id: str) -> dict:
     # always on and the person has no switch for it; the app must already be
     # installed and signed with the dns-proxy entitlement.
     return payload(
-        "com.apple.dnsProxy.managed", "dnsproxy", "Hisn DNS Filter",
-        "Keeps Hisn's own DNS filter on for every app. Supervised devices only.",
+        "com.apple.dnsProxy.managed", "dnsproxy", f"{_name} DNS Filter",
+        f"Keeps {_name}'s own DNS filter on for every app. Supervised devices only.",
         AppBundleIdentifier=app_id,
         ProviderBundleIdentifier=provider_id,
     )
@@ -229,6 +240,9 @@ def short_video_urls(args: argparse.Namespace) -> list[str]:
 
 
 def build(args: argparse.Namespace) -> tuple[dict, str]:
+    global _prefix, _name
+    edition = EDITIONS[getattr(args, "edition", "hisn")]
+    _prefix, _name = edition["prefix"], edition["name"]
     password = args.removal_password or mac.gen_password()
     content = [
         (p_hisn_dns_proxy(args.hisn_app_id, args.hisn_dns_provider_id)
@@ -244,12 +258,12 @@ def build(args: argparse.Namespace) -> tuple[dict, str]:
     profile = {
         "PayloadType": "Configuration",
         "PayloadVersion": 1,
-        "PayloadIdentifier": ID_PREFIX,
+        "PayloadIdentifier": _prefix,
         "PayloadUUID": str(uuid.uuid4()).upper(),
         "PayloadDisplayName": args.display_name,
-        "PayloadOrganization": mac.ORG,
+        "PayloadOrganization": mac.ORG if _name == "Hisn" else _name,
         "PayloadDescription": (
-            "Hisn protection for a supervised iPhone or iPad: family DNS, Apple's adult-website "
+            f"{_name} protection for a supervised iPhone or iPad: family DNS, Apple's adult-website "
             "filter and removal protection. Keep the removal password with your guardian or "
             "partner. On an unsupervised device most of these settings do not apply."),
         "PayloadScope": "System",
@@ -283,7 +297,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--block-sites-file", help="One site per line; # starts a comment.")
     ap.add_argument("--allow-app-removal", action="store_true",
                     help="Leave app deletion allowed (iOS has no per-app switch without MDM).")
-    ap.add_argument("--display-name", default="Hisn Phone Protection")
+    ap.add_argument("--edition", choices=sorted(EDITIONS), default="hisn",
+                    help="general = Unrot: its app and DNS filter identifiers, names and output file")
+    ap.add_argument("--display-name", default=None)
     ap.add_argument("--removal-password", default=None)
     ap.add_argument("--print-password", action="store_true",
                     help="Print the removal password. Do not, if the person it protects can read your terminal.")
@@ -312,8 +328,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--hisn-dns", action="store_true",
                     help="Supervised only: use the installed Hisn app's DNS filter, always on, "
                          "instead of a public filtering resolver.")
-    ap.add_argument("--hisn-app-id", default=HISN_APP_ID)
-    ap.add_argument("--hisn-dns-provider-id", default=HISN_DNS_PROVIDER_ID)
+    ap.add_argument("--hisn-app-id", default=None)
+    ap.add_argument("--hisn-dns-provider-id", default=None)
     ap.add_argument("--no-removal-password", action="store_true",
                     help="Supervised only: leave out the removal password, so the phone shows no "
                          "Remove button and only the supervising Mac can remove the profile.")
@@ -323,8 +339,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--block-short-video", action="store_true",
                     help="Add TikTok and the Shorts, Reels and Spotlight addresses to the web "
                          "filter. Covers page loads in Safari, not the apps.")
-    ap.add_argument("--out", default="../dist/hisn-iphone.mobileconfig")
+    ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
+    edition = EDITIONS[args.edition]
+    args.display_name = args.display_name or edition["display"]
+    args.hisn_app_id = args.hisn_app_id or edition["app"]
+    args.hisn_dns_provider_id = args.hisn_dns_provider_id or f"{args.hisn_app_id}.dnsproxy"
+    args.out = args.out or edition["out"]
     if args.maximum:
         if args.allow_app_removal:
             ap.error("--maximum cannot be combined with --allow-app-removal")

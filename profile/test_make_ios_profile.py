@@ -165,6 +165,28 @@ class TestRemovalProtection(unittest.TestCase):
         self.assertTrue(all(i.startswith(ios.ID_PREFIX + ".") for i in ids))
 
 
+class TestUnrotEdition(unittest.TestCase):
+    def test_unrot_profile_names_and_keeps_unrots_own_app(self):
+        """A Hisn identifier in Unrot's profile would keep the wrong app's filter on."""
+        profile = generate("--edition", "general", "--hisn-dns")[0]
+        proxy = by_type(profile)["com.apple.dnsProxy.managed"]
+        self.assertEqual(proxy["AppBundleIdentifier"], "app.unrot.mobile")
+        self.assertEqual(proxy["ProviderBundleIdentifier"], "app.unrot.mobile.dnsproxy")
+        self.assertEqual(profile["PayloadDisplayName"], "Unrot Phone Protection")
+        self.assertNotIn("Hisn", plistlib.dumps(profile).decode())
+        ids = [profile["PayloadIdentifier"]] + [p["PayloadIdentifier"] for p in profile["PayloadContent"]]
+        self.assertTrue(all(i.startswith("app.unrot.profile.ios") for i in ids))
+
+    def test_unrot_profile_still_blocks_app_removal(self):
+        restrictions = by_type(generate("--edition", "general")[0])["com.apple.applicationaccess"]
+        self.assertFalse(restrictions["allowAppRemoval"])
+
+    def test_hisn_stays_the_default(self):
+        profile = generate()[0]
+        self.assertEqual(profile["PayloadIdentifier"], ios.ID_PREFIX)
+        self.assertEqual(profile["PayloadDisplayName"], "Hisn Phone Protection")
+
+
 class TestBlockedSites(unittest.TestCase):
     def test_sites_are_canonical_unique_and_sorted(self):
         """A typo'd or duplicated entry looks blocked and is not."""

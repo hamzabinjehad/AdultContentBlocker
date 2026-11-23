@@ -99,6 +99,8 @@ fun ProtectionScreen(
     // protection itself). One computation of the protection state serves both.
     val today = mode == HomeMode.Today
     val shield = mode == HomeMode.Shield
+    // Unrot's Shield tabs (All · Feeds and apps · Adult): one list, filtered.
+    var shieldTab by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableIntStateOf(SHIELD_ALL) }
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val status = LocalHisnStatusColors.current
     val haptics = rememberHisnHaptics()
@@ -264,6 +266,11 @@ fun ProtectionScreen(
         }.getOrDefault(false)
     }
 
+    // Unrot: the steps left after onboarding, as one numbered list (see UnrotSetupGuide.kt).
+    val stepsLeft = setupStepsLeft(state)
+    val tab = if (unrotEdition) shieldTab else SHIELD_ALL
+    val guardPermissionText = stringResource(R.string.attention_guard_permission)
+
     val anythingActive = layers.any { it.active }
     val healthy = anythingActive && !showAttention
     val checking = state.check == DnsVpnService.CheckState.CHECKING
@@ -338,7 +345,45 @@ fun ProtectionScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (today) {
-                if (!healthy) {
+                // The Glasshouse: the painted sprout and time given back, first thing on Today.
+                // The Glasshouse home (design/glasshouse-2026-11-23): glass, one banner if
+                // something is open, round tools, check-in and "Had a hard moment"; Breathe is
+                // the pill above the tabs. Everything else follows below.
+                if (unrotEdition) {
+                    if (!Wins.disabled) item(key = "glass") {
+                        UnrotGlassHero(givenBackMs = wins?.givenBackMs ?: 0L, day = state.personal.day, quiet = state.appSchedule)
+                    }
+                    // Day one: what Unrot does and the steps left come first, until setup is done.
+                    if (stepsLeft > 0) {
+                        item(key = "now") { UnrotNowCard(stepsLeft, unrotParts.filter { it.second }.map { it.first }) }
+                        item(key = "setup") { UnrotSetupCard(state) }
+                    }
+                    item(key = "breathe-inline") {
+                        Box(Modifier.fillMaxWidth().padding(top = 0.dp, bottom = 6.dp), contentAlignment = Alignment.Center) {
+                            val glassNow = rememberGlass()
+                            UnrotPauseFab(
+                                onPause = state::openPause,
+                                onNote = { onOpen("notes") },
+                                onLock = { onOpen("lock") },
+                                pill = true,
+                                sealing = glassNow.look == app.hisn.core.GlassState.Look.CRACKED
+                            )
+                        }
+                    }
+                    if (stepsLeft == 0 && !healthy) item(key = "banner") {
+                        UnrotHomeBanner(
+                            title = heroTitle,
+                            body = heroBody,
+                            action = copy.fixNow,
+                            onAction = { if (fix != null) fix() else onShowShield() }
+                        )
+                    }
+                    item(key = "quick-tools") {
+                        UnrotHomeActions(state, onOpen, Modifier.tourTarget("pause").padding(vertical = 4.dp))
+                    }
+                    if (!Wins.disabled) item(key = "three") { UnrotTodaysThree(state, wins, winsResumes, onOpen) }
+                }
+                if (!healthy && !unrotEdition) {
                     item {
                         UnrotNeedsYouCard(
                             title = heroTitle,
@@ -370,6 +415,9 @@ fun ProtectionScreen(
                     if (!winsNow.heavier || winsNow.givenBackMs >= 3_600_000L) {
                         item { UnrotGivenBackCard(winsNow, onShare = { shareWinsCard(winsContext, winsNow) }) }
                     }
+                    if (unrotEdition && stepsLeft == 0 && healthy) {
+                        item(key = "next") { UnrotNextCard(state, onOpen) }
+                    }
                 } else item {
                     Box(Modifier.tourTarget("day")) {
                     UnrotDayCard(
@@ -385,7 +433,9 @@ fun ProtectionScreen(
             }
             if (!today) item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (shield) {
+                    if (shield && stepsLeft > 0) {
+                        UnrotSetupCard(state)
+                    } else if (shield) {
                         // Unrot: one sentence and the one action that would fix it.
                         // Today's saved count: the filter's own counter restarts at 0 with the filter.
                         val shieldContext = androidx.compose.ui.platform.LocalContext.current
@@ -437,9 +487,12 @@ fun ProtectionScreen(
                         celebrate = celebrate
                     )
 
+                    // While setup is unfinished the checklist already covers the app-watching
+                    // permission, so the list keeps only what the checklist does not.
+                    val listed = if (shield && stepsLeft > 0) issues.filter { it.body != guardPermissionText } else issues
                     AnimatedVisibility(
                         // Unrot's status card already says a single issue; the list is for two or more.
-                        visible = showAttention && !(shield && issues.size <= 1),
+                        visible = listed.isNotEmpty() && !(shield && stepsLeft == 0 && listed.size <= 1),
                         enter = fadeIn(HisnMotion.fadeIn) + expandVertically(
                             animationSpec = HisnMotion.spatial(),
                             expandFrom = Alignment.Top
@@ -452,14 +505,14 @@ fun ProtectionScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             SectionHeader(copy.needsAttention)
                             HisnCard {
-                                issues.forEachIndexed { index, issue ->
+                                listed.forEachIndexed { index, issue ->
                                     IssueRow(
                                         icon = issue.icon,
                                         title = issue.title,
                                         supporting = issue.body,
                                         onClick = issue.fix
                                     )
-                                    if (index < issues.lastIndex) InsetDivider()
+                                    if (index < listed.lastIndex) InsetDivider()
                                 }
                             }
                         }
@@ -467,23 +520,27 @@ fun ProtectionScreen(
                 }
             }
 
+            if (shield && unrotEdition) {
+                item(key = "shield-tabs") { UnrotShieldTabs(shieldTab) { shieldTab = it } }
+            }
             if (shield && state.lockRemainingMillis > 0L) {
                 item { UnrotLockBanner(state.lockLabel, onBreathe = state::openPause) }
             }
-            if (shield) {
+            if (shield && tab == SHIELD_ALL) {
                 item { UnrotShieldNumbers(state, onOpen) }
             }
             if (today && unrotEdition && !Wins.disabled) {
                 item(key = "today-plan") { Column { UnrotTodayPlan(state, winsResumes, onOpen) } }
             }
             if (today) {
-                item(key = "quick-tools") {
+                // Unrot's tools sit under the glass (UnrotHomeActions) instead.
+                if (!unrotEdition) item(key = "quick-tools") {
                     Box(Modifier.tourTarget("pause")) {
                     UnrotQuickTools(
                         state = state,
                         onPause = state::openPause,
                         onNote = { onOpen("notes") },
-                        onLock = { onOpen("lock") }
+                        onOpen = onOpen
                     )
                     }
                 }
@@ -547,7 +604,8 @@ fun ProtectionScreen(
                 }
             }
 
-            if (phoneAttention) {
+            // Unrot lists this as a setup step instead.
+            if (phoneAttention && !unrotEdition) {
                 item {
                     HisnCard {
                         IssueRow(
@@ -567,7 +625,7 @@ fun ProtectionScreen(
                 item {
                     val context = androidx.compose.ui.platform.LocalContext.current
                     val waiting = remember(state.blockedApps.size) { app.hisn.android.OpenWaitStore.apps(context).size }
-                    UnrotShieldLayers(state, onOpen, waiting)
+                    UnrotShieldLayers(state, onOpen, waiting, tab = tab)
                 }
             }
             if (!shield) item { SectionHeader(copy.layers) }
@@ -586,7 +644,7 @@ fun ProtectionScreen(
                 }
             }
             // The people cover rides on Images and video, so it needs Android 14 like that layer.
-            if (android.os.Build.VERSION.SDK_INT >= 34) {
+            if (android.os.Build.VERSION.SDK_INT >= 34 && !(shield && tab == SHIELD_FEEDS)) {
                 item { PeopleCoverCard(imagesOn = state.images.on) }
             }
 
@@ -645,12 +703,38 @@ fun ProtectionScreen(
                 listState.layoutInfo.visibleItemsInfo.any { it.key == "quick-tools" }
             }
         }
-        if (today && !toolsVisible) {
+        // The Glasshouse Breathe sits under the tools; once that spot scrolls away (or behind
+        // the tabs) the same pill floats, centred above the tabs.
+        val breatheShown by androidx.compose.runtime.remember {
+            androidx.compose.runtime.derivedStateOf {
+                // Any part of the inline pill on screen: the floating one stays away, never two.
+                val info = listState.layoutInfo
+                info.visibleItemsInfo.any {
+                    it.key == "breathe-inline" && it.offset + it.size > info.viewportStartOffset && it.offset < info.viewportEndOffset
+                }
+            }
+        }
+        if (today && unrotEdition && !breatheShown) {
+            // "Breathe to seal it" while the glass is cracked.
+            val glassNow = rememberGlass()
             UnrotPauseFab(
                 onPause = state::openPause,
-                // Wide only at the end of the list, where the bottom padding leaves it room;
-                // over cards it stays a small round button so it hides less of them.
-                expanded = !listState.canScrollForward,
+                onNote = { onOpen("notes") },
+                onLock = { onOpen("lock") },
+                expanded = true,
+                pill = true,
+                sealing = glassNow.look == app.hisn.core.GlassState.Look.CRACKED,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 18.dp)
+            )
+        } else if (today && !toolsVisible) {
+            UnrotPauseFab(
+                onPause = state::openPause,
+                onNote = { onOpen("notes") },
+                onLock = { onOpen("lock") },
+                // Always named: a bare pause mark read as a media control, not "Breathe".
+                expanded = true,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 16.dp, bottom = 16.dp)

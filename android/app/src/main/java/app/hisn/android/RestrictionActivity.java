@@ -55,7 +55,7 @@ public final class RestrictionActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         voluntary = getIntent().getBooleanExtra("voluntary", false);
-        if (state == null && !voluntary) StepIns.record(this, StepIns.ADULT);
+        if (state == null && !voluntary) { StepIns.record(this, StepIns.ADULT); GlassMoments.cracked(this); }
         personal = new PersonalStore(this);
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
         int side = Ui.sidePadding(this);
@@ -400,6 +400,8 @@ public final class RestrictionActivity extends Activity {
             updateDots(BREATH_CYCLES - 1);
             breathLabel.setText(R.string.pause_title);
             breathStep.setText(R.string.pause_breath_done);
+            // Finished breaths, on any pause screen, seal a fresh crack with gold.
+            GlassMoments.breathed(this);
             breatheAgain.setVisibility(View.VISIBLE);
             if (reflectionPanel != null) {
                 reflectionPanel.setVisibility(View.VISIBLE);
