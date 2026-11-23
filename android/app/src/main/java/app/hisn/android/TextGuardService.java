@@ -1422,7 +1422,55 @@ public final class TextGuardService extends AccessibilityService {
             }
             if (visible) return true;
         }
-        return false;
+        return ShortVideoSurfaces.labelsPlayer(app) && showsLabelledPlayer(root, app);
+    }
+
+    /** Most views a labelled-player search reads; Facebook's Reels screens hold about 100. */
+    private static final int LABELLED_PLAYER_BUDGET = 400;
+
+    /**
+     * Facebook names none of its views, so its Reels player is found by its label and shape
+     * (rule and phone readings in core ShortVideoSurfaces.isLabelledPlayer). Breadth first, so the
+     * large views near the top are read before the many small ones inside them.
+     */
+    private static boolean showsLabelledPlayer(AccessibilityNodeInfo root, String app) {
+        android.graphics.Rect bounds = new android.graphics.Rect();
+        root.getBoundsInScreen(bounds);
+        int windowWidth = bounds.width();
+        if (windowWidth <= 0) return false;
+        java.util.ArrayDeque<AccessibilityNodeInfo> queue = new java.util.ArrayDeque<>();
+        for (int i = 0; i < root.getChildCount(); i++) {
+            AccessibilityNodeInfo child = root.getChild(i);
+            if (child != null) queue.add(child);
+        }
+        int read = 0;
+        boolean found = false;
+        try {
+            while (!queue.isEmpty() && read < LABELLED_PLAYER_BUDGET && !found) {
+                AccessibilityNodeInfo node = queue.poll();
+                read++;
+                try {
+                    if (!node.isVisibleToUser()) continue;
+                    CharSequence label = node.getContentDescription();
+                    if (label != null) {
+                        node.getBoundsInScreen(bounds);
+                        if (ShortVideoSurfaces.isLabelledPlayer(app, label, bounds.width(), bounds.height(), windowWidth)) {
+                            found = true;
+                            continue;
+                        }
+                    }
+                    for (int i = 0; i < node.getChildCount(); i++) {
+                        AccessibilityNodeInfo child = node.getChild(i);
+                        if (child != null) queue.add(child);
+                    }
+                } finally {
+                    node.recycle();
+                }
+            }
+        } finally {
+            for (AccessibilityNodeInfo left : queue) left.recycle();
+        }
+        return found;
     }
 
     /**
