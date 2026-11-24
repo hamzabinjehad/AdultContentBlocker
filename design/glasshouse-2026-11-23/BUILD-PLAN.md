@@ -22,10 +22,12 @@ Status: **done** = in the app and checked on a device · **next** = the order to
 | Daily check-in sheet (mood + what pulls) | done | `CheckIns` in `UnrotTodaysThree.kt` |
 | More sheet with every tool | done | `UnrotMoreSheet.kt` |
 | Hold Breathe for quick choices | done (Breathe, My notes, Lock) | `UnrotPauseFab` |
-| Night look (quiet hours: blue, moon, sleeping sprout) | done (not yet seen on a device during quiet hours) | `UnrotGlassHero.kt` |
+| Night look (quiet hours: blue, moon, sleeping sprout) | done (seen on the emulator at 00:03) | `UnrotGlassHero.kt` |
 | Live plant for Sprout → Flower (code-drawn on the seed painting, grows with time, sways, sparkles on a new stage) | built, not yet seen on a device | `GlassPlant.kt` |
 | Air under the lamp: breathing glow, rising gold motes, glint over the glass | built, not yet seen on a device | `GlassPlant.kt` (`GlassAir`) |
 | First-open tour on the hero | later | existing tour targets |
+| Lower Home like the mockup: Today's three, "Keep the glass closed" (4 switches, count), your words, the thought | done | `UnrotGlassSwitches` |
+| Day count and next milestone | moved to Progress | `UnrotDayCard` |
 
 ## Shield
 | Piece | Status | Where |
@@ -33,6 +35,7 @@ Status: **done** = in the app and checked on a device · **next** = the order to
 | Glass as the status, amber dashed ring when something is off, one big fix button | done | `UnrotShieldStatus` |
 | Tabs (All · Feeds and apps · Adult) | done | `UnrotShieldTabs` |
 | Design review pass: soft header fade, pill dock with Home icon, breathe-ring icon, calmer banner, labelled check-in, sheets with scrim, gold ticks, quiet More tiles, cream tabs, serif Progress headings | done | several |
+| Tabs on top, then "2 of 5 panes are open" / "All 5 panes are closed" | done | `ProtectionScreen` shield branch |
 | Number tiles (adult sites, adult words, apps with a rule) | partly (`UnrotShieldNumbers`) | restyle |
 | "Add a rule" button | next | |
 
@@ -57,7 +60,7 @@ Status: **done** = in the app and checked on a device · **next** = the order to
 | Seed box, compost → willow, real trees, together | later |
 
 ## First run (24 screens, CleanPath order)
-Partly done: chapter bar (You · Why it’s hard · What helps · Your plan), the four tricks page, "What helps" with the glass, and a hold-to-plant pledge are in `UnrotOnboarding.kt` (not yet walked on a device). Still to do from the concept's four chapters (You → Why it's hard → What helps → Your plan),
+Partly done: an urge is a wave, how your sprout lives, what to expect, chapter bar (You · Why it’s hard · What helps · Your plan), the four tricks page, "What helps" with the glass, and a hold-to-plant pledge are in `UnrotOnboarding.kt` (not yet walked on a device). Still to do from the concept's four chapters (You → Why it's hard → What helps → Your plan),
 the four tricks, "your picture", the pledge and "your reason" are **next** as a rewrite of the
 onboarding screens, reusing today's questions and setup steps.
 
