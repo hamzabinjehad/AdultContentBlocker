@@ -80,3 +80,30 @@ Filter (`build_iq.py`, rebuilds `iq.js`): tazkiya only.
 - Result: 457 sayings. Topic tags are automatic (keyword match), so a reviewer should spot-check them.
 - Text is shown exactly as in the list; the brother/sister switch no longer touches any quote text.
 - Overlap with our 39: khatir, sabr, chain, tark, waqt, shafii appear in the owner's list word for word.
+
+## Turath (round 11)
+
+Source: app.turath.io (Nuqayah). Two parts, 98 new sayings after removing overlaps with the lists above.
+
+**From the books (51).** Full text downloaded from Turath and cut by first and last words
+(`tools/turath_book_picks.py`, output `tools/turath_book_picks.json`), so every quote is the printed
+text; only footnote markers and the editor's paragraph numbers are removed. Books (Turath id, edition):
+- ابن الجوزي، ذم الهوى (6870، ت مصطفى عبد الواحد) and صيد الخاطر (12028، دار القلم، بعناية حسن سويدان)
+- ابن رجب، لطائف المعارف (1144، ت طارق عوض الله)، جامع العلوم والحكم (949، ت الفحل)، استنشاق نسيم الأنس (151144)، ذم قسوة القلب (151116)
+- ابن قدامة المقدسي، مختصر منهاج القاصدين (98087، دار البيان)
+- ابن تيمية، أمراض القلوب وشفاؤها (1512، المطبعة السلفية) — one passage; the edition has no punctuation.
+  The source has a digitisation slip «القلبالصحيح»; shown as «الْقلب الصَّحِيح».
+- أحمد فريد، تزكية النفوس (10059، دار العقيدة ١٤١٣) — note p.72 reads «لى قوم» in the source (for «على»).
+
+**From Turath's readers (47).** The public "اقتباسات" feed, tag `tazkiyah` (1,000 fetched). Kept only
+recognised scholars, scored for this app's topics and likes, then each one was checked against its
+page through Turath's page API: 187 of the top 250 matched exactly, 12 near-matches were replaced by
+the book's own wording (`orig_user` keeps what the reader typed). 47 hand-picked; list with ids in
+`tools/turath_reader_picks.json`. Cards show "chosen by Turath readers" with the like count.
+
+Links: each card opens `app.turath.io/book/{id}?page={position}`. Turath's `page` is the page's
+position in the book, not the printed number (e.g. Ṣayd al-Khāṭir printed p.228 = position 360);
+the card shows the printed page.
+
+For the reviewer: Ibn Qudāma's chapter on the gaze (p.275) is quoted without its following words
+«فإن النظر سهم مسموم», which echo the weak ḥadīth already excluded above.

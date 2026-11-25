@@ -1,0 +1,404 @@
+<meta charset="utf-8">
+<title>Unrot Mac Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a working Mac window on the left that moves between the app's real screens; a grouped screen
+   list and a note per screen on the right; then every screen as a filmstrip, the features, the design system.
+   Page chrome is warm-neutral and quiet; the window carries the app's own dark look. */
+:root {
+  color-scheme: dark;
+  --bg: #151412; --fg: #f3f0ea; --muted: #a39d92; --line: #2e2b27; --panel: #1d1b18; --accent: #f0b93c; --accentInk: #2a1d00;
+  --desk1: #3a3226; --desk2: #15130f;
+  --display: "Bricolage Grotesque", "Helvetica Neue", sans-serif; --body: "Instrument Sans", system-ui, sans-serif;
+  --sf: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  color-scheme: light; --bg: #f5f2ec; --fg: #1d1a15; --muted: #6a6359; --line: #dedad0; --panel: #ffffff; --accent: #a8730a; --accentInk: #ffffff; --desk1: #d9cfbd; --desk2: #a99c86; } }
+:root[data-theme="light"] { color-scheme: light; --bg: #f5f2ec; --fg: #1d1a15; --muted: #6a6359; --line: #dedad0; --panel: #ffffff; --accent: #a8730a; --accentInk: #ffffff; --desk1: #d9cfbd; --desk2: #a99c86; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 90px; display: grid; gap: 60px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; line-height: 1.1; text-wrap: balance; letter-spacing: -.01em; }
+h1 { font-size: clamp(34px, 5vw, 58px); }
+h2 { font-size: clamp(24px, 3vw, 32px); }
+h3 { font-size: 18px; }
+p { margin: 0; max-width: 70ch; }
+.lede { font-size: 18px; color: var(--muted); max-width: 66ch; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+section { display: grid; gap: 20px; min-width: 0; }
+header { display: grid; gap: 14px; }
+
+.proto { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(260px, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 920px) { .proto { grid-template-columns: 1fr; } }
+.side { display: grid; gap: 18px; min-width: 0; }
+.jump { display: grid; gap: 14px; }
+.grp { display: grid; gap: 6px; }
+.grp > span { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.grp div { display: flex; flex-wrap: wrap; gap: 6px; }
+.jump button { font: inherit; font-size: 13.5px; padding: 5px 11px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+.jump button[aria-current="true"] { background: var(--accent); color: var(--accentInk); border-color: var(--accent); font-weight: 600; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.note { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: grid; gap: 6px; }
+.note .from { font-size: 12px; color: var(--accent); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.note p { font-size: 15px; color: var(--muted); }
+.note .todo { font-size: 13.5px; color: var(--fg); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
+.hint { font-size: 13px; color: var(--muted); }
+
+/* the Mac stage: always the app's own dark look, whatever the page theme */
+.stage { position: relative; width: 100%; aspect-ratio: 1180 / 872; border-radius: 14px; overflow: hidden; background: radial-gradient(120% 90% at 30% 0%, var(--desk1), var(--desk2)); box-shadow: 0 30px 70px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.08); container-type: inline-size; }
+.stage img { display: block; }
+.stage .win { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stage .lights { position: absolute; top: 2.2%; left: 1.4%; display: flex; gap: .7cqw; z-index: 3; }
+.stage .lights i { width: 1.05cqw; height: 1.05cqw; border-radius: 50%; display: block; }
+.stage .lights i:nth-child(1) { background: #ff5f57; } .stage .lights i:nth-child(2) { background: #febc2e; } .stage .lights i:nth-child(3) { background: #28c840; }
+.stage .dim { position: absolute; inset: 0; background: rgba(0,0,0,.5); border: 0; padding: 0; cursor: pointer; }
+.stage .sheet { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 1.1cqw; box-shadow: 0 2cqw 5cqw rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.1); max-height: 94%; }
+.stage .alone { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 1.1cqw; box-shadow: 0 2cqw 5cqw rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.1); max-height: 92%; max-width: 92%; }
+.stage .hot { position: absolute; border: 0; background: transparent; cursor: pointer; border-radius: .6cqw; padding: 0; }
+.stage .hot:hover { background: rgba(240,185,60,.14); box-shadow: 0 0 0 1px rgba(240,185,60,.6) inset; }
+.stage.enter > * { animation: enter .28s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes enter { from { opacity: .0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .stage.enter > * { animation: none; } }
+/* menu bar scene, drawn here (not a capture) */
+.mbar { position: absolute; inset: 0 0 auto 0; height: 3.2cqw; background: rgba(20,20,20,.72); display: flex; justify-content: flex-end; align-items: center; gap: 2cqw; padding: 0 2cqw; font: 500 1.35cqw var(--sf); color: #fff; }
+.mbar b { background: rgba(255,255,255,.18); padding: .3cqw .9cqw; border-radius: .6cqw; font-weight: 600; }
+.menu { position: absolute; top: 3.6cqw; right: 9cqw; width: 30cqw; background: rgba(42,42,42,.96); border-radius: 1cqw; box-shadow: 0 2cqw 5cqw rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.12); padding: .7cqw; font: 400 1.4cqw var(--sf); color: #fff; display: grid; gap: .1cqw; }
+.menu span { padding: .55cqw 1cqw; border-radius: .6cqw; display: flex; justify-content: space-between; }
+.menu span.dimmed { color: #999; }
+.menu span.sel { background: #f0b93c; color: #2a1d00; font-weight: 600; }
+.menu hr { border: 0; border-top: 1px solid rgba(255,255,255,.12); margin: .4cqw .6cqw; }
+.stage .panel { position: absolute; top: 3.7cqw; right: 6cqw; width: 28.8cqw; border-radius: 1.1cqw; box-shadow: 0 2cqw 5cqw rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.12); }
+.toast { position: absolute; top: 5cqw; left: 3cqw; width: 34cqw; background: rgba(42,42,42,.96); border-radius: 1.4cqw; padding: 1.2cqw 1.4cqw; font: 400 1.3cqw var(--sf); color: #fff; box-shadow: 0 2cqw 5cqw rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.12); display: grid; gap: .2cqw; }
+.toast b { font-weight: 600; } .toast em { font-style: normal; color: #999; font-size: 1.1cqw; }
+/* browser scenes: the extension's own pause page, rebuilt here with its real wording and proportions */
+.bw { position: absolute; inset: 4% 5%; border-radius: 1.1cqw; overflow: hidden; background: #1f1f1f; box-shadow: 0 2cqw 5cqw rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.12); display: flex; flex-direction: column; font-family: var(--sf); color: #fff; }
+.bwbar { height: 3.6cqw; background: #2c2c2c; display: flex; align-items: center; gap: .6cqw; padding: 0 1.2cqw; flex: none; }
+.bwbar i { width: 1cqw; height: 1cqw; border-radius: 50%; background: #5a5a5a; display: block; }
+.bwurl { margin-inline-start: 1.6cqw; flex: 1; max-width: 46cqw; background: #1c1c1c; border-radius: 99px; padding: .45cqw 1.2cqw; font-size: 1.15cqw; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bwbody { flex: 1; display: grid; place-items: center; position: relative; }
+.mo { width: 36cqw; background: #2a2a2a; border: 1px solid rgba(255,255,255,.1); border-radius: 2cqw; padding: 2.2cqw 2.3cqw 1.8cqw; display: grid; justify-items: center; gap: .8cqw; text-align: center; box-shadow: 0 2.4cqw 6cqw rgba(0,0,0,.45); }
+.mo .brand { font-size: 1cqw; font-weight: 600; color: #999; }
+.mo .eyebrow { font-size: 1.1cqw; font-weight: 600; color: #f0b93c; letter-spacing: 0; text-transform: none; }
+.mo b.t { font-size: 1.85cqw; line-height: 1.25; font-weight: 700; }
+.mo .d { font-size: 1.15cqw; color: #999; }
+.mo .own { font-size: 1.25cqw; font-weight: 500; color: #f6d98c; }
+.mo .g { font-size: 3.6cqw; line-height: 1; }
+.mo .ring { position: relative; width: 10cqw; height: 10cqw; display: grid; place-items: center; }
+.mo .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.mo .ring circle { fill: none; stroke-width: 6; } .mo .ring .tr { stroke: rgba(255,255,255,.1); } .mo .ring .fi { stroke: #f0b93c; stroke-linecap: round; stroke-dasharray: 326.7; transition: stroke-dashoffset 1s linear; }
+.mo .ring span { font: 600 2.8cqw/1 ui-rounded, var(--sf); font-variant-numeric: tabular-nums; }
+.mo .acts { display: grid; gap: .65cqw; width: 100%; margin-top: .9cqw; }
+.mo .acts button, .mo .acts span { font: 600 1.15cqw var(--sf); height: 3.4cqw; border-radius: 99px; border: 0; background: rgba(255,255,255,.1); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.mo .acts .pri { background: linear-gradient(180deg, #f6c858, #e0a426); color: #2a1d00; }
+.mo .acts .q { background: transparent; color: #999; height: 2.6cqw; font-weight: 500; }
+.mo .acts [disabled], .mo .acts .dis { opacity: .45; cursor: default; }
+.mo .f { font-size: 1cqw; color: #999; }
+.fakepage { position: absolute; inset: 0; padding: 2.4cqw 3cqw; display: grid; gap: 1.6cqw; align-content: start; }
+.fakepage .srch { height: 3.2cqw; width: 46cqw; justify-self: center; border-radius: 99px; background: #2a2a2a; border: 1px solid rgba(255,255,255,.12); display: flex; align-items: center; padding: 0 1.4cqw; font-size: 1.15cqw; color: #999; }
+.fakepage .gone { height: 30cqw; border: 1px dashed rgba(255,255,255,.14); border-radius: 1.6cqw; display: grid; place-items: center; color: #777; font-size: 1.2cqw; }
+.fakepage .pill { position: absolute; left: 2cqw; bottom: 2cqw; background: #1f1f1f; font: 500 1.1cqw var(--sf); padding: .9cqw 1.3cqw; border-radius: 99px; box-shadow: 0 .6cqw 2cqw rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.12); }
+/* the map of the blocking system */
+.sysmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.lane { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.lane ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: st; }
+.lane li { counter-increment: st; display: grid; grid-template-columns: 26px 1fr; gap: 10px; font-size: 14px; color: var(--muted); align-items: start; }
+.lane li::before { content: counter(st); width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accentInk); font-weight: 700; font-size: 12px; display: grid; place-items: center; }
+.lane li b { color: var(--fg); font-weight: 600; }
+.tbl { overflow-x: auto; }
+.tbl table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14px; }
+.tbl th, .tbl td { text-align: start; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.tbl td:first-child { font-weight: 600; white-space: nowrap; }
+.tbl td { color: var(--muted); } .tbl td:first-child { color: var(--fg); }
+.drawn { position: absolute; left: 2cqw; bottom: 1.6cqw; font: 500 1.2cqw var(--sf); color: rgba(255,255,255,.7); }
+
+#film { display: grid; gap: 14px; }
+.filmh { font-size: 17px; margin-top: 8px; }
+.strip { display: flex; gap: 16px; overflow-x: auto; padding: 4px 2px 14px; scroll-snap-type: x proximity; }
+.fm { margin: 0; display: grid; gap: 8px; width: 300px; flex: none; scroll-snap-align: start; align-content: start; }
+.fm button { all: unset; cursor: pointer; display: block; border-radius: 10px; }
+.fm button:hover .stage, .fm button:focus-visible .stage { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fm .stage { border-radius: 8px; box-shadow: 0 8px 22px rgba(0,0,0,.28), 0 0 0 1px rgba(255,255,255,.08); pointer-events: none; }
+.fm figcaption { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.fm figcaption b { display: block; color: var(--fg); font-size: 14px; }
+
+.feat, .sys { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+.fcard, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.fcard h3 { margin-bottom: 4px; }
+.fcard button { font: inherit; font-size: 14px; text-align: start; background: transparent; border: 0; border-bottom: 1px solid var(--line); padding: 8px 2px; color: var(--fg); cursor: pointer; }
+.fcard button:last-child { border-bottom: 0; } .fcard button:hover { color: var(--accent); }
+.card { gap: 12px; }
+.card p { font-size: 14px; color: var(--muted); }
+.sw { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sw figure { margin: 0; display: grid; gap: 4px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sw i { aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.plants { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.plants figure { margin: 0; display: grid; gap: 4px; font-size: 12px; color: var(--muted); text-align: center; }
+.plants img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; }
+/* component samples, in the app's own colors */
+.app { background: #1f1f1f; border-radius: 12px; padding: 14px; display: grid; gap: 10px; font-family: var(--sf); color: #fff; }
+.row { background: #2a2a2a; border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; position: relative; overflow: hidden; font-size: 13px; }
+.row .em { font-size: 22px; } .row small { display: block; color: #999; font-size: 11px; }
+.row .pill { margin-inline-start: auto; font-size: 11px; background: #333; border-radius: 99px; padding: 3px 9px; display: flex; gap: 5px; align-items: center; color: #ddd; }
+.row .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #5fd08a; }
+.row::after { content: ""; position: absolute; left: 12px; bottom: 0; height: 2px; width: 46%; background: linear-gradient(90deg, #f0b93c, #ffe19a); border-radius: 2px; }
+.gold { justify-self: start; background: linear-gradient(180deg, #f6c858, #e0a426); color: #2a1d00; font-weight: 600; font-size: 13px; padding: 6px 18px; border-radius: 99px; }
+.sug { border: 1px dashed #444; border-radius: 12px; padding: 10px 12px; font-size: 13px; display: flex; justify-content: space-between; color: #fff; }
+.sug span { color: #999; }
+.type b { font: 700 26px var(--sf); display: block; } .type i { font: 500 14px var(--sf); display: block; font-style: normal; } .type u { font: 600 30px ui-rounded, var(--sf); text-decoration: none; display: block; color: #f0b93c; } .type s { font: 400 12px var(--sf); color: #999; text-decoration: none; display: block; }
+ul.open { margin: 0; padding-inline-start: 20px; color: var(--muted); display: grid; gap: 6px; max-width: 75ch; }
+ul.open b { color: var(--fg); }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Unrot for Mac · build 34 · 24 Nov 2026</span>
+    <h1>Every screen of the Mac app, in one window you can click</h1>
+    <p class="lede">The window below is made of captures drawn by the app's own SwiftUI code, not sketches. Click the sidebar, a rule, New rule, Focus now or Breathe inside it, or jump to any screen from the list.</p>
+  </header>
+
+  <section>
+    <div class="proto">
+      <div class="stage" id="stage" aria-live="polite"></div>
+      <div class="side">
+        <div class="jump" id="jump"></div>
+        <div class="note" id="note"></div>
+        <p class="hint">Gold outlines on hover mark what is clickable. Clicking outside a sheet closes it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">All screens</span>
+    <h2>The whole app at a glance</h2>
+    <div id="film"></div>
+  </section>
+
+  <section>
+    <span class="eyebrow">The blocking system</span>
+    <h2>How a block is decided, and where it lands</h2>
+    <p class="lede">One engine on the Mac makes every decision. Apps and browsers only ask it and show the answer, so there is one set of rules and no second place to switch them off.</p>
+    <div class="sysmap">
+      <div class="lane"><h3>An app comes to the front</h3><ol>
+        <li><span><b>The Mac app notices</b> which app is in front and counts its time.</span></li>
+        <li><span><b>The engine decides</b>: allow, pause first, or closed, and why.</span></li>
+        <li><span><b>A panel covers that app's window</b>, not the whole screen.</span></li>
+        <li><span><b>What you choose is recorded</b>: an open, extra minutes, or walking away.</span></li>
+      </ol></div>
+      <div class="lane"><h3>A page opens in a browser</h3><ol>
+        <li><span><b>The extension checks the host</b> against the short list the app gave it. Other pages are never asked about.</span></li>
+        <li><span><b>It asks the same engine</b> through the bridge. Only the address goes across; no page text, no title.</span></li>
+        <li><span><b>The answer lands in the tab</b>: left alone, feed hidden, or the pause or closed page.</span></li>
+        <li><span><b>Every 30 seconds it looks again</b>, so a limit that runs out or quiet hours that begin close an open tab too.</span></li>
+      </ol></div>
+      <div class="lane"><h3>Adult content, underneath all of it</h3><ol>
+        <li><span><b>The Shield does not depend on any rule.</b> Lists, words and image checks run on their own.</span></li>
+        <li><span><b>It fails closed.</b> If the app goes silent during a lock, the browser tightens.</span></li>
+        <li><span><b>Distraction rules fail open.</b> A rule that cannot be read never closes a page by accident.</span></li>
+        <li><span><b>Never-closed sites</b> skip rules and Focus, but never the Shield.</span></li>
+      </ol></div>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th>How strict</th><th>Extra minutes</th><th>Weakening the rule</th><th>Way through</th></tr></thead>
+      <tbody>
+        <tr><td>Gentle</td><td>5 more minutes, after a short wait that grows each time today</td><td>At once</td><td>Extra minutes</td></tr>
+        <tr><td>Firm</td><td>After a longer wait</td><td>Takes effect 10 minutes later</td><td>Extra minutes, or the weekly pass</td></tr>
+        <tr><td>Locked</td><td>None</td><td>Refused in its hours; an all-day rule waits 24 hours</td><td>One emergency pass a week</td></tr>
+        <tr><td>Focus</td><td>None</td><td>Ends as you chose at the start</td><td>The weekly pass</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Features</span>
+    <h2>What each part does, and where it lives</h2>
+    <div class="feat" id="feat"></div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Design system</span>
+    <h2>The look</h2>
+    <div class="sys">
+      <div class="card"><h3>Color</h3>
+        <div class="sw">
+          <figure><i style="background:#1f1f1f"></i>Canvas 1F1F1F</figure>
+          <figure><i style="background:#191919"></i>Sidebar 191919</figure>
+          <figure><i style="background:#2a2a2a"></i>Card 2A2A2A</figure>
+          <figure><i style="background:#333333"></i>Raised 333333</figure>
+          <figure><i style="background:#ffffff"></i>Ink FFFFFF</figure>
+          <figure><i style="background:#999999"></i>Muted 999999</figure>
+          <figure><i style="background:#f0b93c"></i>Gold F0B93C</figure>
+          <figure><i style="background:#5fd08a"></i>Running</figure>
+        </div>
+        <p>Neutral grays with no tint, one gold. Green only ever means a rule is running.</p>
+      </div>
+      <div class="card"><h3>Type</h3>
+        <div class="app type"><b>Today</b><i>Now · Upcoming · Ideas</i><u>37m</u><s>Tuesday, November 24 · 24 m in feeds</s></div>
+        <p>San Francisco throughout, as on any Mac. Figures are rounded and gold. Section heads are plain white words, never capitals.</p>
+      </div>
+      <div class="card"><h3>Rows and pills</h3>
+        <div class="app">
+          <div class="row"><span class="em">⏳</span><div>Feeds<small>36 m left of 1 h</small></div><span class="pill">Limiting</span></div>
+          <div class="sug"><div>Feeds only<br><span>Hide home feeds and short videos.</span></div><span>+ Add</span></div>
+          <span class="gold">+ New rule</span>
+        </div>
+        <p>An emoji is the rule's icon. A thin gold line shows how much of the limit or the window is used. Suggestions are outlined, not filled.</p>
+      </div>
+      <div class="card"><h3>The plant under glass</h3>
+        <div class="plants">
+          <figure><img src="img/paint-1.jpg" alt="Seed under a glass dome">Seed</figure>
+          <figure><img src="img/paint-2.jpg" alt="Sprout under a glass dome">Sprout</figure>
+          <figure><img src="img/paint-6.jpg" alt="Small tree under a glass dome">Tree</figure>
+        </div>
+        <p>It grows with time given back: 5 m, 15 m, 1 h, 3 h, 8 h, 24 h. Same stages as the Android app.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Not done yet</span>
+    <h2>What these pictures do not prove</h2>
+    <ul class="open">
+      <li><b>The app is still named Hisn outside its window.</b> The Dock, Finder and the app menu say Hisn, and a few inner Settings pages still use the word.</li>
+      <li><b>Breathe has no sound or haptics.</b> The Android app ticks on each step; the Mac one is silent.</li>
+      <li><b>The browser side is built but has not run in a real browser.</b> Its logic passes 42 checks and the bridge is tested, but no rule has yet closed a real tab, and the feed selectors are unverified on the live sites. The browser scenes on this page are rebuilt here with the extension's own wording, not captured.</li>
+      <li><b>Nothing here ran in a real window.</b> The window bar, the menu bar panel and the notification are captured or drawn from code, not seen live.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+// kind: win (full window capture), sheet (over Today), alone (own window or panel), menu (drawn here)
+const S = {
+  today:     { g: "Main window", t: "Today", kind: "win", img: "today", from: "Home", note: "Adult protection leads the day: its row is first and opens the Shield. Under it, what is running now, what starts later, a limit suggested from your own measured use, and ideas. Shield and Block lists now come right after Today in the sidebar." },
+  focusing:  { g: "Main window", t: "Today, in Focus", kind: "win", img: "today-focus", from: "Home", note: "A running Focus session sits on top with its purpose and a countdown. The Never closed link shows how many sites stay open." },
+  progress:  { g: "Main window", t: "Progress", kind: "win", img: "progress", from: "Progress", note: "Time given back against your days before the rules, the week as bars with a dashed line for before, the garden, and where today's hours went." },
+  shield:    { g: "Main window", t: "Shield", kind: "win", img: "overview", from: "Adult protection", note: "The adult content layers: every app, the browser, the lock. Private, and never part of anything you could share." },
+  lists:     { g: "Main window", t: "Block lists", kind: "win", img: "rules", from: "Adult protection", note: "Only your own additions to adult protection: sites, words, apps without internet, and sites that are never blocked. Each list has one home and every change applies at once, so there is no Save. Distracting apps and sites are not here; those are rules." },
+  lock:      { g: "Main window", t: "Lock", kind: "win", img: "lock", from: "Commitment", note: "Makes protection harder to turn off for a set time, for the days you do not trust yourself." },
+  settings:  { g: "Main window", t: "Settings", kind: "win", img: "settings", from: "Settings", note: "Eight topics, each one row that says its current state and opens its own page. Nothing here repeats Today or Block lists. Click Checking or Works with your Mac to open one." },
+  macos:     { g: "Main window", t: "Settings, Works with your Mac", kind: "win", img: "settings-mac", from: "Settings", note: "What only a Mac can do. A Focus filter: pick Work, Sleep or any Focus in System Settings, and Unrot closes distractions while it is on and opens them when it ends. Three actions for Shortcuts and Spotlight: Start Focus, Breathe, Time given back.", todo: "Built and registered with macOS, but not yet run live on an installed copy." },
+  checking:  { g: "Main window", t: "Settings, Checking", kind: "win", img: "settings-checking", from: "Settings", note: "One topic on its own page: the three checks in plain words, and how strict. Each switch applies at once; there is no Save.", todo: "The other six topics open the same way but keep their older inner layout for now." },
+  setup:     { g: "Main window", t: "Setup", kind: "win", img: "setup", from: "Setup", note: "The checks that turn each protection layer on, in order. Opened from the status line at the bottom of the sidebar." },
+  templates: { g: "Rules", t: "New rule", kind: "sheet", img: "templates", w: 54.2, from: "Rules", note: "Six starting points: daily limit, wait before opening, work hours, feeds only, quiet hours, always closed. Opens from the gold button or ⌘N." },
+  editor:    { g: "Rules", t: "Rule editor", kind: "sheet", img: "editor", w: 35.6, from: "Rules", note: "Pick an emoji, then close, limit or pause. Add apps, sites, a whole category or just the feeds. Set days and hours, and how hard it is to change." },
+  focus:     { g: "Rules", t: "Start Focus", kind: "sheet", img: "focus", w: 37.3, from: "Focus", note: "How long, what it is for, and how hard it is to stop early. The purpose is shown back to you if you reach for a closed app." },
+  never:     { g: "Rules", t: "Never closed", kind: "sheet", img: "exceptions", w: 37.3, from: "Rules", note: "Sites that stay open under every rule and in Focus, like a music player. Adult protection ignores this list." },
+  wait:      { g: "In the moment", t: "Wait before opening", kind: "alone", img: "panel-wait", from: "Over the app", note: "Covers the app's own window, not the whole screen. A short count, how many opens are left today, then Open or Not now." },
+  closed:    { g: "In the moment", t: "Closed for now", kind: "alone", img: "panel-closed-firm", from: "Over the app", note: "A firm rule in its hours. It says when the app opens again; extra minutes come only after a wait." },
+  limit:     { g: "In the moment", t: "Limit reached, locked", kind: "alone", img: "panel-limit-locked", from: "Over the app", note: "A locked rule offers no extra time. The one way through is the weekly emergency pass." },
+  breathe1:  { g: "In the moment", t: "Breathe, start", kind: "alone", img: "breathe-start", from: "Breathe", note: "One calm sentence, the flower closed and still, the pattern, how many rounds and one Start. The same flow as the Android app, in a Mac window. Opens from Today or the round button at the top." },
+  breathe2:  { g: "In the moment", t: "Breathe, get ready", kind: "alone", img: "breathe-ready", from: "Breathe", note: "A short 3 · 2 · 1 over the closed flower before the first breath." },
+  breathe:   { g: "In the moment", t: "Breathe, breathing", kind: "alone", img: "breathe", from: "Breathe", note: "The gold flower opens on the in-breath and closes on the out-breath. The number is the seconds left in this step; the arc fills over the whole session." },
+  breathe4:  { g: "In the moment", t: "Breathe, after", kind: "alone", img: "breathe-done", from: "Breathe", note: "The pull is smaller now. Four things to do instead, breathe again, or back to your day." },
+  webwait:   { g: "In the browser", t: "Site: a pause first", kind: "web", url: "chess.com/play", web: { mode: "wait", rule: "Games and chat", host: "chess.com", seconds: 8, openMinutes: 10, opensLeft: 3, own: "I want my evenings back." }, from: "Browser extension", note: "New. A site under a wait rule opens on this page instead. The ring counts down live here; then Open for 10 minutes becomes available. Not now is always the first button. The words under the title are your own, from first run." },
+  webclosed: { g: "In the browser", t: "Site: closed for now", kind: "web", url: "reddit.com", web: { mode: "closed", glyph: "🌙", rule: "Work hours", title: "reddit.com is closed for now", detail: "Opens again at 5:00 PM", snooze: 10, own: "I want my evenings back." }, from: "Browser extension", note: "New. A firm rule in its hours. 5 more minutes appears only after a wait, and the wait grows each time today. The page checks again every 30 seconds and goes back by itself when the rule ends." },
+  weblimit:  { g: "In the browser", t: "Site: limit used, locked", kind: "web", url: "youtube.com/watch", web: { mode: "closed", glyph: "⏳", rule: "Feeds", title: "Today’s time for youtube.com is used", detail: "It opens again tomorrow.", locked: true }, from: "Browser extension", note: "New. A locked rule offers no extra minutes in the browser at all. The only way through is the weekly emergency pass in the app." },
+  webfocus:  { g: "In the browser", t: "Site: closed in Focus", kind: "web", url: "x.com/home", web: { mode: "closed", glyph: "🎯", rule: "Focus", title: "x.com is closed during Focus", detail: "You started this to: Write the report", focus: true }, from: "Browser extension", note: "New. During Focus the page shows what you started the session for. Focus never offers extra minutes." },
+  webfeed:   { g: "In the browser", t: "Feed hidden, site usable", kind: "web", url: "youtube.com", web: { mode: "feed" }, from: "Browser extension", note: "New. A Feeds only rule leaves the site open and hides just the home feed, with a small note in the corner. Search and links keep working. The page behind the note is a stand-in drawn here, not the real site.", todo: "The feed selectors are written from each site's known structure and have not been checked against the live sites." },
+  menu:      { g: "In the moment", t: "Menu bar panel", kind: "menu", from: "Outside the window", note: "A click on the menu bar item opens the day at a glance: a ring of feed time against your usual day, time given back, what is running now with its progress, the last seven days, and Focus and Breathe. The three dots (or a right-click) open the full command menu with lock, block a site and gray screen. A notice still arrives one minute before a rule closes an app." },
+  welcome1:  { g: "First run", t: "The problem", kind: "alone", img: "welcome-1", from: "First run · 1 of 6", note: "Your own number, not a lecture. Move the slider to a normal day and the headline and the year of dots follow: about 1 h 45 m a day is 27 days a year, and 3.6 years over fifty. It also sets the usual day the ring and time given back are measured against." },
+  welcome2:  { g: "First run", t: "Why it's hard", kind: "alone", img: "welcome-2", from: "First run · 2 of 6", note: "From the iPhone app: it isn't weak willpower. Four traps, adult content first, each paired with what Unrot does about it." },
+  welcome3:  { g: "First run", t: "What helps", kind: "alone", img: "welcome-3", from: "First run · 3 of 6", note: "The Shield first: blocking adult content is what Unrot is for. Then what Unrot does that the Mac's own Screen Time does not: only the feed closes, a breath instead of a wall, and rules that are hard to switch off. The urge is drawn as a wave.", todo: "Hiding only the feed needs the browser extension side, which is not built yet." },
+  welcome4:  { g: "First run", t: "What you want back", kind: "alone", img: "welcome-4", from: "First run · 4 of 6", note: "Adult protection sits on top as the core, always on and private. Each other goal you pick becomes a real rule, edited later on Today." },
+  welcome5:  { g: "First run", t: "Your reason and pledge", kind: "alone", img: "welcome-5", from: "First run · 5 of 6", note: "Why this matters to you, in your own words. Unrot shows them back on the pause, on a closed app and while you breathe. Under it, the three-line pledge from the iPhone app." },
+  welcome6:  { g: "First run", t: "Your plan", kind: "alone", img: "welcome-6", from: "First run · 6 of 6", note: "The days you get back, the goals you chose, and the three things left for you to do: turn on the Shield first, connect a browser, and close the private-window gap. Each has a button that goes straight there." },
+};
+// hotspots in percent of the window: [left, top, width, height, target]
+const SIDEBAR = [[1,11,17.8,4.2,"templates"],[1,17.2,17.8,3.6,"today"],[1,20.9,17.8,3.6,"shield"],[1,24.5,17.8,3.6,"lists"],[1,28.2,17.8,3.6,"progress"],[1,31.9,17.8,3.6,"lock"],[1,35.5,17.8,3.6,"settings"],[1,93.8,17.8,4.4,"setup"]];
+const HOT = {
+  today: [[22.4,16.4,61,7.6,"shield"],[22.4,29.4,61,8.1,"editor"],[22.4,38.5,61,8.1,"editor"],[22.4,47.6,61,8.1,"editor"],[22.4,61.2,61,8.1,"editor"],[22.4,74.5,61,7.6,"editor"],[22.4,87.3,30,5.5,"focus"],[53.3,87.3,30,5.5,"breathe1"],[81.2,8.4,2.6,3.6,"breathe1"]],
+  settings: [[22.4,16.5,61,7,"checking"],[22.4,32.1,61,7,"macos"]],
+  macos: [[22.3,8,7,3,"settings"]],
+  checking: [[22.3,8,7,3,"settings"]],
+  focusing: [[22.4,16.4,61,7.6,"shield"],[22.4,29.4,61,7,"today"]],
+};
+const order = Object.keys(S);
+let cur = "today";
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const img = (name, cls, alt) => { const i = el("img", cls); i.src = "screens/" + name + ".jpg"; i.alt = alt; i.loading = "lazy"; return i; };
+function hot(stage, list) { for (const [l,t,w,h,to] of list) { const b = el("button", "hot"); b.style.cssText = `left:${l}%;top:${t}%;width:${w}%;height:${h}%`; b.setAttribute("aria-label", "Open " + S[to].t); b.onclick = () => go(to); stage.append(b); } }
+function draw(stage, id, live) {
+  const s = S[id]; stage.replaceChildren();
+  const lights = () => stage.append(el("div", "lights", "<i></i><i></i><i></i>"));
+  if (s.kind === "win") { stage.append(img(s.img, "win", s.t + " screen")); lights(); if (live) hot(stage, SIDEBAR.concat(HOT[id] || [])); }
+  else if (s.kind === "sheet") {
+    stage.append(img("today", "win", "Today screen behind the sheet")); lights();
+    const d = el("button", "dim"); d.setAttribute("aria-label", "Close sheet"); if (live) d.onclick = () => go("today"); stage.append(d);
+    const sh = img(s.img, "sheet", s.t + " sheet"); sh.style.width = s.w + "%"; stage.append(sh);
+  } else if (s.kind === "alone") { stage.append(img(s.img, "alone", s.t)); }
+  else if (s.kind === "web") { drawWeb(stage, s, live); }
+  else { stage.insertAdjacentHTML("beforeend",
+    '<div class="mbar"><span>Wi-Fi</span><b>🌱 Unrot</b><span>Tue 24 Nov 14:09</span></div>' +
+    '<img class="panel" src="screens/menu.jpg" alt="Menu bar panel with today\'s ring, running rules, the last seven days, Focus and Breathe">' +
+    '<div class="toast"><em>Unrot · now</em><b>Feeds closes in 1 minute</b><span>You have used 59 m of 1 h today.</span></div><span class="drawn">The panel is a capture. The menu bar strip and the notice are drawn.</span>'); }
+}
+let webTimer = null;
+function drawWeb(stage, s, live) {
+  const w = s.web;
+  let body;
+  if (w.mode === "feed") {
+    body = '<div class="fakepage"><div class="srch">Search</div><div class="gone">The home feed would be here</div><span class="pill">Feed hidden · Unrot</span></div>';
+  } else {
+    const own = w.own ? `<span class="own">You said: “${w.own}”</span>` : "";
+    const head = `<span class="brand">🌱 Unrot</span><span class="eyebrow">${w.rule}</span>`;
+    if (w.mode === "wait") {
+      body = `<div class="mo">${head}<div class="ring"><svg viewBox="0 0 120 120"><circle class="tr" cx="60" cy="60" r="52"/><circle class="fi" cx="60" cy="60" r="52" style="stroke-dashoffset:120"/></svg><span class="num">${w.seconds}</span></div><b class="t">What did you open ${w.host} for?</b><span class="d">Breathe out slowly while the ring fills.</span>${own}<div class="acts"><button class="pri" data-go="today">Not now</button><button class="open" disabled>Open for ${w.openMinutes} minutes</button></div><span class="f">${w.opensLeft} opens left today</span></div>`;
+    } else {
+      const extra = w.locked ? '<span class="f">This rule is locked. The way through is in the Unrot app.</span>' : "";
+      const snooze = w.snooze ? `<button class="snz" disabled>5 more minutes, in 0:${String(w.snooze).padStart(2, "0")}</button>` : "";
+      body = `<div class="mo">${head}<span class="g">${w.glyph}</span><b class="t">${w.title}</b><span class="d">${w.detail}</span>${own}<div class="acts"><button class="pri" data-go="today">Close this tab</button>${snooze}<button class="q" data-go="breathe1">Breathe instead</button></div>${extra}</div>`;
+    }
+  }
+  stage.insertAdjacentHTML("beforeend", `<div class="bw"><div class="bwbar"><i></i><i></i><i></i><span class="bwurl">${w.mode === "feed" ? s.url : "Unrot · a moment"} </span></div><div class="bwbody">${body}</div></div>`);
+  if (!live) return;
+  clearInterval(webTimer);
+  stage.querySelectorAll("[data-go]").forEach(b => { b.onclick = () => go(b.dataset.go); });
+  const started = Date.now();
+  if (w.mode === "wait") {
+    const num = stage.querySelector(".num"), fill = stage.querySelector(".fi"), open = stage.querySelector(".open");
+    open.onclick = () => go("webfeed");
+    const tick = () => { const left = w.seconds - (Date.now() - started) / 1000; num.textContent = Math.max(0, Math.ceil(left)); fill.style.strokeDashoffset = 326.7 * Math.max(0, left / w.seconds); if (left <= 0) { open.disabled = false; clearInterval(webTimer); } };
+    tick(); webTimer = setInterval(tick, 250);
+  } else if (w.snooze) {
+    const snz = stage.querySelector(".snz");
+    snz.onclick = () => go("webfeed");
+    const tick = () => { const left = Math.ceil(w.snooze - (Date.now() - started) / 1000); if (left <= 0) { snz.disabled = false; snz.textContent = "5 more minutes"; clearInterval(webTimer); } else snz.textContent = "5 more minutes, in 0:" + String(left).padStart(2, "0"); };
+    tick(); webTimer = setInterval(tick, 250);
+  }
+}
+function go(id, scroll) {
+  clearInterval(webTimer);
+  cur = id; const st = document.getElementById("stage");
+  draw(st, id, true); st.classList.remove("enter"); void st.offsetWidth; st.classList.add("enter");
+  const s = S[id];
+  document.getElementById("note").innerHTML = `<span class="from">${s.from}</span><h3>${s.t}</h3><p>${s.note}</p>` + (s.todo ? `<p class="todo">Open: ${s.todo}</p>` : "");
+  document.querySelectorAll("#jump button").forEach(b => b.setAttribute("aria-current", b.dataset.id === id));
+  if (scroll) st.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+// jump list and filmstrip, grouped
+const groups = [...new Set(order.map(k => S[k].g))];
+const jump = document.getElementById("jump"), film = document.getElementById("film");
+for (const g of groups) {
+  const grp = el("div", "grp", `<span>${g}</span>`), row = el("div"), strip = el("div", "strip");
+  film.append(el("h3", "filmh", g), strip);
+  for (const id of order.filter(k => S[k].g === g)) {
+    const b = el("button", "", S[id].t); b.dataset.id = id; b.onclick = () => go(id); row.append(b);
+    const fig = el("figure", "fm"), fb = el("button"), mini = el("div", "stage");
+    draw(mini, id, false); fb.append(mini); fb.setAttribute("aria-label", "Show " + S[id].t); fb.onclick = () => go(id, true);
+    fig.append(fb, el("figcaption", "", `<b>${S[id].t}</b>${S[id].note.split(". ")[0].replace(/\.$/, "")}.`)); strip.append(fig);
+  }
+  grp.append(row); jump.append(grp);
+}
+const FEAT = [
+  ["Rules that close, limit or pause", [["Daily limits and work hours", "today"], ["Six templates", "templates"], ["Apps, sites, categories, feeds", "editor"], ["Sites that never close", "never"]]],
+  ["In the browser", [["A pause before a site opens", "webwait"], ["Closed in its hours", "webclosed"], ["Limit used, locked", "weblimit"], ["Only the feed hidden", "webfeed"]]],
+  ["Focus", [["Start with a purpose", "focus"], ["Countdown on Today", "focusing"], ["From the menu bar", "menu"]]],
+  ["The moment you reach for it", [["A wait, with opens left", "wait"], ["Closed until the hour", "closed"], ["Locked, with a weekly pass", "limit"], ["Breathe", "breathe"]]],
+  ["Seeing it work", [["Time given back", "progress"], ["The plant in the sidebar", "today"], ["One minute warning", "menu"]]],
+  ["Adult protection, kept private", [["Shield", "shield"], ["Block lists", "lists"], ["Lock", "lock"], ["Setup checks", "setup"]]],
+];
+for (const [h, links] of FEAT) { const c = el("div", "fcard", `<h3>${h}</h3>`); for (const [t, id] of links) { const b = el("button", "", t + " →"); b.onclick = () => go(id, true); c.append(b); } document.getElementById("feat").append(c); }
+go("today");
+</script>

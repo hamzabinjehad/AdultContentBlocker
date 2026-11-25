@@ -1,0 +1,712 @@
+<meta charset="utf-8">
+<title>Unrot Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Page chrome is neutral and follows the viewer's theme; the phone carries Unrot's look. */
+:root{--bg:#f5f2ec;--fg:#1d1a14;--muted:#6b6457;--line:#e2dccf;--panel:#fffdf8;--accent:#9a6a12;
+ --display:"Fraunces",Georgia,serif;--body:"Inter",system-ui,-apple-system,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f0d0a;--fg:#f1ebdf;--muted:#a59b88;--line:#2a261f;--panel:#17140f;--accent:#f2c14e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f0d0a;--fg:#f1ebdf;--muted:#a59b88;--line:#2a261f;--panel:#17140f;--accent:#f2c14e;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 90px;display:grid;gap:56px}
+h1,h2,h3{font-family:var(--display);font-weight:600;margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:clamp(34px,5.4vw,56px)}h2{font-size:clamp(24px,3.2vw,32px)}h3{font-size:19px}
+p{margin:0;max-width:70ch}
+.lede{font-size:18px;color:var(--muted);max-width:70ch}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+section{display:grid;gap:20px}
+.took{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.took div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:4px;min-width:0}
+.took b{font-size:15px}.took span{font-size:14px;color:var(--muted)}
+.proto{display:grid;grid-template-columns:auto minmax(0,1fr);gap:36px;align-items:start}
+@media (max-width:860px){.proto{grid-template-columns:1fr;justify-items:center}}
+.side{display:grid;gap:18px;min-width:0;width:100%}
+.looks{display:flex;flex-wrap:wrap;gap:10px}
+.looks button{font:inherit;font-size:14px;display:flex;gap:10px;align-items:center;padding:8px 14px 8px 8px;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+.looks button.t{padding:8px 14px}
+.looks button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset;font-weight:600}
+.looks i{width:28px;height:28px;border-radius:50%;display:block}
+.jump{display:grid;gap:14px}.jump .grp{display:grid;gap:6px}
+.jump .grp>span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.jump .grp div{display:flex;flex-wrap:wrap;gap:6px}
+.jump button{font:inherit;font-size:13.5px;padding:5px 11px;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+.jump button[aria-current="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.note{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:grid;gap:6px}
+.note .from{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.note h3{font-size:20px}.note p{font-size:15px;color:var(--muted)}
+.hint{font-size:13px;color:var(--muted)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.compare{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+@media (max-width:860px){.compare{grid-template-columns:1fr;justify-items:center}}
+.compare figure{margin:0;display:grid;gap:8px;justify-items:center}
+.compare figcaption{font-size:14px;color:var(--muted);text-align:center}.compare figcaption b{color:var(--fg);display:block;font-size:16px}
+.mini{width:300px;max-width:100%;aspect-ratio:355/792;position:relative;overflow:hidden;border-radius:36px;border:7px solid #111;box-shadow:0 16px 40px rgba(0,0,0,.25)}
+.mini>.app{transform-origin:0 0;position:absolute;top:0;left:0;pointer-events:none}
+.map{overflow-x:auto}
+table.st{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+table.st th{text-align:left;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+table.st td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--muted)}
+table.st td:first-child{font-family:var(--display);font-size:17px;color:var(--fg);font-weight:600}
+table.st td:nth-child(4){color:var(--fg)}
+#film,#gallery{display:grid;gap:14px}
+.filmh{font-size:17px;margin-top:8px}
+.strip{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 14px;scroll-snap-type:x proximity}
+.fm{margin:0;display:grid;gap:6px;width:170px;flex:none;scroll-snap-align:start}
+.fm .mini{width:170px;border-width:5px;border-radius:22px;cursor:pointer}
+.fm .mini:hover{outline:2px solid var(--accent);outline-offset:2px}
+.fm figcaption{font-size:12.5px;color:var(--muted);line-height:1.3}.fm figcaption b{display:block;color:var(--fg);font-size:13.5px}
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.fcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:6px;align-content:start;min-width:0}
+.fcard h3{margin-bottom:4px}
+.fcard button{font:inherit;font-size:14px;text-align:start;background:transparent;border:0;border-bottom:1px solid var(--line);padding:8px 2px;color:var(--fg);cursor:pointer;display:flex;justify-content:space-between;gap:8px}
+.fcard button span{color:var(--muted);font-size:12.5px;text-align:end}
+.fcard button:last-child{border-bottom:0}.fcard button:hover{color:var(--accent)}
+.sys{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.sys .card{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:10px;align-content:start}
+.swr{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.swr i{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);display:block}
+.states{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;text-align:center;font-size:11.5px;color:var(--muted)}
+.states svg{width:100%;aspect-ratio:1;border-radius:14px;background:radial-gradient(circle at 50% 60%,#3a2810,#0b0805 75%)}
+
+/* ---------------- the phone ---------------- */
+.device{width:375px;height:812px;border-radius:48px;border:10px solid #111;box-shadow:0 30px 70px rgba(0,0,0,.3);overflow:hidden;position:relative;flex:none}
+@media (max-width:420px){.device{transform:scale(.86);transform-origin:top center;margin-bottom:-114px}}
+.app{width:355px;height:792px;position:relative;overflow:hidden;font-family:var(--body);color:var(--ink);background:var(--sky);text-align:left}
+.app[data-look="glass"]{--sky:#000;--ink:#fff;--sub:#8e8e93;--card:#141414;--card2:linear-gradient(180deg,#3a3a3c,#1c1c1e 55%,#121213);--hi:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(0,0,0,.6),0 6px 14px rgba(0,0,0,.55);--line:rgba(255,255,255,.08);--pri:linear-gradient(180deg,#ffd76a,#d99a1e);--priInk:#2a1c02;--acc:#f2c14e;--acc2:#ffdf8a;--chip:rgba(242,193,78,.16);--glow:rgba(242,193,78,.22);--glow2:rgba(60,38,12,.35);--dock:linear-gradient(180deg,#2a2a2c,#161617);--tabOn:#fff;--tabOnInk:#000;--warn:#ffb366}
+.app[data-look="day"]{--sky:#f6efe2;--ink:#1f1a12;--sub:#7b6f5c;--card:#fffdf8;--card2:linear-gradient(180deg,#fffefb,#f3ead9);--hi:inset 0 1px 0 #fff,0 4px 14px rgba(90,60,20,.10);--line:rgba(60,40,10,.10);--pri:linear-gradient(180deg,#2c251a,#15110b);--priInk:#fff4d6;--acc:#b97d10;--acc2:#9a6a12;--chip:rgba(185,125,16,.12);--glow:rgba(242,193,78,.35);--glow2:rgba(246,226,190,.6);--dock:linear-gradient(180deg,#2c251a,#15110b);--tabOn:#fff4d6;--tabOnInk:#1f1a12;--warn:#c4621c}
+.app[data-look="moon"]{--sky:#05060f;--ink:#eef0ff;--sub:#9aa0c8;--card:#121530;--card2:linear-gradient(180deg,#262b52,#151832 55%,#0e1026);--hi:inset 0 1px 0 rgba(255,255,255,.12),0 6px 14px rgba(0,0,0,.55);--line:rgba(180,190,255,.12);--pri:linear-gradient(180deg,#eef1ff,#b9c3ff);--priInk:#12152e;--acc:#9fb6ff;--acc2:#dfe5ff;--chip:rgba(159,182,255,.16);--glow:rgba(120,140,255,.24);--glow2:rgba(20,24,60,.45);--dock:linear-gradient(180deg,#22264a,#121530);--tabOn:#eef1ff;--tabOnInk:#12152e;--warn:#ffb08a}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:46px 18px 22px;gap:12px;overflow-y:auto;scrollbar-width:none;background:radial-gradient(95% 46% at 50% 26%,var(--glow) 0%,var(--glow2) 42%,var(--sky) 80%)}
+.scr::-webkit-scrollbar{display:none}
+.scr>*{flex-shrink:0}.scr>.grow{flex:1;flex-shrink:1}
+.scr.plain{background:var(--sky)}
+.scr.tabbed{padding-bottom:110px}
+.status{position:absolute;top:12px;left:24px;right:24px;display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;z-index:5;pointer-events:none;color:var(--ink)}
+.t1{font-family:var(--display);font-weight:600;font-size:29px;line-height:1.12;letter-spacing:-.01em}
+.t2{font-family:var(--display);font-weight:600;font-size:23px;line-height:1.18}
+.t1 mark,.t2 mark{background:none;color:var(--acc)}
+.sub{color:var(--sub);font-size:14px}
+.c{text-align:center}.grow{flex:1}
+.k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub);font-weight:700}
+.kk{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);font-weight:800}
+.btn{font:inherit;font-weight:700;font-size:16px;border:0;border-radius:99px;padding:16px 20px;background:var(--pri);color:var(--priInk);display:flex;justify-content:center;align-items:center;gap:8px;cursor:pointer;width:100%;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 8px 20px rgba(0,0,0,.35)}
+.btn.soft{background:var(--card2);color:var(--ink);box-shadow:var(--hi)}
+.btn.ghost{background:transparent;color:var(--sub);font-weight:600;padding:8px;box-shadow:none}
+.btn.warn{background:linear-gradient(180deg,#ffb366,#e07a2e);color:#2a1206}
+.btn:active,.opt:active,.chipz button:active,.tool:active{transform:scale(.97)}
+.btn,.opt,.chipz button,.tool{transition:transform .12s ease}
+.chap{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:var(--acc)}
+.segs4{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.segs4 i{height:5px;border-radius:99px;background:var(--line);overflow:hidden;display:block}
+.segs4 b{display:block;height:100%;background:var(--acc);border-radius:99px}
+.back{width:28px;height:28px;display:grid;place-items:center;border:0;background:transparent;color:inherit;cursor:pointer;padding:0;font-size:18px}
+.why{font-size:12px;color:var(--sub);display:flex;gap:6px;align-items:flex-start}
+.why b{color:var(--acc)}
+.opt{font:inherit;text-align:start;width:100%;display:flex;gap:14px;align-items:center;padding:16px;background:var(--card2);color:var(--ink);border:1.5px solid transparent;border-radius:18px;box-shadow:var(--hi);cursor:pointer;font-size:15px}
+.opt .n{width:26px;height:26px;border-radius:50%;background:var(--chip);color:var(--acc);display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
+.opt.on{border-color:var(--acc)}.opt.on .n{background:var(--acc);color:var(--priInk)}
+.chipz{display:flex;flex-wrap:wrap;gap:8px}
+.chipz button{font:inherit;font-size:14px;padding:10px 14px;border-radius:99px;border:1.5px solid transparent;background:var(--card2);color:var(--ink);box-shadow:var(--hi);cursor:pointer}
+.chipz button.on{border-color:var(--acc);background:var(--chip);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:grid;gap:8px}
+.gl{display:block;margin:0 auto}
+.row{display:flex;align-items:center;gap:12px}
+.ico{width:38px;height:38px;border-radius:13px;background:var(--card2);box-shadow:var(--hi);display:grid;place-items:center;flex:none;font-size:17px;color:var(--acc)}
+.row b{display:block;font-size:14.5px}.row small{color:var(--sub);font-size:12.5px;line-height:1.4;display:block}
+.list{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.list>div,.list>button{font:inherit;color:inherit;width:100%;background:transparent;border:0;border-bottom:1px solid var(--line);padding:13px 14px;display:flex;align-items:center;gap:12px;text-align:start}
+.list>button{cursor:pointer}.list>*:last-child{border-bottom:0}
+.list b{display:block;font-size:14.5px}.list small{display:block;color:var(--sub);font-size:12.5px;line-height:1.4}
+.list .end{margin-inline-start:auto;color:var(--sub);font-size:13px;white-space:nowrap}
+.sw{width:46px;height:28px;flex:none;border-radius:99px;border:0;background:rgba(127,127,127,.35);position:relative;cursor:pointer;margin-inline-start:auto}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw.on{background:#34c759}.sw.on::after{transform:translateX(18px)}
+.tick{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;margin-inline-start:auto;color:transparent;flex:none;font-size:13px;font-weight:800}
+.tick.on{background:var(--acc);border-color:var(--acc);color:var(--priInk)}
+.field{font:inherit;font-size:17px;padding:16px;border-radius:16px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+.field:focus{outline:none;border-color:var(--acc)}
+textarea.field{resize:none;font-family:var(--display);font-size:18px;line-height:1.35}
+.dots{display:flex;gap:6px;justify-content:center}.dots i{width:7px;height:7px;border-radius:50%;background:var(--ink);opacity:.25}.dots i.on{width:22px;border-radius:99px;opacity:1}
+.priv{font-size:12px;color:var(--sub);text-align:center}
+/* home */
+.top{display:flex;align-items:center;gap:7px}
+.top h3{font-family:var(--body);font-weight:800;font-size:23px;margin:0;margin-inline-end:auto;letter-spacing:-.01em}
+.rb{height:34px;min-width:34px;padding:0 10px;border-radius:99px;display:flex;align-items:center;justify-content:center;gap:5px;background:var(--card2);box-shadow:var(--hi);font-size:12.5px;font-weight:800;border:0;color:var(--ink);cursor:pointer;font-family:inherit}
+.rb.day{background:var(--pri);color:var(--priInk)}
+.rb.warn{background:linear-gradient(180deg,#b8682a,#6e3510);color:#fff}
+.stage{margin:4px 0 0;font-size:13px;font-weight:800;letter-spacing:.06em;text-align:center}
+.big{font-weight:800;font-size:38px;letter-spacing:-.02em;text-align:center;line-height:1.05;font-variant-numeric:tabular-nums}
+.big i{font-style:normal;font-size:20px;color:var(--sub);font-weight:700;margin-inline:1px 6px}
+.nextl{font-size:12px;color:var(--sub);text-align:center}.nextl b{color:var(--ink);letter-spacing:.04em;margin-inline-end:6px}
+.seg{display:flex;gap:4px;padding:4px;border-radius:99px;background:var(--card);box-shadow:inset 0 1px 2px rgba(0,0,0,.4);margin:0 6px}
+.seg i{flex:1;height:8px;border-radius:9px;background:rgba(127,127,127,.22);overflow:hidden}.seg i b{display:block;height:100%;background:linear-gradient(180deg,#ffe08a,#e2a32a)}
+.tools{display:flex;justify-content:space-between;padding:0 2px}
+.tool{display:grid;justify-items:center;gap:6px;font-size:11.5px;color:var(--sub);background:none;border:0;cursor:pointer;font-family:inherit}
+.tool span{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;background:var(--card2);box-shadow:var(--hi);font-size:22px;color:var(--ink)}
+.pair{display:grid;grid-template-columns:auto 1fr;gap:10px}
+.pb{height:52px;border-radius:99px;border:0;font:inherit;font-weight:700;font-size:14px;color:var(--ink);background:var(--card2);box-shadow:var(--hi);cursor:pointer;padding:0 16px}
+.pb.gold{background:linear-gradient(180deg,#ffd76a,#d99a1e);color:#2a1c02}
+.three .r{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600;padding:6px 0}
+.three .r span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--card2);box-shadow:var(--hi);font-size:12px;flex:none}
+.three .r.done span{background:linear-gradient(180deg,#ffd76a,#d99a1e);color:#2a1c02}
+.three .r small{display:block;color:var(--sub);font-weight:400;font-size:12px}
+.float{position:absolute;left:50%;bottom:86px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;white-space:nowrap;padding:11px 22px 11px 12px;border-radius:99px;border:0;background:linear-gradient(180deg,#ffd76a 0%,#f2b632 55%,#c98b14 100%);color:#1f1a0a;font:inherit;font-weight:800;font-size:15px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 10px 24px rgba(0,0,0,.5);z-index:4;cursor:pointer}
+.float i{width:22px;height:22px;border-radius:50%;background:#2a1c02;display:grid;place-items:center}.float i::after{content:"";width:8px;height:8px;border-radius:50%;border:2.5px solid #f2c14e}
+.app[data-state="cracked"] .float{animation:glow 1.4s ease-in-out infinite alternate}
+@keyframes glow{from{box-shadow:0 0 0 6px rgba(242,193,78,.18),0 10px 24px rgba(0,0,0,.5)}to{box-shadow:0 0 0 14px rgba(242,193,78,.08),0 10px 24px rgba(0,0,0,.5)}}
+.dock{position:absolute;left:10px;right:10px;bottom:10px;display:flex;justify-content:space-around;padding:7px 4px;border-radius:99px;background:var(--dock);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 10px 30px rgba(0,0,0,.55);z-index:4}
+.dock button{display:grid;justify-items:center;gap:1px;padding:5px 12px;border-radius:99px;border:0;background:none;color:#a3a3a8;font:inherit;font-size:16px;cursor:pointer}
+.dock button small{font-size:10px;font-weight:700}
+.dock button.on{background:var(--tabOn);color:var(--tabOnInk);padding:5px 18px}
+.sheetwrap{position:absolute;inset:0;z-index:6;background:rgba(0,0,0,.55);display:flex;align-items:flex-end}
+.sheet{width:100%;padding:12px 16px 22px;border-radius:28px 28px 0 0;background:var(--card);display:grid;gap:10px;animation:up .25s ease-out}
+.sheet::before{content:"";justify-self:center;width:36px;height:4px;border-radius:9px;background:rgba(127,127,127,.45)}
+@keyframes up{from{transform:translateY(30%)}}
+.flower{position:relative;width:210px;height:210px;display:grid;place-items:center;margin:8px auto;transform:scale(var(--s,.62));transition:transform 4s ease-in-out}
+.flower i{position:absolute;inset:18%;border-radius:46% 54% 50% 50%;background:radial-gradient(circle at 50% 40%,#fff3cc,#f2c14e 55%,#c98b14);opacity:.75}
+.flower i:nth-child(2){transform:rotate(72deg)}.flower i:nth-child(3){transform:rotate(144deg)}.flower i:nth-child(4){transform:rotate(216deg)}.flower i:nth-child(5){transform:rotate(288deg)}
+.flower b{position:relative;font-family:var(--display);font-size:46px;color:#2a1c02}
+.ring{position:relative;width:200px;height:200px;margin:0 auto}.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring>div{position:absolute;inset:0;display:grid;place-content:center;text-align:center}.ring b{font-size:54px;font-weight:800;line-height:1}
+.from{border-radius:18px;padding:14px 16px;background:var(--card);border:1px solid var(--line);display:grid;gap:4px}
+.from p{font-family:var(--display);font-size:19px;line-height:1.3;margin:0}
+.wave{width:100%;height:120px}
+.tl{display:grid;gap:0}.tl div{display:grid;grid-template-columns:22px 1fr;gap:10px;padding-bottom:12px;position:relative}
+.tl i{width:12px;height:12px;border-radius:50%;background:var(--acc);margin:4px 5px 0;box-shadow:0 0 0 4px var(--chip)}
+.tl div:not(:last-child)::before{content:"";position:absolute;left:10.5px;top:18px;bottom:0;width:1px;background:var(--line)}
+.tl b{display:block;font-size:14.5px}.tl small{color:var(--sub);font-size:13px}
+.hold{position:relative;overflow:hidden;user-select:none;touch-action:none}
+.hold::before{content:"";position:absolute;inset:0;width:var(--p,0%);background:rgba(255,255,255,.35)}
+.hold span{position:relative}
+.ubar{display:grid;grid-template-columns:24px 82px 1fr 52px;gap:8px;align-items:center;font-size:13px}
+.ubar i{height:8px;border-radius:99px;background:linear-gradient(90deg,var(--acc) var(--w),var(--line) var(--w))}
+.ubar b{text-align:end;font-weight:700}
+.ap{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;flex:none}
+.segc{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.segc button{font:inherit;flex:1;font-size:12px;padding:7px 2px;border-radius:9px;border:0;background:transparent;color:var(--sub);cursor:pointer}
+.segc button.on{background:var(--pri);color:var(--priInk);font-weight:700}
+.gauge{position:relative;width:86%;margin:4px auto 0}.gauge svg{width:100%}
+.gauge div{position:absolute;left:0;right:0;bottom:2%;display:grid;text-align:center}.gauge b{font-size:40px;font-weight:800;line-height:1}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stats div{padding:10px 6px;border-radius:16px;background:var(--card2);box-shadow:var(--hi);display:grid;gap:2px;text-align:center}
+.stats b{font-size:18px;font-weight:800}.stats small{font-size:10.5px;color:var(--sub)}
+.rec{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rec div{padding:12px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:grid;gap:2px}
+.rec b{font-size:19px;font-weight:800;color:var(--acc2)}.rec small{font-size:11.5px;color:var(--sub)}
+.share{display:grid;grid-template-columns:auto 1fr;column-gap:12px;text-align:left;padding:13px 16px;border-radius:20px;border:0;background:linear-gradient(180deg,#ffd76a,#d99a1e);color:#2a1c02;font:inherit;cursor:pointer}
+.share span{grid-row:span 2;font-size:20px;align-self:center}.share b{font-size:15px;font-weight:800}.share small{font-size:11.5px;opacity:.8}
+.scard{justify-self:center;width:74%;padding:14px 12px 18px;border-radius:24px;text-align:center;background:radial-gradient(90% 60% at 50% 35%,#3a2810,#0b0805 80%);color:#fff;display:grid;gap:2px;box-shadow:0 0 0 1px rgba(242,193,78,.3),0 16px 40px rgba(0,0,0,.6)}
+.scard .sk{font-size:10px;letter-spacing:.3em;color:#ffdf8a;font-weight:800;margin-top:4px}.scard .sn{font-weight:800}.scard .sg{font-size:30px;font-weight:800}.scard .sf{font-size:11px;color:#a99d86}
+.wall{position:absolute;inset:0;padding:46px 14px 20px;display:grid;align-content:start;gap:12px}
+.wall.home{background:linear-gradient(160deg,#2b3d2a,#14201a 60%,#0b120e)}
+.wall.lock{background:radial-gradient(80% 50% at 50% 0%,#33405c,#0d1220 70%);text-align:center;color:#fff}
+.wg{border-radius:22px;background:rgba(10,10,10,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);padding:12px;color:#fff}
+.apps4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 12px;padding:6px 4px}.apps4 i{aspect-ratio:1;border-radius:14px;background:rgba(255,255,255,.14)}
+.noti{display:grid;grid-template-columns:26px 1fr auto;gap:2px 9px;padding:10px 12px;border-radius:18px;background:rgba(245,245,250,.16);backdrop-filter:blur(10px);text-align:left;color:#fff}
+.noti i{grid-row:span 2;width:26px;height:26px;border-radius:7px;background:linear-gradient(180deg,#ffd76a,#d99a1e);display:grid;place-items:center;font-style:normal;font-size:13px}
+.noti b{font-size:12.5px}.noti time{font-size:10.5px;color:#c9cbd6}.noti p{grid-column:2/4;margin:0;font-size:12px;line-height:1.35;color:#e6e7ee}
+.pdome{width:72%;margin:0 auto;display:block}
+.app .crk.gold .seam{animation:shimmer 2.4s linear infinite}
+@keyframes shimmer{to{stroke-dashoffset:-10.4}}
+.sway{transform-origin:52.8px 70px;animation:breathe 7s ease-in-out infinite}
+.app[data-state="night"] .sway{animation-duration:12s}.app[data-state="cracked"] .sway,.app[data-state="broken"] .sway{animation:none}
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.012,1.03)}}
+.mini .sway,.mini .seam{animation:none!important}
+.scr.enter{animation:enter .3s cubic-bezier(.2,.8,.2,1) both}
+@keyframes enter{from{opacity:0;transform:translateY(12px)}}
+.toast{position:absolute;left:14px;right:14px;top:44px;z-index:9;padding:12px 14px;border-radius:16px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.35);font-size:13.5px;transition:transform .3s,opacity .3s}
+.toast.hide{transform:translateY(-16px);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* system parts per phone */
+.device.ios{border-radius:52px}.device.android{border-radius:38px;border-width:9px}
+.status .island{width:96px;height:26px;border-radius:99px;background:#000;margin-top:-4px}
+.status .cam{width:11px;height:11px;border-radius:50%;background:#000;box-shadow:0 0 0 2px #222}
+.app[data-os="android"] .status{font-weight:600;letter-spacing:.02em}
+.gbar{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:120px;height:4px;border-radius:99px;background:var(--ink);opacity:.35;z-index:7}
+.app[data-os="android"] .gbar{width:90px;height:3.5px}
+.app[data-os="android"] .sw{width:52px;height:32px;border:2px solid var(--sub);background:transparent}
+.app[data-os="android"] .sw::after{top:6px;left:6px;width:16px;height:16px;background:var(--sub);box-shadow:none}
+.app[data-os="android"] .sw.on{background:var(--acc);border-color:var(--acc)}.app[data-os="android"] .sw.on::after{transform:translateX(20px);top:2px;left:4px;width:24px;height:24px;background:var(--priInk)}
+.ahead{display:flex;align-items:center;gap:6px;margin:-4px 0 4px}.ahead b{font-size:20px;font-weight:700}.ahead .back{font-size:22px;width:40px;height:40px}
+.ihead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;font-size:15px;margin:-4px 0 0}.ihead b{font-weight:700}
+.iback{all:unset;cursor:pointer;color:var(--acc);font-size:16px}
+.objs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.objs figure{margin:0;display:grid;justify-items:center;gap:4px;font-size:11.5px;color:var(--muted)}
+.objs span{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:19px;color:#fff;background:linear-gradient(180deg,#3a3a3c,#1c1c1e 55%,#121213);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 4px 10px rgba(0,0,0,.35)}
+.comps{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px;border-radius:14px;background:#000}
+.c-btn{padding:10px 16px;border-radius:99px;font-weight:700;font-size:13px;background:linear-gradient(180deg,#ffd76a,#d99a1e);color:#2a1c02}.c-btn.soft{background:linear-gradient(180deg,#3a3a3c,#1c1c1e);color:#fff}
+.c-chip{padding:7px 12px;border-radius:99px;font-size:12.5px;color:#fff;background:#1c1c1e;border:1.5px solid transparent}.c-chip.on{border-color:#f2c14e;background:rgba(242,193,78,.16)}
+.c-sw{width:44px;height:26px;border-radius:99px;position:relative;background:#34c759}.c-sw::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff}
+.c-sw.and{background:#f2c14e;width:48px;height:28px}.c-sw.and::after{background:#2a1c02;width:22px;height:22px}
+.c-pill{padding:6px 10px;border-radius:99px;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(180deg,#3a3a3c,#1c1c1e)}.c-pill.gold{background:linear-gradient(180deg,#ffd76a,#d99a1e);color:#2a1c02}
+.shapes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.shapes i{height:54px;display:grid;place-items:center;font-style:normal;font-size:12px;color:var(--muted);border:1.5px solid var(--line);background:var(--bg)}
+[hidden]{display:none!important}
+</style>
+
+<div class="wrap">
+ <section>
+  <div class="eyebrow">Unrot · general edition · design direction · 24 November 2026</div>
+  <h1>Unrot, the Glasshouse</h1>
+  <p class="lede">A working prototype of every Unrot screen, laid out like the Hisn prototype. Your sprout grows under glass from the time you give back. CleanPath and Opal's near-black, glossy design language sets the look, with CleanPath's home order and Opal's lit scene. The onboarding is the app's real 31 steps in four chapters, with the app's own words. The glass and plant are drawn by hand as vector shapes; there is no AI painting. Tap through the phone: it works. Answer the questions, hold to plant your seed, breathe to seal a crack with gold. Switch the look, and Android or iPhone, on the right: the system parts (status bar, switches, headers, permissions, lock screen) follow each phone. The same screen in all three looks is below.</p>
+  <div class="took">
+   <div><b>Near-black and gold</b><span>CleanPath and Opal's dark space, glossy pills and a white selected tab. Gold is Unrot's own colour.</span></div>
+   <div><b>The glass in the middle</b><span>Opal's lit scene, with the sprout as the hero: it grows, sleeps, cracks, seals with gold and breaks.</span></div>
+   <div><b>One big number</b><span>CleanPath's clean-time clock becomes time given back, which never goes down.</span></div>
+   <div><b>Four chapters</b><span>The setup has a bar in four parts (You, Why it's hard, What helps, Your plan), so it never feels endless.</span></div>
+   <div><b>Your own words</b><span>Your reason and your note show on the pause and block screens. They help more than ours would.</span></div>
+   <div><b>Calm motion</b><span>No wind under glass. The plant only lifts from the soil, as if breathing. Gold seams shimmer slowly.</span></div>
+  </div>
+ </section>
+
+ <section>
+  <h2>Try it</h2>
+  <div class="proto">
+   <div class="device android"><div class="app" id="app" data-look="glass" data-state="clear"></div></div>
+   <div class="side">
+    <div class="looks" role="group" aria-label="Look">
+     <button data-look="glass" aria-pressed="true"><i style="background:radial-gradient(circle at 50% 40%,#f2c14e,#3a2810 55%,#000)"></i>Glasshouse</button>
+     <button data-look="day" aria-pressed="false"><i style="background:radial-gradient(circle at 50% 40%,#fff,#f6e2be 55%,#c98b14)"></i>Daylight</button>
+     <button data-look="moon" aria-pressed="false"><i style="background:radial-gradient(circle at 50% 40%,#dfe5ff,#262b52 55%,#05060f)"></i>Moonlight</button>
+    </div>
+    <div class="looks" role="group" aria-label="The glass right now">
+     <button class="t" data-st="clear" aria-pressed="true">Clear</button><button class="t" data-st="night" aria-pressed="false">Night</button><button class="t" data-st="cracked" aria-pressed="false">Cracked</button><button class="t" data-st="gold" aria-pressed="false">Sealed with gold</button><button class="t" data-st="broken" aria-pressed="false">Broken</button>
+    </div>
+    <div class="looks" role="group" aria-label="Phone">
+     <button class="t" data-os="android" aria-pressed="true">Android</button><button class="t" data-os="ios" aria-pressed="false">iPhone</button>
+    </div>
+    <div class="note" id="note"></div>
+    <div class="jump" id="jump"></div>
+    <p class="hint">Everything inside the phone is clickable. The list jumps straight to a screen. The glass state changes Home, the widgets and the lock screen.</p>
+   </div>
+  </div>
+ </section>
+
+ <section>
+  <h2>This screen in all three looks</h2>
+  <p class="lede">Glasshouse is the default. Daylight is for phones set to light mode, so every word stays readable. Moonlight is what quiet hours look like at night.</p>
+  <div class="compare" id="compare"></div>
+ </section>
+
+ <section>
+  <h2>Onboarding: the best of each app</h2>
+  <p class="lede">CleanPath, Opal, Forest and Finch, from the owner's captures and the apps' own stores, next to our general app's setup, read from its code. Each row is what that app does best and what Unrot takes.</p>
+  <div class="map"><table class="st">
+   <thead><tr><th>App</th><th>Its onboarding</th><th>Best idea</th><th>Unrot takes</th><th>Unrot leaves</th></tr></thead>
+   <tbody>
+    <tr><td>CleanPath</td><td>"Map your path" in two minutes, why you're here, a streak intro, notifications in context, a 13-question score, harms, how it helps, a 90-day path, paywall.</td><td>One question a screen; asking for a permission right after showing why</td><td>One question a screen, a chapter bar, notifications asked right after the plan</td><td>"95/100 severe" scores, fake reviews</td></tr>
+    <tr><td>Opal</td><td>One sentence a screen, a short chat, "how it works" in three taps, permissions as switches, a suggested block list, a held commitment, a hard paywall.</td><td>Explaining the product before asking for anything</td><td>"How it works" in three frames, switches with one line of why, apps sorted by real use, hold to commit</td><td>"15 years of your life", account first, no-exit paywall</td></tr>
+    <tr><td>Forest</td><td>Plant a tree, stay off the phone, the tree grows; leave and it withers. A forest of past sessions.</td><td>A living thing that shows the time you kept</td><td>The sprout under glass, the wood with one tree a day</td><td>Killing the tree for one slip</td></tr>
+    <tr><td>Finch</td><td>A small creature you care for, who answers you. Gentle words on hard days.</td><td>Being kind on bad days</td><td>The sprout reacts to touch and sleeps at night; "Nothing is lost" when the glass breaks</td><td>Coins and outfits</td></tr>
+    <tr><td>Our general app</td><td>31 steps in four chapters: demo, name, age, goals, when, feel, real usage, cost, tricks, helps, wave, lives, expect, instead, apps, firmness, a live try, quiet hours, your note, plan, switches, notifications, a test, hold.</td><td>Real numbers from Android, a live test, your own reason</td><td>All of it: this prototype is its screens, redrawn</td><td>Nothing: it is the base</td></tr>
+   </tbody>
+  </table></div>
+ </section>
+
+ <section>
+  <h2>The setup, chapter by chapter</h2>
+  <p class="lede">25 screens in four chapters, in the order a person meets them. Tap any frame to open it in the phone above.</p>
+  <div id="film"></div>
+ </section>
+
+ <section>
+  <h2>Every other screen</h2>
+  <p class="lede">All 44 other pages in the apps: Home and its sheets, the four tabs, every rule and list, the moments a feed closes or the glass cracks, settings and help. Switch Android or iPhone above and these redraw.</p>
+  <div id="gallery"></div>
+ </section>
+
+ <section>
+  <h2>Features</h2>
+  <p class="lede">Everything Unrot does, grouped. Tap a feature to open its screen in the phone.</p>
+  <div class="feat" id="feat"></div>
+ </section>
+
+ <section>
+  <h2>The system</h2>
+  <div class="sys">
+   <div class="card"><h3>Glasshouse</h3><div class="swr"><i style="background:#000"></i><i style="background:#1c1c1e"></i><i style="background:#f2c14e"></i><i style="background:#ffdf8a"></i><i style="background:#8e8e93"></i><i style="background:#ffb366"></i></div><p class="hint">Near-black space, glossy dark pills, a gold lamp over the glass. The default.</p></div>
+   <div class="card"><h3>Daylight</h3><div class="swr"><i style="background:#f6efe2"></i><i style="background:#fffdf8"></i><i style="background:#b97d10"></i><i style="background:#15110b"></i><i style="background:#7b6f5c"></i><i style="background:#c4621c"></i></div><p class="hint">Warm paper and ink, for phones in light mode. Every word is dark on light, so nothing white gets lost.</p></div>
+   <div class="card"><h3>Moonlight</h3><div class="swr"><i style="background:#05060f"></i><i style="background:#121530"></i><i style="background:#9fb6ff"></i><i style="background:#eef1ff"></i><i style="background:#9aa0c8"></i><i style="background:#ffb08a"></i></div><p class="hint">Quiet hours: indigo and moonlight. The sprout folds its leaves and sleeps.</p></div>
+   <div class="card"><h3>The glass</h3><div class="states" id="states"></div><p class="hint">Drawn live, never a painting: the plant grows from time given back, a crack is one dark line with a white edge, gold is the same line filled, broken adds shards.</p></div>
+   <div class="card"><h3>Objects</h3><div class="objs">
+    <figure><span>◌</span>Breathe</figure><figure><span>◎</span>Focus</figure><figure><span>✎</span>Notes</figure><figure><span>💡</span>Instead</figure>
+    <figure><span>⛉</span>Shield</figure><figure><span>▣</span>Feeds</figure><figure><span>⏳</span>Wait</figure><figure><span>☾</span>Quiet</figure>
+    <figure><span>🔒</span>Lock</figure><figure><span>▥</span>Progress</figure><figure><span>🌱</span>Sprout</figure><figure><span>✦</span>Gold seam</figure></div>
+    <p class="hint">One glossy round tile per tool, white mark on dark glass. The same tile on Android and iPhone.</p></div>
+   <div class="card"><h3>Components</h3><div class="comps">
+    <span class="c-btn">Set it up · 4 min</span><span class="c-btn soft">Not now</span>
+    <span class="c-chip on">😴 Sleep</span><span class="c-chip">🎯 Focus</span>
+    <span class="c-sw ios on" title="iPhone switch"></span><span class="c-sw and on" title="Android switch"></span><span class="c-pill">⛉ 5/5</span><span class="c-pill gold">🌱 Day 4</span></div>
+    <p class="hint">Gold pill for the one main action, dark glass for the rest. Switches follow each phone: round green on iPhone, Material on Android.</p></div>
+   <div class="card"><h3>Shape and space</h3><div class="shapes"><i style="border-radius:13px">13</i><i style="border-radius:20px">20</i><i style="border-radius:28px">28</i><i style="border-radius:99px">pill</i></div>
+    <p class="hint">Icons 13 · cards 20 · sheets 28 · buttons and tabs are pills. Spacing steps of 4: 8 between rows, 12 between cards, 18 at the screen edge.</p></div>
+   <div class="card"><h3>Motion</h3><p class="hint">The plant only lifts from the soil, slowly (7 s); at night half as fast; hurt, it stays still. A gold seam shimmers every 2.4 s. Screens rise 12 px as they come in. A new stage gets one burst. With Reduce Motion on, all of it stops.</p></div>
+   <div class="card"><h3>Words</h3><p class="hint">Plain and kind. Numbers are the person's own, never a score. "Nothing is lost" whenever the glass is hurt. Adult content is named only where the person needs it, never on a share card, a widget or a notification.</p></div>
+   <div class="card"><h3>Type</h3><p style="font-family:var(--display);font-size:28px;line-height:1.1;font-weight:600">Make your phone boring again.</p><p class="hint">Fraunces for titles and your own words · Inter for everything else, heavy for numbers.</p><p style="font-weight:800;font-size:34px;letter-spacing:-.02em;margin:0">0d 2h 35m</p></div>
+   <div class="card"><h3>What stays Unrot</h3><p class="hint">Every protection and tool in today's app (closed feeds, waits, limits, quiet hours, adult sites, words and images, the lock, lists, health) is here, drawn in this style. Only the look changes. Adult-content numbers never show on a share card, a widget or a notification.</p></div>
+  </div>
+ </section>
+</div>
+
+<script src="glass.js"></script>
+<script>
+/* ---------------- state ---------------- */
+const st={os:'android',look:'glass',state:'clear',g:2.45,demo:0,name:'Sam',goals:new Set(['sleep','evenings','adult']),when:2,feel:new Set(['tired','behind']),
+ instead:new Set(['read','walk']),apps:new Set(['tt','ig','yt']),firm:{tt:'feed',ig:'feed',yt:'wait'},quiet:0,note:'Go to sleep. Tomorrow-you has a big day.',
+ sw:[true,true,false],held:false,checked:false,paused:false,panes:[true,false,true,true,false],tab:'all',crack:409};
+const APPS={tt:['TikTok','#111','♪',110],ig:['Instagram','linear-gradient(135deg,#f9a03f,#d62976 60%,#6a3cc8)','◎',65],yt:['YouTube','#e62117','▶',50],sc:['Snapchat','#f7d400','👻',25],x:['X','#111','𝕏',20]};
+const fm=m=>{m=Math.round(m);const h=Math.floor(m/60),mm=m%60;return h?`${h} h ${String(mm).padStart(2,'0')}`:`${mm} m`};
+const given=()=>{const m=minutes(st.g),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mm=Math.round(m%60);return{m,d,h,mm}};
+
+/* ---------------- small builders ---------------- */
+const G=(g,s,w=240,cls='')=>`<svg class="gl ${cls}" data-g="${g}" data-s="${s}" viewBox="0 0 100 100" style="width:${w}px;max-width:100%" aria-hidden="true"></svg>`;
+const chap=(c,f)=>`<div class="chap"><button class="back" data-back aria-label="Back">‹</button><div class="segs4">${[0,1,2,3].map(i=>`<i><b style="width:${i<c?100:i===c?f:0}%"></b></i>`).join('')}</div><span>${['You','Why it’s hard','What helps','Your plan'][c]}</span></div>`;
+const why=t=>`<p class="why"><b>ⓘ</b><span>${t}</span></p>`;
+const btn=(l,go,cls='')=>`<button class="btn ${cls}" ${go?`data-go="${go}"`:''}>${l}</button>`;
+const dock=tab=>`<nav class="dock">${[['home','⌂','Home'],['shield','⛉','Shield'],['progress','▥','Progress'],['you','◉','You']].map(([k,i,n])=>`<button data-go="${k}" class="${tab===k?'on':''}" aria-label="${n}">${i}<small>${n}</small></button>`).join('')}</nav>`;
+const ap=k=>`<span class="ap" style="background:${APPS[k][1]}">${APPS[k][2]}</span>`;
+const OS=()=>st.os;
+/* One detail page: Android puts a back arrow and the title on the left; iPhone centres the title under a "‹ Back". */
+const page=(title,body,back='home')=>OS()==='ios'
+ ?`<div class="scr plain"><div class="ihead"><button class="iback" data-go="${back}">‹ Back</button><span></span><span></span></div><h2 class="t1">${title}</h2>${body}</div>`
+ :`<div class="scr plain"><div class="ahead"><button class="back" data-go="${back}" aria-label="Back">←</button><b>${title}</b></div>${body}</div>`;
+const stageName=()=>NAMES[Math.min(6,Math.floor(st.g))];
+
+/* ---------------- screens ---------------- */
+const SC={
+/* chapter 1: you */
+hello:{g:'You',n:'Welcome',from:'Opal + CleanPath',note:'One promise a line, a seed under glass, and a way to see a pause before setting anything up. No account.',r:()=>`<div class="scr">
+ <div class="grow"></div>${G(.35,'clear',230)}
+ <p class="kk c">Unrot · Blocks brainrot, not your phone</p>
+ <h1 class="t1 c">Make your phone boring again.</h1>
+ <p class="sub c">Feeds that never end get a stop. Everything useful keeps working.</p>
+ <div class="list">${[['▣','Short videos closed','Shorts, Reels and For You'],['◌','A breath before the apps you pick','You still decide'],['⛉','Adult content blocked','In every browser']].map(([i,a,b])=>`<div><span class="ico">${i}</span><div><b>${a}</b><small>${b}</small></div></div>`).join('')}</div>
+ ${btn('Set it up · 4 min','demo')}${btn('Preview an app pause','wait','ghost')}
+ <p class="priv">Your rules and activity stay on this phone. No account.</p></div>`},
+demo:{g:'You',n:'How it works',from:'Opal',note:'Three frames, tap to go on. "So you know exactly what will happen before you switch anything on."',r:()=>{const F=[['You open an app','Unrot sees which app and screen is open: names only, never what’s on it.','▣'],['Your rule decides','A feed? It closes. A wait? A breath first. Limit used up? Closed till tomorrow.','◌'],['Nothing leaves the phone','No account, no history, no server that sees what you do.','⛉']],f=F[st.demo];
+ return `<div class="scr">${chap(0,12)}<div class="grow"></div><button data-demo style="all:unset;cursor:pointer;display:grid;gap:14px;justify-items:center;text-align:center">
+ <div style="width:150px;height:150px;border-radius:40px;background:var(--card2);box-shadow:var(--hi);display:grid;place-items:center;font-size:60px;color:var(--acc)">${f[2]}</div>
+ <h2 class="t1">${f[0]}</h2><p class="sub">${f[1]}</p></button><div class="dots">${F.map((_,i)=>`<i class="${i===st.demo?'on':''}"></i>`).join('')}</div><div class="grow"></div>
+ ${why('So you know exactly what will happen before you switch anything on. Nothing here blocks anything yet.')}${st.demo<2?`<button class="btn" data-demo>Next</button>`:btn('Set mine up','name')}</div>`}},
+name:{g:'You',n:'Your name',from:'Our app',note:'Optional. It goes on your plan and your pause screen, nothing else.',r:()=>`<div class="scr">${chap(0,25)}
+ <h2 class="t1">What should we call you?</h2><input class="field" id="nameField" value="${st.name}" aria-label="Your name" autocomplete="off">
+ ${why('To put your name on your plan and your pause screen. Nothing else.')}<div class="grow"></div>${btn('Next','goals')}</div>`},
+goals:{g:'You',n:'What you want back',from:'CleanPath',note:'Each goal pre-fills a real rule: quiet hours, a wait, a limit or the adult filter.',r:()=>`<div class="scr">${chap(0,40)}
+ <h2 class="t1">What do you want <mark>back</mark>?</h2><p class="sub">Pick as many as you like.</p>
+ <div class="chipz" data-set="goals">${[['sleep','😴 Sleep'],['focus','🎯 Focus'],['evenings','🌙 My evenings'],['people','👥 Time with people'],['calm','🍃 Calm'],['adult','⛉ Keep adult content away']].map(([k,l])=>`<button data-k="${k}" class="${st.goals.has(k)?'on':''}">${l}</button>`).join('')}</div>
+ ${why('Each goal pre-fills a real rule: quiet hours, a wait, a limit or the adult filter. You see and can change every one later.')}<div class="grow"></div>${btn(`${st.goals.size} picked · Next`,'when')}</div>`},
+when:{g:'You',n:'When it gets you',from:'CleanPath',note:'One tap answers and moves on. The answer sets when quiet hours start.',r:()=>`<div class="scr">${chap(0,55)}
+ <h2 class="t1">When does it get you most?</h2>
+ ${['In bed in the morning','At work or school','Late at night','Whenever I’m bored'].map((l,i)=>`<button class="opt ${st.when===i?'on':''}" data-when="${i}"><span class="n">${i+1}</span>${l}</button>`).join('')}
+ ${why('Your answer sets when quiet hours start, so the apps sleep at the time you actually struggle.')}</div>`},
+feel:{g:'You',n:'How it feels',from:'Our app',note:'Your own words appear on the pause and block screens.',r:()=>`<div class="scr">${chap(0,70)}
+ <h2 class="t1">How do you feel after a long scroll?</h2>
+ <div class="chipz" data-set="feel">${[['tired','Tired'],['behind','Behind on things'],['empty','Empty'],['restless','Restless'],['lonely','Lonely'],['fine','Fine, actually']].map(([k,l])=>`<button data-k="${k}" class="${st.feel.has(k)?'on':''}">${l}</button>`).join('')}</div>
+ ${why('Your words appear on the pause and block screens. Hearing your own reason helps more than ours.')}<div class="grow"></div>${btn('Next','start')}</div>`},
+start:{g:'You',n:'Your starting point',from:'Our app',note:'Real minutes from Android’s usage access, never a guess, never a score.',r:()=>`<div class="scr">${chap(0,88)}
+ <p class="kk">Your starting point</p><h2 class="t1">3 h 45 a day on feeds.</h2><p class="sub">Your last seven days, from Android.</p>
+ <div class="card">${['tt','ig','yt','sc'].map(k=>`<div class="ubar">${ap(k)}<span>${APPS[k][0]}</span><i style="--w:${APPS[k][3]/1.1}%"></i><b>${fm(APPS[k][3])}</b></div>`).join('')}</div>
+ ${why('A real starting point makes progress real. The numbers come from Android, stay on this phone and are never scored.')}<div class="grow"></div>${btn('That’s me · Next','year')}</div>`},
+/* chapter 2: why it's hard */
+year:{g:'Why it’s hard',n:'A year of it',from:'Our app',note:'Your own number, worked out in the open. Not a guessed "106 days".',r:()=>`<div class="scr">${chap(1,30)}<div class="grow"></div>
+ <p class="kk c">At this pace</p><h2 class="t1 c">${st.name||'You'}, that’s <mark>57 days</mark> a year.</h2>
+ <p class="sub c">3 h 45 a day × 365 days = 1,369 hours. Whole days, awake or asleep.</p>
+ <div class="card" style="grid-template-columns:repeat(12,1fr);gap:4px">${Array.from({length:36},(_,i)=>`<i style="aspect-ratio:1;border-radius:4px;background:${i<6?'var(--acc)':'var(--line)'}"></i>`).join('')}</div>
+ <p class="sub c" style="font-size:12.5px">Each square is about ten days. The gold ones are feeds.</p><div class="grow"></div>${btn('What does it cost me?','cost')}</div>`},
+cost:{g:'Why it’s hard',n:'What it costs you',from:'Our app',note:'Only what you said you want back, with your own answers. Only research with a named source.',r:()=>`<div class="scr">${chap(1,60)}
+ <h2 class="t1">What it costs <mark>you</mark>.</h2><p class="sub">From your answers, not from us.</p>
+ ${[['😴','Sleep','You said late at night is hardest. That’s when sleep gets pushed back.'],['🌙','Your evenings','2 h 10 of your 3 h 45 is after 21:00.'],['😶','How it feels','You said “tired” and “behind on things”. Those words will be on your pause screen.']].map(([i,a,b])=>`<div class="card row"><span class="ico">${i}</span><div><b>${a}</b><small>${b}</small></div></div>`).join('')}
+ ${why('These pages use your own numbers and answers, and only research with a named source. Nothing here is a score.')}<div class="grow"></div>${btn('Why is it so hard?','tricks')}</div>`},
+tricks:{g:'Why it’s hard',n:'Four tricks',from:'Our app',note:'Naming the tricks takes some of their grip, and says it isn’t the person’s fault.',r:()=>`<div class="scr">${chap(1,90)}
+ <h2 class="t1">Feeds use <mark>four tricks</mark>.</h2>
+ ${[['∞','Endless scroll','A feed has no bottom, so the moment you’d normally stop never comes.'],['🎰','Variable rewards','Not knowing when the next good one comes keeps your thumb moving, like a slot machine.'],['▶','Autoplay','Stopping takes a decision; carrying on takes nothing.'],['🔔','Notifications','A buzz pulls you back just as you’d moved on.']].map(([i,a,b])=>`<div class="row"><span class="ico">${i}</span><div><b>${a}</b><small>${b}</small></div></div>`).join('')}
+ <p class="sub" style="font-family:var(--display);font-size:16px">None of this means something is wrong with you. It’s design, and design can be answered.</p><div class="grow"></div>${btn('What does Unrot do?','helps')}</div>`},
+/* chapter 3: what helps */
+helps:{g:'What helps',n:'How Unrot helps',from:'Our app',note:'"It doesn’t ask you for more willpower. It changes what’s in front of you."',r:()=>`<div class="scr">${chap(2,15)}
+ <h2 class="t1">How Unrot <mark>helps</mark>.</h2><p class="sub">It doesn’t ask you for more willpower. It changes what’s in front of you.</p>
+ ${[['▣','Closes the feeds','Short-video feeds close as they open. Messages and the rest of the app keep working.'],['◌','A pause before opening','Apps you pick wait a few seconds. Often the urge passes while you wait.'],['☾','Quiet hours','In the hours you choose, the apps you picked sleep. Calls still work.'],['✦','The glass','If adult content is tried, the glass cracks. Breathe and it’s sealed with gold.']].map(([i,a,b])=>`<div class="row"><span class="ico">${i}</span><div><b>${a}</b><small>${b}</small></div></div>`).join('')}
+ <div class="grow"></div>${btn('Next','wave')}</div>`},
+wave:{g:'What helps',n:'An urge is a wave',from:'Urge surfing (Marlatt)',note:'Breathe is built for these minutes. The source is named on the screen.',r:()=>`<div class="scr">${chap(2,32)}
+ <h2 class="t1">An urge is a <mark>wave</mark>.</h2><p class="sub">It rises, peaks and passes, usually within minutes, if you don’t feed it.</p>
+ <div class="card"><svg class="wave" viewBox="0 0 300 120" aria-hidden="true"><path d="M0 105 C60 105 80 20 140 18 C200 16 210 100 300 104" fill="none" stroke="var(--acc)" stroke-width="3" stroke-linecap="round"/><path d="M0 105 C60 105 80 20 140 18 C200 16 210 100 300 104 V120 H0Z" fill="var(--chip)"/>
+ <text x="58" y="70" fill="var(--sub)" font-size="12" font-family="Inter">Rises</text><text x="124" y="40" fill="var(--sub)" font-size="12" font-family="Inter">Peaks</text><text x="222" y="80" fill="var(--sub)" font-size="12" font-family="Inter">Passes</text></svg></div>
+ <p style="font-family:var(--display);font-size:19px;line-height:1.3">You don’t have to win against it. You only have to wait it out.</p>
+ <p class="sub" style="font-size:12.5px">Called urge surfing, from G. Alan Marlatt’s work on relapse. Breathe is built for these minutes.</p><div class="grow"></div>${btn('Next','lives')}</div>`},
+lives:{g:'What helps',n:'Your sprout’s rules',from:'Forest + Finch',note:'The rules, before they ever happen. A crack can always be sealed; a break never takes time back.',r:()=>`<div class="scr">${chap(2,50)}
+ <h2 class="t1">Your sprout lives on <mark>what you do</mark>.</h2>
+ ${[['clear','Grows','With every minute you don’t spend in a feed. Time given back never goes down.'],['gold','Cracks','When adult content is tried. Breathe within 10 minutes and the crack is sealed with gold.'],['broken','Breaks','Only if you say adult content got through. New glass goes in; everything given back stays yours.']].map(([s,a,b])=>`<div class="card row">${G(s==='broken'?1.2:2.6,s,64)}<div><b>${a}</b><small>${b}</small></div></div>`).join('')}
+ <div class="grow"></div>${btn('Next','expect')}</div>`},
+expect:{g:'What helps',n:'The first weeks',from:'Our app',note:'"What many people notice. Yours may differ." Honest, no promises.',r:()=>`<div class="scr">${chap(2,68)}
+ <h2 class="t1">The first weeks, <mark>honestly</mark>.</h2><p class="sub">What many people notice. Yours may differ.</p>
+ <div class="tl">${[['Days 1–3','Your thumb reaches for feeds without asking you. Each time, the glass is there.'],['Weeks 1–2','Evenings feel long, even boring. That’s room coming back.'],['Weeks 3–4','Bedtime moves earlier. Long tasks get easier to start.'],['Month 2','The pull is quieter. You open apps when you choose to.']].map(([a,b])=>`<div><i></i><span><b>${a}</b><small>${b}</small></span></div>`).join('')}</div>
+ <div class="grow"></div>${btn('Next','instead')}</div>`},
+instead:{g:'What helps',n:'Instead',from:'Unrot (iOS)',note:'On every pause, one of these shows as something to do instead.',r:()=>`<div class="scr">${chap(2,88)}
+ <h2 class="t1">What will you do <mark>instead</mark>?</h2><p class="sub">Pick a few small things.</p>
+ <div class="chipz" data-set="instead">${[['read','📖 Read 10 pages'],['walk','🚶 A walk round the block'],['text','💬 Text a friend'],['stretch','🤸 Stretch'],['tea','🍵 Make tea'],['draw','✏️ Draw'],['music','🎧 One album, no screen'],['tidy','🧺 Tidy one thing']].map(([k,l])=>`<button data-k="${k}" class="${st.instead.has(k)?'on':''}">${l}</button>`).join('')}</div>
+ ${why('On every pause you’ll see one of these as something to do instead. A next step works better than a stop sign.')}<div class="grow"></div>${btn('Next','apps')}</div>`},
+/* chapter 4: your plan */
+apps:{g:'Your plan',n:'Your apps',from:'Opal',note:'Sorted by real time today. Only the apps you pick get a rule.',r:()=>`<div class="scr">${chap(3,8)}
+ <p class="kk">Your apps</p><h2 class="t1">Which apps take more than they give?</h2><p class="sub">Sorted by your time today. Tap the ones you want quieter.</p>
+ <div class="list">${Object.keys(APPS).map(k=>`<button data-app="${k}">${ap(k)}<div><b>${APPS[k][0]}</b><small>${fm(APPS[k][3]*.6)} today</small></div><span class="tick ${st.apps.has(k)?'on':''}">✓</span></button>`).join('')}</div>
+ <div class="list"><div><span class="ico">⛉</span><div><b>Adult sites and images</b><small>Not one app: blocked in every browser and app</small></div><span class="tick on">✓</span></div></div>
+ ${why('Only the apps you pick get a rule. Everything else on your phone stays exactly as it is.')}${btn(`${st.apps.size} apps · Next`,'firm')}</div>`},
+firm:{g:'Your plan',n:'How firm',from:'Our app',note:'Wait, limit, close the feed or block. Start soft; make it firmer later.',r:()=>{const L={wait:'Opens after a 10-second breath. Each open today adds a little more.',limit:'30 minutes a day, then it closes until tomorrow.',feed:'The short-video feed is closed. Search, messages and everything else still work.',block:'The whole app is blocked.'};
+ return `<div class="scr">${chap(3,20)}<p class="kk">How firm</p><h2 class="t1">How firm with each one?</h2><p class="sub">Most urges fade within minutes, so even a short wait helps. Start soft; make it firmer later.</p>
+ ${[...st.apps].map(k=>`<div class="card"><div class="row">${ap(k)}<b>${APPS[k][0]}</b></div><div class="segc">${[['wait','Wait'],['limit','Limit'],['feed','Close feed'],['block','Block']].map(([v,l])=>`<button data-firm="${k}:${v}" class="${st.firm[k]===v?'on':''}">${l}</button>`).join('')}</div><small class="sub" style="font-size:12.5px">${L[st.firm[k]||'wait']}</small></div>`).join('')}
+ <div class="grow"></div>${btn('Next','try')}</div>`}},
+try:{g:'Your plan',n:'Try it once',from:'Our app',note:'"This is exactly what you’ll see. Nothing is blocked yet."',r:()=>`<div class="scr">${chap(3,32)}
+ <p class="kk">Try it</p><h2 class="t1">Try it once, safely.</h2><p class="sub">This is exactly what you’ll see. Nothing is blocked yet.</p>
+ <div class="card" style="justify-items:center;text-align:center;padding:22px"><div class="ring" style="width:120px;height:120px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--line)" stroke-width="7"/><circle cx="50" cy="50" r="44" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="90"/></svg><div><b style="font-size:38px">7</b></div></div><b>TikTok opens in 7</b><small class="sub">Breathe. You still decide.</small></div>
+ ${btn('See the wait for TikTok','wait','soft')}<div class="grow"></div>${btn('That’s fair · Next','quiet')}</div>`},
+quiet:{g:'Your plan',n:'Quiet hours',from:'Our app',note:'Set from "late at night". Calls, messages, maps and alarms always work.',r:()=>{const Q=[['Nights','22:00 to 07:00',330,105],['Late nights','23:00 to 06:00',345,90],['Not now','You can add quiet hours later in Rules',0,0]],q=Q[st.quiet],arc=(a,b)=>{if(!b)return'';const r=40,p=d=>[50+r*Math.sin(d*Math.PI/180),50-r*Math.cos(d*Math.PI/180)],[x1,y1]=p(a),[x2,y2]=p(a+b);return `<path d="M${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2}" fill="none" stroke="var(--acc)" stroke-width="9" stroke-linecap="round"/>`};
+ return `<div class="scr">${chap(3,45)}<p class="kk">Quiet hours</p><h2 class="t1">When should it be quiet?</h2><p class="sub">Set from “late at night”. The apps you picked stay closed in these hours.</p>
+ <svg viewBox="0 0 100 100" style="width:190px;margin:0 auto" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--line)" stroke-width="9"/>${arc(q[2],q[3])}<text x="50" y="47" text-anchor="middle" font-size="9" font-weight="800" fill="var(--ink)" font-family="Inter">${st.quiet<2?q[1].replace(' to ','–'):'Off'}</text><text x="50" y="58" text-anchor="middle" font-size="5.5" fill="var(--sub)" font-family="Inter">${st.quiet<2?'9 hours asleep':'no quiet hours'}</text></svg>
+ ${Q.map((x,i)=>`<button class="opt ${st.quiet===i?'on':''}" data-quiet="${i}"><span class="n">${i+1}</span><span><b style="display:block">${x[0]}</b><small class="sub">${x[1]}</small></span></button>`).join('')}
+ ${why('Calls, messages, maps and alarms always work.')}${btn('Next','note')}</div>`}},
+note:{g:'Your plan',n:'Your note',from:'Our app',note:'"A line written while calm is the strongest thing to read in a weak moment."',r:()=>`<div class="scr">${chap(3,58)}
+ <p class="kk">Your note</p><h2 class="t1">It’s 23:40 and you reach for TikTok. What should you read?</h2><p class="sub">One line from you to you. It shows on the pause and when a feed is closed.</p>
+ <textarea class="field" id="noteField" rows="3" aria-label="Your note">${st.note}</textarea>
+ <div class="chipz" data-ideas>${['Go to sleep. Tomorrow-you has a big day.','Text a friend instead.','Read 10 pages instead.','You said “tired”.'].map(x=>`<button data-idea="${x}">${x}</button>`).join('')}</div>
+ <p class="priv">Stays on this phone.</p><div class="grow"></div>${btn('Save my note','plan')}</div>`},
+plan:{g:'Your plan',n:'Your plan',from:'CleanPath + Unrot (iOS)',note:'Everything chosen so far, as one plan, with the first milestone and an aim of half of today.',r:()=>`<div class="scr">${chap(3,70)}
+ <p class="kk">Your plan</p><h2 class="t1">Your first week starts now, ${st.name||'friend'}.</h2>
+ <div class="list">${[...st.apps].map(k=>`<div>${ap(k)}<div><b>${APPS[k][0]}</b><small>${{wait:'10 s to breathe first',limit:'30 min a day',feed:'Feed closed. Messages work.',block:'Blocked whole'}[st.firm[k]||'wait']}</small></div></div>`).join('')}
+ <div><span class="ico">☾</span><div><b>Quiet 22:00–07:00</b><small>Apps sleep, calls work</small></div></div><div><span class="ico">⛉</span><div><b>Adult sites and images blocked</b><small>Every browser and app</small></div></div><div><span class="ico">✎</span><div><b>Your note on every pause</b><small>“${st.note}”</small></div></div></div>
+ <div class="card row"><span class="ico">🏁</span><div><b>First milestone: Mon 1 Dec</b><small>Aim: under 1 h 50 a day on feeds, half of today.</small></div></div>
+ <div class="grow"></div>${btn('Make it live','switches')}</div>`},
+switches:{g:'Your plan',n:'Switch it on',from:'Opal',note:'Each switch does one job, said in one line. Nothing leaves the phone.',r:()=>`<div class="scr">${chap(3,82)}
+ <p class="kk">Make it live</p><h2 class="t1">Last step: switch it on.</h2><p class="sub">${OS()==='ios'?'iOS':'Android'} asks for these. Each one does one job, and nothing leaves your phone.</p>
+ <div class="list">${(OS()==='ios'?[['Screen Time access','To close feeds and run waits and limits. Apple keeps the app list private.'],['Content filter','Blocks adult sites in every app. No browsing leaves the phone.'],['Notifications','Three kinds only: a layer stopped, your quiet hours, your glass.']]:[['See which app is open','To pause, limit and close feeds. Reads app names and feed screens only.'],['Filter websites','A local filter for adult sites. No browsing leaves the phone.'],['Notifications','Three kinds only: a layer stopped, your quiet hours, your glass.']]).map(([a,b],i)=>`<div><div style="flex:1"><b>${a}</b><small>${b}</small></div><button class="sw ${st.sw[i]?'on':''}" data-sw="${i}" role="switch" aria-checked="${st.sw[i]}" aria-label="${a}"></button></div>`).join('')}</div>
+ ${why(OS()==='ios'?'iOS asks for these for any app that can close other apps or filter websites.':'Android requires these switches for any app that can close other apps or filter websites.')}<div class="grow"></div>${btn(st.sw.every(Boolean)?'Next':'Turn on the rest','test')}</div>`},
+test:{g:'Your plan',n:'See it work',from:'Our app',note:'"This is the moment most blockers skip." The person opens a real app and sees the rule.',r:()=>`<div class="scr">${chap(3,92)}<div class="grow"></div>
+ <div style="width:96px;height:96px;border-radius:26px;margin:0 auto;background:#111;display:grid;place-items:center;font-size:44px;color:#fff;box-shadow:0 12px 30px rgba(0,0,0,.4)">♪</div>
+ <h2 class="t1 c">Go on. Open TikTok.</h2><p class="sub c">See it work for real, then come back. This is the moment most blockers skip.</p>
+ ${why('Seeing it work once builds trust faster than any explanation.')}<div class="grow"></div>${btn('Open TikTok','closed')}${btn('I’m back','hold','soft')}${btn('I believe you · skip','hold','ghost')}</div>`},
+hold:{g:'Your plan',n:'Hold to plant',from:'Opal + Unchaind',note:'Three promises, then press and hold. It locks nothing; a small deliberate promise helps people keep going.',r:()=>`<div class="scr">${chap(3,100)}
+ <p class="kk">Your pledge</p><h2 class="t1">Make it <mark>yours</mark>.</h2><p class="sub">Read these, then press and hold. A promise to yourself, kept on this phone. It locks nothing.</p>
+ ${G(st.held?1.1:.3,'clear',150)}
+ <div class="list">${['I’ll pause before I scroll.','I’ll keep adult content behind glass.','I’ll be kind to myself on hard days.'].map(x=>`<div><span class="tick on">✓</span><b style="font-family:var(--display);font-size:16px;font-weight:600">${x}</b></div>`).join('')}</div>
+ <div class="grow"></div>${st.held?btn('Your seed is planted · Next','done'):`<button class="btn hold" id="holdBtn"><span>Hold to plant your seed</span></button>`}${btn('Skip, I’ll just start','done','ghost')}</div>`},
+done:{g:'Your plan',n:'You’re set',from:'Our app',note:'What is on now, in one list, then Home.',r:()=>`<div class="scr"><div class="grow"></div>${G(1.2,'clear',210)}
+ <h2 class="t1 c">It worked. You’re set.</h2>
+ <div class="list">${[...st.apps].map(k=>`<div>${ap(k)}<b>${APPS[k][0]}</b><span class="end">${{wait:'Wait',limit:'Limit',feed:'Feed closed',block:'Blocked'}[st.firm[k]]}</span></div>`).join('')}<div><span class="ico">☾</span><b>Quiet hours</b><span class="end">22:00 – 07:00</span></div><div><span class="ico">⛉</span><b>Adult sites and images</b><span class="end">Blocked</span></div></div>
+ <div class="grow"></div>${btn('Go to Home','home')}</div>`},
+
+/* home and moments */
+home:{g:'Home',n:'Home',from:'CleanPath + Opal',note:'CleanPath’s order: round buttons, the hero, the stage in laurels, one big number, the next stage on a bar, four round tools, two pills, a checklist. Opal’s lit scene holds the glass. Switch the glass state on the right.',r:()=>{const f=given(),s=st.state,stg=Math.min(6,Math.floor(st.g)),nx=NAMES[Math.min(6,stg+1)],left=fm(AT[Math.min(6,stg+1)]-minutes(st.g));
+ const L={clear:[stageName(),'Time given back since 20 Nov'],night:['Resting','Feeds open again at 07:00'],cracked:['The glass cracked','Breathe in the next 6 m to seal it with gold'],gold:['Sealed with gold','You came back. The gold seam stays on your glass.'],broken:['New glass, new seed','Everything given back stays yours']}[s];
+ const big=s==='cracked'?`${Math.floor(st.crack/60)}<i>m</i>${String(st.crack%60).padStart(2,'0')}<i>s</i>`:`${f.d}<i>d</i>${f.h}<i>h</i>${f.mm}<i>m</i>`;
+ const nxt=s==='cracked'||s==='broken'?`<b>NOTHING IS LOST</b>${fm(f.m)} given back stays yours`:s==='night'?'Sleeping. It grows again in the morning.':`<b>${nx.toUpperCase()}</b>${left} away`;
+ const open=st.panes.filter(x=>!x).length;
+ return `<div class="scr tabbed"><div class="top"><h3>Home</h3><button class="rb ${open?'warn':''}" data-go="shield" aria-label="Shield">⛉ ${5-open}/5</button><button class="rb day">🌱 Day 4</button><button class="rb" data-go="you" aria-label="Settings">⚙</button></div>
+ <button data-poke style="all:unset;cursor:pointer;display:block" aria-label="Touch your sprout">${G(st.g,s,300,'hero')}</button>
+ <div class="dots"><i class="on"></i><i></i><i></i></div>
+ <p class="stage">❦ ${L[0].toUpperCase()} ❦</p><p class="sub c" style="margin-top:-8px;font-size:12.5px">${L[1]}</p>
+ <p class="big" style="${s==='cracked'?'color:var(--acc2)':''}">${big}</p><p class="nextl">${nxt}</p>
+ ${s==='clear'||s==='gold'?`<div class="seg">${[0,1,2,3,4,5].map(i=>`<i><b style="width:${i<stg?100:i===stg?(st.g-stg)*100:0}%"></b></i>`).join('')}</div>`:''}
+ ${s==='broken'?`<div class="card row" style="border-color:rgba(255,150,60,.4)"><span class="ico">🌰</span><div><b>Last night’s glass broke</b><small>The dry plant goes to your wood. Everything given back stays yours.</small></div></div>`:''}
+ <div class="tools">${[['focus','◎','Focus'],['notes','✎','My notes'],['instead','💡','Instead'],['more','⋯','More']].map(([k,i,n])=>`<button class="tool" data-go="${{focus:'focus',notes:'notes',instead:'insteadnow',more:'more'}[k]}"><span>${i}</span>${n}</button>`).join('')}</div>
+ <div class="pair"><button class="pb gold" data-go="checkin">${st.checked?'🙂 Today':'Check in'}</button><button class="pb" data-go="hard">Had a hard moment</button></div>
+ <div class="card three" style="background:transparent;border:0;padding:4px 2px"><div class="row" style="justify-content:space-between"><b style="font-size:16px">Today’s three</b><b style="color:var(--acc)">${1+st.checked+st.paused}/3</b></div>
+ <div class="r done"><span>✓</span><div>Keep the glass closed<small>No feeds after 22:00</small></div></div>
+ <div class="r ${st.checked?'done':''}"><span>${st.checked?'✓':'2'}</span><div>Check in<small>How is today? One tap.</small></div></div>
+ <div class="r ${st.paused?'done':''}"><span>${st.paused?'✓':'3'}</span><div>Take one pause<small>Breathe once, even without a pull.</small></div></div></div>
+ </div><button class="float" data-go="breathe"><i></i>${s==='cracked'?'Breathe to seal it':'Breathe'}</button>${dock('home')}`}},
+breathe:{g:'Home',n:'Breathe',from:'Our app',note:'3-2-1, then three breaths: in for 4, out for 6. Finished while the glass is cracked, it seals it with gold.',r:()=>`<div class="scr" style="justify-content:center;text-align:center;background:radial-gradient(80% 50% at 50% 42%,#2a1d08,#000 75%);color:#fff">
+ <button class="back" data-go="home" aria-label="Close" style="position:absolute;left:16px;top:44px;border:1px solid rgba(255,255,255,.3);border-radius:50%;width:38px;height:38px">✕</button>
+ <p style="font-family:var(--display);font-size:19px;max-width:24ch;margin:0 auto" id="brline">The pull rises, peaks and passes. You only have to wait it out.</p>
+ <div class="flower" id="flower"><i></i><i></i><i></i><i></i><i></i><b id="brnum">3</b></div>
+ <p style="font-size:24px;font-weight:800;margin:0" id="brstep">Get ready</p><p style="color:#8e8e93;font-size:13px;margin:0" id="brsub">Sit back and let your shoulders drop</p>
+ <button class="btn" id="brdone" data-go="home" hidden style="margin-top:12px">Done</button></div>`},
+checkin:{g:'Home',n:'Check in',from:'Finch',note:'One tap, one face. It stays on this phone.',r:()=>SC.home.r()+`<div class="sheetwrap" data-close><div class="sheet"><b style="font-size:20px">How is today?</b><p class="sub">One tap. It stays on this phone.</p>
+ <div style="display:flex;justify-content:space-between">${['😞','😕','😐','🙂','😄'].map(x=>`<button class="btn soft" data-check="${x}" style="width:56px;padding:12px 0;font-size:24px">${x}</button>`).join('')}</div><button class="btn ghost" data-go="home">Not now</button></div></div>`},
+hard:{g:'Home',n:'Had a hard moment',from:'Our app',note:'Two honest answers. Only the person’s own word can break the glass, and nothing given back is ever taken.',r:()=>SC.home.r()+`<div class="sheetwrap" data-close><div class="sheet"><b style="font-size:20px">Had a hard moment?</b><p class="sub">Thanks for saying it. Nothing resets.</p>
+ <button class="opt" data-hard="adult"><span class="n">💔</span>Adult content got through</button><button class="opt" data-hard="scroll"><span class="n">⏱</span>I scrolled longer than I wanted</button><button class="btn ghost" data-go="home">Not now</button></div></div>`},
+focus:{g:'Home',n:'Focus under glass',from:'Opal',note:'Feed apps close for this long and a gold ring counts down round the glass.',r:()=>SC.home.r()+`<div class="sheetwrap" data-close><div class="sheet"><b style="font-size:20px">Focus under glass</b><p class="sub">Your feed apps close for this long. The glass closes too, and a ring counts down.</p>
+ <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${[15,25,45,60].map(m=>`<button class="btn soft" data-go="toast:Focus for ${m} minutes. Feed apps closed." style="padding:14px 0">${m}m</button>`).join('')}</div><button class="btn ghost" data-go="home">Not now</button></div></div>`},
+closed:{g:'Moments',n:'Feed closed',from:'Our app',note:'What a closed Reels feed looks like: your note, an Instead, and the rest of the app one tap away.',r:()=>`<div class="scr" style="text-align:center"><div class="grow"></div>${G(st.g,st.state==='night'?'night':'clear',190)}
+ <p class="kk">Instagram · Reels</p><h2 class="t1">The feed is closed.</h2><p class="sub">Messages, search and your profile still work.</p>
+ <div class="from" style="text-align:left"><small class="k">From you, earlier</small><p>“${st.note}”</p></div>
+ <div class="card row" style="text-align:left"><span class="ico">📖</span><div><b>Instead: read 10 pages</b><small>One of your own ideas</small></div></div>
+ <div class="grow"></div>${btn('Back to messages','home')}${btn('Breathe first','breathe','soft')}</div>`},
+wait:{g:'Moments',n:'A wait before opening',from:'Our app',note:'Opens after a breath. Each open today adds a little more. The person still decides.',r:()=>`<div class="scr" style="text-align:center"><div class="grow"></div>
+ <div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--line)" stroke-width="6"/><circle cx="50" cy="50" r="44" fill="none" stroke="var(--acc)" stroke-width="6" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="110"/></svg><div><b>7</b><small class="sub">seconds</small></div></div>
+ <h2 class="t1">TikTok opens in a moment.</h2><p class="sub">Third open today, so the wait is 3 seconds longer.</p>
+ <div class="from" style="text-align:left"><small class="k">From you, earlier</small><p>“${st.note}”</p></div>
+ <div class="grow"></div>${btn('Not now','home')}<button class="btn soft" disabled style="opacity:.45">Open TikTok in 7</button></div>`},
+quietnow:{g:'Moments',n:'Asleep in quiet hours',from:'Our app',note:'At night the apps sleep and so does the sprout. Calls, messages, maps and alarms always work.',r:()=>`<div class="scr" style="text-align:center;background:radial-gradient(90% 46% at 50% 26%,rgba(120,140,255,.24),rgba(20,24,60,.45) 42%,#05060f 80%);color:#eef0ff"><div class="grow"></div>${G(st.g,'night',220)}
+ <p class="kk" style="color:#9fb6ff">Quiet hours · until 07:00</p><h2 class="t1">TikTok is asleep.</h2><p class="sub" style="color:#9aa0c8">So is your sprout. Calls, messages, maps and alarms always work.</p>
+ <div class="grow"></div>${btn('Good night','home')}</div>`},
+adult:{g:'Moments',n:'Adult page closed',from:'Our app',note:'The page is never named. The glass cracks; a breath within 10 minutes seals it with gold.',r:()=>`<div class="scr" style="text-align:center"><div class="grow"></div>${G(st.g,'cracked',220)}
+ <h2 class="t1">Closed. Your glass cracked.</h2><p class="sub">Breathe within 10 minutes and the crack is sealed with gold. Nothing you gave back is lost.</p>
+ <div class="from" style="text-align:left"><small class="k">You said</small><p>“I want my evenings back for drawing.”</p></div>
+ <div class="grow"></div><button class="btn" data-seal>Breathe to seal it</button>${btn('Back to the home screen','home','ghost')}</div>`},
+shield:{g:'Tabs',n:'Shield',from:'Opal',note:'The glass as five panes. A pane is closed when its protection is on; open panes glow amber, and one button closes them.',r:()=>{const P=[['▣','Endless feeds','Reels, Shorts and the TikTok feed close','feeds'],['⏳','Wait before opening','A breath before Snapchat opens','feeds'],['☾','Quiet hours','22:00 to 07:00','feeds'],['⛉','Adult sites','Every browser and app','adult'],['▧','Adult images','Checked on the screen, on this phone','adult']],open=st.panes.filter(x=>!x).length;
+ const dome=`<svg class="pdome" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="dc"><path d="M20 86 V48 Q20 10 50 10 Q80 10 80 48 V86Z"/></clipPath></defs><g clip-path="url(#dc)">${P.map((p,i)=>`<rect x="${20+i*12}" y="8" width="12" height="80" fill="${st.panes[i]?'rgba(190,220,255,.14)':'rgba(255,150,60,.38)'}"/>`).join('')}${[1,2,3,4].map(i=>`<line x1="${20+i*12}" y1="8" x2="${20+i*12}" y2="88" stroke="#c9a24a" stroke-width=".7"/>`).join('')}</g><path d="M20 86 V48 Q20 10 50 10 Q80 10 80 48 V86" fill="none" stroke="#e0b45a" stroke-width="1.3"/><circle cx="50" cy="8" r="3" fill="#c9a24a"/><path d="M14 86 H86 L82 94 H18Z" fill="#6f6a62"/></svg>`;
+ return `<div class="scr tabbed"><div class="top"><h3>Shield</h3><button class="rb" data-go="add">＋ Add</button></div>
+ <div class="segc">${[['all','All'],['feeds','Feeds and apps'],['adult','Adult']].map(([k,l])=>`<button data-tab="${k}" class="${st.tab===k?'on':''}">${l}</button>`).join('')}</div>${dome}
+ <h2 class="t2 c">${open?`${open} of 5 panes ${open>1?'are':'is'} open`:'All 5 panes are closed'}</h2><p class="sub c" style="margin-top:-6px">${open?P.filter((_,i)=>!st.panes[i]).map(p=>p[1]).join(' and ')+(open>1?' are':' is')+' not covered':'Feeds, adult content and your limits are covered'}</p>
+ ${open?`<button class="btn warn" data-closeall style="width:auto;align-self:center;padding:12px 22px">${open>1?`Close ${open} panes`:'Close this pane'}</button>`:''}
+ <div class="list">${P.map((p,i)=>st.tab==='all'||p[3]===st.tab?`<div><span class="ico">${p[0]}</span><div style="flex:1"><b>${p[1]}</b><small style="${st.panes[i]?'':'color:var(--warn)'}">${st.panes[i]?p[2]:'Off · this pane is open'}</small></div><button class="sw ${st.panes[i]?'on':''}" data-pane="${i}" role="switch" aria-checked="${st.panes[i]}" aria-label="${p[1]}"></button></div>`:'').join('')}</div></div>${dock('shield')}`}},
+progress:{g:'Tabs',n:'Progress',from:'Opal + Forest',note:'Opal’s gauge for how far feed time fell, three numbers, and Forest’s wood: one tree a day, sized by the time given back. The dry one stays.',r:()=>`<div class="scr tabbed"><div class="top"><h3>Progress</h3><button class="rb" data-go="recap">Week</button></div>
+ <div class="gauge"><svg viewBox="0 0 200 110" aria-hidden="true"><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="var(--line)" stroke-width="14" stroke-linecap="round"/><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="var(--acc)" stroke-width="14" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="155.8"/></svg><div><b>38%</b><small class="sub">less feed time than your before</small></div></div>
+ <p class="sub c" style="font-size:13px">3 h 45 a day before Unrot → 2 h 20 now</p>
+ <div class="stats"><div><b>${fm(minutes(st.g))}</b><small>given back</small></div><div><b>14</b><small>pauses</small></div><div><b>3</b><small>quiet nights</small></div></div>
+ <div class="card"><div class="row" style="justify-content:space-between"><b style="font-size:16px">Your wood</b><span class="sub" style="font-size:12px">This week</span></div>
+ <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:11px;color:var(--sub)">${[2.2,3.1,1.4,st.g,0,0,0].map((g,i)=>`<span>${g?G(g,i===2?'broken':'clear',44):'<span style="display:block;height:44px"></span>'}${'MTWTFSS'[i]}</span>`).join('')}</div>
+ <p class="sub" style="font-size:12px">One tree a day, sized by the time you gave back. The dry one stays; it is part of the story.</p></div></div>${dock('progress')}`},
+you:{g:'Tabs',n:'You',from:'Opal',note:'The sprout as your avatar, your reason in your words, a record of what you grew, and a gold share button. Then the settings.',r:()=>`<div class="scr tabbed"><div class="top"><h3>You</h3></div>
+ <div class="row">${G(st.g,'clear',72)}<div><b style="font-size:21px;font-weight:800">${st.name||'You'}</b><small>Day 4 with Unrot · since 20 Nov</small></div></div>
+ <div class="from"><small class="k">Your reason</small><p>“I want my evenings back for drawing.”</p></div>
+ <div class="rec"><div><b>${fm(minutes(st.g))}</b><small>given back</small></div><div><b>3</b><small>trees in your wood</small></div><div><b>1</b><small>gold seam</small></div><div><b>${stageName()}</b><small>your sprout now</small></div></div>
+ <button class="share" data-go="share"><span>↗</span><b>Share your sprout</b><small>Your plant and your time back. Never anything about adult content.</small></button>
+ <div class="list">${[['☺','About you','','about'],['🔒','Protection lock','Off','plock'],['🛡','Uninstall protection','On','uninstall'],['👥','Someone who checks on you','Not set','guardian'],['🔑','Permissions',OS()==='ios'?'3 of 3':'5 of 5','permissions'],...(OS()==='ios'?[]:[['📱','This phone','All good','phone']]),['🩺','Is everything working?','All on','health'],['🔔','Notifications','3 kinds'],['🌐','Language','English','language'],['◐','Privacy','All on this phone','privacy'],['?','How Unrot works','','how'],['ⓘ','About Unrot','1.0','about_unrot']].map(([i,a,b,go])=>`<button ${go?`data-go="${go}"`:''}><span class="ico">${i}</span><b>${a}</b><span class="end">${b} ›</span></button>`).join('')}</div></div>${dock('you')}`},
+share:{g:'Tabs',n:'Share your sprout',from:'Forest',note:'The card shows the plant and the time given back only. Adult content is never on it.',r:()=>SC.you.r()+`<div class="sheetwrap" data-close><div class="sheet"><b style="font-size:20px">Share your sprout</b>
+ <div class="scard">${G(st.g,'clear',170)}<p class="sk">UNROT</p><p class="sn">${stageName()}</p><p class="sg">${fm(minutes(st.g))}</p><p class="sf">given back from endless feeds</p></div>
+ <p class="sub">The card shows your plant and your time back only. Adult content is never on it.</p>${btn('Share','toast:In the app the card goes out as a picture.')}${btn('Not now','you','ghost')}</div></div>`},
+widgets:{g:'Outside the app',n:'Home-screen widgets',from:'Opal',note:'A small and a medium widget. They follow the glass: asleep at night, a breath when cracked.',r:()=>{const f=fm(minutes(st.g)),s=st.state;return `<div class="wall home"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+ <div class="wg" style="aspect-ratio:1;display:grid;place-items:center;padding:6px">${G(st.g,s,120)}<b style="font-size:13px">${f}</b></div><div class="apps4" style="grid-template-columns:1fr 1fr"><i></i><i></i><i></i><i></i></div></div>
+ <div class="wg" style="display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:center">${G(st.g,s,96)}<div style="display:grid;gap:3px"><small style="font-size:10px;letter-spacing:.12em;color:#ffdf8a;font-weight:800">UNROT · GIVEN BACK</small><b style="font-size:24px;font-weight:800">${f}</b>
+ <small style="color:#a8a8ad;font-size:11.5px">${s==='night'?'Sleeping until 07:00':s==='cracked'?'Breathe to seal it in gold':s==='broken'?'A new seed, the same you':'Next: '+NAMES[Math.min(6,Math.floor(st.g)+1)]+' in '+fm(AT[Math.min(6,Math.floor(st.g)+1)]-minutes(st.g))}</small>
+ <button class="btn" data-go="breathe" style="padding:7px 12px;font-size:12px;width:auto;justify-self:start;background:#fff;color:#000">Breathe</button></div></div>
+ <div class="apps4"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>`}},
+lock:{g:'Outside the app',n:'Lock screen',from:'iOS Live Activities',note:'Notifications that follow the glass, and a live banner. None of them ever mentions adult content.',r:()=>{const s=st.state,N={clear:[['🌱','Two leaves are close','25 more minutes away from feeds and your sprout opens a new leaf.','now'],['✎','Your evening','You wanted your evenings back for drawing. Feeds close in 15 minutes.','1h ago']],night:[['☾','Quiet hours started','Your sprout is asleep. Feeds are closed until 07:00.','12m ago']],cracked:[['◌','Your glass cracked','10 minutes to seal it in gold. One slow breath is enough to start.','now']],gold:[['✦','Sealed with gold','The crack is part of your glass now, and it shines.','now']],broken:[['🌰','Start again, gently','Your time back is still yours. Plant a new seed when you are ready.','now']]}[s];
+ return `<div class="wall lock"><p style="margin:10px 0 0;font-size:60px;font-weight:700;letter-spacing:-.02em;line-height:1">${s==='night'?'00:41':'15:20'}</p><p style="margin:0;font-size:14px;opacity:.8">Tuesday 24 November</p><div style="height:20px"></div>
+ ${N.map(([i,h,b,w])=>`<div class="noti"><i>${i}</i><b>Unrot · ${h}</b><time>${w}</time><p>${b}</p></div>`).join('')}
+ ${OS()==='ios'?`<div class="noti" style="background:rgba(0,0,0,.78);grid-template-columns:40px 1fr auto;align-items:center;margin-top:auto">${G(st.g,s,40)}<b>${s==='cracked'?'A crack in the glass':s==='night'?'Your sprout is asleep':stageName()}</b><b style="color:#ffdf8a">${s==='cracked'?'9:41':s==='night'?'☾':fm(minutes(st.g))}</b></div>`
+ :`<p style="margin:auto 0 0;font-size:12px;opacity:.7">On Android these sit in the shade too, with a Breathe button on the crack notification.</p>`}</div>`}},
+health:{g:'Tools',n:'Is everything working?',from:'Our app',note:'Every layer with one line and a Fix button. The report it copies has no sites, apps or names.',r:()=>`<div class="scr plain"><div class="top"><button class="back" data-go="home" aria-label="Back">‹</button><h3>Is everything working?</h3></div>
+ <div class="card row"><span class="ico" style="color:#34c759">✓</span><div><b>Everything is running</b><small>Checked at 15:18</small></div></div>
+ <div class="list">${[['Website filter','Running · 41 kept out today'],['App protection','Connected'],['Endless feeds','Closing as they open'],['Battery','Android won’t pause Unrot'],['Notifications','You’ll hear if something stops']].map(([a,b])=>`<div><span class="ico" style="color:#34c759">●</span><div><b>${a}</b><small>${b}</small></div></div>`).join('')}</div>
+ ${btn('Run all checks','toast:All checks passed.','soft')}<p class="priv">The report has no sites, apps or names in it.</p></div>`},
+plock:{g:'Tools',n:'Protection lock',from:'Our app',note:'For a while, rules can get stricter but not looser. Emergency calls always work.',r:()=>`<div class="scr plain"><div class="top"><button class="back" data-go="you" aria-label="Back">‹</button><h3>Protection lock</h3></div>
+ ${G(st.g,'clear',150)}<h2 class="t1 c">Make your rules read-only.</h2><p class="sub c">For a while, you can make things stricter but not looser. For the moments you’d undo it.</p>
+ <div class="list"><div><span class="ico" style="color:#34c759">＋</span><div><b>You can</b><small>Add sites, apps and limits · make anything stricter</small></div></div><div><span class="ico" style="color:var(--warn)">−</span><div><b>You can’t</b><small>Turn a layer off · remove a rule · uninstall</small></div></div></div>
+ <div class="segc">${[3,7,14,30].map(d=>`<button class="${d===7?'on':''}">${d} days</button>`).join('')}</div><div class="grow"></div>${btn('Lock for 7 days','toast:Locked until Mon 1 Dec.')}<p class="priv">Emergency calls always work.</p></div>`},
+/* detail pages: every other page in the apps */
+more:{g:'Tools',n:'More',from:'Our app',note:'Every tool in three groups, so Home keeps four round tools and nothing else is more than two taps away.',r:()=>SC.home.r()+`<div class="sheetwrap" data-close><div class="sheet"><b style="font-size:22px;font-family:var(--display)">More</b>
+ ${[['Now',[['◌','Breathe','breathe'],['◎','Focus','focus'],['✎','My notes','notes']]],['Rules',[['▦','Apps','apps'],['☾','Quiet hours','quietedit'],['🔒','Lock','plock'],['☰','Lists','lists'],['⏱','Limits','limits']]],['You',[['▥','Progress','progress'],['☺','About you','about'],['🩺','Health','health'],['?','How it works','how']]]].map(([h,l])=>`<p class="k">${h}</p><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${l.map(([i,n,go])=>`<button data-go="${go}" style="all:unset;cursor:pointer;display:grid;justify-items:center;gap:6px;font-size:11px;color:var(--sub)"><span style="width:100%;height:54px;border-radius:18px;background:var(--card2);box-shadow:var(--hi);display:grid;place-items:center;font-size:20px;color:var(--ink)">${i}</span>${n}</button>`).join('')}</div>`).join('')}</div></div>`},
+add:{g:'Tools',n:'Add a rule',from:'Opal',note:'"+ Add" on Shield opens one sheet for every kind of rule.',r:()=>SC.shield.r()+`<div class="sheetwrap" data-close><div class="sheet"><b style="font-size:22px;font-family:var(--display)">Add a rule</b>
+ <div class="list">${[['▦','Block an app','The whole app, or just its feed','apps'],['⏳','A wait before opening','A breath first','waitset'],['⏱','A daily limit','Then it closes till tomorrow','limits'],['☾','Quiet hours','Apps sleep, calls work','quietedit'],['🌐','Block a website','In every browser','sites'],['Aa','Block a word','Closes the page when it shows','words']].map(([i,a,b,go])=>`<button data-go="${go}"><span class="ico">${i}</span><div><b>${a}</b><small>${b}</small></div><span class="end">›</span></button>`).join('')}</div></div></div>`},
+apps:{g:'Rules',n:'Block whole apps',from:'Opal',note:'Suggested from screen time, then every app. "Just close the feed?" keeps messages working.',r:()=>page('Block whole apps',`<div class="field" style="display:flex;gap:8px;color:var(--sub);font-size:15px">⌕ Search your apps</div>
+ <p class="k">Suggested from your screen time</p><div class="list">${Object.keys(APPS).map((k,i)=>`<div>${ap(k)}<div style="flex:1"><b>${APPS[k][0]}</b><small>${fm(APPS[k][3]*.6)} today${i===0?' · <span style="color:var(--acc)">Just close the feed?</span>':''}</small></div><button class="sw ${i===4?'on':''}" data-flip aria-label="${APPS[k][0]}"></button></div>`).join('')}</div>
+ <p class="k">All apps</p><div class="list">${['Chrome','Maps','Messages','Spotify','WhatsApp'].map(n=>`<div><span class="ap" style="background:#555">${n[0]}</span><b>${n}</b><button class="sw" data-flip aria-label="${n}"></button></div>`).join('')}</div>
+ <div class="grow"></div>${btn('Done · 1 app blocked','shield')}`,'shield')},
+quietedit:{g:'Rules',n:'Quiet hours',from:'Our app',note:'Drag the ends round the clock. The apps you picked sleep; calls, messages, maps and alarms always work.',r:()=>page('Quiet hours',`${SC.quiet.r().match(/<svg viewBox="0 0 100 100" style="width:190px[\s\S]*?<\/svg>/)[0]}
+ <div class="list"><div><b style="flex:1">Every day</b><span class="end">Mon – Sun ›</span></div><div><b style="flex:1">Starts</b><span class="end">22:00 ›</span></div><div><b style="flex:1">Ends</b><span class="end">07:00 ›</span></div><div><div style="flex:1"><b>Work hours too</b><small>09:00 – 17:00 on weekdays</small></div><button class="sw" data-flip aria-label="Work hours"></button></div></div>
+ <p class="k">Asleep in these hours</p><div class="chipz">${[...st.apps].map(k=>`<button class="on">${APPS[k][0]}</button>`).join('')}</div>${why('Calls, messages, maps and alarms always work.')}`,'shield')},
+limits:{g:'Rules',n:'Daily limits',from:'Opal',note:'"Suggested limits are about two-thirds of today: a step, not a cliff."',r:()=>page('Daily limits',`<p class="k">Suggested · your most used</p>
+ <div class="list">${['tt','ig','yt'].map(k=>`<div>${ap(k)}<div style="flex:1"><b>${APPS[k][0]}</b><small>${fm(APPS[k][3])} today</small></div><span class="rb" style="height:30px">${Math.round(APPS[k][3]*.66/5)*5} min</span></div>`).join('')}</div>
+ ${why('Suggested limits are about two-thirds of today: a step, not a cliff.')}<div class="grow"></div>${btn('Add 3 limits','shield')}`,'shield')},
+waitset:{g:'Rules',n:'Wait before opening',from:'Our app',note:'The wait grows with each open today. Set the first wait and how much each open adds.',r:()=>page('Wait before opening',`<div class="card" style="text-align:center;justify-items:center"><div class="ring" style="width:110px;height:110px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--line)" stroke-width="7"/><circle cx="50" cy="50" r="44" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="150"/></svg><div><b style="font-size:34px">10</b></div></div><small class="sub">seconds the first time</small></div>
+ <div class="list"><div><b style="flex:1">First wait</b><span class="end">10 s ›</span></div><div><b style="flex:1">Each open adds</b><span class="end">+3 s ›</span></div><div><div style="flex:1"><b>Show my note</b><small>“${st.note}”</small></div><button class="sw on" data-flip aria-label="Show my note"></button></div></div>
+ <p class="k">Apps with a wait</p><div class="list"><div>${ap('yt')}<b>YouTube</b><span class="end">10 s</span></div><div>${ap('sc')}<b>Snapchat</b><span class="end">10 s</span></div></div>`,'shield')},
+lists:{g:'Rules',n:'Your lists',from:'Our app',note:'Sites, words, apps and the built-in adult list, with export to move to another phone.',r:()=>page('Your lists',`<div class="list">${[['🌐','Sites','3 of your own','sites'],['Aa','Words','Built-in list + 2 of yours','words'],['▦','Apps','5 with a rule','apps'],['⛉','Adult sites list','229,034 sites · signed','adultlist']].map(([i,a,b,go])=>`<button data-go="${go}"><span class="ico">${i}</span><div><b>${a}</b><small>${b}</small></div><span class="end">›</span></button>`).join('')}</div>
+ <p class="k">Move to another phone</p><div class="list"><button data-go="toast:Saved as unrot-rules.json"><span class="ico">⇪</span><b>Export as a file</b></button><button data-go="toast:Pick a file to import"><span class="ico">⇩</span><b>Import</b></button></div>${why('The file holds only your sites and words. No history.')}`,'shield')},
+sites:{g:'Rules',n:'Sites',from:'Our app',note:'Your own sites, blocked in every browser, plus a tester.',r:()=>page('Sites',`<div style="display:flex;gap:8px"><div class="field" style="flex:1;color:var(--sub);font-size:15px">example.com</div><button class="btn" style="width:auto;padding:0 18px">Add</button></div>
+ <div class="list">${['reddit.com/r/all','9gag.com','twitch.tv'].map(x=>`<div><span class="ico">🌐</span><b style="flex:1">${x}</b><span class="end">✕</span></div>`).join('')}</div>${btn('Test a site','sitecheck','soft')}`,'lists')},
+sitecheck:{g:'Rules',n:'Test a site',from:'Our app',note:'Type a site and see whether Unrot would let it through, and which list decides.',r:()=>page('Test a site',`<div class="field" style="font-size:15px">9gag.com</div>
+ <div class="card row"><span class="ico" style="color:var(--warn)">⛔</span><div><b>Blocked</b><small>On your own list. Every browser and app.</small></div></div>
+ <div class="card row"><span class="ico" style="color:#34c759">✓</span><div><b>wikipedia.org passes</b><small>Not on any list.</small></div></div>`,'sites')},
+words:{g:'Rules',n:'Words',from:'Our app',note:'The built-in adult words plus your own. A page closes when one shows on screen.',r:()=>page('Words',`<div class="card row"><span class="ico">⛉</span><div><b>Built-in list</b><small>Adult words and tags, in 14 languages</small></div><button class="sw on" aria-label="Built-in list"></button></div>
+ <p class="k">Your own</p><div class="list">${['onlyf…','nsfw'].map(x=>`<div><span class="ico">Aa</span><b style="flex:1">${x}</b><span class="end">✕</span></div>`).join('')}</div>${btn('Test a sentence','wordtest','soft')}`,'lists')},
+wordtest:{g:'Rules',n:'Test a sentence',from:'Our app',note:'Paste text and see which words would close the page.',r:()=>page('Test a sentence',`<textarea class="field" rows="3" style="font-family:var(--body);font-size:15px">A calm walk by the river, then home.</textarea><div class="card row"><span class="ico" style="color:#34c759">✓</span><div><b>Nothing would close</b><small>No word on any list.</small></div></div>`,'words')},
+adultlist:{g:'Rules',n:'Adult sites list',from:'Our app',note:'A signed list, checked on the phone. Updates come signed too.',r:()=>page('Adult sites list',`<div class="card" style="text-align:center"><b style="font-size:34px;font-weight:800">229,034</b><small class="sub">sites · signed · updated 21 Nov</small></div>${btn('Check for an update','toast:The list is up to date.','soft')}${why('The list is checked against a signature before it is used. Your browsing is never sent to check it.')}`,'lists')},
+notes:{g:'Every day',n:'My notes',from:'Our app',note:'Short notes to yourself. The newest shows on the pause.',r:()=>page('My notes',`<textarea class="field" rows="2" placeholder="A line for the hard moments"></textarea>
+ ${[['Tonight','Go to sleep. Tomorrow-you has a big day.'],['Sunday','The evening felt long, then I drew for an hour.'],['Friday','Opened TikTok three times before 9. Breathed twice.']].map(([d,x])=>`<div class="from"><small class="k">${d}</small><p>${x}</p></div>`).join('')}`,'home')},
+about:{g:'You',n:'About you',from:'Our app',note:'Everything you told Unrot, editable, and one button that removes it all. Your rules stay.',r:()=>page('About you',`<div class="list">${[['Name',st.name||'—'],['Your note',st.note],['What you want back','Sleep, my evenings, adult content away'],['When it gets you','Late at night'],['How it feels','Tired, behind on things'],['Instead','Read 10 pages, a walk']].map(([a,b])=>`<button><div><b>${a}</b><small>${b}</small></div><span class="end">›</span></button>`).join('')}</div>
+ <p class="priv">On this phone only.</p>${btn('Remove all','toast:Personal details removed.','ghost')}`,'you')},
+permissions:{g:'You',n:'Permissions',from:'Our app',note:'Each switch Unrot needs, with one line on what it does and whether it is on.',r:()=>{const P=OS()==='ios'?[['Screen Time access','Closes feeds and runs waits and limits.',true],['Content filter','Blocks adult sites in every app.',true],['Notifications','Three kinds, nothing else.',st.sw[2]]]:[['See which app is open','Android’s accessibility setting. Closes feeds, runs limits and quiet hours.',st.sw[0]],['Filter websites','A local VPN. No browsing leaves the phone.',st.sw[1]],['Usage access','Your minutes, for Progress.',true],['Notifications','Three kinds, nothing else.',st.sw[2]],['Display over other apps','For the wait screen.',true]];
+ return page('Permissions',`<p class="sub">${P.filter(p=>p[2]).length} of ${P.length} switched on</p><div class="list">${P.map(([a,b,on])=>`<div><div style="flex:1"><b>${a}</b><small>${b}</small></div><span class="end" style="color:${on?'#34c759':'var(--warn)'}">${on?'On':'Off ›'}</span></div>`).join('')}</div>`,'you')}},
+phone:{g:'You',n:'This phone',from:'Our app',note:'The phone maker’s settings that keep Unrot alive in the background.',r:()=>page('This phone',`<p class="sub">Android and Samsung decide when Unrot can run. These settings keep it alive.</p><div class="list">${[['Battery','Unrestricted',true],['Auto start','Allowed',true],['Sleeping apps','Unrot is not asleep',true]].map(([a,b,on])=>`<div><div style="flex:1"><b>${a}</b><small>${b}</small></div><span class="end" style="color:#34c759">✓</span></div>`).join('')}</div>`,'you')},
+how:{g:'Help',n:'How Unrot works',from:'Our app',note:'Four steps, in plain words, and where it stops.',r:()=>page('How Unrot works',`${[['1','You open an app','Unrot sees which app and screen is open: names only, never what’s on it.'],['2','Your rule decides','A feed? It closes. A wait? A breath first. Limit used up? Closed till tomorrow.'],['3','Websites pass a filter on the phone','Adult sites stop before they load, in every browser.'],['4','Nothing leaves the phone','No account, no history, no server that sees what you do.']].map(([n,a,b])=>`<div class="row"><span class="ico">${n}</span><div><b>${a}</b><small>${b}</small></div></div>`).join('')}
+ <div class="card"><b>Where it stops</b><small class="sub">A second phone profile, a computer, or switching the layers off in Android’s settings.</small></div>${btn('What can bypass Unrot','bypass','soft')}${btn('Privacy, in full','privacy','ghost')}`,'you')},
+bypass:{g:'Help',n:'What can bypass Unrot',from:'Our app',note:'Said plainly, so nobody is surprised.',r:()=>page('What can bypass Unrot',`<div class="list">${[['Another profile or phone','Unrot guards this profile only.'],['Turning the layers off','The protection lock makes that harder.'],['A computer','Unrot runs on this phone.']].map(([a,b])=>`<div><span class="ico">!</span><div><b>${a}</b><small>${b}</small></div></div>`).join('')}</div>`,'how')},
+privacy:{g:'Help',n:'Privacy',from:'Our app',note:'No account. Your rules, notes and minutes stay on this phone.',r:()=>page('Privacy',`${G(st.g,'clear',140)}<h2 class="t2 c">Everything stays on this phone.</h2><div class="list">${[['No account','Nothing to sign up for.'],['No history','Unrot never keeps what you looked at.'],['No server','Nothing you do is sent anywhere.'],['Share cards','Your plant and your time back only. Never adult content.']].map(([a,b])=>`<div><span class="ico" style="color:#34c759">✓</span><div><b>${a}</b><small>${b}</small></div></div>`).join('')}</div>`,'how')},
+uninstall:{g:'You',n:'Uninstall protection',from:'Our app',note:'With the direct build, uninstalling asks for a wait first. Emergency calls always work.',r:()=>page('Uninstall protection',`<div class="card row"><span class="ico">🔒</span><div><b>Uninstalling waits 24 hours</b><small>So a bad moment can pass first.</small></div><button class="sw on" aria-label="Uninstall protection"></button></div>${why('Needs the direct build and its switch on. Emergency calls always work.')}`,'you')},
+guardian:{g:'You',n:'Someone who checks on you',from:'Our app',note:'Pair with someone you trust. They see that protection is on, never what you did.',r:()=>page('Someone who checks on you',`<div class="card" style="justify-items:center;text-align:center"><div style="width:150px;height:150px;border-radius:20px;background:repeating-conic-gradient(var(--ink) 0 25%,transparent 0 50%) 0 0/18px 18px;opacity:.85"></div><b>Scan on their phone</b><small class="sub">They see that protection is on. Never your apps, sites or minutes.</small></div>`,'you')},
+language:{g:'You',n:'Language',from:'Our app',note:'English or Arabic, right to left.',r:()=>page('Language',`<div class="list"><button><b style="flex:1">English</b><span class="tick on">✓</span></button><button><b style="flex:1">العربية</b><span class="tick"></span></button><button><b style="flex:1">Follow the phone</b><span class="tick"></span></button></div>`,'you')},
+milestone:{g:'Moments',n:'A milestone',from:'CleanPath',note:'Day 7, 14, 30… A card to share with the day count only.',r:()=>`<div class="scr" style="text-align:center"><div class="grow"></div><p class="kk">Day 7</p>${G(3.2,'clear',230)}<h2 class="t1">A week under glass.</h2><p class="sub">${fm(minutes(st.g)+400)} given back so far. Your next milestone is day 14.</p><div class="grow"></div>${btn('Share day 7','toast:The card shows the day count only.')}${btn('Keep going','home','ghost')}</div>`},
+recap:{g:'Moments',n:'Your week',from:'Opal',note:'Sunday’s recap: feed time against your before, the best day, and one change for next week.',r:()=>page('Your week',`<div class="gauge"><svg viewBox="0 0 200 110" aria-hidden="true"><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="var(--line)" stroke-width="14" stroke-linecap="round"/><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="var(--acc)" stroke-width="14" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="140"/></svg><div><b>2 h 20</b><small class="sub">a day, was 3 h 45</small></div></div>
+ <div class="stats"><div><b>Thu</b><small>best day</small></div><div><b>14</b><small>pauses</small></div><div><b>+1</b><small>tree</small></div></div>
+ <div class="card row"><span class="ico">💡</span><div><b>One change</b><small>Most opens were after 21:00. Start quiet hours at 21:30?</small></div></div>${btn('Try it this week','quietedit')}`,'progress')},
+firstweek:{g:'Moments',n:'Your first week',from:'CleanPath',note:'Seven days, one small thing each, shown on Home until day 7.',r:()=>page('Your first week',`<div class="tl">${['Day 1 · See it work once','Day 2 · Breathe once, without a pull','Day 3 · Write a note for tonight','Day 4 · One evening without feeds','Day 5 · Look at your wood','Day 6 · Try a Focus','Day 7 · Your week, in one page'].map((x,i)=>`<div><i style="${i<4?'':'background:var(--line);box-shadow:none'}"></i><span><b>${x.split(' · ')[1]}</b><small>${x.split(' · ')[0]}${i<3?' · done':i===3?' · today':''}</small></span></div>`).join('')}</div>`,'home')},
+tour:{g:'Home',n:'A short tour',from:'Unchaind',note:'Three spots on Home, once, after setup: the sprout, the number, the next stage.',r:()=>SC.home.r()+`<div class="sheetwrap" data-go="home" style="align-items:center;justify-content:center;background:rgba(0,0,0,.72)"><div style="position:absolute;top:96px;left:28px;right:28px;height:300px;border:2.5px solid #fff;border-radius:40px"></div><div class="card" style="position:absolute;top:410px;left:24px;right:24px"><b>Your sprout</b><small class="sub">It grows from every minute you don’t spend in a feed. Touch it.</small><div class="row" style="justify-content:space-between"><div class="dots"><i class="on"></i><i></i><i></i></div><button class="btn" style="width:auto;padding:8px 16px">Next</button></div></div></div>`},
+insteadnow:{g:'Home',n:'Instead',from:'Unrot (iOS)',note:'Your own ideas, one tap from Home.',r:()=>SC.home.r()+`<div class="sheetwrap" data-close><div class="sheet"><b style="font-size:22px;font-family:var(--display)">Instead</b><p class="sub">Your own ideas. Pick one and go.</p><div class="chipz">${[...st.instead].map(k=>`<button class="on">${{read:'📖 Read 10 pages',walk:'🚶 A walk round the block',text:'💬 Text a friend',stretch:'🤸 Stretch',tea:'🍵 Make tea',draw:'✏️ Draw',music:'🎧 One album',tidy:'🧺 Tidy one thing'}[k]}</button>`).join('')}</div>${btn('Edit my ideas','instead','ghost')}</div></div>`},
+about_unrot:{g:'Help',n:'About Unrot',from:'Our app',note:'Version, licences and the people behind it.',r:()=>page('About Unrot',`${G(4.2,'clear',150)}<h2 class="t2 c">Unrot 1.0</h2><p class="sub c">Blocks brainrot, not your phone.</p><div class="list">${['Open-source licences','Privacy, in full','Send feedback'].map(x=>`<button><b style="flex:1">${x}</b><span class="end">›</span></button>`).join('')}</div>`,'you')},
+};
+const ORDER=Object.keys(SC);
+const CHAPTERS=[['You',['hello','demo','name','goals','when','feel','start']],['Why it’s hard',['year','cost','tricks']],['What helps',['helps','wave','lives','expect','instead']],['Your plan',['apps','firm','try','quiet','note','plan','switches','test','hold','done']]];
+
+/* ---------------- render ---------------- */
+let cur='hello',hist=[];const app=document.getElementById('app');
+function hydrate(root){root.querySelectorAll('svg.gl').forEach(s=>drawGlass(s,+s.dataset.g,s.dataset.s))}
+function paint(target,key){const t=st.state==='night'||key==='quietnow'?'00:41':'15:20';target.dataset.os=st.os;
+ target.innerHTML=(st.os==='ios'?`<div class="status"><span>${t}</span><span class="island"></span><span>▂▄▆ ◠ ▭</span></div>`:`<div class="status"><span>${t}</span><span class="cam"></span><span>▾ ◢ ▮</span></div>`)+SC[key].r()+'<span class="gbar"></span>';hydrate(target)}
+function go(key,push=true){if(key.startsWith('toast:'))return toast(key.slice(6));if(!SC[key])return;if(push&&cur!==key)hist.push(cur);cur=key;paint(app,key);
+ const scr=app.querySelector('.scr');if(scr)scr.classList.add('enter');
+ const m=SC[key];document.getElementById('note').innerHTML=`<span class="from">From ${m.from}</span><h3>${m.n}</h3><p>${m.note}</p>`;
+ document.querySelectorAll('#jump button').forEach(b=>b.setAttribute('aria-current',b.dataset.j===key));compare();
+ if(key==='breathe')runBreathe();if(key==='hold')wireHold()}
+function toast(t){let e=app.querySelector('.toast');if(!e){e=document.createElement('div');e.className='toast hide';e.setAttribute('role','status');app.appendChild(e)}e.textContent=t;requestAnimationFrame(()=>e.classList.remove('hide'));clearTimeout(e._t);e._t=setTimeout(()=>e.classList.add('hide'),2400)}
+function setState(s){st.state=s;app.dataset.state=s;document.querySelectorAll('[data-st]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.st===s));go(cur,false)}
+function miniOf(key,look,w){const fig=document.createElement('div');fig.className='mini '+st.os;fig.style.width=w+'px';const a=document.createElement('div');a.className='app';a.dataset.look=look;a.dataset.state=st.state;a.style.transform=`scale(${(w-(w>200?14:10))/355})`;paint(a,key);fig.appendChild(a);return fig}
+function compare(){const c=document.getElementById('compare');c.textContent='';[['glass','Glasshouse','The default'],['day','Daylight','For light mode'],['moon','Moonlight','Quiet hours']].forEach(([l,n,d])=>{const f=document.createElement('figure');f.appendChild(miniOf(cur,l,300));const cap=document.createElement('figcaption');cap.innerHTML=`<b>${n}</b>${d}`;f.appendChild(cap);c.appendChild(f)})}
+
+/* ---------------- interactions ---------------- */
+app.addEventListener('click',e=>{const b=e.target.closest('button,[data-close]');if(!b)return;const d=b.dataset;
+ if(d.close!==undefined&&e.target!==b)return;if(d.close!==undefined)return go(hist.pop()||'home',false);
+ if(d.back!==undefined)return go(hist.pop()||'hello',false);
+ if(d.demo!==undefined){if(st.demo<2){st.demo++;go('demo',false)}return}
+ if(d.k){const set=st[b.parentElement.dataset.set];set.has(d.k)?set.delete(d.k):set.add(d.k);return go(cur,false)}
+ if(d.when){st.when=+d.when;go('when',false);setTimeout(()=>go('feel'),260);return}
+ if(d.quiet){st.quiet=+d.quiet;return go('quiet',false)}
+ if(d.app){st.apps.has(d.app)?st.apps.delete(d.app):st.apps.add(d.app);st.firm[d.app]=st.firm[d.app]||'wait';return go('apps',false)}
+ if(d.firm){const [k,v]=d.firm.split(':');st.firm[k]=v;return go('firm',false)}
+ if(d.idea){st.note=d.idea;return go('note',false)}
+ if(d.sw){st.sw[+d.sw]=!st.sw[+d.sw];return go('switches',false)}
+ if(d.flip!==undefined){b.classList.toggle('on');return}
+ if(d.pane){st.panes[+d.pane]=!st.panes[+d.pane];return go('shield',false)}
+ if(d.tab){st.tab=d.tab;return go('shield',false)}
+ if(d.closeall!==undefined){st.panes=st.panes.map(()=>true);go('shield',false);return toast('Every pane is closed. The glass glows.')}
+ if(d.check){st.checked=true;go('home');return toast('Checked in. It stays on this phone.')}
+ if(d.hard){if(d.hard==='adult'){setState('broken');go('home');toast('The glass broke. A new seed goes in; nothing given back is lost.')}else{go('home');toast('Thanks for saying it. Nothing resets. Try one quiet hour tonight.')}return}
+ if(d.seal!==undefined){setState('cracked');return go('breathe')}
+ if(d.poke!==undefined){const g=b.querySelector('svg');g.animate([{transform:'scale(1)'},{transform:'scale(1.035,.97)'},{transform:'scale(.99,1.02)'},{transform:'scale(1)'}],{duration:700,easing:'ease-out'});return toast(st.state==='cracked'?'Breathe within 6 m to seal it':st.state==='night'?'Shh, sleeping until 07:00':`${NAMES[Math.min(6,Math.floor(st.g)+1)]} in ${fm(AT[Math.min(6,Math.floor(st.g)+1)]-minutes(st.g))}`)}
+ if(d.go)return go(d.go)});
+app.addEventListener('input',e=>{if(e.target.id==='nameField')st.name=e.target.value.trim();if(e.target.id==='noteField')st.note=e.target.value});
+let brT=[];function runBreathe(){brT.forEach(clearTimeout);brT=[];const q=id=>app.querySelector('#'+id),fl=q('flower'),L=(ms,f)=>brT.push(setTimeout(()=>{if(cur==='breathe')f()},ms));
+ L(1000,()=>q('brnum').textContent='2');L(2000,()=>q('brnum').textContent='1');let t=3000;
+ for(let i=1;i<=3;i++){L(t,()=>{q('brnum').textContent='';q('brstep').textContent='Breathe in';q('brsub').textContent=`Breath ${i} of 3`;fl.style.transitionDuration='4s';fl.style.setProperty('--s',1)});
+  L(t+4000,()=>{q('brstep').textContent='Slowly out';fl.style.transitionDuration='6s';fl.style.setProperty('--s',.62)});t+=10000}
+ L(t,()=>{const seal=st.state==='cracked';st.paused=true;q('brstep').textContent=seal?'Sealed with gold':'The pull is smaller now';q('brsub').textContent=seal?'You came back. The gold seam stays on your glass.':'It passes faster than it feels.';q('brdone').hidden=false;if(seal){st.state='gold';app.dataset.state='gold';document.querySelectorAll('[data-st]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.st==='gold'))}})}
+function wireHold(){const b=app.querySelector('#holdBtn');if(!b)return;let raf,t0;const stop=()=>{cancelAnimationFrame(raf);b.style.setProperty('--p','0%');b.querySelector('span').textContent='Hold to plant your seed'};
+ const step=()=>{const p=Math.min(1,(performance.now()-t0)/1600);b.style.setProperty('--p',p*100+'%');if(p<1)raf=requestAnimationFrame(step);else{st.held=true;go('hold',false);toast('Your seed is planted.')}};
+ b.addEventListener('pointerdown',e=>{e.preventDefault();t0=performance.now();b.querySelector('span').textContent='Keep holding…';raf=requestAnimationFrame(step)});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>{if(!st.held)stop()}));
+ b.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();st.held=true;go('hold',false)}})}
+setInterval(()=>{if(st.state==='cracked'&&st.crack>0){st.crack--;if(cur==='home'){const b=app.querySelector('.big');if(b)b.innerHTML=`${Math.floor(st.crack/60)}<i>m</i>${String(st.crack%60).padStart(2,'0')}<i>s</i>`}}},1000);
+document.querySelectorAll('[data-look]').forEach(b=>{if(b.tagName!=='BUTTON')return;b.addEventListener('click',()=>{st.look=b.dataset.look;app.dataset.look=st.look;document.querySelectorAll('.looks [data-look]').forEach(x=>x.setAttribute('aria-pressed',x===b))})});
+document.querySelectorAll('[data-st]').forEach(b=>b.addEventListener('click',()=>setState(b.dataset.st)));
+document.querySelectorAll('button[data-os]').forEach(b=>b.addEventListener('click',()=>{st.os=b.dataset.os;document.querySelector('.device').className='device '+st.os;document.querySelectorAll('button[data-os]').forEach(x=>x.setAttribute('aria-pressed',x===b));go(cur,false);rebuildStrips()}));
+
+/* ---------------- side list, film, gallery, features ---------------- */
+const groups={};ORDER.forEach(k=>{const g=SC[k].g;(groups[g]=groups[g]||[]).push(k)});
+document.getElementById('jump').innerHTML=Object.entries(groups).map(([g,l])=>`<div class="grp"><span>${g}</span><div>${l.map(k=>`<button data-j="${k}">${SC[k].n}</button>`).join('')}</div></div>`).join('');
+document.getElementById('jump').addEventListener('click',e=>{const b=e.target.closest('[data-j]');if(b){hist=[];go(b.dataset.j)}});
+function strip(title,keys,host){const h=document.createElement('h3');h.className='filmh';h.textContent=title;host.appendChild(h);const s=document.createElement('div');s.className='strip';
+ keys.forEach((k,i)=>{const f=document.createElement('figure');f.className='fm';const m=miniOf(k,'glass',170);m.setAttribute('role','button');m.tabIndex=0;m.setAttribute('aria-label','Open '+SC[k].n);
+  const open=()=>{hist=[];go(k);document.querySelector('.device').scrollIntoView({behavior:'smooth',block:'center'})};m.addEventListener('click',open);m.addEventListener('keydown',e=>{if(e.key==='Enter')open()});
+  f.appendChild(m);const c=document.createElement('figcaption');c.innerHTML=`<b>${i+1}. ${SC[k].n}</b>${SC[k].from}`;f.appendChild(c);s.appendChild(f)});host.appendChild(s)}
+const film=document.getElementById('film'),gal=document.getElementById('gallery');
+function rebuildStrips(){film.textContent='';gal.textContent='';CHAPTERS.forEach(([n,keys],i)=>strip(`Chapter ${i+1}: ${n}`,keys,film));
+ ['Home','Tabs','Every day','Moments','Rules','Tools','You','Help','Outside the app'].forEach(g=>groups[g]&&strip(g,groups[g],gal))}
+rebuildStrips();
+const FEAT=[['Feeds',[['Endless feeds close','closed','Reels, Shorts, For You'],['A wait before opening','wait','grows with each open'],['Daily limits','firm','then closed till tomorrow'],['Quiet hours','quietnow','apps sleep, calls work']]],
+ ['Adult content',[['Sites in every browser','shield','a filter on the phone'],['Words and images in apps','shield','checked on the phone'],['A closed page cracks the glass','adult','never named'],['Protection lock','plock','stricter, never looser']]],
+ ['The glass',[['Grows from time given back','home','never goes down'],['Sealed with gold by a breath','breathe','within 10 minutes'],['Breaks only on your word','hard','nothing is lost'],['Your wood','progress','one tree a day']]],
+ ['Every day',[['Today’s three','home','a small checklist'],['Check in','checkin','one tap'],['Focus under glass','focus','15 to 60 minutes'],['Your note on every pause','note','from you, earlier']]],
+ ['You',[['Your reason and record','you','what you grew'],['Share your sprout','share','no adult data'],['Widgets','widgets','follow the glass'],['Lock screen','lock','notifications that follow the glass']]],
+ ['Trust',[['Is everything working?','health','one Fix button each'],['Nothing leaves the phone','demo','no account'],['Switches with one line each','switches','why Android asks'],['See it work for real','test','the step most skip']]]];
+document.getElementById('feat').innerHTML=FEAT.map(([h,l])=>`<div class="fcard"><h3>${h}</h3>${l.map(([n,k,s])=>`<button data-f="${k}">${n}<span>${s}</span></button>`).join('')}</div>`).join('');
+document.getElementById('feat').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(b){hist=[];go(b.dataset.f);document.querySelector('.device').scrollIntoView({behavior:'smooth',block:'center'})}});
+document.getElementById('states').innerHTML=['clear','night','cracked','gold','broken'].map(s=>`<span><svg data-g="2.6" data-s="${s}" viewBox="0 0 100 100" aria-hidden="true"></svg>${s==='gold'?'Gold':s[0].toUpperCase()+s.slice(1)}</span>`).join('');
+document.querySelectorAll('#states svg').forEach(s=>drawGlass(s,2.6,s.dataset.s));
+go('hello',false);
+</script>

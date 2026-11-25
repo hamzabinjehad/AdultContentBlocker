@@ -1,0 +1,516 @@
+<meta charset="utf-8">
+<title>Unrot Extension Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
+
+/* Layout: a working Mac window on the left that moves between the app's real screens; a grouped screen
+   list and a note per screen on the right; then every screen as a filmstrip, the features, the design system.
+   Page chrome is warm-neutral and quiet; the window carries the app's own dark look. */
+:root {
+  color-scheme: dark;
+  --bg: #151412; --fg: #f3f0ea; --muted: #a39d92; --line: #2e2b27; --panel: #1d1b18; --accent: #f0b93c; --accentInk: #2a1d00;
+  --desk1: #3a3226; --desk2: #15130f;
+  --display: "Bricolage Grotesque", "Helvetica Neue", sans-serif; --body: "Instrument Sans", system-ui, sans-serif;
+  --sf: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  color-scheme: light; --bg: #f5f2ec; --fg: #1d1a15; --muted: #6a6359; --line: #dedad0; --panel: #ffffff; --accent: #a8730a; --accentInk: #ffffff; --desk1: #d9cfbd; --desk2: #a99c86; } }
+:root[data-theme="light"] { color-scheme: light; --bg: #f5f2ec; --fg: #1d1a15; --muted: #6a6359; --line: #dedad0; --panel: #ffffff; --accent: #a8730a; --accentInk: #ffffff; --desk1: #d9cfbd; --desk2: #a99c86; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 90px; display: grid; gap: 60px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; line-height: 1.1; text-wrap: balance; letter-spacing: -.01em; }
+h1 { font-size: clamp(34px, 5vw, 58px); }
+h2 { font-size: clamp(24px, 3vw, 32px); }
+h3 { font-size: 18px; }
+p { margin: 0; max-width: 70ch; }
+.lede { font-size: 18px; color: var(--muted); max-width: 66ch; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+section { display: grid; gap: 20px; min-width: 0; }
+header { display: grid; gap: 14px; }
+
+.proto { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(260px, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 920px) { .proto { grid-template-columns: 1fr; } }
+.side { display: grid; gap: 18px; min-width: 0; }
+.jump { display: grid; gap: 14px; }
+.grp { display: grid; gap: 6px; }
+.grp > span { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.grp div { display: flex; flex-wrap: wrap; gap: 6px; }
+.jump button { font: inherit; font-size: 13.5px; padding: 5px 11px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+.jump button[aria-current="true"] { background: var(--accent); color: var(--accentInk); border-color: var(--accent); font-weight: 600; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.note { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: grid; gap: 6px; }
+.note .from { font-size: 12px; color: var(--accent); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.note p { font-size: 15px; color: var(--muted); }
+.note .todo { font-size: 13.5px; color: var(--fg); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
+.hint { font-size: 13px; color: var(--muted); }
+
+.stage { position: relative; width: 100%; aspect-ratio: 1180 / 780; border-radius: 14px; overflow: hidden; background: radial-gradient(120% 90% at 30% 0%, var(--desk1), var(--desk2)); box-shadow: 0 30px 70px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.08); container-type: inline-size; }
+.stage.enter > * { animation: enter .28s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes enter { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .stage.enter > * { animation: none; } }
+.bw { inset: 3% 3%; }
+.bwbar .ext { margin-inline-start: auto; width: 2.4cqw; height: 2.4cqw; border-radius: .7cqw; background: #3a3a3a; display: grid; place-items: center; font-size: 1.3cqw; border: 0; cursor: pointer; }
+.bwbar .ext.on { background: #f0b93c; }
+.bwbody { place-items: stretch; }
+/* a stand-in page: gray blocks, never a real site's look */
+.site { position: absolute; inset: 0; padding: 2cqw 2.6cqw; display: grid; grid-template-columns: 1fr 22cqw; gap: 2cqw; align-content: start; }
+.site .srch { grid-column: 1 / -1; height: 3cqw; width: 44cqw; justify-self: center; border-radius: 99px; background: #2a2a2a; border: 1px solid rgba(255,255,255,.12); display: flex; align-items: center; padding: 0 1.3cqw; font-size: 1.1cqw; color: #999; }
+.site .main { display: grid; gap: 1.2cqw; align-content: start; }
+.site .vid { aspect-ratio: 16 / 9; border-radius: 1.2cqw; background: #2b2b2b; display: grid; place-items: center; color: #666; font-size: 1.2cqw; }
+.site .ln { height: 1.1cqw; border-radius: .5cqw; background: #2b2b2b; } .site .ln.s { width: 55%; }
+.site .side { display: grid; gap: 1cqw; align-content: start; }
+.site .side i { height: 5.4cqw; border-radius: .9cqw; background: #2b2b2b; display: block; }
+.site .grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2cqw; }
+.site .grid i { aspect-ratio: 16 / 10; border-radius: 1cqw; background: #2b2b2b; display: block; }
+.site .grid i.ph { position: relative; overflow: hidden; background: linear-gradient(160deg, #4a3f33, #2b3038); display: grid; place-items: center; font-style: normal; }
+.site .grid i.ph::before { content: ""; position: absolute; left: 50%; top: 20%; width: 21%; aspect-ratio: 1; border-radius: 50%; background: #c9a98a; transform: translateX(-50%); }
+.site .grid i.ph::after { content: ""; position: absolute; left: 50%; top: 54%; width: 46%; height: 60%; border-radius: 42% 42% 0 0; background: #7d8aa0; transform: translateX(-50%); }
+.site .grid i.ph.fb::before { filter: blur(.55cqw); transform: translateX(-50%) scale(1.7); }
+.site .grid i.ph.cov { background: repeating-linear-gradient(135deg, #1a191c 0 .7cqw, #201f23 .7cqw 1.4cqw); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); }
+.site .grid i.ph.cov::before, .site .grid i.ph.cov::after { display: none; }
+.site .grid i.ph span { position: relative; z-index: 1; font: 560 .95cqw ui-rounded, var(--sf); color: #a3a19b; }
+.site .gone { border: 1px dashed rgba(255,255,255,.16); border-radius: 1.2cqw; display: grid; place-items: center; color: #777; font-size: 1.1cqw; min-height: 8cqw; }
+.site.flip { grid-template-columns: 22cqw 1fr; }
+.site.gray { filter: grayscale(1) contrast(.92); }
+.pill { position: absolute; background: #1f1f1f; font: 500 1.1cqw var(--sf); color: #fff; padding: .85cqw 1.25cqw; border-radius: 99px; box-shadow: 0 .6cqw 2cqw rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.12); display: flex; gap: .7cqw; align-items: center; }
+.pill.bl { left: 2cqw; bottom: 2cqw; } .pill.br { right: 2cqw; bottom: 2cqw; }
+.pill b { color: #f0b93c; font-variant-numeric: tabular-nums; }
+.pill .bar { width: 6cqw; height: .45cqw; border-radius: 99px; background: rgba(255,255,255,.14); overflow: hidden; } .pill .bar i { display: block; height: 100%; background: #f0b93c; }
+/* the popup */
+.pp { position: absolute; top: .8cqw; right: 1.2cqw; width: 30cqw; background: #161513; border: 1px solid rgba(255,255,255,.13); border-radius: 1.4cqw; box-shadow: 0 2cqw 5cqw rgba(0,0,0,.6); padding: 1.2cqw; display: grid; gap: .75cqw; font-family: ui-rounded, "SF Pro Rounded", var(--sf); color: #edece8; z-index: 4; letter-spacing: -.004em; }
+.pp img.ic { width: 100%; height: 100%; object-fit: contain; display: block; }
+.pp .hd { display: flex; align-items: center; gap: .9cqw; padding-bottom: .2cqw; }
+.pp .mark { width: 3.5cqw; height: 3.5cqw; flex: none; border-radius: .95cqw; padding: .3cqw; background: linear-gradient(160deg, #3a2f14, #17140c); box-shadow: 0 0 0 1px rgba(240,185,60,.4); }
+.pp .hd b { display: block; font-size: 1.35cqw; font-weight: 700; letter-spacing: -.012em; line-height: 1.15; }
+.pp .st { display: inline-flex; align-items: center; gap: .45cqw; margin-top: .25cqw; font-size: .9cqw; font-weight: 600; padding: .22cqw .6cqw; border-radius: .5cqw; }
+.pp .st::before { content: ""; width: .5cqw; height: .5cqw; border-radius: 50%; background: currentColor; }
+.pp .st.ok { background: rgba(143,198,162,.14); color: #8fc6a2; } .pp .st.warn { background: rgba(223,150,80,.16); color: #f0a468; }
+.pp .gear { margin-inline-start: auto; width: 2.7cqw; height: 2.7cqw; border-radius: .8cqw; border: 0; padding: .35cqw; background: rgba(255,255,255,.06); box-shadow: 0 0 0 1px rgba(255,255,255,.1); cursor: pointer; }
+.pp .eb { display: flex; justify-content: space-between; align-items: baseline; margin-top: .45cqw; font-size: .84cqw; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: #a3a19b; padding: 0 .2cqw; }
+.pp .eb em { font-style: normal; font-weight: 500; letter-spacing: .01em; text-transform: none; font-size: .92cqw; }
+.pp .card { background: #1e1e21; border-radius: 1cqw; box-shadow: 0 0 0 1px rgba(255,255,255,.1); overflow: hidden; }
+.pp .r { display: flex; align-items: center; gap: .85cqw; padding: .7cqw 1cqw; min-height: 3.3cqw; font-size: 1.08cqw; position: relative; }
+.pp .r + .r::before { content: ""; position: absolute; top: 0; left: 1cqw; right: 0; height: 1px; background: rgba(255,255,255,.08); }
+.pp .r[data-go] { cursor: pointer; } .pp .r[data-go]:hover { background: rgba(255,255,255,.035); }
+.pp .r > div { min-width: 0; } .pp .r b { display: block; font-weight: 560; } .pp .r small { display: block; color: #a3a19b; font-size: .92cqw; }
+.pp .r .t { width: 2.5cqw; height: 2.5cqw; flex: none; border-radius: .75cqw; padding: .22cqw; background: linear-gradient(160deg, #2d2a22, #151412); box-shadow: 0 0 0 1px rgba(255,255,255,.08); }
+.pp .r > div:not(.ring) { flex: 1; } .pp .r > :last-child:not(div), .pp .r > .cnt { flex: none; }
+.pp .chev { color: rgba(237,236,232,.4); font-size: 1.5cqw; line-height: 1; }
+.pp .cnt { white-space: nowrap; margin-inline-end: .5cqw; font-size: .9cqw; font-weight: 600; color: #f3c659; background: rgba(240,185,60,.16); padding: .2cqw .55cqw; border-radius: .5cqw; font-variant-numeric: tabular-nums; }
+.pp .num { font-size: 1.15cqw; font-weight: 650; color: #f3c659; font-variant-numeric: tabular-nums; }
+.pp .sw { width: 3.1cqw; height: 1.85cqw; border-radius: .62cqw; background: rgba(255,255,255,.16); position: relative; display: block; }
+.pp .sw::after { content: ""; position: absolute; top: .22cqw; left: .22cqw; width: 1.4cqw; height: 1.4cqw; border-radius: .42cqw; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.pp .sw.on { background: #f0b93c; } .pp .sw.on::after { left: 1.48cqw; }
+.pp .bar { height: .22cqw; background: rgba(255,255,255,.08); } .pp .bar i { display: block; height: 100%; background: #f0b93c; }
+.pp .ring { width: 3.6cqw; height: 3.6cqw; position: relative; flex: none; display: grid; place-items: center; }
+.pp .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.pp .ring circle { fill: none; stroke-width: 11; } .pp .ring .tr { stroke: rgba(255,255,255,.1); } .pp .ring .fi { stroke: #f0b93c; stroke-linecap: round; stroke-dasharray: 326.7; }
+.pp .ring span { font-size: .82cqw; font-weight: 650; font-variant-numeric: tabular-nums; }
+.pp .btns { display: grid; grid-template-columns: 1fr 1fr; gap: .6cqw; margin-top: .3cqw; }
+.pp button.b { font: 560 1.05cqw ui-rounded, var(--sf); height: 2.9cqw; border-radius: .8cqw; border: 0; background: #1e1e21; box-shadow: 0 0 0 1px rgba(255,255,255,.1); color: #edece8; cursor: pointer; padding: 0 .9cqw; }
+.pp button.b.gold { background: #f0b93c; color: #2a1d00; font-weight: 650; box-shadow: none; }
+.pp button.b.sm { height: 2.2cqw; font-size: .95cqw; }
+.pp .okt { font-size: .92cqw; font-weight: 600; color: #8fc6a2; }
+.pp .r.col { flex-direction: column; align-items: stretch; gap: .4cqw; } .pp .r.col > small { color: #a3a19b; font-size: .88cqw; }
+.pp .sg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: rgba(255,255,255,.07); border-radius: .8cqw; padding: .22cqw; }
+.pp .sg span { text-align: center; font-size: .95cqw; padding: .42cqw 0; border-radius: .6cqw; cursor: pointer; } .pp .sg .on { background: #f0b93c; color: #2a1d00; font-weight: 650; }
+.pp .pin { margin: .45cqw -1.2cqw -1.2cqw; padding: .9cqw 1.2cqw 1.2cqw; border-top: 1px solid rgba(255,255,255,.1); }
+.pp .pin .r { background: rgba(240,185,60,.13); border-radius: 1cqw; } .pp .pin b { color: #f3c659; font-weight: 650; } .pp .pin .chev { color: #f3c659; }
+/* a full settings tab */
+.opt { position: absolute; inset: 0; display: grid; grid-template-columns: 17cqw 1fr; font-family: var(--sf); color: #fff; }
+.opt nav { background: #191919; padding: 1.6cqw 1cqw; display: grid; gap: .3cqw; align-content: start; font-size: 1.1cqw; }
+.opt nav b { font-size: 1.2cqw; padding: 0 .8cqw 1cqw; display: block; }
+.opt nav span { padding: .65cqw .8cqw; border-radius: .8cqw; color: #ddd; display: flex; gap: .7cqw; }
+.opt nav span.on { background: rgba(255,255,255,.1); color: #fff; }
+.opt main { padding: 2cqw 2.6cqw; display: grid; gap: 1.1cqw; align-content: start; }
+.opt h4 { margin: 0; font: 700 2cqw var(--sf); } .opt p { margin: 0; font-size: 1.05cqw; color: #999; max-width: none; }
+.opt .row { background: rgba(255,255,255,.06); border-radius: 1.2cqw; padding: 1cqw 1.2cqw; display: flex; gap: 1cqw; align-items: center; font-size: 1.15cqw; }
+.opt .row .e { width: 2.6cqw; height: 2.6cqw; flex: none; } .opt .e img { width: 100%; height: 100%; object-fit: contain; display: block; } .opt nav b img { width: 1.8cqw; height: 1.8cqw; object-fit: contain; vertical-align: -.4cqw; margin-inline-end: .5cqw; } .opt .row small { display: block; color: #999; font-size: 1cqw; }
+.opt .row .v { margin-inline-start: auto; color: #999; font-size: 1cqw; white-space: nowrap; }
+.opt .row i.sw { margin-inline-start: auto; width: 3cqw; height: 1.75cqw; border-radius: 99px; background: #f0b93c; position: relative; flex: none; display: block; }
+.opt .row i.sw::after { content: ""; position: absolute; top: .2cqw; left: 1.45cqw; width: 1.35cqw; height: 1.35cqw; border-radius: 50%; background: #fff; }
+.opt .row i.sw.off { background: rgba(255,255,255,.16); } .opt .row i.sw.off::after { left: .2cqw; }
+.opt .note { border: 1px dashed rgba(240,185,60,.4); border-radius: 1.2cqw; padding: .9cqw 1.2cqw; font-size: 1.05cqw; color: #f6d98c; }
+.chip { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 9px; border-radius: 99px; text-transform: uppercase; }
+.chip.built { background: rgba(143,198,162,.18); color: #5fae7f; } .chip.today { background: rgba(120,160,255,.18); color: #7fa0e8; } .chip.prop { background: rgba(240,185,60,.2); color: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; color: var(--muted); }
+.legend span { display: inline-flex; gap: 8px; align-items: center; }
+/* browser scenes: the extension's own pause page, rebuilt here with its real wording and proportions */
+.bw { position: absolute; inset: 4% 5%; border-radius: 1.1cqw; overflow: hidden; background: #1f1f1f; box-shadow: 0 2cqw 5cqw rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.12); display: flex; flex-direction: column; font-family: var(--sf); color: #fff; }
+.bwbar { height: 3.6cqw; background: #2c2c2c; display: flex; align-items: center; gap: .6cqw; padding: 0 1.2cqw; flex: none; }
+.bwbar i { width: 1cqw; height: 1cqw; border-radius: 50%; background: #5a5a5a; display: block; }
+.bwurl { margin-inline-start: 1.6cqw; flex: 1; max-width: 46cqw; background: #1c1c1c; border-radius: 99px; padding: .45cqw 1.2cqw; font-size: 1.15cqw; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bwbody { flex: 1; display: grid; place-items: center; position: relative; }
+.bwbody > .center { display: block; height: 100%; width: 100%; }
+.mo { height: 100%; box-sizing: border-box; padding: 2.4cqw 4.2cqw 2.6cqw; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 4cqw; background: radial-gradient(90cqw 40cqw at 12% -10%, rgba(240,185,60,.17), transparent 62%), #131210; font-family: ui-rounded, "SF Pro Rounded", var(--sf); color: #edece8; text-align: start; }
+.mo .top { grid-column: 1 / -1; display: flex; align-items: center; gap: .7cqw; font-size: 1.1cqw; font-weight: 700; padding-bottom: 2.2cqw; }
+.mo .top img { width: 2.1cqw; height: 2.1cqw; object-fit: contain; }
+.mo .top em { margin-inline-start: auto; font-style: normal; font-size: .88cqw; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: #a3a19b; }
+.mo .txt { align-self: center; display: grid; gap: 1cqw; justify-items: start; }
+.mo .obj { width: 5.2cqw; height: 5.2cqw; object-fit: contain; margin-inline-start: -.5cqw; filter: drop-shadow(0 .8cqw 1.2cqw rgba(0,0,0,.5)); }
+.mo b.t { font: 600 3.1cqw/1.08 ui-serif, "New York", Georgia, serif; letter-spacing: -.015em; text-wrap: balance; }
+.mo .d { font-size: 1.25cqw; line-height: 1.45; color: #b5b2aa; max-width: 30cqw; }
+.mo .own { display: grid; gap: .35cqw; width: 100%; box-sizing: border-box; padding: 1cqw 1.2cqw; border-radius: 1cqw; background: #1b1a17; box-shadow: 0 0 0 1px rgba(255,255,255,.1); }
+.mo .own small { font-size: .82cqw; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: #a3a19b; }
+.mo .own q { font: 500 1.65cqw/1.25 ui-serif, "New York", Georgia, serif; color: #f3c659; quotes: "“" "”"; }
+.mo .acts { display: flex; flex-wrap: wrap; align-items: center; gap: .7cqw; margin-top: .5cqw; }
+.mo .acts button { font: 600 1.12cqw ui-rounded, var(--sf); height: 3.3cqw; padding: 0 1.5cqw; border-radius: .9cqw; border: 0; background: #1e1e21; box-shadow: 0 0 0 1px rgba(255,255,255,.13); color: #edece8; cursor: pointer; font-variant-numeric: tabular-nums; }
+.mo .acts .pri { background: #f0b93c; color: #2a1d00; box-shadow: none; }
+.mo .acts .q { background: none; box-shadow: none; color: #f3c659; padding: 0 .7cqw; }
+.mo .acts [disabled] { opacity: .45; cursor: default; }
+.mo .f { font-size: 1cqw; color: #a3a19b; }
+.mo .why { display: flex; flex-wrap: wrap; align-items: center; gap: .45cqw; margin-top: .3cqw; }
+.mo .why small { width: 100%; font-size: .82cqw; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: #a3a19b; }
+.mo .why button { font: 560 .95cqw ui-rounded, var(--sf); height: 2.2cqw; padding: 0 .8cqw; border-radius: .6cqw; border: 0; background: none; box-shadow: 0 0 0 1px rgba(255,255,255,.13); color: #b5b2aa; cursor: pointer; }
+.mo .ans { width: 100%; margin: 0 0 .3cqw; } .mo .ans button { height: 2.6cqw; font-size: 1.05cqw; color: #edece8; }
+.mo .go button { display: inline-flex; align-items: center; gap: .4cqw; color: #edece8; } .mo .go button img { width: 1.5cqw; height: 1.5cqw; object-fit: contain; }
+.mo .go .chg { box-shadow: none; color: #f3c659; padding: 0 .4cqw; }
+.mo .acts .pri img { width: 1.7cqw; height: 1.7cqw; object-fit: contain; vertical-align: -.4cqw; margin-inline-end: .35cqw; }
+.mo .why button[aria-pressed="true"] { background: rgba(240,185,60,.16); box-shadow: 0 0 0 1px rgba(240,185,60,.45); color: #f3c659; }
+.mo .side { align-self: center; justify-self: center; display: grid; justify-items: center; gap: .8cqw; text-align: center; }
+.mo .side img.art { width: 19cqw; height: 19cqw; object-fit: cover; border-radius: 2cqw; box-shadow: 0 0 0 1px rgba(240,185,60,.3), 0 2cqw 5cqw rgba(0,0,0,.5); }
+.mo .side .big { font: 600 5.4cqw/1 ui-serif, "New York", Georgia, serif; color: #f3c659; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.mo .side small { font-size: 1.05cqw; color: #a3a19b; }
+.mo .ring { position: relative; width: 15cqw; height: 15cqw; display: grid; place-items: center; }
+.mo .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.mo .ring circle { fill: none; stroke-width: 5; } .mo .ring .tr { stroke: rgba(255,255,255,.1); } .mo .ring .fi { stroke: #f0b93c; stroke-linecap: round; stroke-dasharray: 326.7; transition: stroke-dashoffset 1s linear; }
+.mo .ring span { font: 600 5cqw/1 ui-serif, "New York", Georgia, serif; font-variant-numeric: tabular-nums; }
+.fakepage { position: absolute; inset: 0; padding: 2.4cqw 3cqw; display: grid; gap: 1.6cqw; align-content: start; }
+.fakepage .srch { height: 3.2cqw; width: 46cqw; justify-self: center; border-radius: 99px; background: #2a2a2a; border: 1px solid rgba(255,255,255,.12); display: flex; align-items: center; padding: 0 1.4cqw; font-size: 1.15cqw; color: #999; }
+.fakepage .gone { height: 30cqw; border: 1px dashed rgba(255,255,255,.14); border-radius: 1.6cqw; display: grid; place-items: center; color: #777; font-size: 1.2cqw; }
+.fakepage .pill { position: absolute; left: 2cqw; bottom: 2cqw; background: #1f1f1f; font: 500 1.1cqw var(--sf); padding: .9cqw 1.3cqw; border-radius: 99px; box-shadow: 0 .6cqw 2cqw rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.12); }
+/* the map of the blocking system */
+.sysx { display: grid; gap: 14px; max-width: 760px; }
+.sysc { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px 20px; display: grid; gap: 12px; }
+.sysc h3 { font: 600 22px/1.1 ui-serif, "New York", Georgia, serif; letter-spacing: -.01em; }
+.sysc p { margin: 0; color: var(--muted); font-size: 15px; max-width: 70ch; }
+.sw6 { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.sw6 i { display: block; aspect-ratio: 1; border-radius: 12px; box-shadow: inset 0 0 0 1px rgba(128,128,128,.28); position: relative; }
+.sw6 span { display: block; font: 500 11px ui-monospace, Menlo, monospace; color: var(--muted); margin-top: 6px; text-align: center; }
+.sw6 b { display: block; font-size: 11.5px; font-weight: 600; text-align: center; margin-top: 2px; }
+.objs { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 12px; }
+.objs figure { margin: 0; display: grid; gap: 6px; justify-items: center; font-size: 11.5px; color: var(--muted); }
+.objs img { width: 56px; height: 56px; object-fit: contain; padding: 8px; border-radius: 16px; background: linear-gradient(160deg, #2d2a22, #151412); box-shadow: 0 0 0 1px rgba(255,255,255,.08); box-sizing: content-box; }
+.typ { display: grid; gap: 10px; background: #161513; color: #edece8; border-radius: 14px; padding: 18px 20px; }
+.typ .a { font: 600 30px/1.08 ui-serif, "New York", Georgia, serif; letter-spacing: -.015em; }
+.typ .b { font: 700 16px ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; }
+.typ .c { font: 400 14px/1.45 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; color: #b5b2aa; }
+.typ .d { font: 650 11px ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; letter-spacing: .07em; text-transform: uppercase; color: #a3a19b; }
+.typ .q { font: 500 20px/1.25 ui-serif, "New York", Georgia, serif; color: #f3c659; }
+.shp { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; background: #161513; border-radius: 14px; padding: 18px 20px; font: 600 14px ui-rounded, -apple-system, sans-serif; color: #edece8; }
+.shp .g { background: #f0b93c; color: #2a1d00; padding: 10px 18px; border-radius: 10px; }
+.shp .l { background: #1e1e21; box-shadow: 0 0 0 1px rgba(255,255,255,.13); padding: 10px 18px; border-radius: 10px; }
+.shp .t { color: #f3c659; }
+.shp .s { width: 40px; height: 24px; border-radius: 8px; background: #f0b93c; position: relative; } .shp .s::after { content: ""; position: absolute; top: 3px; left: 19px; width: 18px; height: 18px; border-radius: 5.5px; background: #fff; }
+.shp .s.off { background: rgba(255,255,255,.16); } .shp .s.off::after { left: 3px; }
+.shp .p { font-size: 12px; padding: 3px 8px; border-radius: 6px; background: rgba(143,198,162,.14); color: #8fc6a2; }
+.shp .p.w { background: rgba(223,150,80,.16); color: #f0a468; } .shp .p.c { background: rgba(240,185,60,.16); color: #f3c659; }
+.shp .k { background: #1e1e21; box-shadow: 0 0 0 1px rgba(255,255,255,.1); border-radius: 12px; padding: 12px 16px; font-weight: 560; }
+.sysmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.lane { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.lane ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: st; }
+.lane li { counter-increment: st; display: grid; grid-template-columns: 26px 1fr; gap: 10px; font-size: 14px; color: var(--muted); align-items: start; }
+.lane li::before { content: counter(st); width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accentInk); font-weight: 700; font-size: 12px; display: grid; place-items: center; }
+.lane li b { color: var(--fg); font-weight: 600; }
+.tbl { overflow-x: auto; }
+.tbl table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14px; }
+.tbl th, .tbl td { text-align: start; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.tbl td:first-child { font-weight: 600; white-space: nowrap; }
+.tbl td { color: var(--muted); } .tbl td:first-child { color: var(--fg); }
+#film { display: grid; gap: 14px; }
+.filmh { font-size: 17px; margin-top: 8px; }
+.strip { display: flex; gap: 16px; overflow-x: auto; padding: 4px 2px 14px; scroll-snap-type: x proximity; }
+.fm { margin: 0; display: grid; gap: 8px; width: 300px; flex: none; scroll-snap-align: start; align-content: start; }
+.fm button { all: unset; cursor: pointer; display: block; border-radius: 10px; }
+.fm button:hover .stage, .fm button:focus-visible .stage { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fm .stage { border-radius: 8px; box-shadow: 0 8px 22px rgba(0,0,0,.28), 0 0 0 1px rgba(255,255,255,.08); pointer-events: none; }
+.fm figcaption { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.fm figcaption b { display: block; color: var(--fg); font-size: 14px; }
+
+.feat, .sys { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+.fcard, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.fcard h3 { margin-bottom: 4px; }
+.fcard button { font: inherit; font-size: 14px; text-align: start; background: transparent; border: 0; border-bottom: 1px solid var(--line); padding: 8px 2px; color: var(--fg); cursor: pointer; }
+.fcard button:last-child { border-bottom: 0; } .fcard button:hover { color: var(--accent); }
+.card { gap: 12px; }
+.card p { font-size: 14px; color: var(--muted); }
+.sw { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sw figure { margin: 0; display: grid; gap: 4px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sw i { aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.plants { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.plants figure { margin: 0; display: grid; gap: 4px; font-size: 12px; color: var(--muted); text-align: center; }
+.plants img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; }
+.feat, .sys { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+.fcard, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.fcard h3 { margin-bottom: 4px; }
+.fcard button { font: inherit; font-size: 14px; text-align: start; background: transparent; border: 0; border-bottom: 1px solid var(--line); padding: 8px 2px; color: var(--fg); cursor: pointer; }
+.fcard button:last-child { border-bottom: 0; } .fcard button:hover { color: var(--accent); }
+.card { gap: 12px; }
+.card p { font-size: 14px; color: var(--muted); }
+
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Unrot browser extension · concept · 24 Nov 2026</span>
+    <h1>The extension does what the Mac app cannot see</h1>
+    <p class="lede">The app decides every rule. The extension is its eyes and hands inside a page: it sees which site and which part of it you are on, counts the time, and acts in the tab. Click the toolbar button in the browser below, or jump to any screen.</p>
+    <div class="legend">
+      <span><i class="chip built">Built</i> written and tested today, not yet run in a real browser</span>
+      <span><i class="chip today">In the extension</i> exists now, shown here in the new look</span>
+      <span><i class="chip prop">Proposed</i> a mockup for your yes or no</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="proto">
+      <div class="stage" id="stage" aria-live="polite"></div>
+      <div class="side">
+        <div class="jump" id="jump"></div>
+        <div class="note" id="note"></div>
+        <p class="hint">The pages behind the popup are gray stand-ins, not any real site's design. Countdowns run live.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">All screens</span>
+    <h2>The whole extension at a glance</h2>
+    <div id="film"></div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Division of work</span>
+    <h2>What only the extension can do</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>The app cannot</th><th>So the extension</th><th>State</th></tr></thead>
+      <tbody id="work"></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Studied</span>
+    <h2>What we took from ScreenZen, HaramBlur and the Hisn extension</h2>
+    <p class="lede">ScreenZen and HaramBlur are read from their own sites and HaramBlur’s public code page. The ScreenZen browser extension’s store page would not open in my browser, so its row lists what the product does, not its popup layout. The Hisn extension is this repo’s own.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>From</th><th>What it does well</th><th>Our version</th><th>State</th></tr></thead>
+      <tbody id="took"></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Rules of the design</span>
+    <h2>What stays true on every screen</h2>
+    <div class="sysmap">
+      <div class="lane"><h3>Adult protection leads</h3><ol>
+        <li><span><b>The Shield's state is the first thing in the popup</b>, before any time or rule.</span></li>
+        <li><span><b>An adult block is never softened.</b> No extra minutes, no way through from the browser.</span></li>
+        <li><span><b>It works alone.</b> Without the Mac app the adult layers still run.</span></li>
+      </ol></div>
+      <div class="lane"><h3>One place per thing</h3><ol>
+        <li><span><b>Rules are made in the app.</b> The popup can add a stricter rule for this site, and hands the rest to the app.</span></li>
+        <li><span><b>The browser can tighten, never loosen.</b> Removing or weakening a rule is done in the app, under its strictness.</span></li>
+        <li><span><b>Settings here are only about this browser.</b> Lists and checks show where they are edited.</span></li>
+      </ol></div>
+      <div class="lane"><h3>Private by construction</h3><ol>
+        <li><span><b>Only an address is asked about</b>, and only for hosts the app listed.</span></li>
+        <li><span><b>Time is reported for listed hosts only.</b> Ordinary browsing never leaves the browser.</span></li>
+        <li><span><b>No page text, title or history</b> crosses to the app. No account, no server.</span></li>
+      </ol></div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Design</span>
+    <h2>The system</h2>
+    <div class="sysx">
+      <div class="sysc"><h3>Night gold</h3><div class="sw6"><div><i style="background:#131210"></i><b>Page</b><span>#131210</span></div><div><i style="background:#161513"></i><b>Popup</b><span>#161513</span></div><div><i style="background:#1e1e21"></i><b>Card</b><span>#1e1e21</span></div><div><i style="background:#f0b93c"></i><b>Gold</b><span>#f0b93c</span></div><div><i style="background:#edece8"></i><b>Text</b><span>#edece8</span></div><div><i style="background:#a3a19b"></i><b>Quiet text</b><span>#a3a19b</span></div></div><p>The one look for the popup, the pages and the settings: warm near-black, cards drawn by a single line, and gold as the only signal colour. It is the same night look as the phone app.</p></div>
+      <div class="sysc"><h3>Signals</h3><div class="sw6"><div><i style="background:#f0b93c"></i><b>On</b><span>#f0b93c</span></div><div><i style="background:#f3c659"></i><b>Gold text</b><span>#f3c659</span></div><div><i style="background:#8fc6a2"></i><b>Safe</b><span>#8fc6a2</span></div><div><i style="background:#f0a468"></i><b>Needs you</b><span>#f0a468</span></div><div><i style="background:#2c2b2e"></i><b>Line</b><span>#2c2b2e</span></div><div><i style="background:#1a191c"></i><b>Covered</b><span>#1a191c</span></div></div><p>Gold means on, chosen or yours. Green appears only in the status line when adult content is blocked. Amber appears only when something needs you. Red is never used: a block is calm, not an alarm.</p></div>
+      <div class="sysc"><h3>Type</h3><div class="typ"><span class="d">Group name · scope</span><span class="a">This page stays closed.</span><span class="b">Row and button titles, rounded</span><span class="c">Body and captions in the rounded system face. Nothing you can press is smaller than this line.</span><span class="q">“I want my evenings back.”</span></div><p>Serif for the one sentence a page is about and for your own words. The rounded system face for everything you read or press. No font file ships; both come from the Mac.</p></div>
+      <div class="sysc"><h3>Shapes</h3><div class="shp"><span class="g">Go to my notes</span><span class="l">Breathe first</span><span class="t">Was this a mistake?</span><span class="s"></span><span class="s off"></span><span class="p">Adult content blocked</span><span class="p w">Needs you</span><span class="p c">3 hidden</span><span class="k">A row in a card</span></div><p>Rounded squares, never pills: buttons, switches, status and counts. The gold button is always the safe choice and always first. Cards have a line and no shadow; only the popup itself casts one.</p></div>
+      <div class="sysc"><h3>Objects</h3><div class="objs"><figure><img src="icons/sprout.webp" alt=""><figcaption>The mark</figcaption></figure><figure><img src="icons/shield.webp" alt=""><figcaption>Adult protection</figcaption></figure><figure><img src="icons/eye.webp" alt=""><figcaption>Pictures</figcaption></figure><figure><img src="icons/book.webp" alt=""><figcaption>Words</figcaption></figure><figure><img src="icons/people.webp" alt=""><figcaption>People</figcaption></figure><figure><img src="icons/hourglass.webp" alt=""><figcaption>Limit</figcaption></figure><figure><img src="icons/pause.webp" alt=""><figcaption>Pause</figcaption></figure><figure><img src="icons/moon.webp" alt=""><figcaption>Closed hours</figcaption></figure><figure><img src="icons/target.webp" alt=""><figcaption>Focus</figcaption></figure><figure><img src="icons/medal.webp" alt=""><figcaption>Wins</figcaption></figure><figure><img src="icons/notebook.webp" alt=""><figcaption>Your places</figcaption></figure><figure><img src="icons/globe.webp" alt=""><figcaption>A site</figcaption></figure><figure><img src="icons/bolt.webp" alt=""><figcaption>App link</figcaption></figure><figure><img src="icons/dial.webp" alt=""><figcaption>Settings</figcaption></figure><figure><img src="icons/lock.webp" alt=""><figcaption>Locked</figcaption></figure><figure><img src="icons/rocket.webp" alt=""><figcaption>New tab</figcaption></figure><figure><img src="icons/phone.webp" alt=""><figcaption>Short videos</figcaption></figure><figure><img src="icons/watch.webp" alt=""><figcaption>Time</figcaption></figure></div><p>Unrot’s own black and gold objects, one per meaning, on a dark tile. No emoji and no line icons anywhere in the extension.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Your call</span>
+    <h2>What I need from you</h2>
+    <ul class="open">
+      <li><b>Six ideas are proposals.</b> They are marked Proposed and are not built: the new popup, quick rules from the popup, the time pill, calm pages, gray for one site, and the new settings. Tell me which to build.</li>
+      <li><b>Quick rules from the popup change one thing in the system.</b> Today the browser can only read rules. Adding a rule from the popup means letting the browser add stricter rules, never weaker ones. I recommend it; it is your decision.</li>
+      <li><b>Your places is a proposal too.</b> On a closed page the gold button goes to a place you chose, with up to three places set in the browser settings. It is drawn on the adult, closed and limit pages and is not built.</li>
+      <li><b>The name.</b> The extension is published as "Hisn Protection". This concept shows it as Unrot for the Unrot edition.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const site = (inner, cls = "") => `<div class="site ${cls}">${inner}</div>`;
+const WATCH = `<div class="srch">Search</div><div class="main"><div class="vid">A video</div><div class="ln"></div><div class="ln s"></div></div><div class="side"><i></i><i></i><i></i><i></i></div>`;
+const HOME = `<div class="srch">Search</div><div class="grid">${"<i></i>".repeat(8)}</div>`;
+const ic = n => `<img class="ic" src="icons/${n}.webp" alt="">`;
+const tile = n => `<span class="t">${ic(n)}</span>`;
+const ring = (frac, text) => `<div class="ring"><svg viewBox="0 0 120 120"><circle class="tr" cx="60" cy="60" r="50"/><circle class="fi" cx="60" cy="60" r="50" style="stroke-dashoffset:${326.7 * (1 - frac)}"/></svg><span>${text}</span></div>`;
+const head = (cls = "ok", line = "Adult content blocked") => `<div class="hd"><span class="mark">${ic("sprout")}</span><div><b>Unrot</b><span class="st ${cls}">${line}</span></div><button class="gear" data-go="settings" aria-label="Browser settings" title="Browser settings">${ic("dial")}</button></div>`;
+const grp = (name, scope = "") => `<div class="eb"><span>${name}</span><em>${scope}</em></div>`;
+const card = (...rows) => `<div class="card">${rows.join("")}</div>`;
+const row = (lead, title, sub = "", trail = "", go = "") => `<div class="r"${go ? ` data-go="${go}"` : ""}>${lead}<div><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</div>${trail}</div>`;
+const chev = `<span class="chev">›</span>`;
+const sw = on => `<i class="sw ${on ? "on" : ""}"></i>`;
+const acts = `<div class="btns"><button class="b gold" data-go="webfocus">Focus 25 m</button><button class="b" data-go="webclosed">Breathe</button></div>`;
+const foot = `<div class="pin">${row("", "Open Unrot", "Rules, limits and the Shield", chev)}</div>`;
+const WHY = [["Site list", "This address is on Unrot’s adult site list."], ["Your own list", "You added this site to your own block list."], ["Words on the page", "The words on this page matched your text check."], ["Strict mode", "Strict mode only opens sites you allowed."]];
+const places = `<div class="why go"><small>Or go to one of your places</small><button><img src="icons/book.webp" alt="">Reading list</button><button><img src="icons/rocket.webp" alt="">New tab</button><button class="chg" data-go="settings">Change…</button></div>`;
+const fact = (big, small) => `<span class="big">${big}</span><small>${small}</small>`;
+const mo = (rule, icon, title, detail, own, acts, extra = "", side = "") => `<div class="center"><div class="mo"><div class="top"><img src="icons/sprout.webp" alt=""><span>Unrot</span><em>${rule}</em></div><div class="txt"><img class="obj" src="icons/${icon}.webp" alt=""><b class="t">${title}</b><span class="d">${detail}</span>${own ? `<div class="own"><small>From you, earlier</small><q>${own}</q></div>` : ""}<div class="acts">${acts}</div>${extra}</div><div class="side">${side}</div></div></div>`;
+
+const PEOPLE = (cls) => `<div class="srch">Search</div><div class="grid">${[1, 0, 1, 1, 0, 1, 0, 1].map(p => p ? `<i class="ph ${cls}"></i>` : "<i></i>").join("")}</div>`;
+const seg = (label, opts, on) => `<div class="r col"><small>${label}</small><div class="sg">${opts.map((o, i) => `<span class="${i === on ? "on" : ""}">${o}</span>`).join("")}</div></div>`;
+const S = {
+  popChecks: { g: "Adult checks", t: "What is checked on this page", st: "prop", url: "news.example.com/story", page: site(`<div class="srch">Search</div><div class="grid">${["", "cov", "", "", "cov", "", "", "cov"].map(c => c ? `<i class="ph cov"><span>Hidden</span></i>` : `<i class="ph"></i>`).join("")}</div>`), from: "Toolbar popup",
+    note: "The adult checks were missing from this prototype; they are the core of the extension and already exist. This popup puts them first: the address against the site list, the words on the page, and every picture and video frame. Each row says what it found here. Hiding people is a separate viewing choice under them.",
+    pop: head() + card(row(tile("globe"), "news.example.com", "This site", `<button class="b sm" data-go="adult">Block</button>`)) + grp("Adult checks", "This page") + card(row(tile("shield"), "Site list", "229,000 adult sites", `<span class="okt">Clear</span>`), row(tile("book"), "Words on the page", "Unrot’s list and your own words", `<span class="okt">Clear</span>`), row(tile("eye"), "Pictures and video", "Checked on this Mac, nothing uploaded", `<span class="cnt">3 hidden</span>`, "webhidden"), row(tile("people"), "Hide people", "A viewing choice · women, faces, blur", chev, "webpeople")) + foot },
+  webhidden: { g: "Adult checks", t: "Pictures hidden on the page", st: "today", url: "news.example.com/story", from: "On the site",
+    note: "In the extension today, as a beta. Each picture and video frame is checked on this Mac before it shows. One that looks like adult media stays covered, and one that could not be checked stays covered too. Nothing is uploaded. It can miss things or cover a harmless picture, which is why the site list and the word check run first.",
+    page: site(`<div class="srch">Search</div><div class="grid">${["", "cov", "", "", "cov", "", "", "cov"].map(c => c ? `<i class="ph cov"><span>Hidden</span></i>` : `<i class="ph"></i>`).join("")}</div>`) + `<span class="pill bl"><img src="icons/eye.webp" alt="" style="width:1.7cqw;height:1.7cqw;object-fit:contain">3 pictures hidden · Unrot</span>` },
+  webpeople: { g: "Adult checks", t: "People hidden, like HaramBlur", st: "today", url: "news.example.com/story", page: site(PEOPLE("fb")), from: "Toolbar popup",
+    note: "In the extension today, as a beta. You choose who is hidden (women, men or everyone), whether only the face or the whole picture is covered, blur or a solid cover, and whether it applies to pictures, videos or both (that last choice is in the settings page). It is a viewing choice, separate from the adult checks, and it runs on this Mac. Face estimates can be wrong. Two rows are new and proposed, taken from HaramBlur: a blur strength, and Hold to look, which shows a hidden person while you hold the pointer on the picture. Hold to look never applies to adult media.",
+    pop: head() + grp("Hide people", "A viewing choice") + card(seg("Who", ["Off", "Women", "Men", "Everyone"], 3), seg("Area", ["Faces only", "Whole picture"], 0), seg("Effect", ["Strong blur", "Solid cover"], 0), seg("Strength", ["Light", "Medium", "Strong"], 2), row("", "Hold to look", "People only. Adult media never opens.", sw(0))) + foot },
+  webwords: { g: "Adult checks", t: "Closed by the words on a page", st: "today", url: "Unrot · blocked", from: "Blocked page",
+    note: "In the extension today. The words on a page are scored against Unrot’s list and your own words, on ordinary sites too, with a sensitivity you set. When a page crosses the line it closes and shows which words matched. A word that is fine can be tapped once so it never counts again; during a lock that correction waits.",
+    tab: mo("Adult protection", "shield", "This page stays closed.", "The words on this page matched your text check. There are no extra minutes and no way through.", "I want my evenings back.", `<button class="pri"><img src="icons/notebook.webp" alt="">Go to my notes</button><button>Breathe first</button>`, `<div class="why"><small>Matched here · tap a word that is fine</small><button>first word</button><button>second word</button><button>a phrase of yours</button></div>`, `<img class="art" src="glass-sprout.jpg" alt="">`) },
+  popLimited: { g: "Popup", t: "On a site with a limit", st: "prop", url: "youtube.com/watch", page: site(WATCH), from: "Toolbar popup",
+    note: "The Shield's state first. Then this site: a ring of today's time against its limit and the rule that covers it. Start Focus and Breathe work from any page. The wins row is from ScreenZen: every time you close the pause page instead of opening the site, it counts.",
+    pop: head() + grp("This site", "youtube.com") + card(row(ring(0.4, "24 m"), "36 m left today", "Feeds rule · 1 h a day"), row(tile("medal"), "Walked away 4 times today", "Each one is counted as a win", ""), row(tile("eye"), "Calm this page", "Home feed, Shorts, suggestions", `<span class="cnt">3 / 6</span>${chev}`, "popCalm")) + acts + foot },
+  popSuggest: { g: "Popup", t: "On a site with no rule", st: "prop", url: "chess.com/play", page: site(HOME), from: "Toolbar popup",
+    note: "A site Unrot calls distracting, with no rule yet. The popup says how long you have been here today and offers three stricter moves, each one tap. They are written to the app's rule list.",
+    pop: head() + grp("This site", "chess.com") + card(row(ring(0, "56 m"), "56 m today", "No rule yet")) + grp("Add a rule", "Stricter only") + card(row(tile("hourglass"), "Limit to 30 m a day", "", chev, "popLimited"), row(tile("pause"), "Pause before it opens", "", chev, "webwait"), row(tile("eye"), "Hide its feed", "", chev, "webfeed")) + foot },
+  popPlain: { g: "Popup", t: "On an ordinary site", st: "prop", url: "docs.example.org/guide", page: site(WATCH), from: "Toolbar popup",
+    note: "Most pages need nothing. The popup stays short: the Shield, and the two things that are useful anywhere. Block this site adds it to your own adult block list, as today.",
+    pop: head() + grp("This site", "docs.example.org") + card(row(tile("globe"), "Not counted", "Nothing to do here"), row(tile("shield"), "Block this site", "Adds it to your adult block list", chev, "adult")) + acts + foot },
+  popCalm: { g: "Popup", t: "Calm this page", st: "prop", url: "youtube.com/watch", page: site(`<div class="srch">Search</div><div class="side"><div class="gone" style="min-height:24cqw">Suggestions hidden</div></div><div class="main"><div class="vid">A video</div><div class="ln"></div><div class="ln s"></div></div>`, "flip"), from: "Toolbar popup",
+    note: "Only an extension can change a page. Per site, switch off the parts built to keep you: the home feed, short videos, the suggestions beside a video, autoplay, and comments. The video you came for stays.",
+    pop: head() + grp("Hide on this site", "Every YouTube page") + card(row("", "Home feed", "", sw(1)), row("", "Short videos", "", sw(1)), row("", "Suggestions beside a video", "", sw(1)), row("", "Autoplay next", "", sw(0)), row("", "Comments", "", sw(0)), row("", "Gray for this site", "", sw(0))) + foot },
+  popFocus: { g: "Popup", t: "While Focus runs", st: "prop", url: "docs.example.org/guide", page: site(WATCH), from: "Toolbar popup",
+    note: "During Focus the popup shows what you started it for and the time left. There is nothing to switch off here; ending early follows what you chose at the start, in the app.",
+    pop: head() + grp("Focus", "Until 3:25 PM") + card(row(tile("target"), "Write the report", "Ending early follows what you chose", `<span class="num">15:32</span>`), `<div class="bar"><i style="width:38%"></i></div>`) + `<div class="btns" style="grid-template-columns:1fr"><button class="b" data-go="webclosed">Breathe</button></div>` + foot },
+  popFix: { g: "Popup", t: "When something needs you", st: "today", url: "example.org", page: site(HOME), from: "Toolbar popup",
+    note: "The checks the extension already makes, in the new look: the app is not answering, or this browser still has private windows. One row each, with the one button that fixes it. Remove opens the Mac app, which takes private windows out of this browser; the extension no longer asks to be allowed inside them. Adult lists still work without the app. When the app is there, the browser keeps one line open to it: a rule question is answered in about half a millisecond, where starting the helper each time took 24.",
+    pop: head("warn", "Page checks need the app") + grp("Needs you", "2 things") + card(row(tile("bolt"), "Unrot is not answering", "Rules, limits and Focus are paused", `<button class="b gold sm">Open</button>`), row(tile("moon"), "Private windows are still on", "Unrot can remove them from this browser", `<button class="b sm">Remove</button>`)) + foot },
+  adult: { g: "Pages", t: "Adult block", st: "today", url: "Unrot · blocked", from: "Blocked page",
+    note: "The page that already exists, in the new look. The gold button goes where you chose, not to an empty new tab: your first place, with the others under it. You pick up to three places in the browser settings, and each is checked by the same protection. It says which of the four checks closed the page: the site list, your own list, the words on the page, or Strict mode. Click the four to see each sentence. No extra minutes and no way through, ever. It never names the site it blocked.",
+    tab: mo("Adult protection", "shield", "This page stays closed.", `<span class="why-t">${WHY[0][1]}</span> There are no extra minutes and no way through.`, "I want my evenings back.", `<button class="pri"><img src="icons/notebook.webp" alt="">Go to my notes</button><button>Breathe first</button><button class="q">Was this a mistake?</button>`, places + `<div class="why"><small>Which check closed it</small>${WHY.map((w, i) => `<button data-why="${i}" aria-pressed="${i === 0}">${w[0]}</button>`).join("")}</div>`, `<img class="art" src="glass-sprout.jpg" alt="">`) },
+  webwait: { g: "Pages", t: "A pause first", st: "built", url: "Unrot · a moment", from: "Rule page", wait: 8,
+    note: "A site under a wait rule opens here instead. It works like the Mac panel: the question can be answered with one of four keys, the gold button closes the site, and Open for 10 minutes is a quiet line that only wakes when the ring is full. From ScreenZen: the question on this page can be your own words, set per rule in the app (proposed).",
+    tab: mo("Games and chat", "pause", "What did you open chess.com for?", "Breathe out slowly while the ring fills.", "I want my evenings back.", `<div class="why ans">${["Something I need", "Bored", "A break", "Just habit"].map(a => `<button data-ans aria-pressed="false">${a}</button>`).join("")}</div><button class="pri" data-go="popPlain">Close chess.com</button><button class="open q" disabled data-go="webpill">Open for 10 minutes · in 8 s</button>`, `<span class="f">3 opens left today</span>`, `<div class="ring"><svg viewBox="0 0 120 120"><circle class="tr" cx="60" cy="60" r="52"/><circle class="fi" cx="60" cy="60" r="52"/></svg><span class="num">8</span></div>` + `<small>seconds</small>`) },
+  webclosed: { g: "Pages", t: "Closed for now", st: "built", url: "Unrot · a moment", from: "Rule page", snooze: 10,
+    note: "A firm rule in its hours. 5 more minutes appears only after a wait that grows each time today. The page looks again every 30 seconds and returns by itself when the rule ends.",
+    tab: mo("Work hours", "moon", "reddit.com is closed for now.", "Your Work hours rule is running. This page returns by itself when it ends.", "I want my evenings back.", `<button class="pri" data-go="popPlain"><img src="icons/notebook.webp" alt="">Go to my notes</button><button class="snz" disabled data-go="webpill">5 more minutes, in 0:10</button><button class="q">Breathe first</button>`, places, fact("5:00 PM", "opens again")) },
+  weblimit: { g: "Pages", t: "Limit used, locked", st: "built", url: "Unrot · a moment", from: "Rule page",
+    note: "A locked rule offers no extra minutes in the browser at all. The only way through is the weekly emergency pass, in the app.",
+    tab: mo("Feeds", "hourglass", "Today’s time for youtube.com is used.", "It opens again tomorrow.", "", `<button class="pri" data-go="popPlain"><img src="icons/notebook.webp" alt="">Go to my notes</button><button class="q">Breathe first</button>`, `<span class="f">This rule is locked. The way through is in the Unrot app.</span>` + places, fact("1 h", "of 1 h used today")) },
+  webfocus: { g: "Pages", t: "Closed in Focus", st: "built", url: "Unrot · a moment", from: "Rule page",
+    note: "During Focus the page shows what you started the session for. Focus never offers extra minutes.",
+    tab: mo("Focus", "target", "x.com is closed during Focus.", "Focus never offers extra minutes.", "Write the report", `<button class="pri" data-go="popFocus">Close this tab</button><button class="q">Breathe first</button>`, "", fact("15:32", "left in this Focus")) },
+  webfeed: { g: "In the page", t: "Feed hidden, site usable", st: "built", url: "youtube.com", from: "On the site",
+    note: "A Feeds only rule leaves the site open and hides just the home feed, with a small note in the corner. Search and links keep working.",
+    page: site(`<div class="srch">Search</div><div class="gone" style="grid-column:1/-1;min-height:34cqw">The home feed would be here</div>`) + `<span class="pill bl">Feed hidden · Unrot</span>` },
+  webpill: { g: "In the page", t: "Time left, in the corner", st: "prop", url: "youtube.com/watch", from: "On the site",
+    note: "On a site with a limit, a small pill shows what is left today, so the end is never a surprise. It turns gold in the last five minutes and can be dragged out of the way.",
+    page: site(WATCH) + `<span class="pill br"><img src="icons/hourglass.webp" alt="" style="width:1.7cqw;height:1.7cqw;object-fit:contain"><b>12 m</b> left today<span class="bar"><i style="width:80%"></i></span></span>` },
+  webgray: { g: "In the page", t: "Gray for one site", st: "prop", url: "example-feed.com", from: "On the site",
+    note: "The Mac app can turn the whole screen gray. The extension can do it for one site only, which is often enough to take the pull out of a feed while the rest of your work keeps its color.",
+    page: site(`<div class="srch">Search</div><div class="grid">${"<i style='background:linear-gradient(135deg,#6b4a2a,#2c4a6b)'></i>".repeat(8)}</div>`, "gray") + `<span class="pill bl">Gray on this site · Unrot</span>` },
+  settings: { g: "Settings", t: "Settings, this browser only", st: "prop", url: "Unrot · settings", from: "Settings page",
+    note: "Today's settings page is five long tabs that repeat what the Mac app has. The proposal: one short page about this browser only. Lists and checks show their state and where they are edited, so nothing can be changed in two places.",
+    tab: `<div class="opt"><nav><b><img src="icons/sprout.webp" alt="">Unrot</b><span class="on">This browser</span><span>Your places</span><span>Calm pages</span><span>Language</span><span>About</span></nav><main><h4>This browser</h4><p>What Unrot does here. Rules, lists and checks are edited in the Mac app.</p><div class="row"><span class="e"><img src="icons/shield.webp" alt=""></span><div>Adult content<small>229,000 sites, your words, images. Edited in Unrot › Block lists.</small></div><span class="v">On</span></div><div class="row"><span class="e"><img src="icons/bolt.webp" alt=""></span><div>Connected to the Unrot app<small>Checked a few seconds ago</small></div><span class="v">Connected</span></div><div class="row"><span class="e"><img src="icons/notebook.webp" alt=""></span><div>Your places<small>Where a closed page sends you. The first one is the gold button.</small></div><span class="v">My notes · Reading list · New tab</span></div><div class="row"><span class="e"><img src="icons/hourglass.webp" alt=""></span><div>Time left, in the corner<small>On sites that have a limit</small></div><i class="sw"></i></div><div class="row"><span class="e"><img src="icons/phone.webp" alt=""></span><div>Short videos<small>Shorts, Reels and Spotlight closed everywhere</small></div><i class="sw"></i></div><div class="note">Without the Mac app this page also shows your block list, words and strictness, so the extension still works on its own.</div></main></div>` },
+};
+const WORK = [
+  ["See which part of a site you are on", "Hides only the home feed and keeps search and links", "built", "webfeed"],
+  ["Stop a page before it shows", "Puts a pause or a closed page in the tab", "built", "webwait"],
+  ["Know how long a site was in front", "Counts time for listed sites and reports it, for limits and suggestions", "built", "popSuggest"],
+  ["Close a tab when a limit runs out", "Looks at open tabs again every 30 seconds", "built", "weblimit"],
+  ["Read the words on a page", "Scores page text against Unrot’s list and your own words", "today", "webwords"],
+  ["See the pictures on a page", "Checks each picture and video frame on this Mac and covers adult media", "today", "webhidden"],
+  ["Hide people in pictures", "Blurs or covers faces or whole pictures, by your choice", "today", "webpeople"],
+  ["Force SafeSearch and block adult addresses", "Rewrites and blocks requests in the browser", "today", "adult"],
+  ["Act on the site you are looking at", "One tap in the popup: limit it, pause it, hide its feed", "prop", "popSuggest"],
+  ["Change a page's layout", "Switches off suggestions, autoplay and comments per site", "prop", "popCalm"],
+  ["Show time left where you are looking", "A small pill in the corner of the page", "prop", "webpill"],
+  ["Make one site gray", "A gray filter for that site only", "prop", "webgray"],
+];
+const TOOK = [
+  ["ScreenZen", "A wait before a site opens, and only a few opens a day", "The pause page with its ring and “3 opens left today”", "built", "webwait"],
+  ["ScreenZen", "Your own message on the wait screen", "“From you, earlier” on every page, and your own question per rule", "prop", "webwait"],
+  ["ScreenZen", "Counts the times you did not open it", "“Walked away 4 times today” in the popup", "prop", "popLimited"],
+  ["ScreenZen", "Free limits, schedules and focus blocks", "Rules live in the Mac app; the browser only carries them out", "built", "weblimit"],
+  ["HaramBlur", "Blurs pictures and video frames on the device", "Adult media stays covered; a picture that could not be checked stays covered too", "today", "webhidden"],
+  ["HaramBlur", "Choose who is blurred, and how", "Hide people: who, area, effect, pictures or videos", "today", "webpeople"],
+  ["HaramBlur", "Blur amount and hover to unblur", "Strength, and Hold to look for people only, never for adult media", "prop", "webpeople"],
+  ["HaramBlur", "Sends you somewhere better after a block", "Your places: the gold button goes where you chose", "prop", "adult"],
+  ["Hisn extension", "The current site and Block in one row", "The first row of the checks popup", "today", "popChecks"],
+  ["Hisn extension", "Layers listed with their state", "Site list, words and pictures, each saying what it found on this page", "prop", "popChecks"],
+  ["Hisn extension", "Names the check that closed a page, and lets you clear a wrong word", "The same four reasons and the matched words, in the new page", "today", "webwords"],
+];
+const CHIP = { built: ["built", "Built"], today: ["today", "In the extension"], prop: ["prop", "Proposed"] };
+const order = Object.keys(S);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+let timer = null;
+function draw(stage, id, live, open = true) {
+  const s = S[id];
+  const popup = s.pop && open ? `<div class="pp">${s.pop}</div>` : "";
+  stage.innerHTML = `<div class="bw"><div class="bwbar"><i></i><i></i><i></i><span class="bwurl">${s.url}</span><button class="ext ${s.pop && open ? "on" : ""}" aria-label="Unrot toolbar button"><img src="icons/sprout.webp" alt="" style="width:80%;height:80%;object-fit:contain;display:block;margin:auto"></button></div><div class="bwbody">${s.tab ?? s.page ?? ""}${popup}</div></div>`;
+  if (!live) return;
+  stage.querySelectorAll("[data-go]").forEach(b => { b.onclick = () => go(b.dataset.go); });
+  stage.querySelectorAll("[data-why]").forEach(b => { b.onclick = () => { stage.querySelector(".why-t").textContent = WHY[b.dataset.why][1]; stage.querySelectorAll("[data-why]").forEach(o => o.setAttribute("aria-pressed", o === b)); }; });
+  stage.querySelectorAll("[data-ans]").forEach(b => { b.onclick = () => stage.querySelectorAll("[data-ans]").forEach(o => o.setAttribute("aria-pressed", o === b)); });
+  stage.querySelector(".ext").onclick = () => { if (s.pop) draw(stage, id, true, !open); else go("popPlain"); };
+  const started = Date.now();
+  if (s.wait) {
+    const num = stage.querySelector(".num"), fill = stage.querySelector(".fi"), btn = stage.querySelector(".open");
+    const tick = () => { const left = s.wait - (Date.now() - started) / 1000; num.textContent = Math.max(0, Math.ceil(left)); fill.style.strokeDashoffset = 326.7 * Math.max(0, left / s.wait); btn.textContent = left <= 0 ? "Open for 10 minutes" : "Open for 10 minutes · in " + Math.ceil(left) + " s"; if (left <= 0) { btn.disabled = false; clearInterval(timer); } };
+    tick(); timer = setInterval(tick, 250);
+  } else if (s.snooze) {
+    const btn = stage.querySelector(".snz");
+    const tick = () => { const left = Math.ceil(s.snooze - (Date.now() - started) / 1000); if (left <= 0) { btn.disabled = false; btn.textContent = "5 more minutes"; clearInterval(timer); } else btn.textContent = "5 more minutes, in 0:" + String(left).padStart(2, "0"); };
+    tick(); timer = setInterval(tick, 250);
+  }
+}
+function go(id, scroll) {
+  clearInterval(timer);
+  const st = document.getElementById("stage"), s = S[id];
+  draw(st, id, true); st.classList.remove("enter"); void st.offsetWidth; st.classList.add("enter");
+  const [cls, label] = CHIP[s.st];
+  document.getElementById("note").innerHTML = `<span class="from">${s.from} <i class="chip ${cls}">${label}</i></span><h3>${s.t}</h3><p>${s.note}</p>`;
+  document.querySelectorAll("#jump button").forEach(b => b.setAttribute("aria-current", b.dataset.id === id));
+  if (scroll) st.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+const groups = [...new Set(order.map(k => S[k].g))];
+const jump = document.getElementById("jump"), film = document.getElementById("film");
+for (const g of groups) {
+  const grp = el("div", "grp", `<span>${g}</span>`), row = el("div"), strip = el("div", "strip");
+  film.append(el("h3", "filmh", g), strip);
+  for (const id of order.filter(k => S[k].g === g)) {
+    const b = el("button", "", S[id].t); b.dataset.id = id; b.onclick = () => go(id); row.append(b);
+    const fig = el("figure", "fm"), fb = el("button"), mini = el("div", "stage");
+    draw(mini, id, false); fb.append(mini); fb.setAttribute("aria-label", "Show " + S[id].t); fb.onclick = () => go(id, true);
+    const [cls, label] = CHIP[S[id].st];
+    fig.append(fb, el("figcaption", "", `<b>${S[id].t}</b><i class="chip ${cls}">${label}</i>`)); strip.append(fig);
+  }
+  grp.append(row); jump.append(grp);
+}
+const took = document.getElementById("took");
+for (const [from, good, ours, st, to] of TOOK) {
+  const tr = el("tr", "", `<td><b>${from}</b></td><td>${good}</td><td>${ours}</td><td><i class="chip ${CHIP[st][0]}">${CHIP[st][1]}</i></td>`);
+  tr.style.cursor = "pointer"; tr.onclick = () => go(to, true); took.append(tr);
+}
+const work = document.getElementById("work");
+for (const [cannot, does, st, to] of WORK) {
+  const tr = el("tr", "", `<td>${cannot}</td><td>${does}</td><td><i class="chip ${CHIP[st][0]}">${CHIP[st][1]}</i></td>`);
+  tr.style.cursor = "pointer"; tr.onclick = () => go(to, true); work.append(tr);
+}
+go("popChecks");
+</script>
