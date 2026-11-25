@@ -168,5 +168,15 @@ for (const enforcement of [undefined, { version: 1, status: "pending" },
   check(s.details.find(([key]) => key === "Hisn app")[1] === "connected", "enforcement failure does not relabel valid native connection");
 }
 
+{
+  // Enabled but limited to some sites: never an active headline.
+  const limited = describe({ ...base, siteAccess: false });
+  check(limited.protection.level === "partial" && limited.notices.some(n => n.kind === "warn"),
+        "limited site access is shown as partial protection with a fix");
+  check(describe({ ...base, siteAccess: true }).protection.level === "active"
+        && describe({ ...base }).protection.level === "active",
+        "full or unreported site access changes nothing");
+}
+
 print(`  ${checks - failures}/${checks} checks passed`);
 if (failures) throw new Error(`${failures} status checks failed`);

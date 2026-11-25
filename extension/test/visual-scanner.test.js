@@ -2,12 +2,12 @@
 let checks = 0;
 const check = (ok, label) => { checks++; if (!ok) throw new Error(label); };
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
-function harness() {
+function harness(initial) {
   const values = new Map(), events = new Map(), documentEvents = new Map(), timers = new Map(), delays = new Map(), nodeEvents = new Map();
   const originalNow = Date.now;
   let now = 1000;
   Date.now = () => now;
-  let inspect = [], stored = { inspectVisual: true, personBlur: 'off' }, change, tick, discover, id = 0, capture;
+  let inspect = [], stored = initial ?? { inspectVisual: true, personBlur: 'off' }, change, tick, discover, id = 0, capture;
   const node = { tagName: 'VIDEO', currentSrc: 'https://fixture.example/a.webm', currentTime: 0, attributes: new Map(), attributeWrites: 0,
     getAttribute(name) { return this.attributes.get(name) ?? null; },
     setAttribute(name, value) { this.attributes.set(name, value); this.attributeWrites++; },
@@ -22,6 +22,7 @@ function harness() {
   };
   nodeEvents.set(node, events);
   const nodes = [node];
+  const warms = [];
   globalThis.location = { href: 'https://fixture.example/' };
   globalThis.innerHeight = globalThis.innerWidth = 800;
   globalThis.crypto = { randomUUID: () => String(++id) };
@@ -41,11 +42,12 @@ function harness() {
   globalThis.chrome = { runtime: { sendMessage: async message => {
     if (message.type === 'getVisualSettings') return stored;
     if (message.type === 'cancelVisualMedia') return { state: 'unknown' };
+    if (message.type === 'warmVisualEngine') { warms.push(message); return { ok: true }; }
     return new Promise((resolve, reject) => inspect.push({ message, resolve, reject }));
   } }, storage: { onChanged: { addListener: fn => { change = fn; } } } };
   delete globalThis.__hisnVisualScanner;
   load('../content/visual.js');
-  return { node, events, documentEvents, inspect, values, nodes, document: globalThis.document,
+  return { node, events, documentEvents, inspect, warms, values, nodes, document: globalThis.document,
     discover: mutations => discover(mutations),
     addNode() {
       const properties = new Map(), listeners = new Map();
@@ -133,8 +135,16 @@ const faceResult = (blur, captureKey = 'a'.repeat(64), adult = false) => ({ stat
   h.emit('playing'); await h.tick();
   check(h.inspect.length === 1 && h.node.dataset.hisnVisual === 'pending', 'playing cannot reveal or restart a pending first check');
   await h.resolve(0); h.emit('seeking');
-  check(h.node.dataset.hisnVisual === 'pending', 'seeking still revokes a previous clean sample');
-  await h.tick(); await h.resolve(1);
+  check(h.node.dataset.hisnVisual === 'checked', 'a seek in a showing video does not blank it');
+  await h.pump(); await h.tick();
+  check(h.inspect.length === 2, 'the seek is sampled again at once rather than at the next two-second mark');
+  await h.reply(1, { state: 'ready', adult: { block: true, inspected: true, scores: null }, persons: { blur: false, mode: 'off', regions: [] } });
+  check(h.node.dataset.hisnVisual === 'adult-hidden' && h.node.paused, 'and a positive verdict after the seek still hides and pauses it');
+  h.stop();
+}
+{
+  const h = harness(); await flush(); await h.tick(); await h.resolve(0);
+  h.emit('seeking'); await h.pump(); await h.tick(); await h.resolve(1);
   h.node.currentSrc = 'https://fixture.example/new-playing-source.webm'; h.emit('playing');
   check(h.node.dataset.hisnVisual === 'pending', 'playing with a changed source requires a new hidden-first check');
   await h.tick(); await h.resolve(2);
@@ -324,9 +334,14 @@ const faceResult = (blur, captureKey = 'a'.repeat(64), adult = false) => ({ stat
 }
 {
   const h = harness(); await flush(); h.capture({ state: 'unknown', reason: 'inaccessible-pixels' });
-  await h.tick(); await h.tick();
-  check(h.inspect.length === 0 && !h.values.has('visibility') && !h.node.paused,
-    'unreadable protected or cross-origin video remains explicitly unknown without a false clean result or inference flood');
+  await h.tick(); await h.tick(); await h.pump(); await h.tick(); await h.tick();
+  check(h.inspect.length === 1 && h.inspect[0].message.url === h.node.currentSrc && h.inspect[0].message.rgba === undefined
+    && h.inspect[0].message.mediaKind === 'video',
+    'a video the page cannot read is sent once by address, with no pixels and no flood');
+  check(h.node.dataset.hisnVisual !== 'checked' && !h.node.paused, 'it is not shown while that verdict is awaited');
+  await h.reply(0, { state: 'unknown', reason: 'fetch-failed' }); await h.tick();
+  check(h.node.dataset.hisnVisual === 'unknown' && h.node.dataset.hisnVisualReason === 'fetch-failed' && h.inspect.length === 1,
+    'a protected or unfetchable video remains explicitly unknown without a false clean result');
   h.stop();
 }
 {
@@ -430,8 +445,9 @@ const faceResult = (blur, captureKey = 'a'.repeat(64), adult = false) => ({ stat
   check(h.node.dataset.hisnVisual === 'checked' && h.inspect.length === 1,
     'a valid weak verdict repairs a removed DOM marker without another inference');
   h.node.currentTime = 2; h.capture({ state: 'unknown', reason: 'inaccessible-pixels' }); await h.tick();
+  await h.pump(); await h.tick(); await h.reply(h.inspect.length - 1, { state: 'unknown', reason: 'fetch-failed' });
   h.node.dataset.hisnVisual = 'checked'; delete h.node.dataset.hisnVisualReason; h.discover();
-  check(h.node.dataset.hisnVisual === 'unknown' && h.node.dataset.hisnVisualReason === 'inaccessible-pixels',
+  check(h.node.dataset.hisnVisual === 'unknown' && h.node.dataset.hisnVisualReason === 'fetch-failed',
     'DOM presentation markers cannot overwrite a retained unknown verdict');
   h.stop();
 }
@@ -543,7 +559,7 @@ const faceResult = (blur, captureKey = 'a'.repeat(64), adult = false) => ({ stat
 }
 {
   const h = harness(); h.capture({state:'unknown',reason:'inaccessible-pixels'}); await flush(); await h.tick();
-  check(h.node.attributeWrites===0 && h.node.dataset.hisnVisual==='unknown' && h.inspect.length===0,
+  check(h.node.attributeWrites===0 && h.node.dataset.hisnVisual!=='checked' && h.inspect.every(x=>x.message.rgba===undefined),
     'unreadable videos are not mutated or falsely certified by the image retry');
   h.stop();
 }
@@ -610,11 +626,12 @@ for (const key of [undefined, null, 'not-a-digest', 'a'.repeat(65), 'A'.repeat(6
   h.advance(10000); await h.tick();
   const fresh = h.addNode(); h.capture(node=>({width:1,height:1,rgba:node===fresh.node?'AQAAAA==':'AAAAAA=='}));
   h.discover(); await h.tick();
-  check(h.inspect.length===3, 'image preparation never starts another model request while one is pending');
-  await h.resolve(2); await h.pump();
-  check(h.inspect[3].message.rgba==='AQAAAA==' && second.node.dataset.hisnVisual==='checked',
+  check(h.inspect.length===4, 'a frame never has more than two model requests pending, however many pictures wait');
+  check(h.inspect[3].message.rgba==='AQAAAA==',
     'a newly visible unchecked image precedes a routine recheck already waiting in the active map');
-  await h.resolve(3); h.stop();
+  await h.resolve(2); await h.pump();
+  check(h.inspect.length===5 && h.inspect[4].message.rgba==='AAAAAA==', 'the waiting recheck takes the slot that frees');
+  await h.resolve(3); await h.resolve(4); h.stop();
 }
 {
   const h = harness(); h.node.tagName='IMG'; h.node.naturalWidth=h.node.naturalHeight=224;
@@ -627,8 +644,8 @@ for (const key of [undefined, null, 'not-a-digest', 'a'.repeat(65), 'A'.repeat(6
   check(others.slice(0,3).every(x=>x.node.getAttribute('crossorigin')==='anonymous'
     && x.node.dataset.hisnVisual==='unknown'), 'parallel same-node reloads remain withheld and never become readable-probe clean verdicts');
   await h.tick();
-  check(h.inspect.length===1 && others.every(x=>x.node.getAttribute('crossorigin')==='anonymous'),
-    'remaining eligible image reloads can begin while the first model request is busy');
+  check(h.inspect.length<=2 && others.every(x=>x.node.getAttribute('crossorigin')==='anonymous'),
+    'remaining eligible image reloads can begin while model requests are busy');
   check(authored.node.getAttribute('crossorigin')==='use-credentials', 'readiness preparation preserves an authored credential mode');
   await h.resolve(0); h.stop();
 }
@@ -680,6 +697,65 @@ for (const key of [undefined, null, 'not-a-digest', 'a'.repeat(65), 'A'.repeat(6
   h.set({ available: false });
   check(!h.values.has('visibility') && h.events.size === 0,
     'losing engine availability releases an already hidden record and its listeners');
+  h.stop();
+}
+{
+  const h = harness(); await flush(); await h.tick();
+  check(h.warms.length === 1, 'the first picture on a page asks for the models once, before its verdict');
+  h.addNode(); h.discover([]); await h.tick();
+  check(h.warms.length === 1, 'later pictures do not ask again');
+  h.stop();
+}
+{
+  const h = harness({ inspectVisual: false, personBlur: 'off' }); await flush(); await h.tick();
+  check(h.warms.length === 0, 'a page with visual checks off never asks for the models');
+  h.stop();
+}
+{
+  // A server that refuses the anonymous reload: the page gets its own image
+  // back and the extension is asked to fetch the same address instead.
+  const h = harness(); h.node.tagName = 'IMG'; h.node.naturalWidth = h.node.naturalHeight = 224; h.node.complete = true;
+  h.node.currentSrc = 'https://pictures.example/a.jpg';
+  h.capture({ state: 'unknown', reason: 'inaccessible-pixels' }); await flush(); await h.tick();
+  check(h.node.getAttribute('crossorigin') === 'anonymous' && h.inspect.length === 0, 'the same-pixels reload is still tried first');
+  h.node.naturalWidth = h.node.naturalHeight = 0;
+  h.emit('error');
+  check(h.node.getAttribute('crossorigin') === null, 'a refused reload gives the page its own image mode back');
+  h.node.naturalWidth = h.node.naturalHeight = 224;
+  await h.pump(); await h.tick();
+  const sent = h.inspect.at(-1)?.message;
+  check(sent?.type === 'inspectVisualMedia' && sent.url === 'https://pictures.example/a.jpg' && sent.rgba === undefined && sent.mediaKind === 'image',
+    'the picture is then sent by address for the extension to fetch');
+  check(h.node.dataset.hisnVisual !== 'checked', 'and stays withheld until that verdict arrives');
+  await h.reply(h.inspect.length - 1, { state: 'unknown', reason: 'fetch-failed' });
+  check(h.node.dataset.hisnVisual === 'unknown' && h.node.getAttribute('crossorigin') === null,
+    'a failed fetch is no verdict: the picture stays hidden and the reload is not started again');
+  h.stop();
+}
+{
+  // A video judged by address is followed while it plays: each sample sends
+  // the playback time, and the extension checks the frame at that time.
+  const h = harness(); await flush(); h.capture({ state: 'unknown', reason: 'inaccessible-pixels' });
+  await h.tick(); await h.pump(); await h.tick();
+  check(h.inspect[0]?.message.url && h.inspect[0].message.at === 0, 'the first request carries the playback time');
+  await h.resolve(0);
+  check(h.node.dataset.hisnVisual === 'checked', 'a clean frame shows the video');
+  await h.tick(); await h.pump(); await h.tick();
+  check(h.inspect.length === 1, 'the same moment is not asked for twice');
+  h.node.currentTime = 40; h.advance(10000); await h.tick(); await h.pump(); await h.tick();
+  check(h.inspect.length === 2 && h.inspect[1].message.at === 40 && h.inspect[1].message.rgba === undefined,
+    'later playback asks for the frame at the new time');
+  check(h.node.dataset.hisnVisual === 'checked', 'and the video keeps playing visibly while that is checked');
+  await h.resolve(1, true);
+  check(h.node.dataset.hisnVisual === 'adult-hidden', 'a later adult frame hides the video');
+  h.stop();
+}
+{
+  const h = harness(); await flush(); h.capture({ state: 'unknown', reason: 'inaccessible-pixels' });
+  await h.tick(); await h.pump(); await h.tick(); await h.resolve(0);
+  h.node.currentSrc = 'https://fixture.example/next.webm'; h.discover(); await h.tick(); await h.pump(); await h.tick(); await h.pump(); await h.tick();
+  check(h.inspect.at(-1).message.url === 'https://fixture.example/next.webm' && h.node.dataset.hisnVisual !== 'checked',
+    'a new source is hidden again and judged on its own');
   h.stop();
 }
 print(`  ${checks}/${checks} visual scanner lifecycle checks passed`);

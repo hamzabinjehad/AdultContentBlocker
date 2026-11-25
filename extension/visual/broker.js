@@ -1,5 +1,7 @@
 import { enabled, visualPreferences, validateCapture, presentationPreferences } from './decisions.js';
 import { VisualVerdictCache } from './verdict-cache.js';
+import { captureFromURL, fetchableImageURL } from './fetch-capture.js';
+import { captureVideoFromURL, captureVideoFrameAt } from './video-capture.js';
 let creation;
 let localEngine;
 let recovery;
@@ -10,7 +12,7 @@ let preparation;
 export const VISUAL_RESPONSE_TIMEOUT_MS = 45000;
 export const VISUAL_HASH_TIMEOUT_MS = 1000;
 export const MAX_VISUAL_PENDING_REQUESTS = 12;
-export const MAX_VISUAL_FRAME_PENDING_REQUESTS = 2;
+export const MAX_VISUAL_FRAME_PENDING_REQUESTS = 6;
 const verdictCache = new VisualVerdictCache();
 function cachePolicy(state) {
   return { ...visualPreferences(state), ...presentationPreferences(state),
@@ -154,6 +156,20 @@ async function relay(operation, payload = {}) {
     requests.delete(request);
   }
 }
+// A video needs a document to play in: the offscreen page on Chromium, this
+// page itself where the broker already runs in one. Bounded like any request.
+// With a playback time, the frame at that time of a copy that follows the
+// page's video; without one, a single early frame.
+async function videoFrame(url, at) {
+  const timed = Number.isFinite(at) && at >= 0;
+  try {
+    if (typeof document !== 'undefined') return await (timed ? captureVideoFrameAt(url, at) : captureVideoFromURL(url));
+    await offscreen({ cancelled: false });
+    const reply = await bounded(api().runtime.sendMessage({ target: 'hisn-visual-engine', operation: 'captureVideo', url,
+      ...(timed ? { at } : {}) }), 20000);
+    return reply && !reply.failed && typeof reply.rgba === 'string' ? { width: reply.width, height: reply.height, rgba: reply.rgba } : null;
+  } catch { return null; }
+}
 // Waiting for an already-started creation is not consent to start a new one.
 // Cleanup may arrive while hasDocument is still false, or after another
 // cleanup closes it. Never use the context-creating relay for cancellations.
@@ -229,6 +245,15 @@ export async function handleVisualMessage(message, sender, state = {}) {
     }
     if (!enabled(state)) { verdictCache.begin(cachePolicy(state)); return disabled(); }
     if (!supported()) return { state: 'unavailable', available: false, reason: 'unsupported-runtime' };
+    // A picture or video the page could not read arrives as its address
+    // alone. The extension fetches it here (a video: one early frame); from
+    // then on it is an ordinary capture, validated like one.
+    if (message.rgba === undefined && message.url !== undefined) {
+      if (!['image', 'video'].includes(message.mediaKind) || !fetchableImageURL(message.url)) return { state: 'unknown', reason: 'invalid-capture' };
+      const fetched = message.mediaKind === 'video' ? await videoFrame(message.url, message.at) : await captureFromURL(message.url);
+      if (!fetched) return { state: 'unknown', reason: 'fetch-failed' };
+      message = { id: message.id, mediaKind: message.mediaKind, ...fetched };
+    }
     if (!validateCapture(message)) return { state: 'unknown', reason: 'invalid-capture' };
     const preferences = visualPreferences(state), presentation = presentationPreferences(state);
     if (message.mediaKind !== undefined && !['image','video'].includes(message.mediaKind)) return {state:'unknown',reason:'invalid-media-kind'};

@@ -14,7 +14,7 @@ try {
  <video id="supported" muted playsinline></video><video id="unreadable"></video><img id="zero" style="width:0;height:0" src="${picture}">
  <script>window.jobs=[];window.chrome={runtime:{sendMessage:m=>{
  if(m.type==='getVisualSettings')return new Promise(r=>window.settingsReply=r);
- if(m.type==='cancelVisualMedia')return Promise.resolve({});
+ if(m.type==='cancelVisualMedia'||m.type==='warmVisualEngine')return Promise.resolve({});
  return new Promise(r=>jobs.push({id:m.id,kind:m.mediaKind,reply:r}));}},storage:{onChanged:{addListener:f=>window.change=f}}};<\/script>
  <script src="visual/capture.js"><\/script><script>
  const realCapture=HisnVisualCapture.capture;
@@ -27,7 +27,8 @@ try {
  document.getElementById('frames').append(frame);
  await new Promise(r=>frame.onload=r);
  const w=frame.contentWindow,d=frame.contentDocument,images=[...d.querySelectorAll('#gallery img')];
- const hidden=node=>w.getComputedStyle(node).visibility==='hidden';
+ // Withheld: invisible, or under the strong blur shown only while being checked.
+ const hidden=node=>{const style=w.getComputedStyle(node);return style.visibility==='hidden'||node.dataset.hisnVisual==='pending'&&/blur\(/.test(style.filter);};
  check(images.length===240&&images.every(hidden),'computed CSS withholds all 240 simultaneously visible images before preferences resolve');
  await w.videoReady;
  w.settingsReply({inspectVisual:true,personBlur:'off'});

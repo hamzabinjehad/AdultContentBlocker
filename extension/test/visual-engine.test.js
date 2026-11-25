@@ -1,7 +1,7 @@
 // Exercise the canonical engine factory with model transports mocked. Numeric
 // model quality is tested separately with the real bundled engine in Helium.
 import { adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections, personDecision,
-  squareFrame, unpadFaces, visualPreferences, PERSON_MODES, validateCapture, needsFaceres, needsOarriaga, faceresPrediction } from '../visual/decisions.js';
+  squareFrame, unpadFaces, visualPreferences, PERSON_MODES, validateCapture, decodeCapture, needsFaceres, needsOarriaga, faceresPrediction } from '../visual/decisions.js';
 import { LocalInferenceQueue } from '../visual/queue.js';
 let checks = 0;
 const check = (ok, label) => { checks++; if (!ok) throw new Error(label); };
@@ -49,7 +49,7 @@ function harness({ explicit = false, failedFaceLoad = false, malformedFaces = fa
   } });
   const createVisualEngine = sourceFactory({ tf, Human, loadNSFW, MobileNetV2Model: {}, setWasmPaths: paths => { calls.wasmPaths.push(paths); },
     adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections, personDecision, squareFrame, unpadFaces,
-    visualPreferences, PERSON_MODES, validateCapture, needsFaceres, needsOarriaga, faceresPrediction, LocalInferenceQueue });
+    visualPreferences, PERSON_MODES, validateCapture, decodeCapture, needsFaceres, needsOarriaga, faceresPrediction, LocalInferenceQueue });
   return { engine: createVisualEngine({ baseURL: 'https://local.test/', backend }), calls,
     finishFaceLoad: () => finishFaceLoad() };
 }

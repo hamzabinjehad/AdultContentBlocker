@@ -1,4 +1,4 @@
-import { validateCapture, visualPreferences, adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections,
+import { validateCapture, decodeCapture, visualPreferences, adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections,
   personDecision, squareFrame, unpadFaces, needsFaceres, needsOarriaga, faceresPrediction } from '../visual/decisions.js';
 import { LocalInferenceQueue } from '../visual/queue.js';
 import {visualPolicyWeakens,validatePatch} from '../lib/policy.js';
@@ -148,4 +148,33 @@ check(!personDecision([fr('female', .2)], [], 'male', 100, 100).blur, 'men setti
 check(personDecision([fr('female', .18)], [], 'male', 100, 100).blur, 'men setting covers a face FaceRes rates 0.59 female');
 check(personDecision([fr('male', .1, 12)], [], 'female', 100, 100).blur, 'a small FaceRes face still needs a confident estimate to be shown');
 check(personDecision([fr('female', .9)], [], 'female', 100, 100).blur, 'a matching FaceRes face is covered');
+{
+  // Both decoders must give the same bytes: the native one and the portable loop.
+  const same = (bytes, expected) => bytes instanceof Uint8Array && bytes.length === expected.length && expected.every((value, index) => bytes[index] === value);
+  const native = Uint8Array.fromBase64, portableAtob = globalThis.atob;
+  const table = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  // A small reference atob, so the portable path is exercised in a shell without one.
+  const referenceAtob = text => {
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(text) || text.length % 4) throw new Error('invalid');
+    let out = '';
+    for (let i = 0; i < text.length; i += 4) {
+      const n = [0, 1, 2, 3].map(k => text[i + k] === '=' ? 0 : table.indexOf(text[i + k]));
+      const word = (n[0] << 18) | (n[1] << 12) | (n[2] << 6) | n[3];
+      out += String.fromCharCode((word >> 16) & 255);
+      if (text[i + 2] !== '=') out += String.fromCharCode((word >> 8) & 255);
+      if (text[i + 3] !== '=') out += String.fromCharCode(word & 255);
+    }
+    return out;
+  };
+  if (typeof native === 'function') {
+    check(same(decodeCapture('AAECA/8='), [0, 1, 2, 3, 255]), 'the native decoder returns the capture bytes');
+    check(decodeCapture('not base64!') === null, 'the native decoder rejects text that is not base64');
+  }
+  Uint8Array.fromBase64 = undefined; globalThis.atob = referenceAtob;
+  try {
+    check(same(decodeCapture('AAECA/8='), [0, 1, 2, 3, 255]), 'the portable decoder returns the same bytes');
+    check(decodeCapture('not base64!') === null, 'the portable decoder rejects text that is not base64');
+    check(decodeCapture(null) === null && decodeCapture(12) === null, 'only text is decoded');
+  } finally { Uint8Array.fromBase64 = native; globalThis.atob = portableAtob; }
+}
 print(`  ${checks}/${checks} visual checks passed`);

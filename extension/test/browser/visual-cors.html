@@ -38,8 +38,11 @@ try {
     <script>window.fixtureErrors=[];addEventListener('error',event=>fixtureErrors.push(event.message||event.target?.src||'resource error'),true);
     window.jobs=[];window.chrome={runtime:{sendMessage:message=>{
       if(message.type==='getVisualSettings')return new Promise(resolve=>window.settingsReply=resolve);
-      if(message.type==='cancelVisualMedia')return Promise.resolve({});
+      if(message.type==='cancelVisualMedia'||message.type==='warmVisualEngine')return Promise.resolve({});
       if(message.type!=='inspectVisualMedia')return Promise.resolve({});
+      // A picture whose anonymous reload was refused is sent by address for the
+      // extension to fetch. This fixture has no extension: that fetch fails.
+      if(message.url!==undefined&&message.rgba===undefined){(window.urlJobs??=[]).push(message.url);return Promise.resolve({state:'unknown',reason:'fetch-failed'});}
       const captured=window.lastCapture;
       const actual=captured&&window.directCapture(captured.node);
       return new Promise(resolve=>jobs.push({message,reply:resolve,node:captured?.node,
@@ -62,7 +65,8 @@ try {
   const doc = frame.contentDocument;
   const images = [...doc.querySelectorAll('img')];
   const byId = id => doc.getElementById(id);
-  const hidden = node => win.getComputedStyle(node).visibility === 'hidden';
+  // Withheld: invisible, or under the strong blur shown only while being checked.
+  const hidden = node => { const style = win.getComputedStyle(node); return style.visibility === 'hidden' || node.dataset.hisnVisual === 'pending' && /blur\(/.test(style.filter); };
   const originals = new Map(images.map(node => [node, node.currentSrc]));
   check(images.every(node => node.complete && node.naturalWidth === 32),
     'all image fixtures supply real decoded PNG pixels initially');
@@ -109,6 +113,8 @@ try {
     check(hidden(byId('positive')), 'a synthetic adult-positive verdict remains hidden after actual-image CORS reload');
     check(['clean', 'varying', 'author'].every(id => !hidden(byId(id))),
       'verified clean real cross-origin images are visible through the actual gate CSS');
+    check(win.urlJobs?.includes(denied) && byId('denied').getAttribute('crossorigin') === null,
+      'a refused anonymous reload gives the page its image back and asks the extension to fetch that address');
     check(hidden(byId('denied')) && !!byId('denied').dataset.hisnVisualReason,
       'a server that denies CORS remains explicitly unknown and hidden');
     check(win.jobs.length === cursor, 'unreadable image pixels are never invented or sent to the model');

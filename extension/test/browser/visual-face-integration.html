@@ -9,7 +9,7 @@ try{
  const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="160"><rect width="200" height="160" fill="steelblue"/></svg>');
  f.srcdoc=`<html><head><base href="${base}"><link rel="stylesheet" href="content/visual-gate.css"><style>img,video{width:200px;height:160px;object-fit:fill}</style></head><body><img src="${image}"><video></video>
  <script>window.settings={inspectVisual:false,personBlur:'female',personRegion:'faces',personEffect:'solid',personMedia:'images'};window.kinds=[];
- window.chrome={runtime:{sendMessage:async m=>{if(m.type==='getVisualSettings')return settings;if(m.type==='cancelVisualMedia')return {};kinds.push(m.mediaKind);return {state:'ready',adult:{block:settings.inspectVisual&&m.mediaKind==='image'},persons:{blur:true,regions:[{x:.2,y:.2,width:.3,height:.3}]}};}},storage:{onChanged:{addListener:f=>window.changed=f}}};
+ window.chrome={runtime:{sendMessage:async m=>{if(m.type==='getVisualSettings')return settings;if(m.type==='cancelVisualMedia'||m.type==='warmVisualEngine')return {};kinds.push(m.mediaKind);return {state:'ready',adult:{block:settings.inspectVisual&&m.mediaKind==='image'},persons:{blur:true,regions:[{x:.2,y:.2,width:.3,height:.3}]}};}},storage:{onChanged:{addListener:f=>window.changed=f}}};
  window.HisnVisualCapture={capture:()=>({width:1,height:1,rgba:'AAAAAA=='})};<\/script>
  <script src="content/visual-effects.js"><\/script><script src="content/visual.js"><\/script></body></html>`;
  document.getElementById('frames').append(f);await new Promise(r=>f.onload=r);

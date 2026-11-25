@@ -1,0 +1,39 @@
+/* The pause and closed page. Same neutral grays and one gold as the Mac panel,
+   dark in both appearances: it is a quiet interruption, not a warning. */
+:root { color-scheme: dark; --bg: #1f1f1f; --card: #2a2a2a; --ink: #fff; --muted: #999; --line: rgba(255,255,255,.1);
+        --gold: #f0b93c; --gold-ink: #2a1d00; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+       display: grid; place-items: center; padding: 24px; }
+.moment { width: min(440px, 100%); background: var(--card); border: 1px solid var(--line); border-radius: 24px;
+          padding: 28px 28px 22px; display: grid; justify-items: center; gap: 10px; text-align: center;
+          box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+.moment[data-mode="loading"] > :not(.brand) { visibility: hidden; }
+.brand { margin: 0; font-size: 12px; font-weight: 600; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.eyebrow { margin: 0; font-size: 13px; font-weight: 600; color: var(--gold); min-height: 1.2em; }
+h1 { margin: 2px 0 0; font-size: 22px; line-height: 1.25; font-weight: 700; text-wrap: balance; overflow-wrap: anywhere; }
+.detail { margin: 0; color: var(--muted); font-size: 14px; }
+.own { margin: 4px 0 0; font-size: 15px; font-weight: 500; color: #f6d98c; }
+.glyph { font-size: 44px; line-height: 1; margin: 4px 0; }
+.ring { position: relative; width: 120px; height: 120px; margin: 6px 0; display: grid; place-items: center; }
+.ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 6; }
+.ring .track { stroke: rgba(255,255,255,.1); }
+.ring .fill { stroke: var(--gold); stroke-linecap: round; stroke-dasharray: 326.7; stroke-dashoffset: 326.7; transition: stroke-dashoffset 1s linear; }
+.ring span { font: 600 34px/1 ui-rounded, -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.actions { display: grid; gap: 8px; width: 100%; margin-top: 12px; }
+button { font: inherit; font-weight: 600; font-size: 14px; height: 42px; border-radius: 99px; border: 0; cursor: pointer;
+         background: rgba(255,255,255,.1); color: var(--ink); }
+button.primary { background: linear-gradient(180deg, #f6c858, #e0a426); color: var(--gold-ink); }
+button.quiet { background: transparent; color: var(--muted); height: 34px; font-weight: 500; }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.foot { margin: 4px 0 0; font-size: 12px; color: var(--muted); min-height: 1.4em; }
+.breath { display: grid; justify-items: center; gap: 8px; margin: 6px 0; }
+.breath-dot { width: 84px; height: 84px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff1c4, var(--gold) 60%, #c98d22);
+              animation: breathe 10s ease-in-out infinite; }
+.breath p { margin: 0; font-size: 14px; color: var(--muted); }
+@keyframes breathe { 0% { transform: scale(.6); } 40% { transform: scale(1); } 100% { transform: scale(.6); } }
+@media (prefers-reduced-motion: reduce) { .breath-dot { animation: none; } .ring .fill { transition: none; } }
+[hidden] { display: none !important; }

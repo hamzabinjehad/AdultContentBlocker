@@ -388,6 +388,8 @@ r = await message({ type: 'getVisualSettings' }, PAGE);
 check(r.inspectVisual === true && r.personBlur === 'all' && r.lockUntil === undefined
   && typeof r.available === 'boolean', 'content receives only visual preferences and a runtime availability answer');
 check((await message({ type: 'getVisualStatus' }, PAGE)).reason === 'forbidden-sender', 'content cannot inspect engine privileged channel');
+check((await message({ type: 'warmVisualEngine' }, PAGE)).ok === true, 'a page with pictures may ask for the models to be warmed');
+check((await message({ type: 'warmVisualEngine' }, OPTIONS)).reason === 'forbidden-sender', 'only a page frame sends the warm-up');
 check((await message({ type: 'inspectVisualMedia', id: 'x', width: 1, height: 1, rgba: 'AAAAAA==' }, OPTIONS)).reason === 'forbidden-sender', 'options cannot impersonate content capture');
 check((await message({ type: 'inspectVisualMedia', id: 'x', width: 1, height: 1, rgba: 'AAAAAA==' }, PAGE)).state === 'unavailable', 'unsupported engine never returns clean');
 state.lockUntil = 0;

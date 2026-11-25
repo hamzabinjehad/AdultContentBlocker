@@ -19,7 +19,7 @@
 import { isLocked } from "./lib/policy.js";
 import { createLock } from "./lib/serial.js";
 import { describeEnforcement } from "./lib/status.js";
-import { cancelVisualTab, getVisualStatus, handleVisualMessage, visualSupported } from "./visual/broker.js";
+import { cancelVisualTab, getVisualStatus, handleVisualMessage, prepareVisualEngine, visualSupported } from "./visual/broker.js";
 import { DEFAULT_STATE, getState, toolbarStatus } from "./worker/state.js";
 import { applyRules } from "./worker/rules.js";
 import { pollNative } from "./worker/native.js";
@@ -30,12 +30,17 @@ import {
 } from "./worker/inspection.js";
 import { injectScannerIntoOpenTabs, syncVisualScanning } from "./worker/scanners.js";
 import { ensureBlocked } from "./worker/tabs.js";
+import { distractionMessage, distractionTick, startDistraction } from "./worker/distraction.js";
 
 // The worker's single write transaction. Taken at the entry points (messages,
 // alarms, lifecycle events), never inside the functions they call, so a
 // transaction that calls another (pollNative → handleNativeLoss) does not wait
 // for itself. Reads (`getState`, `scoreText`) do not take it.
 const transaction = createLock();
+
+// Unrot's limits, waits and Focus for pages. Separate from the adult layers
+// above and below: it never relaxes them, and its failures leave pages open.
+startDistraction();
 
 // --------------------------------------------------------------------------
 // Lifecycle
@@ -113,8 +118,17 @@ chrome.runtime.onStartup.addListener(async () => {
   await transaction(pollNative);
 });
 
+// Site access can be narrowed or restored from the browser's own menus at any
+// moment. Tell the app at once rather than at the next heartbeat.
+for (const event of ["onAdded", "onRemoved"]) {
+  chrome.permissions?.[event]?.addListener?.(() => { transaction(pollNative).catch(() => {}); });
+}
+
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === "heartbeat") await transaction(pollNative);
+  if (alarm.name === "heartbeat") {
+    await transaction(pollNative);
+    await distractionTick().catch(() => {});
+  }
   if (alarm.name === "listUpdate") await updateList(transaction);
 });
 
@@ -136,7 +150,8 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
  */
 const PAGE_MESSAGES = new Set(["getState", "update", "forceSync", "reportWrongBlock",
                                "reportWrongWord", "resolveDisputed", "getVisualStatus", "repairProtection",
-                               "updateListNow"]);
+                               "updateListNow",
+                               "distractionInfo", "distractionOpen", "distractionSnooze", "distractionRecheck"]);
 
 function fromExtensionPage(sender) {
   return sender?.id === chrome.runtime.id
@@ -147,7 +162,7 @@ function fromExtensionPage(sender) {
 function senderAllowed(type, sender) {
   if (PAGE_MESSAGES.has(type)) return fromExtensionPage(sender);
   if (type === "scoreText" || type === "scoreFeedItem") return sender?.id === chrome.runtime.id && !!sender.tab;
-  if (["getVisualSettings", "inspectVisualMedia", "cancelVisualMedia"].includes(type)) {
+  if (["getVisualSettings", "inspectVisualMedia", "cancelVisualMedia", "warmVisualEngine"].includes(type)) {
     return sender?.id === chrome.runtime.id && Number.isInteger(sender?.tab?.id)
       && sender.tab.id >= 0 && Number.isInteger(sender.frameId) && sender.frameId >= 0;
   }
@@ -177,6 +192,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           available: visualSupported() });
         break;
       }
+      case "warmVisualEngine":
+        // A page that has pictures says so before the first one finishes
+        // loading, so the models load during the download instead of after
+        // it. Only an opted-in state loads anything, and a page with no
+        // media never asks.
+        prepareVisualEngine(await getState()).catch(() => {});
+        sendResponse({ ok: true });
+        break;
       case "getVisualStatus":
         sendResponse(await getVisualStatus(await getState()));
         break;
@@ -208,6 +231,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           return describeEnforcement(state).status === "applied"
             ? { ok: true, state } : { ok: false, reason: "enforcement-failed", state };
         }));
+        break;
+      case "distractionInfo":
+      case "distractionOpen":
+      case "distractionSnooze":
+      case "distractionRecheck":
+        sendResponse(Number.isInteger(_sender?.tab?.id)
+          ? await distractionMessage({ type: msg.type }, _sender.tab.id)
+          : { ok: false, reason: "no-tab" });
         break;
       case "scoreText":
         sendResponse(await scoreText(msg.zones || {}, _sender));

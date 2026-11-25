@@ -1,7 +1,24 @@
 (() => {
   if (globalThis.HisnVisualCapture) return;
   const edge = 384;
-  function capture(media, doc = document) {
+  // The browser's own base64 encoder does a 384px frame in about a
+  // millisecond; building it from character chunks took about twenty. The
+  // output is the same standard padded alphabet either way.
+  function encode(pixels) {
+    try {
+      const bytes = new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.byteLength);
+      if (typeof bytes.toBase64 === 'function') return bytes.toBase64();
+    } catch { /* Fall through to the portable path. */ }
+    const chunks = [];
+    for (let offset = 0; offset < pixels.length; offset += 8192) chunks.push(String.fromCharCode(...pixels.subarray(offset, offset + 8192)));
+    return btoa(chunks.join(''));
+  }
+  // `square` asks for the adult model's own input: the whole frame stretched
+  // to 224x224, which the engine passes on unchanged. A third of the bytes of
+  // a 384px frame to encode, send twice and hash. Only for a check that looks
+  // for adult content alone; face estimates need the true proportions.
+  const square = 224;
+  function capture(media, doc = document, { adultOnly = false } = {}) {
     // Changing an IMG's CORS mode can temporarily retain an older decoded
     // bitmap. Never inspect that bitmap while the actual reload is pending.
     if (media.complete === false) return { state: 'unknown', reason: 'media-not-ready' };
@@ -10,16 +27,14 @@
     if (!width || !height) return { state: 'unknown', reason: 'media-not-ready' };
     const scale = Math.min(1, edge / Math.max(width, height));
     const canvas = doc.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(width * scale));
-    canvas.height = Math.max(1, Math.round(height * scale));
+    canvas.width = adultOnly ? square : Math.max(1, Math.round(width * scale));
+    canvas.height = adultOnly ? square : Math.max(1, Math.round(height * scale));
     try {
       const context = canvas.getContext('2d', { willReadFrequently: true });
       if (!context) return { state: 'unknown', reason: 'canvas-unavailable' };
       context.drawImage(media, 0, 0, canvas.width, canvas.height);
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-      const chunks = [];
-      for (let offset = 0; offset < pixels.length; offset += 8192) chunks.push(String.fromCharCode(...pixels.subarray(offset, offset + 8192)));
-      const rgba = btoa(chunks.join(''));
+      const rgba = encode(pixels);
       pixels.fill(0);
       return { width: canvas.width, height: canvas.height, rgba };
     } catch { return { state: 'unknown', reason: 'inaccessible-pixels' }; }

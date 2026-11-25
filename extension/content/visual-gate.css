@@ -3,7 +3,18 @@
    Selected media of every nonzero size is checked; small thumbnails are not
    exempt. Pending/unknown (including zero-area and unreadable media) remains
    withheld until a verified result or an explicit applicable opt-out. */
-html:not([data-hisn-visual-gate="off"]):not([data-hisn-visual-images="off"]) img:not([data-hisn-visual="checked"]),
-html:not([data-hisn-visual-gate="off"]):not([data-hisn-visual-videos="off"]) video:not([data-hisn-visual="checked"]){
+html:not([data-hisn-visual-gate="off"]):not([data-hisn-visual-images="off"]) img:not([data-hisn-visual="checked"]):not([data-hisn-visual="pending"]),
+html:not([data-hisn-visual-gate="off"]):not([data-hisn-visual-videos="off"]) video:not([data-hisn-visual="checked"]):not([data-hisn-visual="pending"]){
   visibility:hidden!important;
+}
+/* Being checked right now: covered by the same strong blur the person cover
+   uses, not removed from the page. The wait for a verdict is short, and a page
+   whose pictures are all missing reads as broken; a blurred one reads as
+   loading. Only this state is blurred. Media nobody has looked at yet (no
+   marker), media that could not be checked (unknown) and media judged adult
+   stay hidden by the rule above. The clip keeps the blur inside the box. */
+html:not([data-hisn-visual-gate="off"]):not([data-hisn-visual-images="off"]) img[data-hisn-visual="pending"],
+html:not([data-hisn-visual-gate="off"]):not([data-hisn-visual-videos="off"]) video[data-hisn-visual="pending"]{
+  filter:blur(24px) saturate(.6)!important;
+  clip-path:inset(0)!important;
 }

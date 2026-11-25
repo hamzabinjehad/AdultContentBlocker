@@ -55,7 +55,9 @@ export function createToolbarStatus(action) {
 
   return {
     update(state, language = "en") {
-      const status = describeEnforcement(state).status;
+      // Limited site access is a failure the person must fix, whatever the
+      // rule receipt says: the rules reach no page.
+      const status = state?.siteAccess === false ? "failed" : describeEnforcement(state).status;
       const key = `${status}:${language === "ar" ? "ar" : "en"}`;
       if (pending ? tailKey === key : successfulKey === key) return tail;
       pending++; tailKey = key;

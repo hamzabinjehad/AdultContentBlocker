@@ -151,6 +151,9 @@ def validate_visual_assets(read_bytes, files, enabled=False) -> None:
         if relative.startswith("/") or ".." in parts or relative != PurePosixPath(relative).as_posix():
             raise PreparationError(f"visual artifact escapes bundle: {relative}")
         name = f"visual/{relative}"
+        # Recorded by the shared engine build, deliberately not shipped here.
+        if name in ANDROID_ONLY_VISUAL:
+            continue
         if name not in files:
             raise PreparationError(f"missing recorded visual artifact: {name}")
         if not isinstance(record, dict):

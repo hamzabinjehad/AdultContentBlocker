@@ -244,4 +244,14 @@ function harness({holdPreparation=false} = {}) {
   globalThis.chrome.runtime.sendMessage = send;
   await disableVisualEngine();
 }
+{
+  const h = harness();
+  const byURL = extra => handleVisualMessage({ type: 'inspectVisualMedia', id: 'u1', mediaKind: 'image', url: 'https://pictures.example/a.jpg', ...extra }, sender(), enabled);
+  check((await byURL({ mediaKind: 'video' })).reason === 'invalid-capture', 'only an image may be sent by address');
+  check((await byURL({ url: 'file:///etc/hosts' })).reason === 'invalid-capture', 'only a web address is fetched');
+  check((await byURL({ url: 'data:image/png;base64,AA' })).reason === 'invalid-capture', 'a data address is not fetched');
+  // This shell has no network: a fetch that cannot produce pixels is no verdict.
+  check((await byURL()).reason === 'fetch-failed', 'a picture that cannot be fetched is unknown, never clean');
+  await disableVisualEngine();
+}
 print(`  ${checks}/${checks} visual broker race checks passed`);

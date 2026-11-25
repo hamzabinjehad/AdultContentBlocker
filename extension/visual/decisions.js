@@ -74,6 +74,20 @@ export function validateCapture(message) {
     && /^[A-Za-z0-9+/]*={0,2}$/.test(rgba);
 }
 
+/** The capture's bytes. The browser's own decoder turns a 384px frame into
+ *  bytes in under a millisecond; a per-character callback took about 40 ms,
+ *  which was nearly half of a whole verdict. Both paths give the same bytes,
+ *  and anything that is not valid base64 is null, never a partial frame. */
+export function decodeCapture(rgba) {
+  if (typeof rgba !== 'string') return null;
+  try {
+    if (typeof Uint8Array.fromBase64 === 'function') return Uint8Array.fromBase64(rgba);
+    const binary = atob(rgba), length = binary.length, bytes = new Uint8Array(length);
+    for (let index = 0; index < length; index++) bytes[index] = binary.charCodeAt(index);
+    return bytes;
+  } catch { return null; }
+}
+
 export function adultDecision(predictions) {
   const scores = Object.fromEntries(CLASSES.map(name => [name, 0]));
   if (!Array.isArray(predictions) || predictions.length !== CLASSES.length) return null;

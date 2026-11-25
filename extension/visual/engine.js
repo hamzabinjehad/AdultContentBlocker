@@ -4,7 +4,7 @@ import { load as loadNSFW } from 'nsfwjs/core';
 import { MobileNetV2Model } from 'nsfwjs/models/mobilenet_v2';
 import Human from '@vladmandic/human';
 import { adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections, personDecision, squareFrame, unpadFaces,
-  visualPreferences, PERSON_MODES, validateCapture, needsFaceres, needsOarriaga, faceresPrediction } from './decisions.js';
+  visualPreferences, PERSON_MODES, validateCapture, decodeCapture, needsFaceres, needsOarriaga, faceresPrediction } from './decisions.js';
 import { LocalInferenceQueue } from './queue.js';
 
 // WebGL is the fastest browser backend when the platform exposes a usable
@@ -13,6 +13,48 @@ import { LocalInferenceQueue } from './queue.js';
 // A requested backend is tried first, then the rest of this ladder, so a
 // missing graphics or WASM capability degrades instead of disabling the layer.
 const BACKENDS = Object.freeze(['webgl', 'wasm', 'cpu']);
+// The adult model looks at a 224x224 square: NSFWJS stretches any other input
+// to it. Handing it that square ourselves matters for speed, not only for
+// size. The GPU backend compiles a program per input shape, and pictures on a
+// page nearly all differ in size: measured in Helium, each new size cost 0.5
+// to 3.7 seconds, against 20-35 ms for a shape already seen. One fixed shape
+// is compiled once, at load.
+const ADULT_EDGE = 224;
+
+// The capture stretched to the model's square on a 2D canvas, the same
+// stretch NSFWJS applies itself. Null where no canvas exists (the caller then
+// passes the capture as it is, which NSFWJS resizes on its own).
+function adultSquare(bytes, width, height) {
+  if (width === ADULT_EDGE && height === ADULT_EDGE) return null;
+  if (typeof OffscreenCanvas !== 'function' || typeof ImageData !== 'function') return null;
+  const source = new OffscreenCanvas(width, height), square = new OffscreenCanvas(ADULT_EDGE, ADULT_EDGE);
+  try {
+    const from = source.getContext('2d'), to = square.getContext('2d', { willReadFrequently: true });
+    if (!from || !to) return null;
+    from.putImageData(new ImageData(new Uint8ClampedArray(bytes.buffer, bytes.byteOffset, bytes.length), width, height), 0, 0);
+    to.imageSmoothingEnabled = true; to.imageSmoothingQuality = 'medium';
+    to.drawImage(source, 0, 0, ADULT_EDGE, ADULT_EDGE);
+    const pixels = to.getImageData(0, 0, ADULT_EDGE, ADULT_EDGE).data;
+    return new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.byteLength);
+  } catch { return null; }
+  finally { source.width = source.height = square.width = square.height = 0; }
+}
+
+// The face detector has the same cost per input shape. Each capture is padded,
+// never resampled, into the smallest of these squares that holds it: the
+// detector sees exactly the pixels it saw before, and compiles for at most six
+// shapes instead of one per picture size. Neighbouring sizes differ by at most
+// a quarter, so a picture fills at least 80% of its square. (Scaling every
+// capture up to one square was tried: the second resampling lost borderline
+// faces that the padded original found.)
+const FACE_EDGES = Object.freeze([128, 160, 192, 240, 288, 384]);
+
+function faceFrame(width, height) {
+  const frame = squareFrame(width, height);
+  if (!frame) return null;
+  const edge = FACE_EDGES.find(candidate => candidate >= frame.edge) ?? frame.edge;
+  return { edge, x: Math.floor((edge - width) / 2), y: Math.floor((edge - height) / 2) };
+}
 
 export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
   if (typeof baseURL !== 'string' || !baseURL.endsWith('/')) throw new Error('Missing packaged model base');
@@ -63,7 +105,17 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
       if (expectedEpoch !== epoch) return;
       // NSFWJS's loader already runs one zero-tensor prediction as its own
       // warm-up, so the first real capture is not paying kernel startup here.
-      if (needAdult) adult = await loadNSFW('MobileNetV2', { modelDefinitions: [MobileNetV2Model] });
+      if (needAdult) {
+        const model = await loadNSFW('MobileNetV2', { modelDefinitions: [MobileNetV2Model] });
+        // Compile the one input shape every capture is turned into, so the
+        // first picture of a page does not pay for it.
+        let warm;
+        try {
+          warm = tf.tidy(() => tf.zeros([ADULT_EDGE, ADULT_EDGE, 4], 'int32').slice([0, 0, 0], [-1, -1, 3]));
+          await model.classify(warm, 5);
+        } catch { /* warm-up only */ } finally { warm?.dispose(); }
+        adult = model;
+      }
       if (expectedEpoch !== epoch) return;
       if (needHuman) {
         const candidate = new Human({ backend: tf.getBackend(), modelBasePath: `${baseURL}models/`,
@@ -86,6 +138,12 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
           body: { enabled: false }, hand: { enabled: false }, object: { enabled: false },
           segmentation: { enabled: false } });
         await candidate.load();
+        // Compile the detector for the largest square, the one most captures use.
+        let warm;
+        try {
+          warm = tf.tidy(() => tf.zeros([FACE_EDGES.at(-1), FACE_EDGES.at(-1), 3], 'int32'));
+          await candidate.detect(warm);
+        } catch { /* warm-up only */ } finally { warm?.dispose(); }
         // Human can resolve load() after a swallowed asset error. Do not
         // advertise a constructed object as a successfully loaded detector.
         const detector = candidate.models.stats().modelStats.find(model => model.name === 'blazeface');
@@ -117,15 +175,22 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
       if (!prefs.inspectVisual || !adult) throw error;
     }
     if (!selected.inspectVisual && selected.personBlur === 'off') return { state: 'disabled' };
-    const bytes = Uint8Array.from(atob(capture.rgba), char => char.charCodeAt(0));
-    if (bytes.length !== capture.width * capture.height * 4) return { state: 'unknown', reason: 'invalid-capture' };
+    const bytes = decodeCapture(capture.rgba);
+    if (!bytes || bytes.length !== capture.width * capture.height * 4) return { state: 'unknown', reason: 'invalid-capture' };
     let tensor, faceTensor;
     try {
-      tensor = tf.tidy(() => tf.tensor3d(bytes, [capture.height, capture.width, 4], 'int32').slice([0, 0, 0], [-1, -1, 3]));
+      const whole = () => tensor ??= tf.tidy(() => tf.tensor3d(bytes, [capture.height, capture.width, 4], 'int32').slice([0, 0, 0], [-1, -1, 3]));
       let adultResult = { block: false, scores: null, inspected: false };
       let persons = { blur: false, mode: prefs.personBlur, regions: [], estimated: true };
       if (prefs.inspectVisual) {
-        const decision = adultDecision(await adult.classify(tensor, 5));
+        const square = adultSquare(bytes, capture.width, capture.height);
+        let input;
+        let predictions;
+        try {
+          input = square ? tf.tidy(() => tf.tensor3d(square, [ADULT_EDGE, ADULT_EDGE, 4], 'int32').slice([0, 0, 0], [-1, -1, 3])) : null;
+          predictions = await adult.classify(input ?? whole(), 5);
+        } finally { input?.dispose(); square?.fill(0); }
+        const decision = adultDecision(predictions);
         if (!decision) return { state: 'unknown', reason: 'invalid-model-output' };
         adultResult = { ...decision, inspected: true };
         // A positive adult verdict is sufficient. An optional face model error
@@ -137,8 +202,8 @@ export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
         if (!human || (needsOarriaga(prefs) && !gender) || (needsFaceres(prefs) && !humanDescription)) {
           return { state: 'unknown', reason: 'model-load-failed', adult: adultResult };
         }
-        const frame = squareFrame(capture.width, capture.height);
-        faceTensor = tf.tidy(() => tf.pad(tensor, [[frame.y, frame.edge - capture.height - frame.y],
+        const frame = faceFrame(capture.width, capture.height);
+        faceTensor = tf.tidy(() => tf.pad(whole(), [[frame.y, frame.edge - capture.height - frame.y],
           [frame.x, frame.edge - capture.width - frame.x], [0, 0]]));
         // Human's default detector resizes to a square. Our own letterbox keeps
         // face proportions without depending on its square-coordinate path.

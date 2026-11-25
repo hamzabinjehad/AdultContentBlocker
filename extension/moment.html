@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title data-i18n="moment.docTitle">A moment</title>
+<link rel="stylesheet" href="moment.css">
+</head>
+<body>
+  <main class="moment" id="moment" data-mode="loading">
+    <p class="brand"><span class="leaf" aria-hidden="true">🌱</span><span>Unrot</span></p>
+    <p class="eyebrow" id="eyebrow"></p>
+    <div class="ring" id="ring" role="timer" aria-live="off" hidden>
+      <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="52"/><circle class="fill" id="ringFill" cx="60" cy="60" r="52"/></svg>
+      <span id="ringNumber"></span>
+    </div>
+    <div class="glyph" id="glyph" aria-hidden="true" hidden>🌙</div>
+    <h1 id="title"></h1>
+    <p class="detail" id="detail"></p>
+    <p class="own" id="own" hidden></p>
+    <div class="breath" id="breath" hidden>
+      <div class="breath-dot" aria-hidden="true"></div>
+      <p id="breathWord" role="status"></p>
+    </div>
+    <div class="actions">
+      <button type="button" class="primary" id="primary"></button>
+      <button type="button" id="secondary" hidden></button>
+      <button type="button" class="quiet" id="breathe" data-i18n="moment.breathe" hidden>Breathe instead</button>
+    </div>
+    <p class="foot" id="foot" role="status"></p>
+  </main>
+<script type="module" src="moment.js"></script>
+</body>
+</html>

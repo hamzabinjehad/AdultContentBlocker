@@ -62,6 +62,31 @@ function incognitoAccess() {
 }
 
 /**
+ * Whether the browser lets this extension act on every site.
+ *
+ * Chrome's site-access setting ("On click", "On specific sites") leaves the
+ * extension enabled, its worker running and its heartbeat alive, while taking
+ * away every page it could read or redirect. Without this answer that state
+ * looks exactly like full protection to the app. `undefined` means "no
+ * answer" (an engine without the API), never "limited".
+ */
+export function siteAccess() {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (value) => { if (!done) { done = true; resolve(value); } };
+    try {
+      if (typeof chrome?.permissions?.contains !== "function") { finish(undefined); return; }
+      const timer = setTimeout(() => finish(undefined), 1000);
+      const settle = (granted) => { clearTimeout(timer); finish(typeof granted === "boolean" ? granted : undefined); };
+      const pending = chrome.permissions.contains({ origins: ["<all_urls>"] }, settle);
+      if (pending && typeof pending.then === "function") pending.then(settle, () => settle(undefined));
+    } catch {
+      finish(undefined);
+    }
+  });
+}
+
+/**
  * Ask the native app for the authoritative lock state.
  *
  * A malformed or timed-out reply is a visibility failure first: it marks the
@@ -76,6 +101,13 @@ export async function pollNative() {
     incognitoAllowed = await incognitoAccess();
     const message = { type: "getLockState" };
     if (typeof incognitoAllowed === "boolean") message.incognitoAllowed = incognitoAllowed;
+    // Sent only when known. `false` tells the app this heartbeat is not
+    // coverage; the popup reads the same answer from the stored state.
+    const access = await siteAccess();
+    if (typeof access === "boolean") {
+      message.siteAccess = access;
+      if ((await getState()).siteAccess !== access) await setState({ siteAccess: access });
+    }
     reply = await withTimeout(
       chrome.runtime.sendNativeMessage(NATIVE_HOST, message),
       NATIVE_TIMEOUT_MS, "native host");

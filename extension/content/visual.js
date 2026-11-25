@@ -11,7 +11,7 @@
   // Completed verdicts belong to their DOM nodes, independently of the 128
   // active preparation slots. Weak keys do not retain old gallery/feed nodes.
   const retained = new WeakMap();
-  let prefs = { inspectVisual: false, personBlur: 'off' }, busy = false, stopped = false, policyRevision = 0, admissionCursor = 0;
+  let prefs = { inspectVisual: false, personBlur: 'off' }, inflight = 0, stopped = false, policyRevision = 0, admissionCursor = 0;
   // True only when the worker says this browser cannot host the local engine
   // at all. Such a browser will never produce a ready verdict, so the
   // pre-display gate must open instead of leaving every image hidden forever.
@@ -29,6 +29,11 @@
     return `v_${Date.now()}_${++requestSequence}`;
   }
   let preferencesReady = false, preferenceRequest = false;
+  let warmed = false;
+  const MAX_INFLIGHT = 4;
+  // Pictures this far below the screen are checked before they are scrolled
+  // to, so reading down a page does not wait on each new row.
+  const AHEAD_PX = 700;
   function queuePass() {
     if (stopped || pumpTimer !== undefined) return;
     // Yield to the browser, but do not add a one-second wait per ready image.
@@ -54,10 +59,16 @@
     // Size is not evidence of safety. Every nonzero visible selected image or
     // video is admitted, including 16/32px thumbnails. Zero-area media has an
     // explicit unknown state and is reconsidered when its layout changes.
-    return rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.top <= innerHeight
+    return rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.top <= innerHeight + AHEAD_PX
       && rect.right >= 0 && rect.left <= innerWidth;
   };
-  const signature = node => node.tagName === 'VIDEO' ? Math.floor(node.currentTime / 2)
+  // A playing video is sampled every half second of playback, whether the
+  // page can read its frames or the extension follows it by address. It was
+  // every two seconds, and once only for a video from another site, which
+  // left everything after its opening frames unchecked. One check takes some
+  // 20-40 ms, so this is a small part of one core while a video plays.
+  const VIDEO_STEP = 0.5;
+  const signature = node => node.tagName === 'VIDEO' ? Math.floor(node.currentTime / VIDEO_STEP)
     : `${node.naturalWidth}:${node.naturalHeight}:${Math.floor(Date.now() / 10000)}`;
   const captureKey = result => typeof result?.captureKey === 'string' && /^[a-f0-9]{64}$/.test(result.captureKey)
     ? result.captureKey : null;
@@ -118,6 +129,25 @@
     record.corsMode = corsMode(node);
     return true;
   }
+  // The anonymous reload failed: this server does not let pages read its
+  // pictures. Give the page its own image back and have the extension fetch
+  // the same address instead (see visual/fetch-capture.js). Once per source.
+  function fetchFallback(record) {
+    const { node } = record, url = source(node);
+    if (node.tagName !== 'IMG' || !record.corsOwned || corsMode(node) !== 'anonymous'
+        || !/^https?:\/\//i.test(url) || record.urlSource === url) return false;
+    restoreImageMode(record);
+    record.corsMode = corsMode(node);
+    // The reload was tried for this source; do not start it again.
+    record.corsAttemptSource = url;
+    record.urlSource = url;
+    record.signature = null; record.retryAt = 0; record.failures = 0;
+    record.preparedSource = url;
+    if (!held(record)) mark(record, 'pending', 'awaiting-check');
+    queuePass();
+    return true;
+  }
+  const failedReload = node => node.tagName === 'IMG' && node.complete === true && !(node.naturalWidth > 0);
   function invalidate(record) {
     cancel(record);
     // A seek or stronger person preference is not permission to reveal a
@@ -132,6 +162,23 @@
     record.preparedSource = null;
     if (!held(record) && applies(record.node)) mark(record, 'pending', 'awaiting-check');
     queuePass();
+  }
+  // A seek, a quality switch or a loop restart of a video that is already
+  // showing is the same source at another moment. Blanking it until the next
+  // verdict made videos flicker and hid the first second after every seek,
+  // while protecting nothing: between two samples a playing video is not
+  // re-judged either. So it stays visible and is sampled again at once; a
+  // positive verdict still hides it. A new source is never treated this way.
+  const SOFT_EVENTS = ['seeking', 'resize', 'loadeddata', 'loadedmetadata'];
+  function resample(record, type) {
+    const { node } = record;
+    if (node.tagName !== 'VIDEO' || !SOFT_EVENTS.includes(type) || record.state !== 'checked' || record.hidden
+        || record.source !== source(node) || record.policyRevision !== policyRevision || record.route !== location.href
+        || !applies(node)) return false;
+    cancel(record);
+    record.signature = null; record.retryAt = 0;
+    queuePass();
+    return true;
   }
   function suspend(record) {
     record.resizeObserver?.disconnect();
@@ -211,6 +258,9 @@
           visibility: node.style.getPropertyValue('visibility'), visibilityPriority: node.style.getPropertyPriority('visibility'), hidden: false, blockedSource: null, listeners: [] };
         retained.set(node, record);
         mark(record, 'pending', 'awaiting-check');
+        // The first picture on a page starts the models while it is still
+        // downloading. One message per page; a failure changes nothing.
+        if (!warmed) { warmed = true; api.runtime.sendMessage({ type: 'warmVisualEngine' }).catch(() => {}); }
       }
       const rect = node.getBoundingClientRect();
       if (!(rect.width > 0 && rect.height > 0)) {
@@ -238,7 +288,7 @@
         // Only active preparation owns node listeners. Settled weak verdicts
         // use shared document handlers, so completion releases this capacity.
         for (const event of ['load', 'loadeddata', 'loadedmetadata', 'resize', 'seeking', 'emptied']) {
-          const handler = () => invalidate(record);
+          const handler = () => { if (!resample(record, event)) invalidate(record); };
           record.listeners.push([event, handler]); node.addEventListener(event, handler);
         }
         record.listeners.push(['playing', onMediaEvent]); node.addEventListener('playing', onMediaEvent);
@@ -256,7 +306,7 @@
       else queuePass();
       return;
     }
-    invalidate(record);
+    if (!resample(record, event.type)) invalidate(record);
   }
   function prepareImages() {
     if (typeof globalThis.HisnVisualCapture.probe !== 'function') return;
@@ -277,16 +327,28 @@
     if (stopped || document.hidden || !active()) return;
     discover();
     prepareImages();
-    if (busy) return;
+    // A few pictures may be on their way at once: the model judges the ones
+    // that are waiting together in a single call, so sending them one by one
+    // would waste it.
+    if (inflight >= MAX_INFLIGHT) return;
     // Favor fresh visible items, but reserve a video-monitoring slot after four
     // first checks so continuous scrolling cannot starve a playing source.
     // The inference engine itself remains strictly serialized.
     const priority = record => record.signature === null ? 0
       : freshStreak >= 4 && record.node.tagName === 'VIDEO' ? -1 : 1;
-    const records = [...media.values()].sort((a,b) => priority(a) - priority(b));
+    // Among equals: what is on screen before what is just below it, then the
+    // largest first, so the picture someone is looking at is not queued behind
+    // a row of icons.
+    const weight = record => {
+      const rect = record.node.getBoundingClientRect();
+      return (rect.top <= innerHeight ? 1e9 : 0) + Math.min(1e8, rect.width * rect.height);
+    };
+    const weights = new Map();
+    for (const record of media.values()) weights.set(record, weight(record));
+    const records = [...media.values()].sort((a,b) => priority(a) - priority(b) || weights.get(b) - weights.get(a));
     for (const record of records) {
       const node = record.node;
-      if (!visible(node) || !applies(node)) continue;
+      if (record.request || !visible(node) || !applies(node)) continue;
       if (record.retryAt > Date.now()) continue;
       // currentSrc covers <picture>/srcset choices; srcObject must be compared
       // by identity because distinct MediaStreams stringify identically.
@@ -310,8 +372,21 @@
       if (record.state !== 'checked') mark(record, 'pending', 'awaiting-check');
       const route = location.href, generation = record.generation, capturedSource = source(node), capturedMode = corsMode(node);
       let capture;
-      try { capture = globalThis.HisnVisualCapture.capture(node); }
-      catch { capture = { state: 'unknown', reason: 'capture-failed' }; }
+      // A video the page cannot read has no reload to try: its address goes
+      // to the extension the first time its pixels are refused.
+      const byURL = typeof record.urlSource === 'string' && record.urlSource === source(node) && (video || corsMode(node) === null);
+      if (byURL) capture = video ? { url: record.urlSource, at: node.currentTime } : { url: record.urlSource };
+      else {
+        try { capture = globalThis.HisnVisualCapture.capture(node, document, { adultOnly: !personApplies(node) }); }
+        catch { capture = { state: 'unknown', reason: 'capture-failed' }; }
+      }
+      if ((!capture || capture.state) && record.corsOwned && failedReload(node) && fetchFallback(record)) continue;
+      if (video && capture?.reason === 'inaccessible-pixels' && typeof source(node) === 'string'
+          && /^https?:\/\//i.test(source(node)) && record.urlSource !== source(node)) {
+        record.urlSource = source(node); record.signature = null;
+        queuePass();
+        continue;
+      }
       record.signature = sample;
       if (!capture || capture.state) {
         const retry = capture?.reason === 'inaccessible-pixels' && retryImageMode(record);
@@ -322,7 +397,9 @@
         queuePass();
         continue;
       }
-      busy = true;
+      inflight++;
+      // Let the next picture start while this one waits for its verdict.
+      if (inflight < MAX_INFLIGHT) queuePass();
       freshStreak = firstCheck ? Math.min(4, freshStreak + 1) : 0;
       let id;
       let timeout;
@@ -397,7 +474,7 @@
         record.request = null;
         suspend(record);
         if (record.state === 'pending') record.signature = null;
-        busy = false;
+        inflight--;
         queuePass();
       }
       break; // one model request per tick, not a page-sized frame flood
@@ -488,6 +565,16 @@
       if (!media.has(event.target)) onMediaEvent(event);
     }, true);
   }
+  // Playback reaches the next sample time between the one-second passes.
+  document.addEventListener('timeupdate', event => {
+    const record = retained.get(event.target);
+    if (record && !stopped && record.state === 'checked' && record.signature !== signature(event.target)) queuePass();
+  }, true);
+  // An image whose anonymous reload was refused fires error, not load.
+  document.addEventListener('error', event => {
+    const record = retained.get(event.target);
+    if (record && !stopped) fetchFallback(record);
+  }, true);
   document.addEventListener('DOMContentLoaded', observe, { once: true });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) for (const record of media.values()) cancel(record);

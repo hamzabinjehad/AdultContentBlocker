@@ -31,6 +31,7 @@ try {
     window.textScores=[];window.pauseCalls=0;window.controlChanges=0;
     window.chrome={runtime:{sendMessage:message=>{
       if(message.type==='getVisualSettings')return new Promise(resolve=>window.settingsReply=resolve);
+      if(message.type==='warmVisualEngine')return Promise.resolve({});
       if(message.type==='cancelVisualMedia'){
         cancellations.push(message.id);
         const job=jobs.find(job=>job.id===message.id);
@@ -102,7 +103,8 @@ try {
   };
   await wait(() => w.scannerLoaded && w.settingsReply, 'local video decoded and scanner loaded');
   const video = w.video;
-  const hidden = () => w.getComputedStyle(video).visibility === 'hidden';
+  // Withheld: invisible, or under the strong blur shown only while being checked.
+  const hidden = () => { const style = w.getComputedStyle(video); return style.visibility === 'hidden' || video.dataset.hisnVisual === 'pending' && /blur\(/.test(style.filter); };
   const nextJob = async after => {
     await wait(() => w.jobs.slice(after).some(job => !job.settled), 'next real captured frame');
     return w.jobs.slice(after).find(job => !job.settled);
@@ -181,7 +183,7 @@ try {
   jobCount = w.jobs.length;
   // MediaStreams are not seekable: exercise the canonical seek listener explicitly.
   video.dispatchEvent(new w.Event('seeking'));
-  check(hidden() && video.dataset.hisnVisual === 'pending', 'simulated seek revokes prior reveal before rechecking');
+  check(!hidden() && video.dataset.hisnVisual === 'checked', 'a seek in a showing video does not blank it; it is sampled again at once');
   await acceptClean(await nextJob(jobCount));
 
   jobCount = w.jobs.length;

@@ -96,8 +96,8 @@
       "source": "@tensorflow/tfjs-backend-wasm@4.22.0 tfjs-backend-wasm-threaded-simd.wasm"
     },
     "engine.bundle.js": {
-      "bytes": 5520486,
-      "sha256": "0fe2318a139573f1a63ee4a0af02d11315047c34e47924031686ac501728063f",
+      "bytes": 5521895,
+      "sha256": "d5312efb1978b229c8732879357509c8e1a3537b77dd5cfdc69d4e9ca8229fea",
       "source": "engine.js; pinned pnpm-lock.yaml; NSFWJS MobileNetV2 weights embedded from nsfwjs@4.4.0; TFJS WASM backend kernels"
     },
     "engine.bundle.js.LEGAL.txt": {

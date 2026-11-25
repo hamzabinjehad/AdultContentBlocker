@@ -10,7 +10,7 @@
  */
 
 import { isLocked } from "../lib/policy.js";
-import { disableVisualEngine } from "../visual/broker.js";
+import { disableVisualEngine, prepareVisualEngine } from "../visual/broker.js";
 
 export const TEXT_SCANNER = {
   id: "hisn-scan", js: ["content/feed.js", "content/scan.js"], matches: ["<all_urls>"],
@@ -111,6 +111,7 @@ export async function syncVisualScanning(state) {
       allFrames: true, matchOriginAsFallback: true, persistAcrossSessions: true,
     }]);
   }
+  warmVisualEngineSoon(state);
   let tabs = [];
   try { tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }); } catch { return; }
   await Promise.all(tabs.map(async (tab) => {
@@ -120,6 +121,25 @@ export async function syncVisualScanning(state) {
       await chrome.scripting.executeScript({ target, files });
     } catch { /* A closed or unpermitted tab cannot be injected. */ }
   }));
+}
+
+/**
+ * Load the models a few seconds after the checks are found switched on.
+ *
+ * Loading on the first picture left the first page of every browser session
+ * with its pictures and videos hidden for several seconds (3.5 to 9 measured).
+ * Loading at the very start competed with the text policy path, which is why
+ * it was removed once. A short delay gives both: the text path settles first,
+ * and the models are usually ready before the first picture asks.
+ */
+export const VISUAL_WARM_DELAY_MS = 4000;
+let warmTimer;
+export function warmVisualEngineSoon(state) {
+  if (warmTimer !== undefined) clearTimeout(warmTimer);
+  warmTimer = setTimeout(() => {
+    warmTimer = undefined;
+    prepareVisualEngine(state).catch(() => {});
+  }, VISUAL_WARM_DELAY_MS);
 }
 
 /** Run the scanner in every open web page now. It starts once per frame

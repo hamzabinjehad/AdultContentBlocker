@@ -1,5 +1,6 @@
 import { createVisualEngine } from './engine.bundle.js';
 import { fromBackgroundWorker } from './offscreen-sender.js';
+import { captureVideoFromURL, captureVideoFrameAt } from './video-capture.js';
 const instance = createVisualEngine({ baseURL: chrome.runtime.getURL('visual/') });
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.target !== 'hisn-visual-engine') return false;
@@ -15,6 +16,9 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       await instance.prepare(message.preferences);
       return instance.status(message.preferences);
     }
+    // A frame for a video the page cannot read. Null when it cannot be had.
+    if (message.operation === 'captureVideo') return (await (Number.isFinite(message.at)
+      ? captureVideoFrameAt(message.url, message.at) : captureVideoFromURL(message.url))) ?? { failed: true };
     if (message.operation === 'cancel') { instance.cancel(message.key); return { state: 'unknown', reason: 'cancelled' }; }
     if (message.operation === 'cancelPrefix') { instance.cancelPrefix(message.prefix); return { state: 'unknown', reason: 'cancelled' }; }
     if (message.operation === 'status') return instance.status(message.preferences);

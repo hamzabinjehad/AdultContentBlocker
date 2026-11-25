@@ -41,4 +41,15 @@ for(const [options,reason] of [[{denied:true},'inaccessible-pixels'],[{missingCo
   check(h.buffers[0].every(v=>v===0) && h.canvases[0].width===0,
     'full capture still clears temporary pixel buffers');
 }
+{
+  // The native encoder and the portable chunked one must produce the same text.
+  const native = Uint8Array.prototype.toBase64;
+  const fast = HisnVisualCapture.capture(image, fixture().doc).rgba;
+  Uint8Array.prototype.toBase64 = undefined;
+  let portable;
+  try { portable = HisnVisualCapture.capture(image, fixture().doc).rgba; }
+  finally { Uint8Array.prototype.toBase64 = native; }
+  check(typeof fast === 'string' && fast === portable && /^[A-Za-z0-9+/]*={0,2}$/.test(fast),
+    'native and portable encoders give the same standard base64');
+}
 print(`  ${checks}/${checks} visual capture readiness checks passed`);

@@ -95,4 +95,15 @@ gate = false; unblock();
 await first; await second; await third;
 check(finalBadge === "", "serialized toolbar writes end at the latest verified state");
 
+{
+  let badge = null;
+  const limited = createToolbarStatus({ setBadgeText: async ({ text }) => { badge = text; },
+    setBadgeBackgroundColor: async () => {}, setTitle: async () => {}, getBadgeText: async () => "" });
+  const applied = { desiredRevision: 1, appliedRevision: 1, enforcement: { version: 1, status: "applied", desiredRevision: 1,
+    appliedRevision: 1, layers: { domains: "applied", search: "applied", text: "applied", visual: "off" } } };
+  await limited.update({ ...applied, siteAccess: false }); await limited.whenIdle();
+  check(badge === "!", "limited site access puts the warning badge on the toolbar even with applied rules");
+  await limited.update({ ...applied, siteAccess: true }); await limited.whenIdle();
+  check(badge === "", "restored site access clears it");
+}
 print(`${checks}/${checks} toolbar status checks passed`);

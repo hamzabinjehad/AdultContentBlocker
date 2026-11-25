@@ -99,7 +99,12 @@ export function describeStatus(state, opts = {}) {
   // Stored intent or a heartbeat alone is not proof Chrome installed it.
   // Only the current rule/scanner receipt permits the active headline.
   let protection;
-  if (enforcement.status === "pending") {
+  if (state.siteAccess === false) {
+    // Enabled, but the browser only lets it act on some sites. Rules may be
+    // installed and still reach nothing, so this is never an active headline.
+    protection = { level: "partial", headline: t("status.siteAccess"), detail: t("status.siteAccess.detail") };
+    notices.push({ kind: "warn", text: t("status.siteAccess.notice") });
+  } else if (enforcement.status === "pending") {
     protection = { level: "unknown", headline: t("status.applying"), detail: t("status.applying.detail") };
   } else if (enforcement.status === "failed") {
     protection = { level: "partial", headline: t("status.repair"), detail: t("status.repair.detail") };
