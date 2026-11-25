@@ -3,6 +3,7 @@ import test from 'node:test';
 import { existsSync, readFileSync } from 'node:fs';
 
 import { ar } from '../lib/site.js';
+import { ar as homeAr } from '../lib/home-copy.js';
 
 const read = (name) => readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 const release = JSON.parse(read('release.json'));
@@ -12,6 +13,7 @@ const limits = read('limits.html');
 const vault = read('vault.html');
 const partner = read('partner.html');
 const script = read('lib/site.js');
+const home = read('lib/home.js');
 const animations = read('lib/animations.js');
 const app = release.android;
 
@@ -55,13 +57,37 @@ test('the public page carries no release-developer details', () => {
   }
 });
 
-test('the roadmap names every other version and labels it honestly', () => {
-  for (const text of ['Android', 'A new Android update', 'Mac &amp; iPhone', 'Linux &amp; Windows', 'Browser extension', 'Hisn Vault']) {
-    assert.ok(index.includes(text), `missing roadmap entry ${text}`);
+test('the platforms row names every platform and labels it honestly', () => {
+  const get = index.slice(index.indexOf('id="get"'), index.indexOf('id="faq"'));
+  for (const text of ['Android', 'iPhone and iPad', 'Mac', 'Windows', 'Browser extension']) {
+    assert.ok(get.includes(text), `missing platform ${text}`);
   }
-  assert.ok(index.includes('More platforms are coming.'));
-  assert.ok(index.includes('data-i18n="status.soon"'));
-  assert.ok(index.includes('data-i18n="road.androidNext.body"'));
+  assert.equal(get.split('data-i="soon"').length - 1, 4, 'iPhone, Mac, Windows and the extension say Coming');
+  assert.ok(get.includes('data-i="now"'), 'Android says Available');
+});
+
+test('every store button and platform card says which device it is for', () => {
+  const stores = [...index.matchAll(/<a class="store[^"]*"([^>]*)>/g)].map((m) => m[1]);
+  const plats = [...index.matchAll(/<div class="plat"([^>]*)>/g)].map((m) => m[1]);
+  for (const attrs of [...stores, ...plats]) assert.match(attrs, /data-os="(android|ios|mac|windows|web)"/);
+  assert.equal(stores.length, 5);
+  assert.equal(plats.length, 5);
+  assert.match(home, /putFirst\(visitorOS\(\)\)/, 'the visitor\'s platform is not put first');
+});
+
+test('every string on the product page has Arabic, and it is Arabic', () => {
+  const keysOnPage = new Set([...index.matchAll(/data-i="([^"]+)"/g)].map((m) => m[1]));
+  const missing = [...keysOnPage].filter((key) => !(key in homeAr));
+  assert.deepEqual(missing, []);
+  const unused = Object.keys(homeAr).filter((key) => !keysOnPage.has(key));
+  assert.deepEqual(unused, []);
+  // An empty string hides an English-only line (a Qur'an translation) in Arabic.
+  const notArabic = Object.entries(homeAr).filter(([, v]) => v !== '' && !/[\u0600-\u06FF]/.test(v)).map(([k]) => k);
+  assert.deepEqual(notArabic, []);
+  for (const [key, value] of Object.entries(homeAr)) {
+    assert.ok(!/[\u0660-\u0669]/.test(value), `${key} uses ١٢٣ digits; the owner wants 1 2 3`);
+    assert.ok(!value.includes('الإباحي'), `${key} says الإباحي; the owner wants محتوى الزنا`);
+  }
 });
 
 test('every string on the landing and privacy pages has Arabic', () => {
@@ -104,17 +130,28 @@ test('the CSP blocks connections and inline script', () => {
     assert.ok(!html.includes("'unsafe-inline'"));
     assert.ok(!/<script(?![^>]*src=)[^>]*>/.test(html), 'inline script found');
   }
+  assert.ok(!/\sstyle="/.test(index), 'the product page has an inline style the CSP would block');
   assert.ok(!/\bfetch\s*\(/.test(script), 'site.js makes a request');
+  assert.ok(!/\bfetch\s*\(|XMLHttpRequest|WebSocket/.test(home), 'home.js makes a request');
 });
 
-test('the animation library is vendored, licensed and wired in', () => {
+test('the animation library is vendored, licensed and wired into the limits page', () => {
   assert.ok(existsSync(new URL('../lib/vendor/anime.min.js', import.meta.url)));
   assert.ok(existsSync(new URL('../lib/vendor/LICENSE.anime', import.meta.url)));
-  assert.ok(index.includes('lib/vendor/anime.min.js'));
-  assert.ok(index.includes('lib/animations.js'));
-  assert.ok(index.includes('lib/motion-flag.js'));
+  assert.ok(limits.includes('lib/vendor/anime.min.js'));
   assert.match(animations, /anime/i);
   assert.match(animations, /prefers-reduced-motion/);
+});
+
+test('the product page art and styles are on this site', () => {
+  for (const src of [...index.matchAll(/src="(assets\/[^"]+)"/g)].map((m) => m[1])) {
+    assert.ok(existsSync(new URL(`../${src}`, import.meta.url)), `missing ${src}`);
+  }
+  const css = read('assets/home.css');
+  for (const url of [...css.matchAll(/url\(([^)]+)\)/g)].map((m) => m[1])) {
+    assert.ok(existsSync(new URL(`../assets/${url}`, import.meta.url)), `missing ${url}`);
+  }
+  assert.ok(!css.includes('fonts.googleapis') && !index.includes('fonts.googleapis'));
 });
 
 test('the limits page is separate from the sales page', () => {

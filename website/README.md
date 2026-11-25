@@ -4,10 +4,16 @@ The product site for the Android app, plus the Vault. Static files, no account,
 no server, no analytics. The site is bilingual (English and Arabic), light and
 dark, and every page has a strict CSP with no third-party resource.
 
-- `/` — the product page: a left-aligned hero with the free Android download
-  and the platforms still to come, a one-sentence statement with three benefits,
-  the Vault spotlight, a five-step "How Hisn works" stepper over real app
-  screens, a privacy row, the roadmap, a short FAQ and a closing download.
+- `/` — the product page, built from the Hisn app prototype (sky, painted
+  landscapes, serif titles, the 3D objects) and approved as
+  `website-next/prototype.html` on 25 November 2026: one phone in the painted
+  scene, store buttons (Android live; iPhone, iPad and Mac coming), the verse
+  band, four feature cards, who it is for, the hard minute, milestones, the
+  three looks (Fajr, Madinah, Layl) as a live switch, free and donations,
+  platforms and questions. English in the HTML, Arabic in `lib/home-copy.js`;
+  `lib/home.js` runs the language switch, the looks, the phone timer and the
+  breathing circle; styles in `assets/home.css`, art in `assets/hisn/`. The
+  Patreon and coffee buttons stay hidden until their links exist.
 - `/vault.html` — Hisn Vault, the off-device time lock. See
   [`docs/WEB_VAULT.md`](../docs/WEB_VAULT.md).
 - `/partner.html` — the Vault's partner half.
@@ -57,7 +63,7 @@ the vendored runtime keeps its license.
 | `privacy.html` | The short privacy page, linked from the product page and the app record. |
 | `limits.html` | The opt-in list of what Hisn cannot do, linked from the FAQ and footer rather than from the sales flow. |
 | `release.json` | Internal release identity: version, bytes, SHA-256, certificate, source record. Not copied to the public build. |
-| `index.html` / `lib/site.js` | Product-page English copy in HTML, Arabic in `lib/site.js`; the language switch updates the document direction. |
+| `index.html` / `lib/home.js` / `lib/home-copy.js` / `assets/home.css` | The product page: English in the HTML, Arabic in `home-copy.js`, the switch, looks, timer and breathing circle in `home.js`. `lib/site.js` still runs the privacy and limits pages. |
 | `lib/crypto.js` | Vault AES-GCM, P-256 ECDH + HKDF, passcode drawing. |
 | `lib/vault.js` | The vault record, both open paths, import validation. |
 | `lib/tlock.js` | drand quicknet constants, round math, sealing/opening. |

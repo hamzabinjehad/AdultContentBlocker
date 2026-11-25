@@ -1,0 +1,675 @@
+<title>Hisn · حصن</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Hisn closes adult content on your phone, helps you through the hard minute and brings you nearer to Allah. Free, no ads, no subscription.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Outfit:wght@400;500;600;700&family=Amiri:wght@400;700&family=Amiri+Quran&family=Noto+Naskh+Arabic:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: the app's own world as a page. Sky on top, the painted landscape under the hero phones,
+   a deep verse band, four object cards, the hard minute as a real sequence beside a phone,
+   the three looks as a live switch for the whole page, then free, platforms and questions.
+   Looks: Fajr (default light), Madinah (light), Layl (dark, the default on a dark system). */
+:root {
+  --sky: #fbf1ec; --ink: #241640; --sub: #6d6280; --card: #ffffff; --line: #efe3ea; --soft: #f5ebf1;
+  --pri: #2b1a5e; --priInk: #ffffff; --acc: #b5762a; --deep: #2b1a5e; --deepInk: #ffffff;
+  --help: #f8dcd9; --helpInk: #3a1830; --red: #d93f45; --redInk: #ffffff; --ok: #2a9d55;
+  --paint: url(img/bg-fajr.jpg);
+  --display: "Young Serif", Georgia, serif; --body: "Outfit", system-ui, sans-serif;
+  --ar: "IBM Plex Sans Arabic", "Outfit", system-ui, sans-serif; --arDisplay: "Noto Naskh Arabic", "Amiri", serif;
+  --quran: "Amiri Quran", "Amiri", "Noto Naskh Arabic", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]):not([data-look]) {
+  --sky: #14132c; --ink: #efebfa; --sub: #a9a5c6; --card: #1f1e3e; --line: #302e57; --soft: #24234a;
+  --pri: #e9c46a; --priInk: #1b1530; --acc: #e9c46a; --deep: #0d0c24; --deepInk: #efebfa;
+  --help: #33203a; --helpInk: #f6e3ea; --red: #e5484d; --redInk: #ffffff; --ok: #4cc47d; --paint: url(img/bg-layl.jpg); color-scheme: dark } }
+:root[data-theme="dark"]:not([data-look]), :root[data-look="layl"] {
+  --sky: #14132c; --ink: #efebfa; --sub: #a9a5c6; --card: #1f1e3e; --line: #302e57; --soft: #24234a;
+  --pri: #e9c46a; --priInk: #1b1530; --acc: #e9c46a; --deep: #0d0c24; --deepInk: #efebfa;
+  --help: #33203a; --helpInk: #f6e3ea; --red: #e5484d; --redInk: #ffffff; --ok: #4cc47d; --paint: url(img/bg-layl.jpg); color-scheme: dark }
+:root[data-look="fajr"] {
+  --sky: #fbf1ec; --ink: #241640; --sub: #6d6280; --card: #ffffff; --line: #efe3ea; --soft: #f5ebf1;
+  --pri: #2b1a5e; --priInk: #ffffff; --acc: #b5762a; --deep: #2b1a5e; --deepInk: #ffffff;
+  --help: #f8dcd9; --helpInk: #3a1830; --red: #d93f45; --redInk: #ffffff; --ok: #2a9d55; --paint: url(img/bg-fajr.jpg); color-scheme: light }
+:root[data-look="madinah"] {
+  --sky: #f7f4ea; --ink: #13261e; --sub: #5c6b62; --card: #ffffff; --line: #e2e5d8; --soft: #eef2e8;
+  --pri: #0f4d3a; --priInk: #ffffff; --acc: #9a6e1f; --deep: #0f3d2f; --deepInk: #ffffff;
+  --help: #f5e4cf; --helpInk: #3a2614; --red: #d93f45; --redInk: #ffffff; --ok: #2a9d55; --paint: url(img/bg-madinah.jpg); color-scheme: light }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--sky); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.6; transition: background-color .4s, color .4s; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--sky); }
+:lang(ar) body, [dir="rtl"] body { font-family: var(--ar); }
+a { color: inherit; }
+img { max-width: 100%; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; margin: 0; line-height: 1.12; text-wrap: balance; }
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3 { font-family: var(--arDisplay); font-weight: 700; line-height: 1.45; }
+p { margin: 0; }
+.in { max-width: 1160px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.k { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: var(--sub); }
+[dir="rtl"] .k { letter-spacing: 0; font-size: 13.5px; }
+:focus-visible { outline: 2.5px solid var(--acc); outline-offset: 3px; border-radius: 6px; }
+
+/* header */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--sky); border-bottom: 1px solid transparent; transition: border-color .3s, background-color .4s; }
+.top.scrolled { border-bottom-color: var(--line); }
+.top .in { display: flex; align-items: center; gap: 18px; min-height: 68px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-size: 22px; }
+.brand .logo { width: 32px; height: 32px; color: var(--pri); }
+.brand span.ar { font-family: var(--arDisplay); font-weight: 700; font-size: 20px; color: var(--sub); }
+.nav { display: flex; gap: 22px; margin-inline-start: auto; font-size: 15px; }
+.nav a { text-decoration: none; color: var(--sub); }
+.nav a:hover { color: var(--ink); }
+.lang { font: inherit; font-size: 14px; font-weight: 600; border: 1.5px solid var(--line); background: transparent; color: var(--ink); border-radius: 99px; padding: 7px 14px; cursor: pointer; }
+.lang:hover { border-color: var(--ink); }
+.btn { font: inherit; font-weight: 700; font-size: 16px; border: 0; border-radius: 99px; padding: 15px 24px; background: var(--pri); color: var(--priInk); display: inline-flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; text-decoration: none; transition: transform .12s ease; }
+.btn:active { transform: scale(.97); }
+.btn.small { padding: 9px 16px; font-size: 14.5px; }
+.btn.white { background: var(--card); color: var(--ink); border: 1.5px solid var(--line); }
+.btn svg { width: 20px; height: 20px; flex: none; }
+@media (max-width: 860px) { .nav { display: none; } .top .lang { margin-inline-start: auto; } }
+
+/* hero */
+.hero { position: relative; overflow: hidden; }
+.hero .in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 40px; align-items: center; padding-block: 56px 0; }
+.hero h1 { font-size: clamp(42px, 6.4vw, 76px); letter-spacing: -.01em; }
+[dir="rtl"] .hero h1 { font-size: clamp(40px, 6vw, 70px); letter-spacing: 0; line-height: 1.35; }
+.hero h1 em { font-style: normal; color: var(--acc); }
+.hero .copy { display: grid; gap: 22px; align-content: start; padding-bottom: 80px; min-width: 0; }
+.lede { font-size: 19px; color: var(--sub); max-width: 34em; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.small-note { font-size: 14px; color: var(--sub); }
+.ayah { display: grid; gap: 4px; padding-top: 6px; }
+.ayah .q { font-family: var(--quran); font-size: 26px; line-height: 2; direction: rtl; text-align: start; color: var(--ink); }
+[dir="ltr"] .ayah .q { text-align: left; }
+.ayah .t { font-size: 14px; color: var(--sub); }
+/* The stage is the painting itself, a full framed scene; one phone stands in it, cut by the frame's bottom edge. */
+.stage { position: relative; height: 680px; min-width: 0; margin-bottom: 64px; border-radius: 36px; overflow: hidden; background: var(--paint) center bottom / cover no-repeat; }
+.paint { position: absolute; inset: auto 0 0; height: 300px; background: var(--paint) center bottom / cover no-repeat; pointer-events: none; }
+@media (max-width: 900px) {
+  .hero .in { grid-template-columns: 1fr; padding-top: 36px; }
+  .hero .copy { padding-bottom: 0; }
+  .stage { height: 660px; }
+}
+
+/* phones */
+.phone { position: absolute; width: 280px; height: 600px; border-radius: 42px; border: 9px solid #121018; background: var(--sky); overflow: hidden; box-shadow: 0 24px 50px rgba(20,10,40,.3); }
+.phone.p1 { left: 50%; top: 40px; transform: translateX(-50%); z-index: 3; }
+/* a flat notification card over the scene: the moment the app exists for */
+.note { position: absolute; z-index: 4; inset-inline-start: 24px; top: 30px; width: 250px; max-width: calc(100% - 48px); background: var(--card); color: var(--ink); border-radius: 18px; padding: 12px 14px; display: flex; gap: 10px; align-items: center; box-shadow: 0 10px 26px rgba(20,10,40,.18); font-size: 13px; line-height: 1.35; }
+.note img { width: 38px; height: 38px; object-fit: contain; flex: none; }
+.note b { display: block; font-size: 13.5px; }
+.note span { color: var(--sub); }
+@media (max-width: 620px) { .note { top: auto; bottom: 20px; } }
+.scr { position: absolute; inset: 0; padding: 36px 16px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; line-height: 1.4; color: var(--ink); font-family: var(--body); }
+[dir="rtl"] .scr { font-family: var(--ar); }
+.scr .status { position: absolute; top: 9px; left: 22px; right: 22px; display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
+.scr.deep { background: var(--deep); color: var(--deepInk); }
+.scr.deep.land { background: linear-gradient(180deg, var(--deep) 45%, transparent 100%), var(--paint) center bottom / cover no-repeat; }
+.scr.help { background: var(--help); color: var(--helpInk); }
+.s-hd { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; }
+.s-hd .logo { width: 22px; height: 22px; color: var(--pri); }
+.s-since { text-align: center; display: grid; gap: 2px; }
+.s-since .k { font-size: 9.5px; }
+.s-days { display: flex; justify-content: center; align-items: baseline; gap: 6px; }
+.s-days b { font-family: var(--display); font-weight: 400; font-size: 64px; line-height: .95; }
+.s-days span { font-family: var(--display); font-size: 20px; }
+[dir="rtl"] .s-days b, [dir="rtl"] .s-days span { font-family: var(--arDisplay); font-weight: 700; }
+.s-timer { justify-self: center; display: inline-flex; gap: 6px; align-items: center; padding: 4px 11px; border-radius: 99px; background: var(--card); font-weight: 600; font-variant-numeric: tabular-nums; direction: ltr; }
+.s-timer i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+.s-rounds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; font-size: 9px; font-weight: 700; color: var(--sub); letter-spacing: .06em; text-transform: uppercase; }
+[dir="rtl"] .s-rounds { letter-spacing: 0; font-size: 10px; text-transform: none; }
+.s-rounds span { display: grid; justify-items: center; gap: 4px; }
+.s-rounds img { width: 42px; height: 42px; padding: 6px; border-radius: 13px; background: var(--card); object-fit: contain; }
+.s-bar { height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.s-bar i { display: block; height: 100%; width: 22.5%; background: var(--pri); border-radius: 99px; }
+.s-prayers { display: grid; grid-template-columns: repeat(5, 1fr); text-align: center; gap: 2px; font-size: 9.5px; color: var(--sub); background: var(--card); border-radius: 14px; padding: 6px; }
+.s-prayers div { padding: 5px 0; border-radius: 10px; display: grid; gap: 1px; }
+.s-prayers b { color: var(--ink); font-size: 11px; font-variant-numeric: tabular-nums; }
+.s-prayers .nx { background: var(--soft); color: var(--pri); font-weight: 700; }
+.s-verse { background: var(--deep); color: var(--deepInk); border-radius: 16px; padding: 12px 14px; display: grid; gap: 4px; }
+.s-verse .k { color: inherit; opacity: .7; font-size: 9px; }
+.s-verse .q { font-family: var(--quran); font-size: 20px; line-height: 1.9; direction: rtl; text-align: center; }
+.s-dock { margin-top: auto; display: flex; gap: 8px; }
+.s-btn { flex: 1; border-radius: 99px; padding: 12px; text-align: center; font-weight: 700; font-size: 13px; background: var(--pri); color: var(--priInk); display: flex; gap: 6px; justify-content: center; align-items: center; }
+.s-btn.red { background: var(--red); color: var(--redInk); letter-spacing: .04em; }
+.s-btn.white { background: #fff; color: #1b1530; }
+.s-btn.line { background: transparent; color: inherit; border: 1.5px solid currentColor; }
+.s-btn svg { width: 15px; height: 15px; }
+.s-ico { width: 84px; height: 84px; object-fit: contain; align-self: center; }
+.s-t { font-family: var(--display); font-size: 22px; line-height: 1.15; text-align: center; }
+[dir="rtl"] .s-t { font-family: var(--arDisplay); font-weight: 700; line-height: 1.5; font-size: 20px; }
+.s-q { font-family: var(--quran); font-size: 21px; line-height: 2; text-align: center; direction: rtl; }
+.s-src { text-align: center; font-size: 10.5px; opacity: .8; font-weight: 600; }
+.s-sub { text-align: center; opacity: .82; }
+.s-promise { background: rgba(255,255,255,.7); color: #2a1628; border-radius: 13px; padding: 9px 11px; display: flex; gap: 8px; align-items: center; font-weight: 600; font-size: 11.5px; }
+:root[data-look="layl"] .s-promise { background: rgba(255,255,255,.08); color: inherit; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]):not([data-look]) .s-promise { background: rgba(255,255,255,.08); color: inherit; } }
+.s-promise svg { width: 14px; height: 14px; color: var(--ok); flex: none; }
+.s-pill { justify-self: center; align-self: center; display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 99px; background: rgba(255,255,255,.14); font-variant-numeric: tabular-nums; }
+
+/* sections */
+section { padding-block: 96px; }
+.head { display: grid; gap: 14px; max-width: 46em; margin-bottom: 44px; }
+.head h2 { font-size: clamp(32px, 4.4vw, 50px); }
+.head p { color: var(--sub); font-size: 18px; }
+
+.band { background: var(--deep); color: var(--deepInk); text-align: center; padding-block: 88px; }
+.band .in { display: grid; gap: 18px; justify-items: center; }
+.band .q { font-family: var(--quran); font-size: clamp(28px, 4vw, 44px); line-height: 2.05; direction: rtl; max-width: 22em; }
+.band .q::before, .band .q::after { color: #e9c46a; }
+.band .q::before { content: "﴿ "; } .band .q::after { content: " ﴾"; }
+.band .t { font-size: 18px; max-width: 36em; opacity: .9; }
+.band .src { font-size: 13px; opacity: .65; letter-spacing: .04em; }
+
+.feats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 1000px) { .feats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .feats { grid-template-columns: 1fr; } }
+.feat { background: var(--card); border-radius: 24px; padding: 26px 22px 24px; display: grid; gap: 10px; align-content: start; min-width: 0; border: 1px solid var(--line); }
+.feat img { width: 92px; height: 92px; object-fit: contain; margin: -6px 0 4px -6px; }
+[dir="rtl"] .feat img { margin: -6px -6px 4px 0; }
+.feat h3 { font-size: 23px; }
+.feat p { color: var(--sub); font-size: 15.5px; }
+.feat ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14.5px; }
+.feat li { display: flex; gap: 8px; align-items: baseline; }
+.feat li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--acc); flex: none; transform: translateY(-2px); }
+
+.minute { background: var(--help); color: var(--helpInk); }
+.minute .head p { color: inherit; opacity: .78; }
+.minute .grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 56px; align-items: center; }
+@media (max-width: 900px) { .minute .grid { grid-template-columns: 1fr; } .minute .stage2 { justify-self: center; } }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; counter-reset: s; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 18px; padding: 18px 0; border-top: 1px solid rgba(58,24,48,.16); }
+:root[data-look="layl"] .steps li { border-top-color: rgba(255,255,255,.12); }
+.steps li:first-child { border-top: 0; }
+.steps li::before { content: counter(s); font-family: var(--display); font-size: 34px; line-height: 1; padding-top: 2px; }
+.steps h3 { font-size: 22px; margin-bottom: 4px; }
+.steps p { opacity: .8; font-size: 16px; max-width: 34em; }
+.stage2 { position: relative; width: 280px; height: 600px; }
+.stage2 .phone { left: 0; top: 0; transform: none; }
+
+.looks .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 800px) { .looks .grid { grid-template-columns: 1fr; } }
+.look { font: inherit; color: inherit; text-align: start; cursor: pointer; border: 2px solid var(--line); background: var(--card); border-radius: 24px; padding: 0; overflow: hidden; display: grid; transition: border-color .2s, transform .15s; }
+.look:hover { transform: translateY(-2px); }
+.look[aria-pressed="true"] { border-color: var(--pri); }
+.look .pic { height: 170px; background-size: cover; background-position: center bottom; position: relative; }
+.look .sw { position: absolute; inset: auto 14px 14px auto; display: flex; gap: 6px; }
+[dir="rtl"] .look .sw { inset: auto auto 14px 14px; }
+.look .sw i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; display: block; }
+.look .txt { padding: 18px 20px 20px; display: grid; gap: 4px; }
+.look h3 { font-size: 24px; display: flex; gap: 10px; align-items: baseline; }
+.look h3 small { font-family: var(--arDisplay); font-size: 18px; color: var(--sub); font-weight: 700; }
+.look p { color: var(--sub); font-size: 15px; }
+.look .on { font-size: 13px; font-weight: 700; color: var(--pri); }
+.look[aria-pressed="false"] .on { visibility: hidden; }
+
+.free .grid { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 32px; padding: 44px; }
+@media (max-width: 760px) { .free .grid { grid-template-columns: 1fr; padding: 28px; gap: 20px; } .free .grid img { width: 140px; } }
+.free h2 { font-size: clamp(32px, 4.4vw, 50px); margin-bottom: 12px; }
+.free p { color: var(--sub); font-size: 18px; max-width: 36em; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.support { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.facts span { font-size: 14px; font-weight: 600; padding: 8px 14px; border-radius: 99px; background: var(--soft); }
+
+.plats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+@media (max-width: 1000px) { .plats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .plats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.plat { padding: 26px 22px 26px 0; display: grid; gap: 6px; border-bottom: 1px solid var(--line); align-content: start; }
+[dir="rtl"] .plat { padding: 26px 0 26px 22px; }
+.plat h3 { font-size: 22px; }
+.plat p { color: var(--sub); font-size: 14.5px; }
+.tag { justify-self: start; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 99px; background: var(--soft); color: var(--sub); }
+.tag.now { background: var(--pri); color: var(--priInk); }
+.plat .btn { justify-self: start; margin-top: 8px; }
+.also { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; font-size: 13.5px; }
+.also .chip { font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--soft); color: var(--ink); }
+.pico { width: 52px; height: 52px; border-radius: 16px; background: var(--soft); color: var(--pri); display: grid; place-items: center; margin-bottom: 6px; }
+.pico svg { width: 28px; height: 28px; }
+.plat:first-child .pico { background: var(--pri); color: var(--priInk); }
+
+/* questions: title on one side, answers fill the other, so the row is never half empty */
+#faq .in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr); gap: 48px; align-items: start; }
+#faq .head { margin-bottom: 0; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 96px); }
+@media (max-width: 860px) { #faq .in { grid-template-columns: 1fr; gap: 0; } #faq .head { position: static; margin-bottom: 28px; } }
+.faq { display: grid; gap: 10px; min-width: 0; }
+.faq details { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 0 22px; }
+.faq summary { cursor: pointer; list-style: none; padding: 20px 0; font-weight: 600; font-size: 17.5px; display: flex; justify-content: space-between; gap: 14px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-family: var(--display); font-size: 24px; line-height: 1; color: var(--sub); }
+.faq details[open] summary::after { content: "–"; }
+.faq details p { color: var(--sub); padding-bottom: 20px; max-width: 42em; }
+
+/* the closing scene: the painting as one framed panel, like the hero, with the words in its sky */
+.end { text-align: center; padding-block: 24px 96px; }
+.end .scene { border-radius: 36px; background: var(--paint) center bottom / cover no-repeat; padding: 72px 24px 300px; display: grid; gap: 20px; justify-items: center; }
+.end h2 { font-size: clamp(36px, 5.4vw, 62px); }
+.end .logo { width: 64px; height: 64px; color: var(--pri); }
+@media (max-width: 620px) { .end .scene { padding: 48px 20px 220px; border-radius: 28px; } }
+
+footer { border-top: 1px solid var(--line); padding-block: 48px 56px; font-size: 15px; color: var(--sub); }
+.foot { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); gap: 32px; }
+@media (max-width: 760px) { .foot { grid-template-columns: 1fr 1fr; } .fbrand { grid-column: 1 / -1; } }
+.fbrand { display: grid; gap: 12px; align-content: start; }
+.fbrand .brand { color: var(--ink); }
+.fcol { display: grid; gap: 10px; align-content: start; }
+.fcol b { color: var(--ink); font-size: 15px; }
+footer a { text-decoration: none; } footer a:hover { color: var(--ink); }
+.soon small { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--soft); margin-inline-start: 4px; }
+.social { display: flex; gap: 8px; margin-top: 4px; }
+.social a { width: 40px; height: 40px; border-radius: 12px; background: var(--soft); color: var(--pri); display: grid; place-items: center; }
+.social a:hover { background: var(--pri); color: var(--priInk); }
+.social svg { width: 20px; height: 20px; }
+
+.reveal { animation: rise .7s cubic-bezier(.2,.8,.2,1) both; }
+.reveal.d1 { animation-delay: .08s; } .reveal.d2 { animation-delay: .16s; } .reveal.d3 { animation-delay: .24s; }
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.phone.p1.reveal { animation-name: riseX; } @keyframes riseX { from { opacity: 0; transform: translate(-50%, 24px); } to { opacity: 1; transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .reveal { animation: none; } html { scroll-behavior: auto; } }
+
+.stores { display: flex; flex-wrap: wrap; gap: 10px; }
+.store { display: flex; gap: 10px; align-items: center; padding: 9px 18px 9px 13px; border-radius: 14px; background: transparent; color: var(--ink); border: 1.5px solid var(--line); text-decoration: none; min-width: 0; }
+[dir="rtl"] .store { padding: 9px 13px 9px 18px; }
+.store.now { background: var(--ink); color: var(--sky); border-color: var(--ink); }
+.store svg { width: 26px; height: 26px; flex: none; }
+.store small { display: block; font-size: 11.5px; opacity: .75; line-height: 1.2; }
+.store b { display: block; font-size: 16.5px; line-height: 1.25; }
+.feat .when { font-family: var(--display); font-size: 15px; color: var(--acc); }
+[dir="rtl"] .feat .when { font-family: var(--arDisplay); font-weight: 700; }
+.people { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.person { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 24px 22px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.person img { width: 84px; height: 84px; object-fit: contain; margin: -4px 0 2px; }
+.person h3 { font-size: 22px; }
+.person p { color: var(--sub); font-size: 15.5px; }
+.tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tools span { font-size: 13px; font-weight: 600; padding: 5px 11px; border-radius: 99px; background: var(--soft); color: var(--pri); }
+@media (max-width: 900px) { .people { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .people { grid-template-columns: 1fr; } }
+.path { list-style: none; margin: 0; padding: 8px 0 18px; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(130px, 1fr); gap: 0; overflow-x: auto; scrollbar-width: thin; }
+.path li { position: relative; display: grid; justify-items: center; gap: 4px; text-align: center; padding: 0 8px; }
+.path li::before { content: ""; position: absolute; top: 44px; inset-inline-start: 50%; width: 100%; height: 2px; background: var(--line); z-index: 0; }
+.path li:last-child::before { display: none; }
+.path img { position: relative; z-index: 1; width: 88px; height: 88px; object-fit: contain; background: var(--sky); border-radius: 50%; }
+.path b { font-family: var(--display); font-weight: 400; font-size: 22px; }
+[dir="rtl"] .path b { font-family: var(--arDisplay); font-weight: 700; }
+.path li > span { color: var(--sub); font-size: 14.5px; }
+.gift { text-align: center; color: var(--sub); font-size: 16px; max-width: 40em; margin: 6px auto 0; }
+.along { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 28px; }
+@media (max-width: 760px) { .along { grid-template-columns: 1fr; } }
+.along .tile { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 20px; display: flex; gap: 14px; align-items: center; min-width: 0; }
+.along img { width: 64px; height: 64px; object-fit: contain; flex: none; }
+.along b { display: block; font-size: 17px; }
+.along span { color: var(--sub); font-size: 14.5px; }
+
+/* header on narrow phones: keep buttons on one line, drop the duplicate download link */
+.btn { white-space: nowrap; }
+@media (max-width: 420px) { .top .btn.small { display: none; } .top .in { gap: 12px; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="gate" viewBox="0 0 64 64"><path fill="currentColor" fill-rule="evenodd" d="M10 7h8v5h6V7h16v5h6V7h8v27c0 13-9 21.5-22 27C19 55.5 10 47 10 34zM24 52V36.5Q24 27.5 32 22.5Q40 27.5 40 36.5V52z"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v12M6.5 11 12 16.5 17.5 11M5 20h14"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v6M12 16.5h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="p-android" viewBox="0 0 24 24"><path fill="currentColor" d="M6.2 9.2h11.6v8.3c0 .7-.6 1.3-1.3 1.3h-.9v2.4a1.3 1.3 0 0 1-2.6 0v-2.4h-2v2.4a1.3 1.3 0 0 1-2.6 0v-2.4h-.9c-.7 0-1.3-.6-1.3-1.3zM4.3 9.2a1.3 1.3 0 0 1 1.3 1.3v5.1a1.3 1.3 0 0 1-2.6 0v-5.1c0-.7.6-1.3 1.3-1.3zm15.4 0a1.3 1.3 0 0 1 1.3 1.3v5.1a1.3 1.3 0 0 1-2.6 0v-5.1c0-.7.6-1.3 1.3-1.3zM6.3 8.3a5.7 5.7 0 0 1 3-4.6l-.9-1.6a.3.3 0 0 1 .5-.3l1 1.6a6 6 0 0 1 4.2 0l1-1.6a.3.3 0 0 1 .5.3l-.9 1.6a5.7 5.7 0 0 1 3 4.6zm3.4-2.6a.6.6 0 1 0 0 1.2.6.6 0 0 0 0-1.2zm4.6 0a.6.6 0 1 0 0 1.2.6.6 0 0 0 0-1.2z"/></symbol>
+  <symbol id="p-apple" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.6s-2.5-1-2.5-3.8zM14.1 5.8c.6-.8 1.1-1.8 1-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.7-1 2.7 1 .1 2-.5 2.7-1.3z"/></symbol>
+  <symbol id="p-mac" viewBox="0 0 24 24"><path fill="currentColor" d="M4 5.5C4 4.7 4.7 4 5.5 4h13c.8 0 1.5.7 1.5 1.5V16H4zM1.5 17.5h21l-.6 1.3c-.3.7-1 1.2-1.8 1.2H3.9c-.8 0-1.5-.5-1.8-1.2z"/></symbol>
+  <symbol id="p-win" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5.5 10.5 4.5v7H3zM11.5 4.4 21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.4z"/></symbol>
+  <symbol id="p-web" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M2 6.5C2 5.1 3.1 4 4.5 4h15C20.9 4 22 5.1 22 6.5v11c0 1.4-1.1 2.5-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5zM4 9v8.5c0 .3.2.5.5.5h15c.3 0 .5-.2.5-.5V9zm1.5-3.2a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8zm2.8 0a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8z"/></symbol>
+</svg>
+
+<header class="top" id="top">
+  <div class="in">
+    <a class="brand" href="#"><svg class="logo"><use href="#gate"/></svg>Hisn <span class="ar">حصن</span></a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#features" data-i="navFeatures">What it does</a>
+      <a href="#minute" data-i="navMinute">The hard minute</a>
+      <a href="#looks" data-i="navLooks">Looks</a>
+      <a href="#faq" data-i="navFaq">Questions</a>
+    </nav>
+    <button class="lang" id="lang" type="button" aria-label="Switch language">العربية</button>
+    <a class="btn small" href="#get" data-i="navGet">Get Hisn</a>
+  </div>
+</header>
+
+<main>
+<div class="hero">
+  <div class="in">
+    <div class="copy">
+      <h1 class="reveal d1" data-i="h1" data-html>Guard your gaze. <em>Keep your heart.</em></h1>
+      <p class="lede reveal d2" data-i="lede">Hisn closes adult content on your phone, stays with you through the hard minute, and brings you nearer to Allah every day. No ads and no subscription.</p>
+      <div class="stores reveal d3">
+        <a class="store now" data-os="android" href="downloads/hisn-android.apk"><svg><use href="#p-android"/></svg><span><small data-i="stA">Download for</small><b>Android</b></span></a>
+        <a class="store" data-os="ios" href="#get"><svg><use href="#p-apple"/></svg><span><small data-i="stSoon">Coming soon</small><b data-i="ios">iPhone and iPad</b></span></a>
+        <a class="store" data-os="mac" href="#get"><svg><use href="#p-mac"/></svg><span><small data-i="stSoon">Coming soon</small><b>Mac</b></span></a>
+        <a class="store" data-os="windows" href="#get"><svg><use href="#p-win"/></svg><span><small data-i="stSoon">Coming soon</small><b>Windows</b></span></a>
+        <a class="store" data-os="web" href="#get"><svg><use href="#p-web"/></svg><span><small data-i="stSoon">Coming soon</small><b data-i="extShort">Browser extension</b></span></a>
+      </div>
+      <div class="ayah reveal d3">
+        <div class="q">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ</div>
+        <div class="t" data-i="ayahT">“Tell the believing men to lower their gaze.” An-Nūr 24:30, Pickthall</div>
+      </div>
+    </div>
+
+    <div class="stage" aria-label="Hisn on a phone">
+      <div class="note reveal d3"><img src="img/ic-shield.png" alt=""><div><b data-i="noteT">Hisn closed a page</b><span data-i="noteS">Lower your gaze. Nothing was saved.</span></div></div>
+      <!-- Home -->
+      <div class="phone p1 reveal d1"><div class="scr">
+        <div class="status"><span>21:14</span><span></span></div>
+        <div class="s-hd"><svg class="logo"><use href="#gate"/></svg><span data-i="salam">As-salāmu ʿalaykum, Yusuf</span></div>
+        <div class="s-since"><div class="k" data-i="nights">Nights of light</div><div class="s-days"><b>9</b><span data-i="nightsW">nights</span></div><div class="s-timer"><i></i><span id="tick">15:28:04</span></div></div>
+        <div class="s-rounds"><span><img src="img/ic-misbaha.png" alt=""><span data-i="r1">Adhkār</span></span><span><img src="img/ic-hands.png" alt=""><span data-i="r2">Du’a</span></span><span><img src="img/ic-medal.png" alt=""><span data-i="r3">Progress</span></span><span><img src="img/ic-quran.png" alt=""><span data-i="r4">Qur’an</span></span></div>
+        <div><div class="s-bar"><i></i></div><div class="s-sub" style="font-size:10.5px;margin-top:5px" data-i="toMile">9 of 40 nights to your first milestone</div></div>
+        <div class="s-prayers"><div><span data-i="fajr">Fajr</span><b>06:12</b></div><div><span data-i="dhuhr">Dhuhr</span><b>12:24</b></div><div><span data-i="asr">ʿAṣr</span><b>14:31</b></div><div><span data-i="maghrib">Maghrib</span><b>16:43</b></div><div class="nx"><span data-i="isha">ʿIshāʾ</span><b>18:12</b></div></div>
+        <div class="s-verse"><span class="k" data-i="votd">Verse of the day · 96:14</span><div class="q">أَلَمْ يَعْلَم بِأَنَّ ٱللَّهَ يَرَىٰ</div><div style="text-align:center;font-size:11.5px" data-i="votdT">“Is he then unaware that Allah seeth?”</div></div>
+        <div class="s-dock"><div class="s-btn red"><svg><use href="#i-alert"/></svg><span data-i="helpNow">HELP NOW</span></div></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<div class="band">
+  <div class="in">
+    <div class="q">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ وَيَحْفَظُوا۟ فُرُوجَهُمْ ۚ ذَٰلِكَ أَزْكَىٰ لَهُمْ ۗ إِنَّ ٱللَّهَ خَبِيرٌۢ بِمَا يَصْنَعُونَ</div>
+    <p class="t" data-i="bandT">Tell the believing men to lower their gaze and be modest. That is purer for them. Lo! Allah is aware of what they do.</p>
+    <p class="src" data-i="bandSrc">AN-NŪR 24:30 · TRANSLATION: PICKTHALL</p>
+  </div>
+</div>
+
+<section id="features">
+  <div class="in">
+    <div class="head">
+      <h2 data-i="fH">Four walls, and a door that is always open</h2>
+      <p data-i="fP">Hisn works under your phone’s own settings. It closes what leads to the worst step, and it helps you most in the minute it matters.</p>
+    </div>
+    <div class="feats">
+      <article class="feat"><img src="img/ic-shield.png" alt=""><p class="when" data-i="w1">All day, in every app</p><h3 data-i="f1h">Content shield</h3><p data-i="f1p">Adult sites, words and images are closed in every app and browser on the phone.</p><ul><li data-i="f1a">Sites, in all apps</li><li data-i="f1b">Words, in Arabic and English</li><li data-i="f1c">Images, checked on the phone</li></ul></article>
+      <article class="feat"><img src="img/ic-phonedown.png" alt=""><p class="when" data-i="w2">23:40, alone</p><h3 data-i="f2h">Help now</h3><p data-i="f2p">One red button for the hard minute. Your own promises first, then breathing with dhikr.</p><ul><li data-i="f2a">Your promises, in your words</li><li data-i="f2b">Wuḍūʾ and two rakʿahs</li><li data-i="f2c">A way back after a slip</li></ul></article>
+      <article class="feat"><img src="img/ic-hourglass.png" alt=""><p class="when" data-i="w3">After ʿIshāʾ</p><h3 data-i="f3h">Feeds and time</h3><p data-i="f3p">A short pause with dhikr before the apps you choose, and quiet nights after ʿIshāʾ.</p><ul><li data-i="f3a">Open Wait before chosen apps</li><li data-i="f3b">Focus that pauses for the adhān</li><li data-i="f3c">Shorts and Reels closed</li></ul></article>
+      <article class="feat"><img src="img/ic-padlock.png" alt=""><p class="when" data-i="w4">In a weak moment</p><h3 data-i="f4h">Lock and companion</h3><p data-i="f4p">Lock your rules so a weak moment can’t loosen them. Choose one person you trust.</p><ul><li data-i="f4a">Rules locked for a set time</li><li data-i="f4b">A companion sees only your nights</li><li data-i="f4c">A guardian laptop can add rules</li></ul></article>
+    </div>
+  </div>
+</section>
+
+<section class="who" style="padding-top:0">
+  <div class="in">
+    <div class="head"><h2 data-i="whoH">For the one who fears Allah and wants to guard himself</h2><p data-i="whoP">Each of them finds the tools that fit in Hisn.</p></div>
+    <div class="people">
+      <article class="person"><img src="img/ic-ibrik.png" alt=""><h3 data-i="whoN1">The young man</h3><p data-i="who1">You fear Allah, you keep falling, and you want to stop for good.</p><div class="tools"><span data-i="t11">Content shield</span><span data-i="t12">Help now</span></div></article>
+      <article class="person"><img src="img/ic-rings.png" alt=""><h3 data-i="whoN2">The husband</h3><p data-i="who2">You want to guard your marriage and lower your gaze.</p><div class="tools"><span data-i="t21">Lock</span><span data-i="t22">Companion</span></div></article>
+      <article class="person"><img src="img/ic-olive.png" alt=""><h3 data-i="whoN3">Brother or sister</h3><p data-i="who3">You want a phone that helps you obey Allah, not one that pulls you away.</p><div class="tools"><span data-i="t31">Open Wait</span><span data-i="t32">Quiet nights</span></div></article>
+      <article class="person"><img src="img/ic-home.png" alt=""><h3 data-i="whoN4">The parent</h3><p data-i="who4">You want a safer phone for your children at home.</p><div class="tools"><span data-i="t41">Guardian</span><span data-i="t42">Lock</span></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="minute" id="minute">
+  <div class="in grid">
+    <div>
+      <div class="head" style="margin-bottom:28px">
+        <h2 data-i="mH">When it gets hard, press Help now</h2>
+        <p data-i="mP">The red button is on every screen of the app. This is what happens next.</p>
+      </div>
+      <ol class="steps">
+        <li><div><h3 data-i="m1h">Remember what you promised</h3><p data-i="m1p">Hisn shows the promises you wrote at the start, and the verse “Then surely I am nigh.” (2:186)</p></div></li>
+        <li><div><h3 data-i="m2h">Breathe with dhikr</h3><p data-i="m2p">Three slow breaths. Say astaghfirullāh as you breathe out.</p></div></li>
+        <li><div><h3 data-i="m3h">Make wuḍūʾ and pray two rakʿahs</h3><p data-i="m3p">Hisn sends no notifications for ten minutes while you pray.</p></div></li>
+        <li><div><h3 data-i="m4h">If you slipped</h3><p data-i="m4p">Your past days are kept. You start again tonight.</p></div></li>
+      </ol>
+    </div>
+    <div class="stage2" aria-hidden="true">
+      <div class="phone"><div class="scr help">
+        <div class="status"><span>23:40</span><span></span></div>
+        <div class="s-t" style="margin-top:8px" data-i="bT">Let’s pause together</div>
+        <div class="s-sub" data-i="bS">Urges pass; your promise stays. Breathe with the circle.</div>
+        <div id="circle" style="width:170px;height:170px;margin:14px auto;border-radius:50%;background:rgba(255,255,255,.55);display:grid;place-items:center;transition:transform 4s ease-in-out;transform:scale(.7)"><b id="bword" style="font-family:var(--display);font-weight:400;font-size:19px" data-i="bIn">Breathe in</b></div>
+        <div class="s-q" style="font-size:24px">أَسْتَغْفِرُ ٱللَّٰهَ</div>
+        <div class="s-sub" data-i="bR">Round 1 of 3</div>
+        <div class="s-dock"><div class="s-btn" data-i="bNext">Continue to prayer</div></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section class="miles">
+  <div class="in">
+    <div class="head"><h2 data-i="miH">A way of life, night after night</h2><p data-i="miP">Hisn counts every clean night, and with it the prayers you kept, the pages you read and the times you turned back. A slip never erases what came before.</p></div>
+    <ol class="path"><li><img src="img/ic-crescent.png" alt=""><b><span>1</span> <span data-i="sn1">night</span></b><span data-i="st1">The first night</span></li><li><img src="img/ic-misbaha.png" alt=""><b><span>7</span> <span data-i="sn2">nights</span></b><span data-i="st2">First week</span></li><li><img src="img/ic-lantern.png" alt=""><b><span>14</span> <span data-i="sn3">nights</span></b><span data-i="st3">Bright lamp</span></li><li><img src="img/ic-dates.png" alt=""><b><span>30</span> <span data-i="sn4">nights</span></b><span data-i="st4">A full month</span></li><li><img src="img/ic-medal.png" alt=""><b><span>40</span> <span data-i="sn5">nights</span></b><span data-i="st5">Forty nights</span></li><li><img src="img/ic-mosque.png" alt=""><b><span>100</span> <span data-i="sn6">nights</span></b><span data-i="st6">A hundred nights</span></li><li><img src="img/ic-tower.png" alt=""><b><span>365</span> <span data-i="sn7">nights</span></b><span data-i="st7">A year in the fortress</span></li></ol>
+    <p class="gift" data-i="gift">At each stop you receive one of these objects to keep. It is a gift for you alone: no ranks, no leaderboard, and no comparing with anyone.</p>
+    <div class="along">
+      <div class="tile"><img src="img/ic-rug.png" alt=""><div><b data-i="al1">Prayers on time</b><span data-i="al1s">Each day, next to your night</span></div></div>
+      <div class="tile"><img src="img/ic-quran.png" alt=""><div><b data-i="al2">Qur’an every day</b><span data-i="al2s">A short reading, marked as read</span></div></div>
+      <div class="tile"><img src="img/ic-hands.png" alt=""><div><b data-i="al3">Turned back in time</b><span data-i="al3s">Each time you stopped at the first step</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="looks" id="looks">
+  <div class="in">
+    <div class="head">
+      <h2 data-i="lH">Choose how Hisn looks</h2>
+      <p data-i="lP">Three colour themes. Tap one to see it on this page.</p>
+    </div>
+    <div class="grid">
+      <button class="look" type="button" data-look="fajr" aria-pressed="false"><div class="pic" style="background-image:url(img/bg-fajr.jpg)"><div class="sw"><i style="background:#2b1a5e"></i><i style="background:#fbf1ec"></i><i style="background:#c8862f"></i></div></div><div class="txt"><h3>Fajr <small>فجر</small></h3><p data-i="l1">Light, with violet and gold.</p><span class="on" data-i="chosen">On this page now</span></div></button>
+      <button class="look" type="button" data-look="madinah" aria-pressed="false"><div class="pic" style="background-image:url(img/bg-madinah.jpg)"><div class="sw"><i style="background:#0f4d3a"></i><i style="background:#f7f4ea"></i><i style="background:#b8862b"></i></div></div><div class="txt"><h3>Madinah <small>المدينة</small></h3><p data-i="l2">Light, with green and gold.</p><span class="on" data-i="chosen">On this page now</span></div></button>
+      <button class="look" type="button" data-look="layl" aria-pressed="false"><div class="pic" style="background-image:url(img/bg-layl.jpg)"><div class="sw"><i style="background:#14132c"></i><i style="background:#e9c46a"></i><i style="background:#1f1e3e"></i></div></div><div class="txt"><h3>Layl <small>ليل</small></h3><p data-i="l3">Dark, with gold. Good for night.</p><span class="on" data-i="chosen">On this page now</span></div></button>
+    </div>
+  </div>
+</section>
+
+<section class="free">
+  <div class="in">
+    <div class="grid">
+      <img src="img/ic-medal.png" alt="">
+      <div>
+        <h2 data-i="frH">Hisn is free</h2>
+        <p data-i="frP">No subscription. Hisn is kept going by donations, and its code is open for anyone to read.</p>
+        <div class="facts"><span data-i="fa1">Supported by donations</span><span data-i="fa2">No subscription</span><span data-i="fa3">Open source</span><span data-i="fa4">Arabic and English, more languages later</span></div>
+        <div class="support">
+          <a class="btn" href="#" data-todo="patreon-url"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="14.5" cy="9.5" r="6.5" fill="currentColor"/><rect x="3" y="3" width="3.6" height="18" rx="1" fill="currentColor"/></svg><span data-i="patreon">Support on Patreon</span></a>
+          <a class="btn white" href="#" data-todo="coffee-url"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 8h14v5a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6zm14 1.5h1.5a2.5 2.5 0 0 1 0 5H17v-2h1.5a.5.5 0 0 0 0-1H17zM6 3.5c0-.6.6-1 1-.5.8.9.8 2 0 3-.4.5-1 0-1-.5zm4 0c0-.6.6-1 1-.5.8.9.8 2 0 3-.4.5-1 0-1-.5z"/></svg><span data-i="coffee">Buy us a coffee</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="get" style="padding-top:0">
+  <div class="in">
+    <div class="head">
+      <h2 data-i="gH">Start on Android today</h2>
+    </div>
+    <div class="plats">
+      <div class="plat" data-os="android"><span class="pico"><svg><use href="#p-android"/></svg></span><span class="tag now" data-i="now">Available</span><h3>Android</h3><p data-i="pa">Android 6.0 and newer. Phone makers’ extra settings explained inside.</p><a class="btn small" href="downloads/hisn-android.apk"><svg><use href="#i-down"/></svg><span data-i="dlShort">Download</span></a><p class="also"><span data-i="alsoOn">Coming to more stores:</span> <span class="chip">Google Play</span> <span class="chip">Huawei AppGallery</span> <span class="chip" data-i="moreStores">and more</span></p></div>
+      <div class="plat" data-os="ios"><span class="pico"><svg><use href="#p-apple"/></svg></span><span class="tag" data-i="soon">Coming</span><h3 data-i="ios">iPhone and iPad</h3><p data-i="pi">Screen Time and a content filter, with Hisn on top.</p></div>
+      <div class="plat" data-os="mac"><span class="pico"><svg><use href="#p-mac"/></svg></span><span class="tag" data-i="soon">Coming</span><h3>Mac</h3><p data-i="pm">A menu bar shield for every browser on the Mac.</p></div>
+      <div class="plat" data-os="windows"><span class="pico"><svg><use href="#p-win"/></svg></span><span class="tag" data-i="soon">Coming</span><h3>Windows</h3><p data-i="pw">A shield for every browser on a Windows PC.</p></div>
+      <div class="plat" data-os="web"><span class="pico"><svg><use href="#p-web"/></svg></span><span class="tag" data-i="soon">Coming</span><h3 data-i="ext">Browser extension</h3><p data-i="pe">Chrome, Edge and Firefox, on Mac, Windows or Linux.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq" style="padding-top:0">
+  <div class="in">
+    <div class="head"><h2 data-i="qH">What people ask first</h2></div>
+    <div class="faq">
+      <details open><summary data-i="q1">Does Hisn see what I browse?</summary><p data-i="a1">No. Pages, words and images are checked on your phone, and nothing about your browsing is sent anywhere.</p></details>
+      <details><summary data-i="q2">Is it for brothers and sisters?</summary><p data-i="a2">Yes. At the start Hisn asks whether to call you brother or sister, and speaks to you that way.</p></details>
+      <details><summary data-i="q3">Can it block everything?</summary><p data-i="a3">No blocker can. Hisn closes the common doors and tells you plainly what each layer does not cover, so you can close the rest yourself.</p></details>
+      <details><summary data-i="q4">What if I slip?</summary><p data-i="a4">Press the red bar, then “I slipped”. Your nights of light are kept, and Hisn shows three steps back: istighfār, wuḍūʾ and two rakʿahs, and closing the door it came through.</p></details>
+      <details><summary data-i="q5">Why is it free?</summary><p data-i="a5">Hisn is made for the sake of Allah, and its code is open.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="end">
+  <div class="in">
+    <div class="scene">
+      <svg class="logo"><use href="#gate"/></svg>
+      <h2 data-i="endH">Start tonight</h2>
+      <a class="btn" href="downloads/hisn-android.apk"><svg><use href="#i-down"/></svg><span data-i="dl">Download for Android</span></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="in foot">
+    <div class="fbrand">
+      <a class="brand" href="#"><svg class="logo"><use href="#gate"/></svg>Hisn <span class="ar">حصن</span></a>
+      <p data-i="fTag">Guard your gaze. Keep your heart.</p>
+      <div class="social" data-pending="social-links">
+        <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm5 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm5.3-4a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z"/></svg></a>
+        <a href="#" aria-label="TikTok"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 2c.4 2.3 1.9 3.9 4.3 4.1v3.2c-1.6 0-3-.5-4.3-1.3v6.6a6 6 0 1 1-6-6c.3 0 .7 0 1 .1v3.3a2.8 2.8 0 1 0 1.9 2.6V2z"/></svg></a>
+        <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.5 2.5 0 0 0-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z"/></svg></a>
+        <a href="#" aria-label="X"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.8 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.2 21H2.1l7.3-8.3L1.8 3h6.4l4.4 5.9zm-1.1 16.2h1.7L7.4 4.7H5.6z"/></svg></a>
+      </div>
+    </div>
+    <nav class="fcol" aria-label="Hisn">
+      <b data-i="fcApp">The app</b>
+      <a href="#features" data-i="navFeatures">What it does</a>
+      <a href="#minute" data-i="navMinute">The hard minute</a>
+      <a href="#looks" data-i="navLooks">Looks</a>
+      <a href="#get" data-i="navGet">Get Hisn</a>
+    </nav>
+    <nav class="fcol" aria-label="Read">
+      <b data-i="fcRead">Read</b>
+      <span class="soon"><span data-i="fBlog">Blog</span> <small data-i="soon">Coming</small></span>
+      <a href="limits.html" data-i="fLim">What Hisn can’t do</a>
+      <a href="privacy.html" data-i="fPriv">Privacy</a>
+    </nav>
+    <nav class="fcol" aria-label="Tools">
+      <b data-i="fcTools">Tools</b>
+      <a href="vault.html" data-i="fVault">Vault</a>
+      <a href="partner.html" data-i="fPartner">Vault partner</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+const AR = {
+ stA: 'حمّل لـ', stSoon: 'قريبًا',
+  w1: 'طوال اليوم، في كل تطبيق', w2: 'الساعة 23:40، وحدك', w3: 'بعد العشاء', w4: 'في لحظة ضعف',
+  whoH: 'لمن يخاف الله ويريد أن يحفظ نفسه', whoP: 'ولكلٍّ منهم في حصن ما يعينه.',
+  whoN1: 'الشاب', who1: 'تخاف الله، وتقع مرة بعد مرة، وتريد أن تتوقف.', t11: 'درع المحتوى', t12: 'ساعدني الآن',
+  whoN2: 'الزوج', who2: 'تريد أن تحفظ زواجك وتغضّ بصرك.', t21: 'القفل', t22: 'الرفيق',
+  whoN3: 'الأخ والأخت', who3: 'تريد هاتفًا يعينك على طاعة الله، لا هاتفًا يبعدك عنها.', t31: 'الانتظار قبل الفتح', t32: 'ليالٍ هادئة',
+  whoN4: 'الأب والأم', who4: 'تريد هاتفًا آمنًا لأولادك في البيت.', t41: 'وليّ الأمر', t42: 'القفل',
+  miH: 'طريق حياة، ليلة بعد ليلة', miP: 'يعدّ حصن كل ليلة نظيفة، ومعها الصلوات التي حافظت عليها، والصفحات التي قرأتها، والمرات التي رجعت فيها. والزلّة لا تمحو ما قبلها.',
+  sn1: 'ليلة', st1: 'الليلة الأولى', sn2: 'ليالٍ', st2: 'الأسبوع الأول', sn3: 'ليلة', st3: 'القنديل المضيء', sn4: 'ليلة', st4: 'شهر كامل', sn5: 'ليلة', st5: 'أربعون ليلة', sn6: 'ليلة', st6: 'مئة ليلة', sn7: 'ليلة', st7: 'عام في الحصن',
+  gift: 'عند كل محطة تنال واحدة من هذه الهدايا لتحتفظ بها. هي لك وحدك: لا ترتيب، ولا لوحة متصدّرين، ولا مقارنة بأحد.',
+  al1: 'الصلوات في وقتها', al1s: 'كل يوم، بجانب ليلتك', al2: 'القرآن كل يوم', al2s: 'قراءة قصيرة تُعلَّم بعد قراءتها', al3: 'رجعت في وقتك', al3s: 'كل مرة وقفت فيها عند الخطوة الأولى',
+  navFeatures: 'ماذا يفعل', navMinute: 'اللحظة الصعبة', navLooks: 'الألوان', navFaq: 'أسئلة', navGet: 'احصل على حصن',
+  eyebrow: 'لأندرويد وآيفون وآيباد وماك · مجاني',
+  h1: 'احفظ بصرك، <em>واحفظ قلبك.</em>',
+  lede: 'يغلق حصن محتوى الزنا على هاتفك، ويقف معك في اللحظة الصعبة، ويقرّبك من الله كل يوم. بلا إعلانات ولا اشتراك.',
+  dl: 'حمّل لأندرويد', iosBtn: 'آيفون · قريبًا',
+  ayahT: 'سورة النور، الآية 30',
+  pHelpT: 'وعدتَ الله، وهو قريب', pHelpSrc: 'سورة البقرة، الآية 186',
+  pr1: 'أستعين بالله لا بقوتي وحدها', pr2: 'سأحفظ عيني وقلبي', pr3: 'سأقف عند الخطوة الأولى',
+  slipped: 'وقعتُ', close: 'أوشكتُ أن أضعف',
+  salam: 'السلام عليكم يا يوسف', nights: 'ليالٍ من النور', nightsW: 'ليالٍ',
+  r1: 'الأذكار', r2: 'الدعاء', r3: 'التقدّم', r4: 'القرآن', toMile: '9 من 40 ليلة حتى أول محطة',
+  fajr: 'الفجر', dhuhr: 'الظهر', asr: 'العصر', maghrib: 'المغرب', isha: 'العشاء',
+  votd: 'آية اليوم · العلق 14', votdT: '', helpNow: 'ساعدني الآن',
+  noteT: 'أغلق حصن صفحة', noteS: 'غُضّ بصرك. لم يُحفظ شيء.',
+  pClosedT: 'أغلق حصن هذه الصفحة', pClosedS: 'غُضّ بصرك لحظة. لم يُحفظ شيء عمّا ظهر.', turnBack: 'ارجع خلال', breathe: 'تنفّس مع الذكر',
+  bandT: '', bandSrc: 'سورة النور، الآية 30',
+  fK: 'ماذا يفعل حصن', fH: 'أربعة أسوار، وباب التوبة مفتوح دائمًا',
+  fP: 'يعمل حصن تحت إعدادات هاتفك نفسها. يغلق ما يقود إلى الخطوة الأسوأ، ويساعدك أكثر ما يساعدك في اللحظة التي تحتاجه فيها.',
+  f1h: 'درع المحتوى', f1p: 'تُغلق مواقع الزنا وكلماته وصوره في كل تطبيق ومتصفح على الهاتف.', f1a: 'المواقع، في كل التطبيقات', f1b: 'الكلمات، بالعربية والإنجليزية', f1c: 'الصور، تُفحص على الهاتف',
+  f2h: 'ساعدني الآن', f2p: 'زرّ أحمر واحد للحظة الصعبة. وعودك أنت أولًا، ثم تنفّس مع الذكر.', f2a: 'وعودك، بكلماتك', f2b: 'الوضوء وركعتان', f2c: 'طريق للرجوع بعد الزلّة',
+  f3h: 'المقاطع والوقت', f3p: 'وقفة قصيرة مع الذكر قبل التطبيقات التي تختارها، وليالٍ هادئة بعد العشاء.', f3a: 'انتظار قبل فتح التطبيقات المختارة', f3b: 'تركيز يتوقف عند الأذان', f3c: 'إغلاق المقاطع القصيرة',
+  f4h: 'القفل والرفيق', f4p: 'اقفل قواعدك فلا تُخفَّف في لحظة ضعف، واختر شخصًا واحدًا تثق به.', f4a: 'قواعد مقفلة لمدة تحددها', f4b: 'رفيق لا يرى إلا لياليك', f4c: 'حاسوب وليّ الأمر يضيف قواعد',
+  mK: 'اللحظة الصعبة', mH: 'حين تضعف، اضغط «ساعدني الآن»', mP: 'الزر الأحمر موجود في كل شاشة من التطبيق. وهذا ما يحدث بعده.',
+  m1h: 'تتذكّر ما وعدت به', m1p: 'يعرض حصن الوعود التي كتبتها في البداية، وقوله تعالى: ﴿فَإِنِّي قَرِيبٌ﴾.',
+  m2h: 'تنفّس مع الذكر', m2p: 'ثلاثة أنفاس بطيئة، وتقول مع كل زفير: أستغفر الله.',
+  m3h: 'توضّأ وصلِّ ركعتين', m3p: 'لا يرسل لك حصن أي تنبيه لمدة عشر دقائق وأنت تصلّي.',
+  m4h: 'وإن وقعت', m4p: 'لا يضيع ما مضى من أيامك، وتبدأ من جديد الليلة.',
+  bT: 'لنقف معًا', bS: 'الرغبة تمضي، ووعدك يبقى. تنفّس مع الدائرة.', bIn: 'شهيق', bR: 'الجولة 1 من 3', bNext: 'تابع إلى الصلاة',
+  lK: 'الألوان', lH: 'اختر شكل حصن', lP: 'ثلاثة ألوان. اضغط على أحدها لتراه على هذه الصفحة.',
+  l1: 'فاتح، بنفسجي وذهبي.', l2: 'فاتح، أخضر وذهبي.', l3: 'داكن مع الذهبي. مناسب لليل.', chosen: 'على هذه الصفحة الآن',
+  frH: 'حصن مجاني', frP: 'بلا اشتراك. يقوم حصن على التبرعات، وشيفرته مفتوحة لمن أراد قراءتها.',
+  fa1: 'يقوم على التبرعات', fa2: 'بلا اشتراك', fa3: 'مفتوح المصدر', fa4: 'بالعربية والإنجليزية، ولغات أخرى لاحقًا', patreon: 'ادعم حصن على Patreon', coffee: 'اشترِ لنا قهوة',
+  gK: 'احصل على حصن', gH: 'ابدأ على أندرويد اليوم', now: 'متاح', soon: 'قريبًا', dlShort: 'تحميل',
+  alsoOn: 'وقريبًا في متاجر أخرى:', moreStores: 'وغيرها', pa: 'أندرويد 6.0 وما بعده. إعدادات الشركات المصنّعة الإضافية مشروحة في التطبيق.', ios: 'آيفون وآيباد', pi: 'مدة استخدام الجهاز وفلتر المحتوى، وحصن فوقهما.', pm: 'درع في شريط القوائم لكل متصفح على الماك.', ext: 'إضافة المتصفح', pw: 'درع لكل متصفح على حاسوب ويندوز.', extShort: 'إضافة المتصفح', pe: 'كروم وإيدج وفايرفوكس، على ماك أو ويندوز أو لينكس.',
+  qK: 'أسئلة', qH: 'أول ما يسأل عنه الناس',
+  q1: 'هل يرى حصن ما أتصفحه؟', a1: 'لا. الصفحات والكلمات والصور تُفحص على هاتفك، ولا يُرسَل شيء عن تصفحك إلى أي مكان.',
+  q2: 'هل هو للإخوة والأخوات؟', a2: 'نعم. يسألك حصن في البداية: أخي أم أختي؟ ثم يخاطبك على ذلك.',
+  q3: 'هل يحجب كل شيء؟', a3: 'لا يستطيع ذلك أي حاجب. يغلق حصن الأبواب الشائعة، ويخبرك بوضوح بما لا تغطّيه كل طبقة، لتغلق الباقي بنفسك.',
+  q4: 'ماذا لو وقعت؟', a4: 'اضغط الشريط الأحمر ثم «وقعتُ». لياليك من النور محفوظة، ويعرض حصن ثلاث خطوات للرجوع: الاستغفار، والوضوء وركعتان، وإغلاق الباب الذي جاء منه.',
+  q5: 'لماذا هو مجاني؟', a5: 'حصن مصنوع ابتغاء وجه الله، ومصدره مفتوح.',
+  endH: 'ابدأ من الليلة', fPriv: 'الخصوصية', fLim: 'ما لا يستطيعه حصن', fVault: 'الخزنة', fTag: 'احفظ بصرك، واحفظ قلبك.', fcApp: 'التطبيق', fcRead: 'اقرأ', fBlog: 'المدونة', fcTools: 'أدوات', fPartner: 'شريك الخزنة',
+};
+const EN = {};
+document.querySelectorAll('[data-i]').forEach(el => { EN[el.dataset.i] = el.hasAttribute('data-html') ? el.innerHTML : el.textContent; });
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+const root = document.documentElement;
+let lang = store.get('hisn-lang') || 'en';
+function setLang(l) {
+  lang = l; root.lang = l; root.dir = l === 'ar' ? 'rtl' : 'ltr';
+  const d = l === 'ar' ? AR : EN;
+  document.querySelectorAll('[data-i]').forEach(el => {
+    const v = d[el.dataset.i] ?? EN[el.dataset.i];
+    el.hidden = v === '';
+    if (el.hasAttribute('data-html')) el.innerHTML = v; else el.textContent = v;
+  });
+  document.getElementById('lang').textContent = l === 'ar' ? 'English' : 'العربية';
+  store.set('hisn-lang', l);
+}
+document.getElementById('lang').addEventListener('click', () => setLang(lang === 'ar' ? 'en' : 'ar'));
+
+function currentLook() {
+  if (root.dataset.look) return root.dataset.look;
+  const dark = root.dataset.theme === 'dark' || (root.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  return dark ? 'layl' : 'fajr';
+}
+function markLook() { const c = currentLook(); document.querySelectorAll('.look').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.look === c))); }
+document.querySelectorAll('.look').forEach(b => b.addEventListener('click', () => { root.dataset.look = b.dataset.look; store.set('hisn-look', b.dataset.look); markLook(); }));
+const saved = store.get('hisn-look'); if (saved) root.dataset.look = saved;
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', markLook);
+new MutationObserver(markLook).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+markLook();
+setLang(lang);
+
+// live "nights of light" timer, as in the app
+const start = Date.now() - ((15 * 3600) + 28 * 60 + 4) * 1000;
+const tick = document.getElementById('tick');
+setInterval(() => { const s = Math.floor((Date.now() - start) / 1000) % 86400; tick.textContent = [s / 3600 | 0, (s / 60 | 0) % 60, s % 60].map(n => String(n).padStart(2, '0')).join(':'); }, 1000);
+
+// breathing circle
+const circle = document.getElementById('circle'), bword = document.getElementById('bword');
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  let inhale = true;
+  const breathe = () => { circle.style.transform = inhale ? 'scale(1)' : 'scale(.7)'; bword.textContent = inhale ? (lang === 'ar' ? 'شهيق' : 'Breathe in') : (lang === 'ar' ? 'زفير' : 'Breathe out'); inhale = !inhale; };
+  breathe(); setInterval(breathe, 4000);
+}
+
+
+// Show the visitor's own platform first: Android on an Android phone, Mac on a Mac, and so on.
+// Read from the browser only; nothing is sent. iPadOS reports itself as a Mac, so touch decides.
+function visitorOS() {
+  const ua = navigator.userAgent || '';
+  const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+  if (/android/i.test(ua)) return 'android';
+  if (/iphone|ipad|ipod/i.test(ua) || (/mac/i.test(plat) && navigator.maxTouchPoints > 1)) return 'ios';
+  if (/mac/i.test(plat)) return 'mac';
+  if (/win/i.test(plat)) return 'windows';
+  return 'web';
+}
+function putFirst(os) {
+  for (const box of document.querySelectorAll('.stores, .plats')) {
+    const item = box.querySelector(':scope > [data-os="' + os + '"]');
+    const items = [...box.querySelectorAll(':scope > [data-os]')];
+    const order = ['android', 'ios', 'mac', 'windows', 'web'];
+    items.sort((a, b) => order.indexOf(a.dataset.os) - order.indexOf(b.dataset.os)).forEach((el) => box.appendChild(el));
+    if (item) box.prepend(item);
+  }
+  document.documentElement.dataset.os = os;
+}
+putFirst(visitorOS());
+window.hisnShowFor = putFirst;
+
+const topBar = document.getElementById('top');
+addEventListener('scroll', () => topBar.classList.toggle('scrolled', scrollY > 8), { passive: true });
+</script>

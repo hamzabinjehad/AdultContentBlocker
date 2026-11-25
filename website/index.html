@@ -2,298 +2,262 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
-<title>Hisn — block adult content on your Android phone</title>
-<meta name="description" content="Block adult sites in every browser, block the apps you choose, and check what's on screen. All on your phone. Free, no account, no cloud.">
-<meta property="og:title" content="Hisn — block adult content on your phone">
-<meta property="og:description" content="Four protections, one free Android app. No account, no cloud, no subscription.">
+<meta name="theme-color" content="#fbf1ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14132c" media="(prefers-color-scheme: dark)">
+<title>Hisn · حصن</title>
+<meta name="description" content="Hisn closes adult content on your phone, helps you through the hard minute and brings you nearer to Allah. Free, no subscription.">
+<meta property="og:title" content="Hisn · حصن">
+<meta property="og:description" content="Guard your gaze. Keep your heart. Free for Android, with iPhone, iPad and Mac coming.">
 <meta property="og:type" content="website">
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-<script src="lib/motion-flag.js"></script>
-<link rel="stylesheet" href="assets/style.css">
-<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" type="image/svg+xml" href="assets/hisn/favicon.svg">
+<link rel="stylesheet" href="assets/home.css">
+<script type="module" src="lib/home.js"></script>
 </head>
-<body class="site">
-<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
-
-<!-- Icons: Lucide (ISC), inlined so the page makes no external request. -->
-<svg class="icon-sprite" aria-hidden="true" focusable="false">
-  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
-  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></symbol>
-  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
-  <symbol id="i-laptop" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 20h20"/></symbol>
-  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
-  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
-  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
-  <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
-  <symbol id="i-cloud-off" viewBox="0 0 24 24"><path d="m2 2 20 20"/><path d="M5.8 5.8A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.3-.2"/><path d="M21.5 16.5A4.5 4.5 0 0 0 17.5 10h-1.8A7 7 0 0 0 10 5.1"/></symbol>
-  <symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></symbol>
+<body>
+<svg class="u1" width="0" height="0" aria-hidden="true">
+  <symbol id="gate" viewBox="0 0 64 64"><path fill="currentColor" fill-rule="evenodd" d="M10 7h8v5h6V7h16v5h6V7h8v27c0 13-9 21.5-22 27C19 55.5 10 47 10 34zM24 52V36.5Q24 27.5 32 22.5Q40 27.5 40 36.5V52z"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v12M6.5 11 12 16.5 17.5 11M5 20h14"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v6M12 16.5h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="p-android" viewBox="0 0 24 24"><path fill="currentColor" d="M6.2 9.2h11.6v8.3c0 .7-.6 1.3-1.3 1.3h-.9v2.4a1.3 1.3 0 0 1-2.6 0v-2.4h-2v2.4a1.3 1.3 0 0 1-2.6 0v-2.4h-.9c-.7 0-1.3-.6-1.3-1.3zM4.3 9.2a1.3 1.3 0 0 1 1.3 1.3v5.1a1.3 1.3 0 0 1-2.6 0v-5.1c0-.7.6-1.3 1.3-1.3zm15.4 0a1.3 1.3 0 0 1 1.3 1.3v5.1a1.3 1.3 0 0 1-2.6 0v-5.1c0-.7.6-1.3 1.3-1.3zM6.3 8.3a5.7 5.7 0 0 1 3-4.6l-.9-1.6a.3.3 0 0 1 .5-.3l1 1.6a6 6 0 0 1 4.2 0l1-1.6a.3.3 0 0 1 .5.3l-.9 1.6a5.7 5.7 0 0 1 3 4.6zm3.4-2.6a.6.6 0 1 0 0 1.2.6.6 0 0 0 0-1.2zm4.6 0a.6.6 0 1 0 0 1.2.6.6 0 0 0 0-1.2z"/></symbol>
+  <symbol id="p-apple" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.6s-2.5-1-2.5-3.8zM14.1 5.8c.6-.8 1.1-1.8 1-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.7-1 2.7 1 .1 2-.5 2.7-1.3z"/></symbol>
+  <symbol id="p-mac" viewBox="0 0 24 24"><path fill="currentColor" d="M4 5.5C4 4.7 4.7 4 5.5 4h13c.8 0 1.5.7 1.5 1.5V16H4zM1.5 17.5h21l-.6 1.3c-.3.7-1 1.2-1.8 1.2H3.9c-.8 0-1.5-.5-1.8-1.2z"/></symbol>
+  <symbol id="p-win" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5.5 10.5 4.5v7H3zM11.5 4.4 21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.4z"/></symbol>
+  <symbol id="p-web" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M2 6.5C2 5.1 3.1 4 4.5 4h15C20.9 4 22 5.1 22 6.5v11c0 1.4-1.1 2.5-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5zM4 9v8.5c0 .3.2.5.5.5h15c.3 0 .5-.2.5-.5V9zm1.5-3.2a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8zm2.8 0a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8z"/></symbol>
 </svg>
 
-<header class="top site-top">
-  <a class="brand" href="./index.html" aria-label="Hisn home">
-    <span class="ar">حصن</span><span class="dot">·</span><span>Hisn</span>
-  </a>
-  <nav class="site-nav" aria-label="Main" data-i18n-aria="nav.label">
-    <a href="#features" data-i18n="nav.features">Features</a>
-    <a href="#how" data-i18n="nav.how">How it works</a>
-    <a href="#roadmap" data-i18n="nav.roadmap">Roadmap</a>
-    <a href="vault.html" data-i18n="nav.vault">Vault</a>
-  </nav>
-  <div class="top-actions">
-    <button class="ghost" type="button" data-lang-button aria-label="العربية">العربية</button>
-    <a class="button get-app" href="#download" data-i18n="nav.get">Get the app</a>
+<header class="top" id="top">
+  <div class="in">
+    <a class="brand" href="#"><svg class="logo"><use href="#gate"/></svg>Hisn <span class="ar">حصن</span></a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#features" data-i="navFeatures">What it does</a>
+      <a href="#minute" data-i="navMinute">The hard minute</a>
+      <a href="#looks" data-i="navLooks">Looks</a>
+      <a href="#faq" data-i="navFaq">Questions</a>
+    </nav>
+    <button class="lang" id="lang" data-lang-button type="button" aria-label="Switch language">العربية</button>
+    <a class="btn small" href="#get" data-i="navGet">Get Hisn</a>
   </div>
 </header>
 
-<main id="main" class="site-main">
-
-  <section class="hero3">
-    <div class="hero3-copy">
-      <dl class="hero-facts">
-        <div><dt data-i18n="fact.list.label">On the blocklist</dt><dd data-i18n="fact.list.value">236,000+ sites</dd></div>
-        <div><dt data-i18n="fact.private.label">On your phone</dt><dd data-i18n="fact.private.value">No account, no cloud</dd></div>
-      </dl>
-      <h1 data-i18n="hero.title">Adult content, blocked. No subscription.</h1>
-      <p class="lede" data-i18n="hero.lede">Hisn is a free Android app that blocks adult sites, the apps you choose, and what shows up on screen. Everything runs on your phone.</p>
-      <div class="cta-row">
-        <a class="button primary big" href="downloads/hisn-android.apk" download><span data-i18n="hero.download">Download for Android</span><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg></a>
+<main>
+<div class="hero">
+  <div class="in">
+    <div class="copy">
+      <h1 class="reveal d1" data-i="h1" data-html>Guard your gaze. <em>Keep your heart.</em></h1>
+      <p class="lede reveal d2" data-i="lede">Hisn closes adult content on your phone, stays with you through the hard minute, and brings you nearer to Allah every day. No ads and no subscription.</p>
+      <div class="stores reveal d3">
+        <a class="store now" data-os="android" href="downloads/hisn-android.apk"><svg><use href="#p-android"/></svg><span><small data-i="stA">Download for</small><b>Android</b></span></a>
+        <a class="store" data-os="ios" href="#get"><svg><use href="#p-apple"/></svg><span><small data-i="stSoon">Coming soon</small><b data-i="ios">iPhone and iPad</b></span></a>
+        <a class="store" data-os="mac" href="#get"><svg><use href="#p-mac"/></svg><span><small data-i="stSoon">Coming soon</small><b>Mac</b></span></a>
+        <a class="store" data-os="windows" href="#get"><svg><use href="#p-win"/></svg><span><small data-i="stSoon">Coming soon</small><b>Windows</b></span></a>
+        <a class="store" data-os="web" href="#get"><svg><use href="#p-web"/></svg><span><small data-i="stSoon">Coming soon</small><b data-i="extShort">Browser extension</b></span></a>
       </div>
-      <ul class="platform-pills" aria-label="Other platforms" data-i18n-aria="hero.platformsLabel">
-        <li class="soon" data-i18n="status.soon">Coming soon</li>
-        <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg><span data-i18n="platform.iphone">iPhone</span></li>
-        <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-laptop"/></svg><span data-i18n="platform.mac">Mac</span></li>
-        <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg><span data-i18n="platform.linux">Linux</span></li>
-        <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg><span data-i18n="platform.windows">Windows</span></li>
-        <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-globe"/></svg><span data-i18n="platform.browser">Browser</span></li>
-      </ul>
-    </div>
-
-    <div class="hero3-phone">
-      <div class="phone-frame">
-        <img src="assets/block.png" width="1080" height="2400" alt="Hisn block screen: One breath first, then back to home">
-      </div>
-      <div class="float-card">
-        <h3 data-i18n="float.title">One app. Four protections.</h3>
-        <ul>
-          <li data-i18n="float.dns">Websites</li>
-          <li data-i18n="float.apps">Apps &amp; text</li>
-          <li data-i18n="float.checks">Images</li>
-          <li data-i18n="float.limits">Time &amp; limits</li>
-        </ul>
+      <div class="ayah reveal d3">
+        <div class="q">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ</div>
+        <div class="t" data-i="ayahT">“Tell the believing men to lower their gaze.” An-Nūr 24:30, Pickthall</div>
       </div>
     </div>
-  </section>
 
-  <section class="section band" id="features">
-    <h2 class="band-line"><span data-i18n="band.lead">Hisn blocks </span><em data-i18n="band.mark">236,000+ adult sites</em><span data-i18n="band.tail"> before the page loads, in every browser on your phone.</span></h2>
-    <div class="feature-panel">
-      <article class="feature-item">
-        <span class="tick"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
-        <div><h3 data-i18n="gain.one.title">Close the door on adult sites</h3><p data-i18n="gain.one.body">Blocked in every browser, before the page loads.</p></div>
-      </article>
-      <article class="feature-item">
-        <span class="tick"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
-        <div><h3 data-i18n="gain.two.title">Quiet the apps that pull you back</h3><p data-i18n="gain.two.body">Block a whole app, or the adult words and images inside it.</p></div>
-      </article>
-      <article class="feature-item">
-        <span class="tick"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
-        <div><h3 data-i18n="gain.three.title">Pause before the urge wins</h3><p data-i18n="gain.three.body">A slow breath and a way home, not a lecture.</p></div>
-      </article>
+    <div class="stage" aria-label="Hisn on a phone">
+      <div class="note reveal d3"><img src="assets/hisn/ic-shield.png" alt=""><div><b data-i="noteT">Hisn closed a page</b><span data-i="noteS">Lower your gaze. Nothing was saved.</span></div></div>
+      <!-- Home -->
+      <div class="phone p1 reveal d1"><div class="scr">
+        <div class="status"><span>21:14</span><span></span></div>
+        <div class="s-hd"><svg class="logo"><use href="#gate"/></svg><span data-i="salam">As-salāmu ʿalaykum, Yusuf</span></div>
+        <div class="s-since"><div class="k" data-i="nights">Nights of light</div><div class="s-days"><b>9</b><span data-i="nightsW">nights</span></div><div class="s-timer"><i></i><span id="tick">15:28:04</span></div></div>
+        <div class="s-rounds"><span><img src="assets/hisn/ic-misbaha.png" alt=""><span data-i="r1">Adhkār</span></span><span><img src="assets/hisn/ic-hands.png" alt=""><span data-i="r2">Du’a</span></span><span><img src="assets/hisn/ic-medal.png" alt=""><span data-i="r3">Progress</span></span><span><img src="assets/hisn/ic-quran.png" alt=""><span data-i="r4">Qur’an</span></span></div>
+        <div><div class="s-bar"><i></i></div><div class="s-sub u2" data-i="toMile">9 of 40 nights to your first milestone</div></div>
+        <div class="s-prayers"><div><span data-i="fajr">Fajr</span><b>06:12</b></div><div><span data-i="dhuhr">Dhuhr</span><b>12:24</b></div><div><span data-i="asr">ʿAṣr</span><b>14:31</b></div><div><span data-i="maghrib">Maghrib</span><b>16:43</b></div><div class="nx"><span data-i="isha">ʿIshāʾ</span><b>18:12</b></div></div>
+        <div class="s-verse"><span class="k" data-i="votd">Verse of the day · 96:14</span><div class="q">أَلَمْ يَعْلَم بِأَنَّ ٱللَّهَ يَرَىٰ</div><div class="u3" data-i="votdT">“Is he then unaware that Allah seeth?”</div></div>
+        <div class="s-dock"><div class="s-btn red"><svg><use href="#i-alert"/></svg><span data-i="helpNow">HELP NOW</span></div></div>
+      </div></div>
     </div>
-  </section>
+  </div>
+</div>
 
-  <section class="section spotlight">
-    <p class="tag" data-i18n="vault.tag">Also from Hisn</p>
-    <h2 data-i18n="vault.title">Introducing Hisn Vault</h2>
-    <p class="spotlight-lede" data-i18n="vault.body">A time lock that lives off your phone. Seal the passcode you would rather not know, and it stays sealed until the date you choose.</p>
-    <a class="button outline" href="vault.html" data-i18n="vault.link">Learn about the Vault</a>
-    <div class="vault-art" aria-hidden="true">
-      <div class="vault-card">
-        <span class="tick"><svg class="icon"><use href="#i-lock"/></svg></span>
-        <span class="vault-dots"><i></i><i></i><i></i><i></i><i></i><i></i></span>
-        <span class="vault-bar"><i></i></span>
+<div class="band">
+  <div class="in">
+    <div class="q">قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَٰرِهِمْ وَيَحْفَظُوا۟ فُرُوجَهُمْ ۚ ذَٰلِكَ أَزْكَىٰ لَهُمْ ۗ إِنَّ ٱللَّهَ خَبِيرٌۢ بِمَا يَصْنَعُونَ</div>
+    <p class="t" data-i="bandT">Tell the believing men to lower their gaze and be modest. That is purer for them. Lo! Allah is aware of what they do.</p>
+    <p class="src" data-i="bandSrc">AN-NŪR 24:30 · TRANSLATION: PICKTHALL</p>
+  </div>
+</div>
+
+<section id="features">
+  <div class="in">
+    <div class="head">
+      <h2 data-i="fH">Four walls, and a door that is always open</h2>
+      <p data-i="fP">Hisn works under your phone’s own settings. It closes what leads to the worst step, and it helps you most in the minute it matters.</p>
+    </div>
+    <div class="feats">
+      <article class="feat"><img src="assets/hisn/ic-shield.png" alt=""><p class="when" data-i="w1">All day, in every app</p><h3 data-i="f1h">Content shield</h3><p data-i="f1p">Adult sites, words and images are closed in every app and browser on the phone.</p><ul><li data-i="f1a">Sites, in all apps</li><li data-i="f1b">Words, in Arabic and English</li><li data-i="f1c">Images, checked on the phone</li></ul></article>
+      <article class="feat"><img src="assets/hisn/ic-phonedown.png" alt=""><p class="when" data-i="w2">23:40, alone</p><h3 data-i="f2h">Help now</h3><p data-i="f2p">One red button for the hard minute. Your own promises first, then breathing with dhikr.</p><ul><li data-i="f2a">Your promises, in your words</li><li data-i="f2b">Wuḍūʾ and two rakʿahs</li><li data-i="f2c">A way back after a slip</li></ul></article>
+      <article class="feat"><img src="assets/hisn/ic-hourglass.png" alt=""><p class="when" data-i="w3">After ʿIshāʾ</p><h3 data-i="f3h">Feeds and time</h3><p data-i="f3p">A short pause with dhikr before the apps you choose, and quiet nights after ʿIshāʾ.</p><ul><li data-i="f3a">Open Wait before chosen apps</li><li data-i="f3b">Focus that pauses for the adhān</li><li data-i="f3c">Shorts and Reels closed</li></ul></article>
+      <article class="feat"><img src="assets/hisn/ic-padlock.png" alt=""><p class="when" data-i="w4">In a weak moment</p><h3 data-i="f4h">Lock and companion</h3><p data-i="f4p">Lock your rules so a weak moment can’t loosen them. Choose one person you trust.</p><ul><li data-i="f4a">Rules locked for a set time</li><li data-i="f4b">A companion sees only your nights</li><li data-i="f4c">A guardian laptop can add rules</li></ul></article>
+    </div>
+  </div>
+</section>
+
+<section class="who u4">
+  <div class="in">
+    <div class="head"><h2 data-i="whoH">For the one who fears Allah and wants to guard himself</h2><p data-i="whoP">Each of them finds the tools that fit in Hisn.</p></div>
+    <div class="people">
+      <article class="person"><img src="assets/hisn/ic-ibrik.png" alt=""><h3 data-i="whoN1">The young man</h3><p data-i="who1">You fear Allah, you keep falling, and you want to stop for good.</p><div class="tools"><span data-i="t11">Content shield</span><span data-i="t12">Help now</span></div></article>
+      <article class="person"><img src="assets/hisn/ic-rings.png" alt=""><h3 data-i="whoN2">The husband</h3><p data-i="who2">You want to guard your marriage and lower your gaze.</p><div class="tools"><span data-i="t21">Lock</span><span data-i="t22">Companion</span></div></article>
+      <article class="person"><img src="assets/hisn/ic-olive.png" alt=""><h3 data-i="whoN3">Brother or sister</h3><p data-i="who3">You want a phone that helps you obey Allah, not one that pulls you away.</p><div class="tools"><span data-i="t31">Open Wait</span><span data-i="t32">Quiet nights</span></div></article>
+      <article class="person"><img src="assets/hisn/ic-home.png" alt=""><h3 data-i="whoN4">The parent</h3><p data-i="who4">You want a safer phone for your children at home.</p><div class="tools"><span data-i="t41">Guardian</span><span data-i="t42">Lock</span></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="minute" id="minute">
+  <div class="in grid">
+    <div>
+      <div class="head u5">
+        <h2 data-i="mH">When it gets hard, press Help now</h2>
+        <p data-i="mP">The red button is on every screen of the app. This is what happens next.</p>
       </div>
-    </div>
-  </section>
-
-  <section class="section how" id="how" data-how>
-    <div class="how-copy">
-      <h2 data-i18n="works.title">How Hisn works</h2>
-      <ol class="how-steps">
-        <li><button type="button" class="how-step" data-step="0" aria-pressed="true">
-          <span class="how-num">1</span>
-          <span class="how-text"><span class="how-title" data-i18n="works.one.title">Turn on protection</span><span class="how-body" data-i18n="works.one.body">Switch on site filtering and app protection. Android asks for two permissions.</span></span>
-        </button></li>
-        <li><button type="button" class="how-step" data-step="1" aria-pressed="false">
-          <span class="how-num">2</span>
-          <span class="how-text"><span class="how-title" data-i18n="works.apps.title">Choose your apps</span><span class="how-body" data-i18n="works.apps.body">Pick from the apps on your phone. A chosen app is blocked entirely.</span></span>
-        </button></li>
-        <li><button type="button" class="how-step" data-step="2" aria-pressed="false">
-          <span class="how-num">3</span>
-          <span class="how-text"><span class="how-title" data-i18n="works.two.title">Set limits and schedules</span><span class="how-body" data-i18n="works.two.body">Add sites and words, then set quiet hours or a daily limit.</span></span>
-        </button></li>
-        <li><button type="button" class="how-step" data-step="3" aria-pressed="false">
-          <span class="how-num">4</span>
-          <span class="how-text"><span class="how-title" data-i18n="works.three.title">Breathe before you open</span><span class="how-body" data-i18n="works.three.body">A block shows one calm screen, then takes you back home.</span></span>
-        </button></li>
-        <li><button type="button" class="how-step" data-step="4" aria-pressed="false">
-          <span class="how-num">5</span>
-          <span class="how-text"><span class="how-title"><span data-i18n="works.four.title">Keep it running</span> <span class="soon" data-i18n="status.soon">Coming soon</span></span><span class="how-body" data-i18n="works.four.body">Hisn shows which settings keep it awake on Samsung, Xiaomi and Nothing phones.</span></span>
-        </button></li>
+      <ol class="steps">
+        <li><div><h3 data-i="m1h">Remember what you promised</h3><p data-i="m1p">Hisn shows the promises you wrote at the start, and the verse “Then surely I am nigh.” (2:186)</p></div></li>
+        <li><div><h3 data-i="m2h">Breathe with dhikr</h3><p data-i="m2p">Three slow breaths. Say astaghfirullāh as you breathe out.</p></div></li>
+        <li><div><h3 data-i="m3h">Make wuḍūʾ and pray two rakʿahs</h3><p data-i="m3p">Hisn sends no notifications for ten minutes while you pray.</p></div></li>
+        <li><div><h3 data-i="m4h">If you slipped</h3><p data-i="m4p">Your past days are kept. You start again tonight.</p></div></li>
       </ol>
-      <a class="button primary" href="downloads/hisn-android.apk" download><span data-i18n="download.button">Download Hisn</span><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg></a>
     </div>
-    <div class="how-visual">
-      <div class="how-phone">
-        <img class="how-shot is-active" data-shot="0" src="assets/home.png" width="1080" height="2400" loading="lazy" alt="Hisn Protection screen with its four layers">
-        <img class="how-shot" data-shot="1" src="assets/apps.png" width="1080" height="2400" loading="lazy" alt="Hisn Apps to block screen listing installed apps">
-        <img class="how-shot" data-shot="2" src="assets/rules.png" width="1080" height="2400" loading="lazy" alt="Hisn Rules screen: blocked domains, words, apps, daily limit and schedule">
-        <img class="how-shot" data-shot="3" src="assets/block.png" width="1080" height="2400" loading="lazy" alt="Hisn block screen: One breath first">
-        <img class="how-shot" data-shot="4" src="assets/phone-checks.png" width="1080" height="2400" loading="lazy" alt="Hisn phone check screen for a Xiaomi phone">
+    <div class="stage2" aria-hidden="true">
+      <div class="phone"><div class="scr help">
+        <div class="status"><span>23:40</span><span></span></div>
+        <div class="s-t u6" data-i="bT">Let’s pause together</div>
+        <div class="s-sub" data-i="bS">Urges pass; your promise stays. Breathe with the circle.</div>
+        <div class="u7" id="circle"><b class="u8" id="bword" data-i="bIn">Breathe in</b></div>
+        <div class="s-q u9">أَسْتَغْفِرُ ٱللَّٰهَ</div>
+        <div class="s-sub" data-i="bR">Round 1 of 3</div>
+        <div class="s-dock"><div class="s-btn" data-i="bNext">Continue to prayer</div></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section class="miles">
+  <div class="in">
+    <div class="head"><h2 data-i="miH">A way of life, night after night</h2><p data-i="miP">Hisn counts every clean night, and with it the prayers you kept, the pages you read and the times you turned back. A slip never erases what came before.</p></div>
+    <ol class="path"><li><img src="assets/hisn/ic-crescent.png" alt=""><b><span>1</span> <span data-i="sn1">night</span></b><span data-i="st1">The first night</span></li><li><img src="assets/hisn/ic-misbaha.png" alt=""><b><span>7</span> <span data-i="sn2">nights</span></b><span data-i="st2">First week</span></li><li><img src="assets/hisn/ic-lantern.png" alt=""><b><span>14</span> <span data-i="sn3">nights</span></b><span data-i="st3">Bright lamp</span></li><li><img src="assets/hisn/ic-dates.png" alt=""><b><span>30</span> <span data-i="sn4">nights</span></b><span data-i="st4">A full month</span></li><li><img src="assets/hisn/ic-medal.png" alt=""><b><span>40</span> <span data-i="sn5">nights</span></b><span data-i="st5">Forty nights</span></li><li><img src="assets/hisn/ic-mosque.png" alt=""><b><span>100</span> <span data-i="sn6">nights</span></b><span data-i="st6">A hundred nights</span></li><li><img src="assets/hisn/ic-tower.png" alt=""><b><span>365</span> <span data-i="sn7">nights</span></b><span data-i="st7">A year in the fortress</span></li></ol>
+    <p class="gift" data-i="gift">At each stop you receive one of these objects to keep. It is a gift for you alone: no ranks, no leaderboard, and no comparing with anyone.</p>
+    <div class="along">
+      <div class="tile"><img src="assets/hisn/ic-rug.png" alt=""><div><b data-i="al1">Prayers on time</b><span data-i="al1s">Each day, next to your night</span></div></div>
+      <div class="tile"><img src="assets/hisn/ic-quran.png" alt=""><div><b data-i="al2">Qur’an every day</b><span data-i="al2s">A short reading, marked as read</span></div></div>
+      <div class="tile"><img src="assets/hisn/ic-hands.png" alt=""><div><b data-i="al3">Turned back in time</b><span data-i="al3s">Each time you stopped at the first step</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="looks" id="looks">
+  <div class="in">
+    <div class="head">
+      <h2 data-i="lH">Choose how Hisn looks</h2>
+      <p data-i="lP">Three colour themes. Tap one to see it on this page.</p>
+    </div>
+    <div class="grid">
+      <button class="look" type="button" data-look="fajr" aria-pressed="false"><div class="pic u10"><div class="sw"><i class="u11"></i><i class="u12"></i><i class="u13"></i></div></div><div class="txt"><h3>Fajr <small>فجر</small></h3><p data-i="l1">Light, with violet and gold.</p><span class="on" data-i="chosen">On this page now</span></div></button>
+      <button class="look" type="button" data-look="madinah" aria-pressed="false"><div class="pic u14"><div class="sw"><i class="u15"></i><i class="u16"></i><i class="u17"></i></div></div><div class="txt"><h3>Madinah <small>المدينة</small></h3><p data-i="l2">Light, with green and gold.</p><span class="on" data-i="chosen">On this page now</span></div></button>
+      <button class="look" type="button" data-look="layl" aria-pressed="false"><div class="pic u18"><div class="sw"><i class="u19"></i><i class="u20"></i><i class="u21"></i></div></div><div class="txt"><h3>Layl <small>ليل</small></h3><p data-i="l3">Dark, with gold. Good for night.</p><span class="on" data-i="chosen">On this page now</span></div></button>
+    </div>
+  </div>
+</section>
+
+<section class="free">
+  <div class="in">
+    <div class="grid">
+      <img src="assets/hisn/ic-medal.png" alt="">
+      <div>
+        <h2 data-i="frH">Hisn is free</h2>
+        <p data-i="frP">No subscription. Hisn is kept going by donations, and its code is open for anyone to read.</p>
+        <div class="facts"><span data-i="fa1">Supported by donations</span><span data-i="fa2">No subscription</span><span data-i="fa3">Open source</span><span data-i="fa4">Arabic and English, more languages later</span></div>
+        <div class="support" hidden>
+          <a class="btn" href="#" data-todo="patreon-url"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="14.5" cy="9.5" r="6.5" fill="currentColor"/><rect x="3" y="3" width="3.6" height="18" rx="1" fill="currentColor"/></svg><span data-i="patreon">Support on Patreon</span></a>
+          <a class="btn white" href="#" data-todo="coffee-url"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 8h14v5a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6zm14 1.5h1.5a2.5 2.5 0 0 1 0 5H17v-2h1.5a.5.5 0 0 0 0-1H17zM6 3.5c0-.6.6-1 1-.5.8.9.8 2 0 3-.4.5-1 0-1-.5zm4 0c0-.6.6-1 1-.5.8.9.8 2 0 3-.4.5-1 0-1-.5z"/></svg><span data-i="coffee">Buy us a coffee</span></a>
+        </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="section trust" aria-labelledby="trust-title">
-    <div class="section-head center">
-      <p class="tag" data-i18n="privacy.eyebrow">Privacy</p>
-      <h2 id="trust-title" data-i18n="trust.title">Private by default.</h2>
+<section class="u4" id="get">
+  <div class="in">
+    <div class="head">
+      <h2 data-i="gH">Start on Android today</h2>
     </div>
-    <div class="trust-row">
-      <article class="trust-card deep">
-        <h3 data-i18n="trust.card.title">Every check runs on your phone.</h3>
-        <a href="privacy.html" data-i18n="trust.card.link">Read what leaves it</a>
-      </article>
-      <article class="trust-card">
-        <span class="tick"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg></span>
-        <h3 data-i18n="private.account.title">No account</h3>
-        <p data-i18n="private.account.body">Nothing to sign in to.</p>
-      </article>
-      <article class="trust-card">
-        <span class="tick"><svg class="icon" aria-hidden="true"><use href="#i-cloud-off"/></svg></span>
-        <h3 data-i18n="private.cloud.title">No cloud screenshots</h3>
-        <p data-i18n="private.cloud.body">Nothing sent to a stranger.</p>
-      </article>
-      <article class="trust-card">
-        <span class="tick"><svg class="icon" aria-hidden="true"><use href="#i-card"/></svg></span>
-        <h3 data-i18n="private.price.title">No subscription</h3>
-        <p data-i18n="private.price.body">Free, with no trial timer.</p>
-      </article>
+    <div class="plats">
+      <div class="plat" data-os="android"><span class="pico"><svg><use href="#p-android"/></svg></span><span class="tag now" data-i="now">Available</span><h3>Android</h3><p data-i="pa">Android 6.0 and newer. Phone makers’ extra settings explained inside.</p><a class="btn small" href="downloads/hisn-android.apk"><svg><use href="#i-down"/></svg><span data-i="dlShort">Download</span></a><p class="also"><span data-i="alsoOn">Coming to more stores:</span> <span class="chip">Google Play</span> <span class="chip">Huawei AppGallery</span> <span class="chip" data-i="moreStores">and more</span></p></div>
+      <div class="plat" data-os="ios"><span class="pico"><svg><use href="#p-apple"/></svg></span><span class="tag" data-i="soon">Coming</span><h3 data-i="ios">iPhone and iPad</h3><p data-i="pi">Screen Time and a content filter, with Hisn on top.</p></div>
+      <div class="plat" data-os="mac"><span class="pico"><svg><use href="#p-mac"/></svg></span><span class="tag" data-i="soon">Coming</span><h3>Mac</h3><p data-i="pm">A menu bar shield for every browser on the Mac.</p></div>
+      <div class="plat" data-os="windows"><span class="pico"><svg><use href="#p-win"/></svg></span><span class="tag" data-i="soon">Coming</span><h3>Windows</h3><p data-i="pw">A shield for every browser on a Windows PC.</p></div>
+      <div class="plat" data-os="web"><span class="pico"><svg><use href="#p-web"/></svg></span><span class="tag" data-i="soon">Coming</span><h3 data-i="ext">Browser extension</h3><p data-i="pe">Chrome, Edge and Firefox, on Mac, Windows or Linux.</p></div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="section" id="roadmap">
-    <div class="section-head center">
-      <p class="tag" data-i18n="road.eyebrow">Roadmap</p>
-      <h2 data-i18n="road.title">More platforms are coming.</h2>
-    </div>
-    <div class="roadmap-grid">
-      <article class="road-card">
-        <span class="status available" data-i18n="status.available">Available</span>
-        <h3>Android</h3>
-        <p data-i18n="road.androidNow.body">The app you can install today.</p>
-      </article>
-      <article class="road-card">
-        <span class="status soon" data-i18n="status.soon">Coming soon</span>
-        <h3 data-i18n="road.androidNext.title">A new Android update</h3>
-        <p data-i18n="road.androidNext.body">Phone checks and a new look.</p>
-      </article>
-      <article class="road-card">
-        <span class="status soon" data-i18n="status.soon">Coming soon</span>
-        <h3 data-i18n="road.apple.title">Mac &amp; iPhone</h3>
-        <p data-i18n="road.apple.body">Content filter, browser guard and DNS.</p>
-      </article>
-      <article class="road-card">
-        <span class="status soon" data-i18n="status.soon">Coming soon</span>
-        <h3 data-i18n="road.desktop.title">Linux &amp; Windows</h3>
-        <p data-i18n="road.desktop.body">Protection for desktop computers.</p>
-      </article>
-      <article class="road-card">
-        <span class="status soon" data-i18n="status.soon">Coming soon</span>
-        <h3 data-i18n="road.ext.title">Browser extension</h3>
-        <p data-i18n="road.ext.body">Protection in Chromium browsers.</p>
-      </article>
-      <article class="road-card">
-        <span class="status available" data-i18n="status.available">Available</span>
-        <h3 data-i18n="road.vault.title">Hisn Vault</h3>
-        <p data-i18n="road.vault.body">An off-device time lock.</p>
-        <p class="mini"><a href="vault.html" data-i18n="road.vault.link">Open the Vault</a></p>
-      </article>
-    </div>
-  </section>
-
-  <section class="section" id="faq">
-    <div class="section-head center">
-      <h2 data-i18n="faq.heading">Frequently asked questions</h2>
-    </div>
+<section class="u4" id="faq">
+  <div class="in">
+    <div class="head"><h2 data-i="qH">What people ask first</h2></div>
     <div class="faq">
-      <details open>
-        <summary data-i18n="faq.need.q">Will Hisn block apps I need?</summary>
-        <p data-i18n="faq.need.a">No. Site filtering only stops adult sites, and app blocking only touches the apps you pick. Messages, maps and work tools stay open.</p>
-      </details>
-      <details>
-        <summary data-i18n="faq.always.q">Are my apps locked all the time?</summary>
-        <p data-i18n="faq.always.a">No. You decide when, with a schedule or a daily limit.</p>
-      </details>
-      <details>
-        <summary data-i18n="faq.around.q">Can't I just delete Hisn or get around it?</summary>
-        <p><span data-i18n="faq.around.a">A protection lock freezes your rules until a date you set, and an optional guard stands in the way of uninstalling while it runs. No blocker is unbreakable. </span><a href="limits.html" data-i18n="faq.limits">Read the limits</a><span data-i18n="faq.a4end"> before you install.</span></p>
-      </details>
-      <details>
-        <summary data-i18n="faq.pay.q">Do I have to pay to use Hisn?</summary>
-        <p data-i18n="faq.pay.a">No. Hisn is free: no account, no subscription, no in-app purchase.</p>
-      </details>
-      <details>
-        <summary data-i18n="faq.q2">What leaves my phone?</summary>
-        <p data-i18n="faq.a2">The blocklist update and the DNS names your phone already looks up. Nothing else. The privacy page lists every request.</p>
-      </details>
-      <details>
-        <summary data-i18n="faq.install.q">How do I install it?</summary>
-        <p data-i18n="faq.install.a">Download the file and open it. If Android asks, allow installs from this browser once.</p>
-      </details>
+      <details open><summary data-i="q1">Does Hisn see what I browse?</summary><p data-i="a1">No. Pages, words and images are checked on your phone, and nothing about your browsing is sent anywhere.</p></details>
+      <details><summary data-i="q2">Is it for brothers and sisters?</summary><p data-i="a2">Yes. At the start Hisn asks whether to call you brother or sister, and speaks to you that way.</p></details>
+      <details><summary data-i="q3">Can it block everything?</summary><p data-i="a3">No blocker can. Hisn closes the common doors and tells you plainly what each layer does not cover, so you can close the rest yourself.</p></details>
+      <details><summary data-i="q4">What if I slip?</summary><p data-i="a4">Press the red bar, then “I slipped”. Your nights of light are kept, and Hisn shows three steps back: istighfār, wuḍūʾ and two rakʿahs, and closing the door it came through.</p></details>
+      <details><summary data-i="q5">Why is it free?</summary><p data-i="a5">Hisn is made for the sake of Allah, and its code is open.</p></details>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="final-cta" id="download">
-    <img class="final-mascot" src="assets/companion.webp" width="560" height="560" alt="" loading="lazy">
-    <h2 data-i18n="final.title">Take your phone back, starting today.</h2>
-    <p data-i18n="final.body">A free adult-content blocker for Android. No account, no cloud, no subscription.</p>
-    <a class="button primary big" href="downloads/hisn-android.apk" download><span data-i18n="hero.download">Download for Android</span><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg></a>
-    <ul class="platform-pills" aria-label="Other platforms" data-i18n-aria="hero.platformsLabel">
-      <li class="soon" data-i18n="status.soon">Coming soon</li>
-      <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg><span data-i18n="platform.iphone">iPhone</span></li>
-      <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-laptop"/></svg><span data-i18n="platform.mac">Mac</span></li>
-      <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg><span data-i18n="platform.linux">Linux</span></li>
-      <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg><span data-i18n="platform.windows">Windows</span></li>
-    </ul>
-    <p class="mini" data-i18n="phone.line">Works on Samsung, Xiaomi, Nothing and stock Android.</p>
-  </section>
-
+<section class="end">
+  <div class="in">
+    <div class="scene">
+      <svg class="logo"><use href="#gate"/></svg>
+      <h2 data-i="endH">Start tonight</h2>
+      <a class="btn" href="downloads/hisn-android.apk"><svg><use href="#i-down"/></svg><span data-i="dl">Download for Android</span></a>
+    </div>
+  </div>
+</section>
 </main>
 
-<footer class="site-footer">
-  <div class="footer-top">
-    <a class="brand" href="./index.html" aria-label="Hisn home"><span class="ar">حصن</span><span class="dot">·</span><span>Hisn</span></a>
-    <p data-i18n="footer.note">No account, no server, no analytics. Matching stays on the phone.</p>
+<footer>
+  <div class="in foot">
+    <div class="fbrand">
+      <a class="brand" href="#"><svg class="logo"><use href="#gate"/></svg>Hisn <span class="ar">حصن</span></a>
+      <p data-i="fTag">Guard your gaze. Keep your heart.</p>
+      <div class="social" data-pending="social-links" hidden>
+        <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm5 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm5.3-4a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z"/></svg></a>
+        <a href="#" aria-label="TikTok"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 2c.4 2.3 1.9 3.9 4.3 4.1v3.2c-1.6 0-3-.5-4.3-1.3v6.6a6 6 0 1 1-6-6c.3 0 .7 0 1 .1v3.3a2.8 2.8 0 1 0 1.9 2.6V2z"/></svg></a>
+        <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.5 2.5 0 0 0-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z"/></svg></a>
+        <a href="#" aria-label="X"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.8 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.2 21H2.1l7.3-8.3L1.8 3h6.4l4.4 5.9zm-1.1 16.2h1.7L7.4 4.7H5.6z"/></svg></a>
+      </div>
+    </div>
+    <nav class="fcol" aria-label="Hisn">
+      <b data-i="fcApp">The app</b>
+      <a href="#features" data-i="navFeatures">What it does</a>
+      <a href="#minute" data-i="navMinute">The hard minute</a>
+      <a href="#looks" data-i="navLooks">Looks</a>
+      <a href="#get" data-i="navGet">Get Hisn</a>
+    </nav>
+    <nav class="fcol" aria-label="Read">
+      <b data-i="fcRead">Read</b>
+      <span class="soon"><span data-i="fBlog">Blog</span> <small data-i="soon">Coming</small></span>
+      <a href="limits.html" data-i="fLim">What Hisn can’t do</a>
+      <a href="privacy.html" data-i="fPriv">Privacy</a>
+    </nav>
+    <nav class="fcol" aria-label="Tools">
+      <b data-i="fcTools">Tools</b>
+      <a href="vault.html" data-i="fVault">Vault</a>
+      <a href="partner.html" data-i="fPartner">Vault partner</a>
+    </nav>
   </div>
-  <nav aria-label="Footer" data-i18n-aria="footer.label">
-    <a href="vault.html" data-i18n="nav.vault">Vault</a>
-    <a href="limits.html" data-i18n="nav.limits">Limits</a>
-    <a href="privacy.html" data-i18n="nav.privacy">Privacy</a>
-  </nav>
 </footer>
-
-<noscript><p class="noscript">This page works without JavaScript; only the language switch needs it. The English content is shown.</p></noscript>
-
-<script src="lib/vendor/anime.min.js" defer></script>
-<script src="lib/animations.js" defer></script>
-<script src="lib/how.js" defer></script>
-<script type="module" src="lib/site.js"></script>
 </body>
 </html>

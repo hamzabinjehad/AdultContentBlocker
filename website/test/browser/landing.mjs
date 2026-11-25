@@ -1,5 +1,5 @@
 // Browser check for the product page: English, the Arabic switch, the download
-// link, the roadmap and a narrow viewport. It starts its own static server and
+// links, the platforms, the three looks and a narrow viewport. It starts its own static server and
 // a headless Chrome, fails on any console error, and optionally writes
 // screenshots.
 //
@@ -111,22 +111,27 @@ try {
   await load('/index.html');
 
   const h1 = await evaluate("document.querySelector('h1').textContent");
-  if (!h1.includes('Adult content, blocked')) throw new Error(`unexpected hero: ${h1}`);
+  if (!h1.includes('Guard your gaze')) throw new Error(`unexpected hero: ${h1}`);
   const downloads = await evaluate("document.querySelectorAll('a[href=\"downloads/hisn-android.apk\"]').length");
-  if (downloads < 2) throw new Error(`expected hero and card downloads, got ${downloads}`);
-  const roadmap = await evaluate("document.querySelector('#roadmap').textContent");
-  for (const name of ['A new Android update', 'Mac & iPhone', 'Linux & Windows', 'Browser extension', 'Hisn Vault']) {
-    if (!roadmap.includes(name)) throw new Error(`roadmap missing ${name}`);
+  if (downloads < 3) throw new Error(`expected hero, platforms and closing downloads, got ${downloads}`);
+  const platforms = await evaluate("document.querySelector('#get').textContent");
+  for (const name of ['Android', 'iPhone and iPad', 'Mac', 'Windows', 'Browser extension']) {
+    if (!platforms.includes(name)) throw new Error(`platforms missing ${name}`);
   }
   const visible = await evaluate('document.body.innerText.toLowerCase()');
   for (const term of ['sha-256', 'certificate', 'version code', 'signed', 'github', 'checksum']) {
     if (visible.includes(term)) throw new Error(`public page still says ${term}`);
   }
-  const motion = await evaluate('Boolean(window.__hisnMotion) && document.documentElement.classList.contains("js-motion")');
-  if (!motion) throw new Error('animation library did not initialize');
   await sleep(900);
-  const opacity = await evaluate('Number(getComputedStyle(document.querySelector(".hero3 h1")).opacity)');
-  if (opacity < 0.95) throw new Error(`hero did not finish animating: opacity ${opacity}`);
+  const opacity = await evaluate('Number(getComputedStyle(document.querySelector(".hero h1")).opacity)');
+  if (opacity < 0.95) throw new Error(`hero did not finish its entrance: opacity ${opacity}`);
+  const art = await evaluate("[...document.images].filter((img) => !img.complete || img.naturalWidth === 0).map((img) => img.src)");
+  if (art.length) throw new Error(`images did not load: ${art.join(', ')}`);
+  // The three looks recolour the page.
+  await evaluate("document.querySelector('.look[data-look=\"madinah\"]').click()");
+  const madinah = await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--pri').trim()");
+  if (madinah !== '#0f4d3a') throw new Error(`Madinah look did not apply: ${madinah}`);
+  await evaluate("localStorage.removeItem('hisn-look'); document.documentElement.removeAttribute('data-look')");
 
   await send('Emulation.setEmulatedMedia', {
     features: [{ name: 'prefers-color-scheme', value: 'light' }],
@@ -143,7 +148,7 @@ try {
   const dir = await evaluate('document.documentElement.dir');
   const arabicTitle = await evaluate("document.querySelector('h1').textContent");
   if (lang !== 'ar' || dir !== 'rtl') throw new Error(`Arabic switch failed: ${lang}/${dir}`);
-  if (!arabicTitle.includes('محتوى')) throw new Error(`Arabic hero missing: ${arabicTitle}`);
+  if (!arabicTitle.includes('احفظ')) throw new Error(`Arabic hero missing: ${arabicTitle}`);
   const arOverflow = await evaluate('document.documentElement.scrollWidth - document.documentElement.clientWidth');
   if (arOverflow > 1) throw new Error(`Arabic desktop overflow: ${arOverflow}px`);
   await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1600, deviceScaleFactor: 1, mobile: false });
