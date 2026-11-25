@@ -1,447 +1,125 @@
-# Hisn · حصن
+# Hisn · حصن  and  Unrot
 
 [![CI](https://github.com/hamzabinjehad/AdultContentBlocker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hamzabinjehad/AdultContentBlocker/actions/workflows/ci.yml)
 
-**Arabic-aware adult-content protection for the browser, Mac, iPhone, iPad and Android.**
-Matching runs on the device, nothing about your browsing is reported, and every
-layer says plainly what it does not cover.
+**One on-device engine that blocks adult content first, then helps with screen time and endless scrolling.**
+It ships as two apps that share the same blocking system:
 
-Hisn is built to work *under* each platform's own controls (Screen Time, Family
-Sharing, MDM, a separate admin account), not to replace them. The platform gives
-you the lock; Hisn adds the coverage those built-in filters miss. Read
-[Positioning](docs/POSITIONING.md) for why it exists, and the
-[Threat model](docs/THREAT_MODEL.md) before changing anything.
+| | **Hisn · حصن** | **Unrot** |
+|---|---|---|
+| For | Muslims who want to stay away from zina and porn | Anyone fighting porn, doom-scrolling and lost hours |
+| Look and words | Islamic: Arabic and English, sayings, prayer times, Hijri date | Neutral: the sprout under glass, trees, gold "Glasshouse" look |
+| Blocking | **The same engine** (see below) | **The same engine** (see below) |
 
-## Latest
-
-- **Mac — the app now runs on macOS 12 (Monterey).** The deployment target
-  moved from 13 to 12: the content filter, the Mach-service XPC channel and the
-  lock stores never needed 13, only the SwiftUI shell did. The menu bar item is
-  an `NSStatusItem` whose rows are built from state, the sidebar is an
-  `HSplitView`, the main window is hidden rather than closed because macOS 12
-  cannot reopen a `WindowGroup` window, and `Grid`, the `Layout` protocol and
-  `OSAllocatedUnfairLock` each have a macOS 12 spelling. macOS 13 and newer keep
-  their current look and API paths. Builds and tests run at the 12 target; the
-  app has not been launched on a booted macOS 12 machine. Record:
-  [the macOS 12 note](docs/MACOS_12_SUPPORT.md).
-- **Android 1.6.0 — the committed candidate, with the reconnect lifecycle.**
-  The 1.5.3 feature set, signed list updates, readiness receipts, rule tools and
-  the 1.5.4 lifecycle now build as **1.6.0 / 43**. `onCreate` proves the bound
-  guard, `onRebind` re-arms, a live event restores `connected`, and the
-  dashboard asks a live but not-yet-connected service to re-arm on resume; the
-  reconnect copy names Accessibility → Installed apps. Development candidate:
-  no signed artifact, no phone run, and the post-reboot dashboard remains
-  unverified. Record: [the 1.6.0 note](docs/ANDROID_1.6.0.md).
-- **Android phone-maker setup, 14 November 2026.** Hisn now reads whether it
-  runs on a Samsung, Xiaomi/Redmi/POCO, Nothing, OPPO/realme/OnePlus,
-  vivo/iQOO, Huawei/HONOR or TECNO/Infinix/itel build and shows the extra
-  background switch that maker adds. Battery and background restriction are
-  live Android readings; autostart and the Recents lock are the owner's own
-  ticks. On the Galaxy the standard battery request does not exist and Device
-  care's power screens need a Samsung signature permission, so the screen opens
-  app info instead, where **Battery** and **Manage app if unused** live.
-  Nothing OS and stock builds show only Android's reading. The screen also
-  explains second spaces, the Samsung Auto Blocker install switch, and links
-  Always-on VPN. Record:
-  [the phone-maker note](docs/ANDROID_OEM_PHONES_2026-11-14.md).
-- **Website — the Android download and the roadmap, 14 November 2026.** A
-  bilingual product page at `website/index.html` offers the Android app as a
-  free download, explains the four layers and the bypasses, and shows
-  **the next Android update, Mac, iPhone/iPad, Linux, Windows, the browser
-  extension and the Vault** as available or coming soon. It follows the
-  layout of ScreenZen's page — a left-aligned promise beside a phone, a
-  one-sentence statement over three benefits, a Vault spotlight, a step-by-step
-  "How Hisn works" with real app screens, a privacy row and a short FAQ —
-  without inventing ratings, testimonials or a subscription. The longer limits
-  list moved to its own page. Version numbers, hashes,
-  checksums and source links are kept off the public page; the release identity
-  is still checked in `website/release.json` before a build. The Vault moved to
-  `/vault.html`; a privacy page was added. `bash website/build-site.sh` stages
-  the APK and writes a deployable folder and zip. No hosting or domain is set
-  up yet. Record: [the website note](docs/WEBSITE_2026-11-14.md).
-- **Android 6.0 support — the candidate runs on API 23 and later.** Java 8+
-  APIs are desugared, one `Compat` surface covers Android 6/7, the DoT resolver
-  verifies the certificate name on every release and carries a pinned SSL.com
-  root because Android 6's 2015 trust store predates it, and the 236,000-domain
-  seed gets the larger app heap. The API 23 emulator passed the app, word
-  fixture, DNS route check (UDP and reused TCP), core device tests and the
-  direct build's boot shield; API 36 stayed green. Image checks remain Android
-  14+. Record:
-  [the Android 6.0 note](docs/ANDROID_OLDER_VERSIONS_2026-11-11.md).
-- **Android personal layer, 11 November 2026.** One optional welcome page and a
-  **Settings › Personal** section save a local name and reason; a saved name
-  greets the person, Protection quotes the reason with a bounded day/pause line,
-  and the pause screen repeats it above the breath. The words are not a rule,
-  are not covered by the protection lock, and are never sent, exported or put in
-  diagnostics. It is not a clean-day streak or recovery score. Development
-  evidence only: record in
-  [the personal-layer note](docs/ANDROID_PERSONAL_2026-11-11.md).
-- **iPhone & iPad 1.8.0 — a device-wide DNS filter, and a direct build.** The
-  new `HisnDNSProxy` Network Extension answers Hisn's signed list (236,586
-  domains), the four adult TLDs, the 116 hostname terms and the person's saved
-  sites with a local NXDOMAIN for **every app's system DNS**, and sends only
-  allowed names to Cloudflare Families over HTTPS. The old Family DNS profile
-  used Cloudflare's categories rather than Hisn's list and covered no
-  non-WebKit app; it is gone. Domain and term data are generated from the
-  signature-verified seed at build time and checked again by SHA-256 at start;
-  a damaged domain list stops the extension, while a damaged term file leaves
-  the domain list enforcing. The app gains on/off, readback, a route self-check
-  through a reserved `hisn.invalid` alias and a commitment freeze. It is
-  distributed **directly** as an IPA outside the App Store
-  (`ios/direct/build_direct.sh` plus an AltStore source from
-  `make_source.py`); Apple still enforces `dns-proxy` and Family Controls, so
-  the installer's profile must carry them. Simulator-tested only; the extension
-  and install need a signed device. [1.8.0 record](docs/IOS_1.8.0.md) ·
-  [direct install](docs/IOS_DIRECT.md).
-- **Hisn Vault (web)** — the Screen Time passcode can now be kept **off the
-  device**: a static page in [`website/`](website/) seals it under a random
-  32-byte key, wraps that key to a partner's P-256 key **and** to a future drand
-  quicknet round, and shows the code once for the setup window. Deleting the app,
-  clearing the browser or reading the file reveals nothing; the date path opens
-  only when the threshold network has produced that round's beacon. 16 Node
-  tests (including a live beacon round-trip) and a headless-Chrome end-to-end
-  pass; no hosting, no account, and the Apple Account reset / erase / another
-  device limits are unchanged. Record: [the web vault note](docs/WEB_VAULT.md).
-- **Unlisted-host guard, every surface** — a name under `.adult`, `.porn`,
-  `.sex` or `.xxx` is now blocked by the **extension 1.5.3**, **Mac 1.1.17**,
-  **iPhone & iPad 1.7.2** (and **1.8.0**'s system-DNS filter) and **Android 1.2.2** before any list has heard of
-  it; the four rules are policy constants, so they answer without a list entry
-  (the Android DNS service still needs its seed to start). **Android** also
-  gains the 116-term hostname-keyword layer the Mac and Chrome already had,
-  read from the signed seed before the DNS tunnel starts. A hand allowance still wins, `.cam` is deliberately not guarded, and
-  random new generic-TLD names remain list-dependent. Details and limits:
-  [the guard record](docs/BLOCKING_GUARD_2026-11-06.md).
-- **Blocklist v6** — the first signed list generation is published:
-  **5,274,046 domains**, 239,885 core and 5,831 terms, verified over HTTPS and
-  served with HTTP 200. The bundled seed stays v5, re-cut on 6 November with
-  **236,586 core** domains, 5,280,200 in the full list and the six MDisk/TeraBox
-  link hosts added from the adult-apps research; iOS and Android still update
-  with an app build.
-- **Extension 1.5.3** — the adult-TLD guard above, plus a popup repair: the
-  status screen paints its Hisn-app row, lock strip, notices and Details again
-  after a 1.5.1 reference error, and the settings page embedded in the popup
-  now gets the popup's height. One row of five tabs fits, the full-page footer
-  and language row are gone from the embedded view, the language switch moves
-  into the compact editor bar, and the ambiguous "Settings" tab is renamed
-  "Content" beside the Content options page. 1.5.2's private-window heartbeat
-  answer and 1.5.0's **Move your rules** export/import remain. Record:
-  [the popup UX note](docs/EXTENSION_POPUP_UX_2026-11-06.md).
-- **iPhone & iPad 1.7.0** — a **pause rule**: a fourth app-rule mode where the
-  shield asks **Is this important?** instead of only closing. **Pause first**
-  hands the request to Hisn, a ten-second breath unlocks one session of the
-  chosen minutes, opens are limited per day, and the device monitor re-shields
-  when the session ends. The shield can only hand over, never grant; a damaged
-  budget record closes the day. 1.6.0's browser/VPN guard and Lock Center, 1.5.0
-  overview and 1.4.0 shield remain.
-- **Mac 1.1.18 — the MDM profile can own the filter, and the Mac gets its
-  craft pass.** Add `--mdm --team-id` to the profile generator and the profile
-  carries a `com.apple.webcontent-filter` plugin payload plus a
-  `com.apple.system-extension-policy` that makes the signed Hisn filter
-  non-removable on macOS 15+; an MDM build also blocks Erase All Content and
-  Settings, and macOS 26+ loses Safari private browsing. `--maximum` is the
-  supervised-fleet preset, and `verify_mdm.sh --strict` checks the layers.
-  The same release keeps the adult-TLD rail and the ink-and-paper craft pass
-  (see the Mac records below). 1.1.17's enrollment probe and guided handoff
-  remain.
-- **Mac 1.1.16** — the filter now reports an aggregate count of denied
-  connections for the current local day (no host, app or address) in the menu
-  bar and the Overview's layer details; a dropped XPC reply no longer abandons
-  the authority request batch; and the menu bar shows the lock's coarse time
-  left. 1.1.15's Organization Mode and 1.1.14's first-run/private-window pass
-  remain.
-- **Android 1.5.3 — a matched person can go back.** Rules › Built-in checks
-  now has **When a person is detected: Go back to the last page** (default) or
-  **Cover the whole screen**. Back returns a browser to its previous page, at
-  most once per 1.2 s; adult content still closes the app and Incognito still
-  uses the protected cover. Record:
-  [the 1.5.3 note](docs/ANDROID_1.5.3.md).
-- **Android 1.5.2 — the layers recover after an update.** If DNS was left on
-  and Android still holds the VPN approval, it restarts on app foreground; a
-  live accessibility service is re-armed by broadcast when the app reads it
-  disconnected. This fixes the post-update "DNS left on but not running" gap.
-  It does not toggle accessibility or remove Chrome's Incognito menu. Record:
-  [the 1.5.2 note](docs/ANDROID_1.5.2.md).
-- **Android 1.5.1 — protected and Incognito windows are covered.** Android
-  refuses screenshots of `FLAG_SECURE` windows, including Chrome Incognito, so
-  no ordinary app can inspect those pixels; HaramBlur cannot bypass it either.
-  Hisn now reports **PROTECTED** and covers the selected window with *Hisn can't
-  check this window* instead of leaving the private page visible. Text and DNS
-  layers stay independent. Record:
-  [the 1.5.1 note](docs/ANDROID_1.5.1.md).
-- **Android 1.5.0 — an opt-in people cover.** Rules › Built-in checks ›
-  **Blur people** offers Off, All faces, Women (estimated) and Men (estimated).
-  A matching face covers the whole selected window with a touch-blocking,
-  abstract 10 px snapshot on an opaque scrim; the adult classifier still runs
-  and still closes the app. Face mode uses the pinned BlazeFace/gender models at
-  384 px; the adult-only path remains native TFLite at 224 px. Women/men is an
-  estimate, uncertain faces are covered, and the smoke test is one public-domain
-  portrait, not an accuracy claim. Record:
-  [the 1.5.0 note](docs/ANDROID_1.5.0.md).
-- **Android 1.4.1 — a moving screen is sampled at the platform limit.** The
-  fast visual cadence was 250 ms, below Android's 333 ms screenshot floor, so
-  every other request could be rejected and then back off. It is now 350 ms;
-  a floor rejection retries at the floor without a capture-failure backoff. The
-  live emulator fixture produced **23 samples in 8 s instead of 11**, with
-  **0 capture failures instead of 6**, at 24–30 ms native inference. Record:
-  [the 1.4.1 note](docs/ANDROID_1.4.1.md).
-- **Android 1.4.0 — the visual model now runs natively.** The same MobileNetV2
-  weights are converted to a pinned TFLite model and run on a native worker:
-  **38–45 ms median** inference on the API 36 emulator, against 123 ms for WASM,
-  with the WebView engine retained as fallback. Converted scores matched TFJS to
-  3.34×10⁻⁶ on 12 benign views and 0/12 were blocked; no adult corpus or phone
-  claim. The direct APK grows to ~29 MB. Record:
-  [the 1.4.0 note](docs/ANDROID_1.4.0.md).
-- **Android 1.3.2 — reuse the verdict on an unchanged frame.** A still selected
-  window keeps its coarse signature and allow/block word for five seconds; the
-  guard skips the 123 ms model inference when the frame has not changed. Window
-  changes, scrolls and engine resets clear it; the capture still runs and no
-  pixels, URL or text are stored. Core-tested; no device cache-hit measurement.
-  Record: [the 1.3.2 note](docs/ANDROID_1.3.2.md).
-- **Android 1.3.1 — a faster visual check with a closer look.** The image
-  guard now starts on the packaged WASM engine instead of trying WebGL first;
-  on the API 36 emulator that cut the median full-roundtrip from 188 ms to
-  123 ms on a 12-view benign corpus. A frame whose Porn/Hentai scores are near
-  the block threshold is cropped to its centred 68% and classified once more,
-  with the same 0.70/0.85 block thresholds; 0/12 benign views were blocked.
-  No adult-positive corpus or phone claim; details:
-  [the 1.3.1 note](docs/ANDROID_1.3.1.md).
-- **Android 1.3.0 — after a block, close the page and rest the app.** A
-  detection now leaves the browser page first (Back), closes the app (Home) and
-  keeps **only that app** closed for a chosen quiet period: 1, 5, 15, 30 or 60
-  minutes, default 5. The pause screen shows the remaining time and offers
-  **Rest 5/15/60 minutes** and **Lock the screen**. The setting is separate from
-  the sealed rules because it never changes what is detected. Android cannot
-  force-stop another app or power off the phone, so close means Back/Home and
-  the screen lock is a display lock, not a shutdown. Record:
-  [the 1.3.0 note](docs/ANDROID_1.3.0.md).
-- **Android 1.2.3 — the phone reads the screen off its main thread.** The
-  accessibility tree walk moved to a daemon scanner thread, so a large feed no
-  longer stalls the service; a selected app's own event can block a promotional
-  label before the walk, the walk reads 2,048 nodes and can stop at a partial
-  match, and a static screen is still reread every three seconds. The image
-  layer keeps its local model warm while the screen is on, captures at the
-  model's 224 px input edge, gives a frame 5 s and backs off protected windows
-  instead of polling them four times a second. Signed Play/direct builds, the
-  core suite, the device runner and an emulator stress case pass; no 1.2.3
-  phone run is claimed. Record: [the 1.2.3 note](docs/ANDROID_1.2.3.md).
-- **Android craft pass (development, on the 1.2.3 tree).** The three tabs move
-  to the Mac's warm paper and ink: a tracked page line, one serif verdict, a
-  three-column coverage ledger in place of tinted tiles, and one next action.
-  Rules opens with twelve named site chips that write the ordinary blocked-domain
-  list, so a chip is not a hidden category and a protection lock freezes it like
-  every other rule. The block page leads with a breath and keeps the exit
-  visible; the reminder and four needs appear only after the third breath. The
-  welcome, settings and direct-build shield surfaces follow. No enforcement,
-  permission, consent text or version changed, and the signed 1.2.3 artifacts
-  predate the pass. Record:
-  [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
-  [design/android-craft-2026-11-07](design/android-craft-2026-11-07/README.md).
-- **Android 1.2.2** — the DNS tunnel now applies the same hostname-keyword
-  contract as the Mac and Chrome (`HostTermPolicy`, the adult TLDs and the Arabic
-  and Franco-Arabic folds) to names no seed list carries, after the person's own
-  allowance. Two fixes from the day's live protection pass ride with it: a
-  granted accessibility service no longer reads as **Permission required** when
-  Android's cached manager list is stale, and the guard arms itself from its
-  first event if Android rebinds it without repeating the callback. A classifier
-  failure retries after 5 s with a doubling backoff capped at the previous 30 s
-  instead of blinding the photo/video layer for half a minute. The day's
-  interface pass (one line per rule, section labels, a page-aware bar, a hero
-  tinted by its verdict) and 1.1.1's weekday schedule are unchanged.
-- **iPhone & iPad 1.6.0** — a **browser and VPN guard**: a second,
-  always-block app rule for the browsers and VPN apps that route around Safari
-  blocking, frozen during a commitment and watched by the monitor's layer-loss
-  check; and a **Lock Center** that turns removal protection into the honest
-  ladder — one row per level with what it stops and the exit it keeps, saying
-  plainly that no level stops an Apple Account passcode reset, device erasure
-  or another device. The 1.5.0 card-stack overview, 1.4.0 bilingual shield
-  with no unlock, 1.3.0 pause, quiet hours and saved-rule freeze remain.
-- **iPhone & iPad 1.5.0** — a UI/UX pass: the overview is a calm card stack
-  (status, pause, plan progress, lock and rules), the lock, blocked-site and
-  app-limit cards open their editors directly, Setup is three guided steps with
-  a checks card, and Settings is grouped cards. Design research used REA 6.8.0
-  on ScreenZen 2.0.0. The 1.4.0 bilingual Screen Time shield with no unlock, the
-  1.3.0 pause, quiet hours and saved-rule freeze remain.
-- **Mac 1.1.15** — **Organization Mode**: a forced `HisnManaged` preference
-  from a profile puts the app under an organization, shows its name, hides
-  local removal and weakening controls, and makes Settings, Rules, the partner
-  key and the gray-screen switch tightening-only. `profile/make_profile.py
-  --managed --organization-name …` emits the app payload beside the browser
-  private-window policies with `PayloadRemovalDisallowed`; real removal
-  resistance still needs MDM/supervision and a standard account. The 1.1.14
-  welcome/Overview and **Private windows** status layer remain.
-- **Android 1.1.0** — a first-run welcome, a voluntary pause on Protection and
-  today's usage in the daily-limit editor sit on the 1.0.0 protection lock,
-  removal guard, managed lockdown and layer watchdog. The signed direct APK is
-  published on GitHub Releases; the Play AAB is not uploaded.
-
-These are development candidates. No store listing or physical-device
-acceptance is claimed; the Android 1.1.0 direct APK is the published build (1.2.2
-is a development build) and the Play AAB is not uploaded. The exact state is in
-[versions](docs/VERSIONS.md) and [1.0 readiness](docs/1.0_READINESS.md).
-
-### Interface
+Matching runs on the device. Nothing about your browsing is reported, and every
+layer says plainly what it does not cover. Read [Positioning](docs/POSITIONING.md)
+for why it exists and the [Threat model](docs/THREAT_MODEL.md) before changing
+anything that blocks.
 
 <p align="center">
-  <img src="design/extension-ui-2026-11-04/after-popup-light-en.png" width="300" alt="Hisn extension popup in light mode">
-  <img src="design/extension-ui-2026-11-04/after-options-overview.png" width="560" alt="Hisn extension dashboard in light mode">
+  <img src="design/macos-unrot-2026-11-23/app-2026-11-24/unrot-today-light.png" width="620" alt="Unrot on the Mac: Today page with feed limits, a pause rule, work hours and the sprout under glass">
 </p>
 
-The extension popup and dashboard lead with one protection status and one-word
-layer states. The current captures, including Arabic, the rules editor, visual
-checks, content options and the block page, are in the
-[UI refresh record](design/extension-ui-2026-11-04/README.md). The design
-research behind the pass, including the REA comparison with ScreenZen, is in
-[the 2026-11-04 note](docs/EXTENSION_UI_REFRESH_2026-11-04.md).
+## One blocking system, two editions
 
-<p align="center">
-  <img src="design/macos-craft-2026-11-07/overview-light.png" width="560" alt="Hisn Mac overview with a serif status statement, a layer table and a commitment rail">
-</p>
+The edition only changes the look, the words and the extra pages. Every
+blocking piece is shared code:
 
-The Mac window is a warm-paper surface with a two-column Overview, a layer
-table, a compact commitment rail and one serif statement per page. The current
-captures, including dark, Arabic RTL and the 760-point layout, are in the
-[Mac craft pass](design/macos-craft-2026-11-07/README.md).
+| Platform | Shared blocking engine | How the edition is chosen |
+|---|---|---|
+| Android | `android/core` (DNS filter, adult-TLD and keyword guards, word and image checks, app limits, protection lock) | Gradle flavor: `hisn` or `general` (Unrot) |
+| iPhone & iPad | `HisnDNSProxy`, Screen Time shield and activity monitor, Safari blockers | Two Xcode projects, `HisnMobile` and `UnrotMobile`, built from the same extensions; `ios/Shared/Edition.swift` |
+| Mac | `HisnFilter` content filter, browser guard, locks | `HisnEdition` Info.plist key (`MacEdition.isUnrot`) |
+| Browser | `extension/` (domain list, page text, on-device image/video checks, distraction rules) | One extension for both |
+| Lists | `blocklist/` builds and signs the list, `seed/` is the copy bundled into every app | Same list for both |
 
-<p align="center">
-  <img src="design/android-craft-2026-11-07/after-protection-partly.png" width="280" alt="Hisn Android protection page with a serif verdict and a three-column coverage ledger">
-  <img src="design/android-craft-2026-11-07/after-protection-dark.png" width="280" alt="Hisn Android protection page in dark mode">
-</p>
+A fix to blocking lands once and reaches both apps.
 
-The Android app opens on a warm-paper verdict, reads the three layers as one
-coverage ledger, and keeps one filled action on the page. Rules adds named site
-chips; the block page is a breath first and a reflection second. The three tabs
-in English, Arabic RTL and both palettes are in the
-[Android craft pass record](design/android-craft-2026-11-07/README.md).
+## What it blocks
+
+1. **Adult content** (the main job): a signed list of about 236,000 core domains
+   bundled offline (5.2 million in the full list), the `.adult` `.porn` `.sex` `.xxx`
+   domains, 116 hostname terms, Arabic-aware page text, and optional on-device
+   image checks.
+2. **Screen time**: per-app daily limits, a wait before opening, schedules and
+   quiet hours.
+3. **Scrolling**: "feeds only" hides home feeds and short videos (Reels, Shorts)
+   while search and links keep working.
+
+A protection lock freezes your rules for a set time, so a weak moment cannot
+undo them.
 
 ## Platforms
 
-| Platform | What it does | State | Start here |
-| --- | --- | --- | --- |
-| Browser extension (Chromium) | Blocks listed domains and adult TLDs, checks page text in the page's language, on-device image/video checks on by default, hides the whole post on X and the main social feeds when its media is flagged, portable hand lists | 1.5.3 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, adult-TLD and hostname guards, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker, an aggregate blocked-connection count, MDM enrollment and a profile-managed non-removable filter | 1.1.18, needs a signed build · runs on macOS 12 or later | [Mac setup](docs/SETUP.md) · [MDM](docs/MDM_DEPLOYMENT.md) |
-| iPhone & iPad | A device-wide DNS filter with the adult-TLD and hostname guards, six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, a browser and VPN guard, a pause rule with a daily opens budget, protection lock for saved rules, an on-demand pause, daily quiet hours and a removal-protection Lock Center; distributed directly as a signed-on-install IPA | 1.8.0, development · needs a signed device | [iOS README](ios/README.md) · [direct install](docs/IOS_DIRECT.md) |
-| Android | DNS filtering with the adult-TLD and hostname guards, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog, bundled-list freshness warning, signed list updates, readiness receipts and portable rule tools | 1.6.0 development candidate · runs on Android 6.0+ (API 23); core and build tests, no signed 1.6.0 APK or phone run; 1.5.4 on the owner's phone; post-reboot dashboard unverified | [Android README](android/README.md) · [1.6.0 record](docs/ANDROID_1.6.0.md) |
-| Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
-
-Seed **v5** raises the bundled core from 159,768 to **236,586 domains** on every
-surface, the largest tier the browser, six Safari blockers and the Android seed
-can hold without truncation. The selection rules, the 1,261 domains deferred by
-capacity and the licensing boundary are in the
-[coverage pass record](docs/COVERAGE_PASS_2026-10-30.md). A signed **lists v6**
-generation (5,274,046 domains) is published for the Mac filter and the browser's
-list update; the seed remains the offline fallback. The evidence, hashes and the
-guard refusal that preceded it are in
-[the publication record](docs/LIST_PUBLICATION_2026-11-03.md).
-
-Each platform's start link is in the table; Mac users can also follow the
-[Mac user guide](docs/USER_GUIDE.md). Every document is listed in the
-[docs index](docs/README.md). The pinned version of every platform, and the honest release state behind it,
-is in [versions](docs/VERSIONS.md); the single finish line, including what is
-still unproven, is [1.0 readiness](docs/1.0_READINESS.md); per-surface
-list coverage is in [coverage](docs/COVERAGE.md). The
-[privacy policy](PRIVACY.md) and [support page](SUPPORT.md) are the public
-statements to check before a release.
-
-## Protection layers
-
-| Layer | Closes | Defeated by |
+| Platform | State | Start here |
 |---|---|---|
-| Network DNS (administrator setup) | Listed hosts on devices using the resolver | Outside DNS, tunnels, another network, gateway reset |
-| Browser extension | Known domains, page text and on-device readable image/video samples in supported browsers | Another browser, removal/disablement, unreadable media, classification misses |
-| Configuration profile | Supported DNS, Private Relay, and browser settings | A tunnel; an administrator removing the profile |
-| Content filter (system extension) | Host/application decisions on new Mac flows | Provider loss, established flows, unidentified destinations outside strict mode, recovery/admin changes |
-| Accountability partner | Ordinary user loosening an active policy | Guardian authority or recovery; a separate unprotected device |
-| Browser guard (in the app) | Continuously closes a browser that loses its verified extension connection: a one-minute countdown for silence, five minutes when a standard profile confirms removal/disablement; a returned heartbeat cancels it | Force-quitting Hisn, explicitly trusted unknown apps, unreadable/custom profiles, guest/private windows, a remembered locked-authority IPC outage, admin changes |
+| Android | 1.0.0 beta, signed direct APK · Android 6.0+ | [Android README](android/README.md) |
+| iPhone & iPad | 1.8.0 development · needs a signed device | [iOS README](ios/README.md) · [direct install](docs/IOS_DIRECT.md) |
+| Mac | 1.1.18 development · needs Developer ID signing · macOS 12+ | [Mac setup](docs/SETUP.md) |
+| Browser (Chrome, Edge, Brave) | 1.5.3 · unpacked, not in the store yet | [Using the extension](docs/EXTENSION_USAGE.md) |
+| Router / network | Signed DNS rules for admins | [Network tools](network/README.md) |
 
-These layers address different gaps and need independent checks. A browser
-model cannot replace a device/network control, while DNS and socket decisions
-cannot classify every encrypted post. No combination guarantees all-content
-coverage or prevents a device owner with administrator/recovery access from
-undoing protections.
-
-For the app-level layer, [apps to consider blocking](docs/APPS_TO_CONSIDER.md)
-is a category-based checklist, not an "adult app" verdict: it explains what
-each block costs, why browsers and messaging are high-cost choices, and what
-must stay accessible.
-
-Blocking your own sites works the same way everywhere: the extension popup's
-**Block** button for the current tab, the Mac menu bar's **Block a site…**, and
-iPhone/iPad **My blocked sites** (up to 49 sites through the Screen Time filter).
-
-To make protection hard to delete or switch off, use each platform's own
-lock-down: on a Mac, the guardian account split (`setup_guardian.sh`) with the
-removal-password profile; on iPhone/iPad, a supervised device with
-`profile/make_ios_profile.py` ([guide](docs/IPHONE_SUPERVISED.md)); on Windows,
-the browser policy from `profile/make_windows_policy.py` with a standard user
-account ([guide](docs/WINDOWS_SETUP.md)). No setup
-survives someone who holds the admin, recovery or supervision credentials.
-The managed-device route (Android device owner, Apple supervision, a guardian
-console and phone-laptop pairing) is planned in
-[Guardian mode](docs/GUARDIAN_MODE_PLAN.md).
+Exact versions: [versions](docs/VERSIONS.md). What is still unproven:
+[1.0 readiness](docs/1.0_READINESS.md). Past release notes:
+[changelog](docs/CHANGELOG.md).
 
 ## Repository layout
 
 ```
-blocklist/       list pipeline: fetch → merge → sign, keyword layer, seed bundle  (Python)
-network/         capability planning + verified DNS-rule publication             (Python)
-profile/         .mobileconfig generator: DNS, DoH, Private Relay                (Python)
-extension/       Chromium MV3 extension + on-device local visual engine        (JS)
-macos/           the app + content filter                                        (Swift)
-ios/             universal iPhone/iPad app, Safari blockers + device DNS filter (Swift)
-android/         DNS, selected-app/text and opt-in visual protection preview      (Java)
-ipados/          iPad-specific documentation; shares the ios/ target
-shared/apple/    portable Apple-platform configuration and protection-state code
-seed/            signed starter list + keyword layer, bundled into each client
-partner/         the accountability partner's page: key, and signed approvals    (HTML)
-docs/            guides, plans, release records and the docs index
-.github/         CI on every PR; daily signed rebuild and publish                 (Actions)
+android/      Android app (Kotlin/Java). core/ = shared blocking engine with plain-Java tests
+ios/          iPhone & iPad: Hisn/ and Unrot/ apps, DNS filter, Screen Time and Safari extensions
+macos/        Mac app, content filter, Safari extension, browser bridge
+extension/    Chromium MV3 extension with on-device image/video checks
+blocklist/    list pipeline: fetch → merge → sign            (Python)
+seed/         signed starter list bundled into every app
+shared/       Apple-platform code used by both iOS and Mac
+network/      DNS rules for routers and admins               (Python)
+profile/      .mobileconfig and Windows policy generators    (Python)
+website/      product page and the Vault (passcode kept off the device)
+partner/      the accountability partner's approval page
+docs/         guides, plans and dated release records (index: docs/README.md)
+design/       mockups and screenshots behind each design pass
 ```
 
 ## Testing
 
 ```bash
-./test.sh              # python, seed, extension, release, macos, ios
-./test.sh python seed  # the suites that run on any OS
-./test.sh browser      # the page scanner in headless Chrome (CI always runs it)
-./test.sh ios          # mobile unit tests + a locally available iOS simulator
-extension/eval/run.sh  # score the evaluation corpus; a blocked benign page fails
-cd android && sh test-core.sh   # Android core suite (JDK 17+)
+./test.sh                                  # python, seed, extension, release, macos, ios
+./test.sh python seed                      # suites that run on any OS
+cd android && sh test-core.sh              # Android blocking engine (JDK 17+)
+extension/eval/run.sh                      # score the evaluation corpus
 ```
 
-`./test.sh` is the same script CI runs. A suite whose toolchain is missing fails
-rather than skips: "the tests passed" has to mean they ran. The default run needs
-Xcode and an installed iOS Simulator runtime; name suites explicitly for a
-narrower run.
+`./test.sh` is the same script CI runs. A suite whose toolchain is missing
+fails rather than skips. Building, signing and releases:
+[development notes](docs/DEVELOPMENT.md) and the
+[release runbook](docs/RELEASE_RUNBOOK.md).
 
-Building, signing, the seed bundle, the extension, the Mac app, the native
-messaging host and lock lengths are covered in
-[development notes](docs/DEVELOPMENT.md). Maintainers releasing a build follow
-the [release runbook](docs/RELEASE_RUNBOOK.md) and record results in
-[release validation](docs/RELEASE_VALIDATION.md); each release has a dated note
-in the [documentation index](docs/README.md).
+## Protection layers and their limits
+
+| Layer | Closes | Defeated by |
+|---|---|---|
+| DNS filter (phone, Mac, router) | Listed hosts and adult TLDs in every app | Outside DNS, a VPN or tunnel, another network |
+| App guard (Android accessibility, iOS Screen Time) | Chosen apps, words on screen, time limits | Turning the permission off when no lock is running |
+| Browser extension | Domains, page text, on-device image/video samples | Another browser, removing the extension |
+| Mac content filter | New connections on the Mac | Admin or recovery access |
+| Accountability partner | Loosening an active lock | A second device with no protection |
+
+No setup survives someone who holds the admin, recovery or supervision
+credentials. To make protection hard to remove, use each platform's own
+lock-down: a guardian account on the Mac, a supervised iPhone, a standard user
+on Windows. See [Guardian mode](docs/GUARDIAN_MODE_PLAN.md).
 
 ## Privacy
 
-See [SECURITY.md](SECURITY.md) for private vulnerability reporting and the limits that are documented product boundaries, not bugs.
-
-Domain matching happens entirely on-device. Do not build a feature that reports
-which sites a user tried to visit. A server-side log of blocked adult domains,
-tied to identities, is the most damaging thing this company could hold, and one
-breach away from ruining the people it was built to help. The accountability
-partner learns that a release was *requested*, and when — nothing else.
+Matching happens on the device. Do not build a feature that reports which sites
+someone tried to visit: a server log of blocked adult domains tied to people is
+the most damaging thing this project could hold. The accountability partner
+learns only that a release was *requested*, and when.
+[Privacy policy](PRIVACY.md) · [Security](SECURITY.md) · [Support](SUPPORT.md)
 
 ## Licensing note
 
-This deliberately does **not** fork SelfControl. SelfControl is GPL-3.0, which
-would require publishing any derivative under the same terms — incompatible
-with a closed paid tier. The Swift here is original work built on Apple's
-NetworkExtension framework, so you are free to license it as you choose.
-
-The bundled visual runtime includes third-party libraries and model assets with
-their own licenses. Preserve `extension/visual/notices/`, the linked dependency
-notices and artifact provenance when redistributing. The original Hisn
-integration does not copy HaramBlur's AGPL code.
-
-Upstream blocklists carry their own licences (MIT, GPL-3.0, Unlicense) and are
-recorded per-source in `blocklist/sources.json`. You redistribute the merged
-list, not their code — but check the terms before shipping commercially.
+Original work; it does not fork SelfControl (GPL-3.0) or copy HaramBlur's AGPL
+code. The bundled visual runtime and upstream blocklists keep their own
+licences: see `extension/visual/notices/` and `blocklist/sources.json`.
