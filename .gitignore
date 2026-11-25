@@ -69,3 +69,7 @@ website/downloads/SHA256SUMS
 design/general-edition-concept-2026-11-19/icons-ai/*
 !design/general-edition-concept-2026-11-19/icons-ai/cut/
 design/general-edition-concept-2026-11-19/icons-3dicons/
+
+# Other companies' app screenshots, kept for design reference on the owner's machine only.
+# The repo is public; their screens are not ours to publish.
+design/competitors-*/
