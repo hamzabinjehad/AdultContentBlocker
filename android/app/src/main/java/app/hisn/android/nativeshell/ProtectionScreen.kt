@@ -93,7 +93,9 @@ fun ProtectionScreen(
     copy: ProtectionCopy = EnglishProtectionCopy,
     onOpen: (String) -> Unit = {},
     mode: HomeMode = HomeMode.Full,
-    onShowShield: () -> Unit = {}
+    onShowShield: () -> Unit = {},
+    /** Unrot's five tabs: Shield shows only the adult panes ([SHIELD_ADULT]), Rules only feeds and apps ([SHIELD_FEEDS]). */
+    part: Int = SHIELD_ALL
 ) {
     // Unrot splits this screen across two tabs: Today (the person's day) and Shield (the
     // protection itself). One computation of the protection state serves both.
@@ -224,6 +226,16 @@ fun ProtectionScreen(
         // Waiting for its first screen after a restart is not "stopped"; only a real issue is.
         if (state.images.on) add(stringResource(R.string.part_images) to (imageIssue == null))
     }
+    // The Shield tab's glass: the five panes that keep adult content out, closed or open, whether
+    // or not the person has switched each one on (an unset pane is an open pane).
+    val adultPanes = listOf(
+        stringResource(R.string.part_sites) to (state.dns.on && runtime.dnsReady && dnsIssue == null),
+        stringResource(R.string.part_words) to (state.tags.on && guardReady),
+        stringResource(R.string.part_images) to (state.images.on && imageIssue == null),
+        stringResource(R.string.pane_see_apps) to guardReady,
+        stringResource(R.string.today_tool_lock) to (state.lockRemainingMillis > 0L)
+    )
+    val shownParts = if (unrotEdition && part == SHIELD_ADULT) adultPanes else unrotParts
     // Browsers that load pages through their maker's servers or a built-in VPN: the website
     // filter never sees which site opens there. An issue until blocked or "only Chrome" is on.
     val leakyContext = androidx.compose.ui.platform.LocalContext.current
@@ -268,7 +280,7 @@ fun ProtectionScreen(
 
     // Unrot: the steps left after onboarding, as one numbered list (see UnrotSetupGuide.kt).
     val stepsLeft = setupStepsLeft(state)
-    val tab = if (unrotEdition) shieldTab else SHIELD_ALL
+    val tab = if (unrotEdition && part != SHIELD_ALL) part else if (unrotEdition) shieldTab else SHIELD_ALL
     val guardPermissionText = stringResource(R.string.attention_guard_permission)
 
     val anythingActive = layers.any { it.active }
@@ -308,6 +320,8 @@ fun ProtectionScreen(
             runCatching { Wins.read(winsContext, state) }.getOrNull()
         }
     }
+    // The home-screen widget shows the same time given back as the glass.
+    LaunchedEffect(wins?.givenBackMs) { wins?.let { app.hisn.android.GlassMoments.rememberGiven(winsContext, it.givenBackMs) } }
 
     var wasActive by remember { mutableStateOf(healthy) }
     LaunchedEffect(healthy) {
@@ -437,21 +451,24 @@ fun ProtectionScreen(
                 }
             }
             // Shield's tabs sit on top, like CleanPath's Blocker; the status follows.
-            if (shield && unrotEdition) {
+            if (shield && unrotEdition && part == SHIELD_ALL) {
                 item(key = "shield-tabs") { UnrotShieldTabs(shieldTab) { shieldTab = it } }
             }
             if (!today) item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (shield && stepsLeft > 0) {
+                    // Rules (feeds and apps) has no status of its own: the glass and its setup live on Shield.
+                    if (shield && part == SHIELD_FEEDS) {
+                    } else if (shield && stepsLeft > 0 && part != SHIELD_ADULT) {
                         UnrotSetupCard(state)
                     } else if (shield) {
+                        // On the Shield tab the panes always show; unfinished setup follows them (below).
                         // Unrot: one sentence and the one action that would fix it.
                         // Today's saved count: the filter's own counter restarts at 0 with the filter.
                         val shieldContext = androidx.compose.ui.platform.LocalContext.current
                         val blocked = remember(state.blockedLookups) { app.hisn.android.StepIns.keptOutToday(shieldContext) }
                         // The mockup's status line: how many panes of the glass are open, by name below.
-                        val openPanes = unrotParts.count { !it.second }
-                        val panes = unrotParts.size
+                        val openPanes = shownParts.count { !it.second }
+                        val panes = shownParts.size
                         val paneTitle = when {
                             panes == 0 -> null
                             openPanes == 0 -> androidx.compose.ui.res.pluralStringResource(R.plurals.shield_panes_closed, panes, panes)
@@ -464,7 +481,7 @@ fun ProtectionScreen(
                                 !healthy -> heroBody
                                 runtime.dnsAttached -> stringResource(
                                     R.string.shield_status_ok_body,
-                                    String.format(java.util.Locale.getDefault(), "%,d", blocked)
+                                    String.format(uiLocale(), "%,d", blocked)
                                 )
                                 else -> stringResource(R.string.shield_status_ok_body_no_filter)
                             },
@@ -479,8 +496,9 @@ fun ProtectionScreen(
                                     else -> state.fixDns()
                                 }
                             },
-                            parts = unrotParts
+                            parts = shownParts
                         )
+                        if (stepsLeft > 0 && part == SHIELD_ADULT) UnrotSetupCard(state)
                     } else StatusHero(
                         title = heroTitle,
                         body = heroBody,
@@ -540,7 +558,7 @@ fun ProtectionScreen(
             if (shield && state.lockRemainingMillis > 0L) {
                 item { UnrotLockBanner(state.lockLabel, onBreathe = state::openPause) }
             }
-            if (shield && tab == SHIELD_ALL) {
+            if (shield && (tab == SHIELD_ALL || part == SHIELD_ADULT)) {
                 item { UnrotShieldNumbers(state, onOpen) }
             }
             // Unrot's plan for today is the glass's switches on Home (UnrotGlassSwitches).

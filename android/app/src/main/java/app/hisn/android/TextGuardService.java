@@ -181,7 +181,7 @@ public final class TextGuardService extends AccessibilityService {
     private int waitOverlayFallbacks;
     private final Runnable showRestriction = () -> {
         try {
-            startActivity(new Intent(this, Edition.islamic ? RestrictionActivity.class : BlockActivity.class)
+            startActivity(new Intent(this, BlockActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                     .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason)
                     .putExtra("focus", pendingFocusReason)

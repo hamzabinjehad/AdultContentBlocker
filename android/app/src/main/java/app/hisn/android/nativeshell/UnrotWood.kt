@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -49,6 +50,8 @@ import java.time.LocalDate
 import java.time.Month
 import java.time.format.DateTimeFormatter
 import kotlin.math.PI
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.res.imageResource
 import kotlin.math.abs
 import kotlin.math.sin
 
@@ -57,7 +60,7 @@ import kotlin.math.sin
  * around the glasshouse. Its size is that day's time given back; a heavy day is a small bush,
  * never a dead tree. Only the day adult content got through (the glass broke) stays a dry tree.
  * Kinds of tree are earned with days, never bought; in winter pines wear snow. Today is the
- * sapling still growing. Drawn in code in the paintings' cartoon style, swaying in the wind.
+ * sapling still growing. Painted trees on a painted hill, swaying in the wind.
  */
 
 internal enum class TreeKind(val unlockDay: Int, val label: Int) {
@@ -86,16 +89,52 @@ internal fun woodTrees(w: WinsSummary, brokenDay: Long): List<WoodTree> {
     return days + WoodTree(today, 0L, null, today.toEpochDay() == brokenDay, true)
 }
 
-private val Bark = Color(0xFF7A4A24)
-private val BarkLight = Color(0xFFA36A3A)
 private val GlassGoldW = Color(0xFFF2C14E)
 
 @Composable
 internal fun UnrotWoodCard(w: WinsSummary) {
     val context = LocalContext.current
+    val trees = remember(w) { woodTrees(w, GlassMoments.brokenDay(context)).takeLast(MAX_TREES) }
+    UnrotWoodCard(trees, w.day, w.base.feedMs, w.givenBackMs)
+}
+
+/**
+ * The wood when Android has given no usage numbers yet: still a tree for every day with Unrot,
+ * all one size, so the top of Progress is never empty. The dry tree and today's sapling are real.
+ */
+@Composable
+internal fun UnrotWoodCardByDays(day: Int) {
+    val context = LocalContext.current
+    val broken = remember { GlassMoments.brokenDay(context) }
+    val trees = remember(day, broken) {
+        val today = LocalDate.now()
+        (day - 1 downTo 1).map { back ->
+            val date = today.minusDays(back.toLong())
+            WoodTree(date, 30 * 60_000L, treeKindFor(date, day - back), date.toEpochDay() == broken, false)
+        }.takeLast(MAX_TREES - 1) + WoodTree(today, 0L, null, today.toEpochDay() == broken, true)
+    }
+    UnrotWoodCard(trees, day, 60 * 60_000L, 0L)
+}
+
+/** A wood of sample days, for looking at the trees on a phone with no history (debug builds only). */
+@Composable
+internal fun UnrotWoodPreview(onBack: () -> Unit) {
+    val today = LocalDate.now()
+    val trees = remember {
+        (22 downTo 1).map { back ->
+            val date = today.minusDays(back.toLong()); val n = 23 - back
+            WoodTree(date, ((20 + (n * 37) % 70) * 60_000L).takeIf { n % 9 != 4 } ?: 2 * 60_000L, treeKindFor(date, n * 2 + 2), n == 15, false)
+        } + WoodTree(today, 0L, null, false, true)
+    }
+    DetailScaffold(stringResource(R.string.wood_title), onBack) { pad ->
+        Column(Modifier.padding(pad).padding(16.dp)) { UnrotWoodCard(trees, 46, 110 * 60_000L, 14 * 3_600_000L) }
+    }
+}
+
+@Composable
+private fun UnrotWoodCard(trees: List<WoodTree>, day: Int, baseFeedMs: Long, givenBackMs: Long) {
     val reduce = LocalReduceMotion.current
     val haptics = rememberHisnHaptics()
-    val trees = remember(w) { woodTrees(w, GlassMoments.brokenDay(context)).takeLast(MAX_TREES) }
     var picked by remember(trees) { mutableIntStateOf(trees.lastIndex) }
     val appear = remember { Animatable(if (reduce) 1f else 0f) }
     LaunchedEffect(Unit) { if (!reduce) appear.animateTo(1f, tween(1800, easing = LinearEasing)) }
@@ -103,9 +142,10 @@ internal fun UnrotWoodCard(w: WinsSummary) {
     val phase by wind.animateFloat(0f, (2 * PI).toFloat(), infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Restart), label = "p")
     val locale = appLocale()
     val fmt = remember(locale) { DateTimeFormatter.ofPattern("EEE d MMM", locale) }
-    val nextKind = TreeKind.entries.firstOrNull { it.unlockDay > w.day }
+    val nextKind = TreeKind.entries.firstOrNull { it.unlockDay > day }
     val names = TreeKind.entries.associateWith { stringResource(it.label) }
-    val woodDesc = stringResource(R.string.wood_desc, trees.size, Wins.short(w.givenBackMs))
+    val woodDesc = stringResource(R.string.wood_desc, trees.size, Wins.short(givenBackMs))
+    val art = rememberTreeArt()
 
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Color(0xFF15100A)).padding(bottom = 14.dp),
@@ -118,14 +158,14 @@ internal fun UnrotWoodCard(w: WinsSummary) {
         }
         val layout = remember(trees) { placeTrees(trees.size) }
         Canvas(
-            Modifier.fillMaxWidth().height(230.dp)
+            Modifier.fillMaxWidth().aspectRatio(360f / 300f)
                 .semantics { contentDescription = woodDesc }
                 .pointerInput(trees) {
                     detectTapGestures { tap ->
                         val wpx = size.width.toFloat(); val hpx = size.height.toFloat()
                         val best = layout.indices.minByOrNull { i ->
                             val (x, y) = layout[i].pos(wpx, hpx)
-                            abs(x - tap.x) + abs(y - hpx * .12f - tap.y) * .6f
+                            abs(x - tap.x) + abs(y - hpx * .05f - tap.y) * .6f
                         }
                         if (best != null && best != picked) { picked = best; haptics.tick() }
                     }
@@ -134,22 +174,21 @@ internal fun UnrotWoodCard(w: WinsSummary) {
             val p = if (reduce) 0f else phase
             drawHill(p)
             // Back rows first, so the front trees stand over them.
-            layout.indices.sortedBy { layout[it].row * -1 }.forEach { i ->
+            layout.indices.sortedBy { layout[it].fy }.forEach { i ->
                 val spot = layout[i]
                 val t = trees[i]
                 val (x, y) = spot.pos(size.width, size.height)
                 val grow = easeBack(((appear.value - i * (.7f / layout.size)) / .3f).coerceIn(0f, 1f))
                 if (grow <= 0f) return@forEach
-                val depth = 1f - spot.row * .22f
-                val full = size.height * .36f * depth
-                val sizeFactor = if (t.today) .38f else (.42f + .58f * (t.gainMs / (w.base.feedMs * .5f).coerceAtLeast(1f))).coerceIn(.42f, 1f)
+                val full = size.width * .105f * spot.scale
+                val sizeFactor = if (t.today) .8f else (.62f + .38f * (t.gainMs / (baseFeedMs * .5f).coerceAtLeast(1f))).coerceIn(.62f, 1f)
                 val h = full * sizeFactor * grow
                 val sway = sin(p + i * .8f) * 2.2f
-                val haze = spot.row * .22f
+                val haze = 0f
                 if (i == picked) {
                     drawCircle(Brush.radialGradient(listOf(GlassGoldW.copy(alpha = .35f), Color.Transparent), center = Offset(x, y - h * .5f), radius = h * .9f), h * .9f, Offset(x, y - h * .5f))
                 }
-                drawTree(t, Offset(x, y), h, sway, p + i, haze)
+                drawTree(t, Offset(x, y), h, sway, haze, art)
             }
             // A few fireflies over the wood.
             if (!reduce) for (k in 0 until 7) {
@@ -179,22 +218,31 @@ internal fun UnrotWoodCard(w: WinsSummary) {
 private const val MAX_TREES = 24
 
 /** Where each tree stands: rows from the front (0) back, newest at the front. */
-private class Spot(val fx: Float, val row: Int) {
-    fun pos(w: Float, h: Float): Pair<Float, Float> = Pair(fx * w, hillY(fx, row, h))
+/**
+ * Where each tree stands on the painted hill, as fractions of the picture. [row] 0 is the back
+ * row near the crest; later rows are lower and nearer. [scale] grows towards the front.
+ */
+private class Spot(val fx: Float, val fy: Float, val row: Int, val scale: Float) {
+    fun pos(w: Float, h: Float): Pair<Float, Float> = Pair(fx * w, fy * h)
 }
 
-private fun hillY(fx: Float, row: Int, h: Float): Float =
-    h * (.90f - row * .17f) - sin(fx * PI.toFloat() * 1.2f + row * 1.7f) * h * .045f
+/** The crest of the painted hill, in the picture's own 360 × 300 units. */
+private fun crest(x: Float): Float = 124f + 15f * ((x - 180f) / 150f) * ((x - 180f) / 150f)
 
+/**
+ * Oldest days at the back, newest at the front, in one to four rows. Trees stand on the two
+ * grass banks only: the painted path down the middle of the hill stays clear.
+ */
 private fun placeTrees(n: Int): List<Spot> {
-    val perRow = 8
+    val rows = when { n <= 6 -> 1; n <= 18 -> 2; n <= 32 -> 3; else -> 4 }
+    val per = kotlin.math.ceil(n / rows.toFloat()).toInt().coerceAtLeast(1)
     return List(n) { i ->
-        val fromNewest = n - 1 - i
-        val row = (fromNewest / perRow).coerceAtMost(2)
-        val col = fromNewest % perRow
-        val jitter = (((i * 37) % 11) / 11f - .5f) * .05f
-        val offset = if (row % 2 == 1) .5f / perRow else 0f
-        Spot(((perRow - 1 - col) + .5f) / perRow + offset * .6f + jitter - (if (row % 2 == 1) .03f else 0f), row)
+        val r = i / per; val c = i % per
+        val inRow = minOf(per, n - r * per)
+        val u = (c + .5f + (if (r % 2 == 1) .22f else -.08f)) / inRow
+        val x = if (u < .5f) 38f + u * 2f * 114f else 232f + (u - .5f) * 2f * 92f
+        val y = crest(x) + (if (rows == 1) 44f else 20f) + r * 33f
+        Spot(x / 360f, y / 300f, r, (.74f + r * .13f) * (if (n <= 8) 1.7f else 1f))
     }
 }
 
@@ -203,175 +251,118 @@ private fun easeBack(t: Float): Float {
     return 1f + (c + 1f) * x * x * x + c * x * x
 }
 
-private fun DrawScope.drawHill(phase: Float) {
-    val w = size.width; val h = size.height
-    // Sky with the glasshouse lamp glowing behind the hill.
-    drawRect(Brush.verticalGradient(listOf(Color(0xFF2B1D10), Color(0xFF15100A))))
-    val glow = Offset(w * .5f, h * .38f)
-    drawCircle(Brush.radialGradient(listOf(GlassGoldW.copy(alpha = .22f + .04f * sin(phase)), Color.Transparent), center = glow, radius = w * .45f), w * .45f, glow)
-    val colors = listOf(Color(0xFF26301A), Color(0xFF30401F), Color(0xFF3D5226))
-    for (row in 2 downTo 0) {
-        val path = Path().apply {
-            moveTo(0f, h)
-            var x = 0f
-            moveTo(0f, hillY(0f, row, h) + h * .03f)
-            while (x <= 1.0001f) { lineTo(x * w, hillY(x, row, h) + h * .03f); x += .02f }
-            lineTo(w, h); lineTo(0f, h); close()
-        }
-        drawPath(path, colors[2 - row])
-        val rim = Path().apply {
-            var x = 0f; moveTo(0f, hillY(0f, row, h) + h * .03f)
-            while (x <= 1.0001f) { lineTo(x * w, hillY(x, row, h) + h * .03f); x += .02f }
-        }
-        drawPath(rim, Color(0xFF9CC46A).copy(alpha = .25f - row * .06f), style = Stroke(2f))
-    }
-}
 
 /** One tree in the paintings' style: dark outline round the whole crown, flat colour, a light edge. */
-private fun DrawScope.drawTree(t: WoodTree, root: Offset, h: Float, sway: Float, phase: Float, haze: Float) {
-    val ink = (h * .025f).coerceIn(1f, 2.4f)
-    // A soft shadow on the grass.
-    drawOval(Color.Black.copy(alpha = .25f), topLeft = Offset(root.x - h * .28f, root.y - h * .03f), size = androidx.compose.ui.geometry.Size(h * .56f, h * .07f))
-    rotate(sway, pivot = root) {
-        when {
-            t.today -> drawSapling(root, h, phase, ink)
-            t.dry -> drawDry(root, h, ink)
-            t.gainMs < 5 * 60_000L -> drawBush(root, h, ink, haze)
-            else -> when (t.kind) {
-                TreeKind.PINE -> drawPine(root, h, ink, haze, snow = winter(t.date))
-                TreeKind.WILLOW -> drawWillow(root, h, ink, haze, phase)
-                else -> drawRound(root, h, ink, haze, t.kind ?: TreeKind.OAK)
-            }
-        }
+/**
+ * The hill, drawn (not a generated picture), in the picture's own 360 × 300 units like the
+ * prototype's: a glow behind the crest, a far hill, the grass slope, the sandy path down the
+ * middle (trees keep off it, see [placeTrees]), grass tufts, flowers and stars that twinkle.
+ */
+private fun DrawScope.drawHill(phase: Float) {
+    val k = size.width / 360f
+    fun o(x: Float, y: Float) = Offset(x * k, y * k)
+    // glow behind the crest
+    drawCircle(
+        Brush.radialGradient(listOf(Color(0xFFFFD98A).copy(alpha = .5f), Color(0xFFF0B93C).copy(alpha = .16f), Color.Transparent), center = o(180f, 124f), radius = 150f * k),
+        150f * k, o(180f, 124f)
+    )
+    // stars
+    val stars = floatArrayOf(22f, 30f, 58f, 62f, 96f, 22f, 128f, 54f, 226f, 34f, 262f, 66f, 300f, 24f, 338f, 58f, 40f, 96f, 318f, 100f, 166f, 18f, 204f, 70f)
+    for (i in 0 until stars.size / 2) {
+        val tw = .25f + .7f * (.5f + .5f * sin(phase * 2f + i * 1.7f))
+        drawCircle(Color(0xFFFFE9B0).copy(alpha = tw), (if (i % 3 == 0) 1.4f else .9f) * k, o(stars[i * 2], stars[i * 2 + 1]))
     }
-}
-
-private fun Color.hazed(haze: Float): Color = androidx.compose.ui.graphics.lerp(this, Color(0xFF2A2418), haze)
-
-private fun DrawScope.trunk(root: Offset, h: Float, top: Float, width: Float, ink: Float, haze: Float, bend: Float = 0f) {
-    val path = Path().apply {
-        moveTo(root.x - width, root.y)
-        quadraticTo(root.x - width * .5f + bend, root.y - h * top * .5f, root.x - width * .45f + bend, root.y - h * top)
-        lineTo(root.x + width * .45f + bend, root.y - h * top)
-        quadraticTo(root.x + width * .5f + bend, root.y - h * top * .5f, root.x + width, root.y)
+    // far hill
+    drawPath(Path().apply {
+        moveTo(-20f * k, 178f * k); quadraticTo(70f * k, 128f * k, 150f * k, 150f * k); quadraticTo(230f * k, 172f * k, 380f * k, 160f * k)
+        lineTo(380f * k, 300f * k); lineTo(-20f * k, 300f * k); close()
+    }, Color(0xFF1D3F27).copy(alpha = .7f))
+    // the slope
+    drawPath(Path().apply {
+        moveTo(-10f * k, 150f * k); quadraticTo(180f * k, 98f * k, 370f * k, 150f * k)
+        lineTo(370f * k, 300f * k); lineTo(-10f * k, 300f * k); close()
+    }, Brush.verticalGradient(0f to Color(0xFF6AA544), .35f to Color(0xFF3F7D38), 1f to Color(0xFF173A22), startY = 120f * k, endY = 300f * k))
+    // light along the crest
+    drawPath(Path().apply {
+        moveTo(30f * k, 140f * k); quadraticTo(180f * k, 104f * k, 330f * k, 140f * k); quadraticTo(180f * k, 120f * k, 30f * k, 140f * k); close()
+    }, Color(0xFFFFF0B0).copy(alpha = .28f))
+    // the path
+    drawPath(Path().apply {
+        moveTo(184f * k, 126f * k)
+        cubicTo(172f * k, 152f * k, 206f * k, 172f * k, 186f * k, 204f * k)
+        cubicTo(170f * k, 230f * k, 136f * k, 250f * k, 140f * k, 300f * k)
+        lineTo(190f * k, 300f * k)
+        cubicTo(186f * k, 258f * k, 212f * k, 238f * k, 224f * k, 208f * k)
+        cubicTo(238f * k, 172f * k, 198f * k, 152f * k, 190f * k, 126f * k)
         close()
+    }, Brush.verticalGradient(listOf(Color(0xFFE2C48A), Color(0xFF8A6A3F)), startY = 126f * k, endY = 300f * k), alpha = .9f)
+    // grass tufts and flowers
+    val tufts = floatArrayOf(36f, 196f, 70f, 232f, 104f, 178f, 128f, 248f, 58f, 270f, 246f, 186f, 280f, 226f, 312f, 196f, 330f, 250f, 262f, 268f, 96f, 214f, 296f, 160f, 150f, 284f, 232f, 244f)
+    for (i in 0 until tufts.size / 2) {
+        val x = tufts[i * 2]; val y = tufts[i * 2 + 1]
+        for ((dx, dy) in listOf(-3f to -7f, 0f to -9f, 3f to -7f)) {
+            drawLine(Color(0xFF9FD070).copy(alpha = .8f), o(x, y), o(x + dx, y + dy), 1.3f * k, StrokeCap.Round)
+        }
     }
-    drawPath(path, GlassInk, style = Stroke(ink * 2f, join = StrokeJoin.Round))
-    drawPath(path, Brush.horizontalGradient(listOf(BarkLight.hazed(haze), Bark.hazed(haze)), startX = root.x - width, endX = root.x + width))
+    val dots = floatArrayOf(48f, 214f, 118f, 262f, 86f, 190f, 270f, 204f, 322f, 228f, 244f, 262f, 300f, 276f, 140f, 222f)
+    for (i in 0 until dots.size / 2) drawCircle(if (i % 2 == 0) Color(0xFFFFF6D8) else Color(0xFFFFD76A), 1.6f * k, o(dots[i * 2], dots[i * 2 + 1]))
+    // the slope sinks into the card
+    drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF15100A)), startY = size.height * .8f, endY = size.height), topLeft = Offset(0f, size.height * .8f))
 }
 
-/** Oak, cherry, lemon and olive: a crown of overlapping balls under one ink outline. */
-private fun DrawScope.drawRound(root: Offset, h: Float, ink: Float, haze: Float, kind: TreeKind) {
-    val (light, dark) = when (kind) {
-        TreeKind.CHERRY -> Color(0xFFFFC2D6) to Color(0xFFD9709A)
-        TreeKind.OLIVE -> Color(0xFFC9D6A3) to Color(0xFF7E9563)
-        TreeKind.LEMON -> Color(0xFF9FD45E) to Color(0xFF3F8A36)
-        else -> Color(0xFF9CD45A) to Color(0xFF3F7F33)
-    }
-    val olive = kind == TreeKind.OLIVE
-    trunk(root, h, .5f, h * (if (olive) .07f else .055f), ink, haze, bend = if (olive) h * .05f else 0f)
-    val c = Offset(root.x, root.y - h * .64f)
-    val r = h * .33f
-    val balls = listOf(
-        Offset(0f, 0f) to 1f, Offset(-.62f, .2f) to .7f, Offset(.62f, .18f) to .72f,
-        Offset(-.35f, -.5f) to .7f, Offset(.38f, -.48f) to .66f, Offset(0f, .42f) to .6f
-    ).map { (o, s) -> Offset(c.x + o.x * r, c.y + o.y * r) to s * r * (if (olive) .9f else 1f) }
-    balls.forEach { (p, br) -> drawCircle(GlassInk, br + ink, p) }
-    balls.forEach { (p, br) -> drawCircle(Brush.radialGradient(listOf(light.hazed(haze), dark.hazed(haze)), center = p - Offset(br * .35f, br * .45f), radius = br * 1.5f), br, p) }
-    // Light edges on the upper left of each ball.
-    balls.take(5).forEach { (p, br) -> drawCircle(Color.White.copy(alpha = .14f * (1 - haze)), br * .35f, p - Offset(br * .35f, br * .4f)) }
-    when (kind) {
-        TreeKind.CHERRY -> for (k in 0 until 9) {
-            val a = k * 1.9f; val d = r * (.25f + (k % 3) * .25f)
-            drawCircle(Color.White.copy(alpha = .85f * (1 - haze)), r * .07f, c + Offset(sin(a) * d, kotlin.math.cos(a) * d * .8f))
-        }
-        TreeKind.LEMON -> for (k in 0 until 7) {
-            val a = k * 2.3f; val d = r * (.3f + (k % 3) * .22f)
-            val p = c + Offset(sin(a) * d, kotlin.math.cos(a) * d * .8f)
-            drawCircle(GlassInk, r * .11f + ink * .6f, p)
-            drawCircle(Color(0xFFFFE04A).hazed(haze), r * .11f, p)
-        }
-        TreeKind.OLIVE -> for (k in 0 until 6) {
-            val a = k * 2.1f; val d = r * (.3f + (k % 2) * .3f)
-            drawCircle(Color(0xFF3A3550).hazed(haze), r * .06f, c + Offset(sin(a) * d, kotlin.math.cos(a) * d * .8f))
-        }
-        else -> Unit
-    }
-}
-
-private fun DrawScope.drawPine(root: Offset, h: Float, ink: Float, haze: Float, snow: Boolean) {
-    trunk(root, h, .22f, h * .05f, ink, haze)
-    val tiers = listOf(Triple(.16f, .36f, .5f), Triple(.36f, .3f, .4f), Triple(.55f, .24f, .32f))
-    tiers.forEach { (base, half, tall) ->
-        val y0 = root.y - h * base
-        val path = Path().apply {
-            moveTo(root.x - h * half, y0)
-            quadraticTo(root.x, y0 + h * .05f, root.x + h * half, y0)
-            lineTo(root.x, y0 - h * tall)
-            close()
-        }
-        drawPath(path, GlassInk, style = Stroke(ink * 2f, join = StrokeJoin.Round))
-        drawPath(path, Brush.linearGradient(listOf(Color(0xFF5FAE6A).hazed(haze), Color(0xFF2E6E45).hazed(haze)),
-            start = Offset(root.x - h * half, y0 - h * tall), end = Offset(root.x + h * half, y0)))
-        if (snow) {
-            val cap = Path().apply {
-                moveTo(root.x, y0 - h * tall)
-                lineTo(root.x - h * half * .45f, y0 - h * tall * .55f)
-                quadraticTo(root.x, y0 - h * tall * .45f, root.x + h * half * .45f, y0 - h * tall * .55f)
-                close()
-            }
-            drawPath(cap, Color(0xFFF4F8FF).hazed(haze))
+/**
+ * The painted trees (one family for Android, iPhone and Mac), each on its own patch of grass.
+ * They replaced the trees that were drawn in code.
+ */
+internal class TreeArt(
+    val oak: ImageBitmap, val pine: ImageBitmap, val cherry: ImageBitmap, val lemon: ImageBitmap,
+    val olive: ImageBitmap, val willow: ImageBitmap, val winter: ImageBitmap, val sapling: ImageBitmap,
+    val dry: ImageBitmap
+) {
+    fun of(t: WoodTree): ImageBitmap = when {
+        t.today -> sapling
+        t.dry -> dry
+        t.gainMs < 5 * 60_000L -> sapling
+        else -> when (t.kind) {
+            TreeKind.PINE -> if (winter(t.date)) winter else pine
+            TreeKind.CHERRY -> cherry
+            TreeKind.LEMON -> lemon
+            TreeKind.OLIVE -> olive
+            TreeKind.WILLOW -> willow
+            else -> oak
         }
     }
 }
 
-private fun DrawScope.drawWillow(root: Offset, h: Float, ink: Float, haze: Float, phase: Float) {
-    trunk(root, h, .55f, h * .06f, ink, haze)
-    val c = Offset(root.x, root.y - h * .62f)
-    val r = h * .3f
-    drawCircle(GlassInk, r + ink, c)
-    drawCircle(Brush.radialGradient(listOf(Color(0xFFB8DC7A).hazed(haze), Color(0xFF5E9A44).hazed(haze)), center = c - Offset(r * .3f, r * .4f), radius = r * 1.4f), r, c)
-    for (k in -5..5) {
-        val sx = c.x + k * r * .17f
-        val sy = c.y + r * (.1f - abs(k) * .03f)
-        val drift = sin(phase * 1.3f + k) * h * .02f
-        val strand = Path().apply { moveTo(sx, sy); quadraticTo(sx + drift, sy + h * .25f, sx + drift * 1.6f, sy + h * .42f) }
-        drawPath(strand, GlassInk, style = Stroke(ink * 2.6f, cap = StrokeCap.Round))
-        drawPath(strand, Color(0xFF8CC35E).hazed(haze), style = Stroke(ink * 1.3f, cap = StrokeCap.Round))
+@Composable
+internal fun rememberTreeArt(): TreeArt {
+    @Composable fun img(id: Int) = ImageBitmap.imageResource(id)
+    return TreeArt(
+        img(R.drawable.unrot_tree_oak), img(R.drawable.unrot_tree_pine), img(R.drawable.unrot_tree_cherry),
+        img(R.drawable.unrot_tree_lemon), img(R.drawable.unrot_tree_olive), img(R.drawable.unrot_tree_willow),
+        img(R.drawable.unrot_tree_winter), img(R.drawable.unrot_tree_sapling), img(R.drawable.unrot_tree_dry)
+    )
+}
+
+private fun DrawScope.drawTree(t: WoodTree, root: Offset, h: Float, sway: Float, haze: Float, art: TreeArt) {
+    // The painting is square with the tree standing on a patch of grass near its foot.
+    val side = (h * 1.3f).toInt().coerceAtLeast(1)
+    rotate(sway * .6f, pivot = root) {
+        drawImage(
+            art.of(t),
+            dstOffset = androidx.compose.ui.unit.IntOffset((root.x - side / 2f).toInt(), (root.y - side * .9f).toInt()),
+            dstSize = androidx.compose.ui.unit.IntSize(side, side),
+            // Trees further up the hill sit back in the evening haze.
+            alpha = 1f - haze * .35f,
+            filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium
+        )
     }
 }
 
-/** A heavy day: a low bush, still green. */
-private fun DrawScope.drawBush(root: Offset, h: Float, ink: Float, haze: Float) {
-    val r = h * .2f
-    val balls = listOf(Offset(-.6f, -.55f) to .75f, Offset(.6f, -.55f) to .75f, Offset(0f, -.9f) to .95f)
-        .map { (o, s) -> Offset(root.x + o.x * r, root.y + o.y * r) to s * r }
-    balls.forEach { (p, br) -> drawCircle(GlassInk, br + ink, p) }
-    balls.forEach { (p, br) -> drawCircle(Brush.radialGradient(listOf(Color(0xFF8CC35E).hazed(haze), Color(0xFF3F7F33).hazed(haze)), center = p - Offset(br * .3f, br * .4f), radius = br * 1.5f), br, p) }
-}
 
-/** The day the glass broke: a bare dry tree. It stays, but it never spreads. */
-private fun DrawScope.drawDry(root: Offset, h: Float, ink: Float) {
-    val dry = Color(0xFF8A6A48)
-    fun branch(from: Offset, to: Offset, wd: Float) {
-        drawLine(GlassInk, from, to, wd + ink * 2f, StrokeCap.Round)
-        drawLine(dry, from, to, wd, StrokeCap.Round)
-    }
-    val top = Offset(root.x + h * .02f, root.y - h * .62f)
-    branch(root, top, h * .06f)
-    branch(Offset(root.x, root.y - h * .35f), Offset(root.x - h * .22f, root.y - h * .62f), h * .035f)
-    branch(Offset(root.x + h * .01f, root.y - h * .45f), Offset(root.x + h * .24f, root.y - h * .7f), h * .03f)
-    branch(top, Offset(top.x - h * .08f, top.y - h * .14f), h * .025f)
-}
 
-/** Today's tree, still a sapling, glowing gold until the day is done. */
-private fun DrawScope.drawSapling(root: Offset, h: Float, phase: Float, ink: Float) {
-    val glow = Offset(root.x, root.y - h * .5f)
-    drawCircle(Brush.radialGradient(listOf(Color(0xFFFFE39A).copy(alpha = .45f), Color.Transparent), center = glow, radius = h * .9f), h * .9f, glow)
-    val tip = Offset(root.x, root.y - h * .75f)
-    drawLine(GlassInk, root, tip, h * .07f + ink * 2f, StrokeCap.Round)
-    drawLine(Color(0xFF5FA03E), root, tip, h * .07f, StrokeCap.Round)
-    val f = sin(phase * 1.8f) * 6f
-    drawLeaf(tip, h * .42f, -150f + f, ink)
-    drawLeaf(tip, h * .44f, -30f - f, ink)
-}
+
+
+
+
+

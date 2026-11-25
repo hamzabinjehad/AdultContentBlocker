@@ -104,7 +104,50 @@ internal fun UnrotShieldStatus(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         val b = breath()
-        Box(Modifier.size(200.dp), contentAlignment = Alignment.Center) {
+        // The glass as its panes (prototype: Shield): closed panes are gold, an open one is an amber
+        // dashed gap you can see before you read. Falls back to the glass picture with no parts.
+        if (parts.isNotEmpty()) {
+            val gold = MaterialTheme.colorScheme.primary
+            val track = MaterialTheme.colorScheme.surfaceVariant
+            androidx.compose.foundation.Canvas(Modifier.size(width = 190.dp, height = 150.dp)) {
+                val n = parts.size
+                val slot = size.width / (n + .6f)
+                val barW = slot * .78f
+                val base = size.height - 14.dp.toPx()
+                parts.forEachIndexed { i, (_, on) ->
+                    // a dome: tallest in the middle
+                    val t = if (n == 1) 0f else kotlin.math.abs(i - (n - 1) / 2f) / ((n - 1) / 2f)
+                    val h = (base - 6.dp.toPx()) * (1f - .42f * t * t)
+                    val left = slot * .3f + i * slot + (slot - barW) / 2f
+                    val topLeft = androidx.compose.ui.geometry.Offset(left, base - h)
+                    val sz = androidx.compose.ui.geometry.Size(barW, h)
+                    val r = androidx.compose.ui.geometry.CornerRadius(barW / 2f)
+                    if (on) {
+                        drawRoundRect(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(listOf(gold, gold.copy(alpha = .72f)), startY = base - h, endY = base),
+                            topLeft, sz, r
+                        )
+                    } else {
+                        drawRoundRect(warm.copy(alpha = .10f + b * .08f), topLeft, sz, r)
+                        drawRoundRect(
+                            warm.copy(alpha = .6f + b * .4f), topLeft, sz, r,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                width = 1.6.dp.toPx(),
+                                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 10f))
+                            )
+                        )
+                    }
+                }
+                drawRoundRect(
+                    track, androidx.compose.ui.geometry.Offset(0f, base + 4.dp.toPx()),
+                    androidx.compose.ui.geometry.Size(size.width, 6.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(3.dp.toPx())
+                )
+            }
+            Text(
+                stringResource(R.string.shield_panes_count, parts.count { it.second }, parts.size),
+                style = MaterialTheme.typography.displaySmall.storySerif(), color = gold
+            )
+        } else Box(Modifier.size(200.dp), contentAlignment = Alignment.Center) {
             if (!healthy) {
                 androidx.compose.foundation.Canvas(Modifier.size(196.dp).graphicsLayer { alpha = 0.7f + b * 0.3f }) {
                     drawCircle(

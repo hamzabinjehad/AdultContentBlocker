@@ -167,6 +167,8 @@ internal fun UnrotProgress(state: HisnState, padding: PaddingValues, onOpen: (St
         ),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // The wood opens the page, as in the prototype: clean days are the main result.
+        item(key = "wood") { wins?.let { UnrotWoodCard(it) } ?: UnrotWoodCardByDays(state.personal.day.coerceAtLeast(1)) }
         // CleanPath's Analytics top: gauge, two tiles, meters (see UnrotAnalyticsTop.kt).
         item(key = "analytics-top") { UnrotAnalyticsTop(wins, state.personal.day, steps) }
         // The day count and the next milestone (moved from Home, which now ends like the mockup).
@@ -179,8 +181,6 @@ internal fun UnrotProgress(state: HisnState, padding: PaddingValues, onOpen: (St
                 sticker = MilestoneMemory.celebrated(context)
             )
         }
-        // One swaying cartoon tree per day (UnrotWood.kt, from the trees-and-animations work).
-        wins?.let { w -> item(key = "wood") { UnrotWoodCard(w) } }
         wins?.let { w ->
             if (!w.heavier) item { UnrotProgressHero(w) }
             item {

@@ -8,7 +8,7 @@ import app.hisn.android.Edition
  * [tr] keeps the screens from showing English to an Arabic reader.
  */
 fun tr(english: String): String =
-    if (java.util.Locale.getDefault().language == "ar") ArabicShell[english] ?: english else english
+    if (isArabicUi()) hisnWords(ArabicShell[english] ?: english) else english
 
 private val ArabicShell: Map<String, String> = mapOf(
     "Choose what ${Edition.NAME} blocks or checks. Every rule below is saved on this phone." to "اختر ما يحظره ${Edition.NAME_AR} أو يفحصه. كل قاعدة أدناه محفوظة على هذا الهاتف.",

@@ -26,6 +26,10 @@ import app.hisn.core.GuardianPolicy;
  * QR scanner is available; it sends no browsing data and talks to no server.
  */
 public final class GuardianPairActivity extends Activity {
+    @Override protected void attachBaseContext(android.content.Context base) {
+        super.attachBaseContext(app.hisn.android.nativeshell.IslamicCommonKt.arabicDigitsContext(base));
+    }
+
     private EditText offerInput;
     private TextView status;
     private TextView responseView;

@@ -1,5 +1,6 @@
 package app.hisn.android
 
+import app.hisn.android.nativeshell.arabicDigitsContext
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -27,6 +28,10 @@ import kotlinx.coroutines.withContext
 
 /** Rules › Wait before opening. */
 class OpenWaitSettingsActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(arabicDigitsContext(newBase))
+    }
+
 
     private var resumed by mutableIntStateOf(0)
 

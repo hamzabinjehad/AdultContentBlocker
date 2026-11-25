@@ -12,13 +12,10 @@ public final class PauseEntry {
     private PauseEntry() { }
 
     public static Intent intent(Context context) {
-        // The general edition has its own breathing screen; the Islamic edition keeps its pause,
-        // which carries the edition's reminders.
+        // Each edition has its own breathing screen: Unrot's cyclic sighing, Hisn's istighfār.
         if (!Edition.islamic) {
             return new Intent(context, BreatheActivity.class).setAction(Intent.ACTION_VIEW);
         }
-        return new Intent(context, RestrictionActivity.class)
-                .setAction(Intent.ACTION_VIEW)
-                .putExtra("voluntary", true);
+        return new Intent(context, HisnBreatheActivity.class).setAction(Intent.ACTION_VIEW);
     }
 }

@@ -32,6 +32,10 @@ import app.hisn.core.SelfProtectionScreens.Guard;
  * screen is read or stored; the reason is one of four fixed categories.
  */
 public final class ShieldActivity extends Activity {
+    @Override protected void attachBaseContext(android.content.Context base) {
+        super.attachBaseContext(app.hisn.android.nativeshell.IslamicCommonKt.arabicDigitsContext(base));
+    }
+
     public static final String EXTRA_GUARD = "guard";
     /** Long enough for the impulse to pass, short enough not to trap a person who needs the phone. */
     static final long HOLD_MILLIS = 8000;

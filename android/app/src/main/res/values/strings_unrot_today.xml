@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Unrot's Today (design/unrot-phone-prototype-2026-11-24). Unrot only; the Islamic edition never shows these. -->
+<resources>
+    <string name="ut_eyebrow">%1$s · day %2$d</string>
+    <string name="ut_chip_closed">All closed</string>
+    <string name="ut_chip_open">%1$d open</string>
+    <string name="ut_chip_cracked">Cracked</string>
+    <string name="ut_chip_desc">Shield: %1$s. Open Shield</string>
+
+    <string name="ut_stage_day">%1$s · day %2$d</string>
+    <string name="ut_stage_cracked">Cracked at %1$s</string>
+    <string name="ut_stage_gold">Sealed with gold · day %1$d</string>
+    <string name="ut_stage_broken">New glass</string>
+    <string name="ut_stage_resting">Resting · quiet hours</string>
+    <string name="ut_clean_since">clean, since %1$s</string>
+    <string name="ut_clean_today">clean, since today</string>
+    <string name="ut_seal_left">left to seal the crack with gold</string>
+    <string name="ut_clock_desc">%1$d days, %2$d hours and %3$d minutes clean</string>
+    <string name="ut_seal_desc">%1$d minutes and %2$d seconds left to seal the crack with gold</string>
+
+    <string name="ut_next_in">in %1$s</string>
+    <string name="ut_next_of">%1$s of %2$s given back</string>
+    <string name="ut_next_top">The plant is grown</string>
+    <string name="ut_next_top_body">%1$s given back in all</string>
+    <string name="ut_nothing_lost">Nothing is lost</string>
+    <plurals name="ut_seal_body">
+        <item quantity="one">Three slow breaths seal it. Your %1$d clean day stays.</item>
+        <item quantity="other">Three slow breaths seal it. Your %1$d clean days stay.</item>
+    </plurals>
+    <string name="ut_seal_body_new">Three slow breaths seal it. Nothing you gave back is taken.</string>
+
+    <string name="ut_tile_panes">%1$d / %2$d</string>
+    <string name="ut_tile_panes_label">panes closed</string>
+    <string name="ut_tile_page_label">page stopped</string>
+    <string name="ut_tile_trees_label">trees in your wood</string>
+    <string name="ut_tile_back_label">back today</string>
+
+    <string name="ut_tool_notes">Notes</string>
+
+    <string name="ut_adult_closed">Adult content is closed</string>
+    <string name="ut_adult_closed_body">Every app and browser · %1$d of %2$d panes</string>
+    <plurals name="ut_adult_open">
+        <item quantity="one">%1$d pane is open</item>
+        <item quantity="other">%1$d panes are open</item>
+    </plurals>
+    <string name="ut_adult_open_body">See what is open and fix it on Shield</string>
+    <string name="ut_adult_cracked">A page was stopped at %1$s</string>
+    <string name="ut_adult_cracked_body">Nothing is lost. Breathe to seal the glass</string>
+
+    <string name="ut_three_count">%1$d of 3</string>
+    <string name="ut_three_checked">Checked in</string>
+    <string name="ut_three_checkin">Check in</string>
+    <string name="ut_three_checkin_body">How is today? One tap</string>
+    <string name="ut_three_pause">One pause before a feed</string>
+    <string name="ut_three_not_yet">Not yet today</string>
+    <string name="ut_three_done">Done today</string>
+    <string name="ut_three_under">Under your before</string>
+    <string name="ut_three_under_body">%1$s of %2$s so far</string>
+    <string name="ut_three_under_unknown">A few days of use tell Unrot your before</string>
+
+    <string name="ut_help_now">Help now</string>
+    <string name="ut_help_seal">Breathe to seal it</string>
+
+    <string name="ut_hard_title">Had a hard moment</string>
+    <string name="ut_hard_body">No one sees this. It only changes the glass.</string>
+    <string name="ut_hard_stopped">I went looking, and it was stopped</string>
+    <string name="ut_hard_through">It got through</string>
+    <string name="ut_hard_pull">Just a strong pull</string>
+
+    <string name="ut_more_title">More</string>
+    <string name="ut_more_help_body">Breathe through it</string>
+    <string name="ut_more_hard">Hard moment</string>
+    <string name="ut_more_hard_body">Say what happened</string>
+    <string name="ut_more_keep_out">Keep it out</string>
+    <string name="ut_more_your_time">Your time</string>
+    <string name="ut_more_grow">See it grow</string>
+    <string name="ut_more_shield">Shield</string>
+    <string name="ut_more_lists">Block lists</string>
+    <string name="ut_more_lock">Lock</string>
+    <string name="ut_more_quiet">Quiet hours</string>
+    <string name="ut_more_focus">Focus</string>
+    <string name="ut_more_wait">Wait</string>
+    <string name="ut_more_rules">Rules</string>
+    <string name="ut_more_instead">Instead</string>
+    <string name="ut_more_woods">Your woods</string>
+    <string name="ut_more_progress">Progress</string>
+    <string name="ut_more_notes">Notes</string>
+    <string name="ut_more_checkin">Check in</string>
+
+    <string name="ut_breathe">Breathe</string>
+    <string name="ut_new_rule">New rule</string>
+</resources>

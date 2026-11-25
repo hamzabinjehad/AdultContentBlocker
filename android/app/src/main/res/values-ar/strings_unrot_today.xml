@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Unrot's Today, in Arabic. Unrot only. -->
+<resources>
+    <string name="ut_eyebrow">%1$s · اليوم %2$d</string>
+    <string name="ut_chip_closed">كلها مغلقة</string>
+    <string name="ut_chip_open">%1$d مفتوحة</string>
+    <string name="ut_chip_cracked">تشقّق</string>
+    <string name="ut_chip_desc">الدرع: %1$s. افتح الدرع</string>
+
+    <string name="ut_stage_day">%1$s · اليوم %2$d</string>
+    <string name="ut_stage_cracked">تشقّق عند %1$s</string>
+    <string name="ut_stage_gold">مختوم بالذهب · اليوم %1$d</string>
+    <string name="ut_stage_broken">زجاج جديد</string>
+    <string name="ut_stage_resting">راحة · ساعات الهدوء</string>
+    <string name="ut_clean_since">نظيف، منذ %1$s</string>
+    <string name="ut_clean_today">نظيف، منذ اليوم</string>
+    <string name="ut_seal_left">باقٍ لختم الشقّ بالذهب</string>
+    <string name="ut_clock_desc">%1$d أيام و%2$d ساعات و%3$d دقائق نظيفة</string>
+    <string name="ut_seal_desc">باقٍ %1$d دقائق و%2$d ثوانٍ لختم الشقّ بالذهب</string>
+
+    <string name="ut_next_in">بعد %1$s</string>
+    <string name="ut_next_of">%1$s من %2$s وقت مستعاد</string>
+    <string name="ut_next_top">اكتمل نموّ النبتة</string>
+    <string name="ut_next_top_body">%1$s وقت مستعاد في المجموع</string>
+    <string name="ut_nothing_lost">لم يضِع شيء</string>
+    <plurals name="ut_seal_body">
+        <item quantity="zero">ثلاثة أنفاس بطيئة تختمه. أيامك النظيفة باقية.</item>
+        <item quantity="one">ثلاثة أنفاس بطيئة تختمه. يومك النظيف باقٍ.</item>
+        <item quantity="two">ثلاثة أنفاس بطيئة تختمه. يوماك النظيفان باقيان.</item>
+        <item quantity="few">ثلاثة أنفاس بطيئة تختمه. أيامك النظيفة الـ%1$d باقية.</item>
+        <item quantity="many">ثلاثة أنفاس بطيئة تختمه. أيامك النظيفة الـ%1$d باقية.</item>
+        <item quantity="other">ثلاثة أنفاس بطيئة تختمه. أيامك النظيفة الـ%1$d باقية.</item>
+    </plurals>
+    <string name="ut_seal_body_new">ثلاثة أنفاس بطيئة تختمه. لا يُؤخذ شيء مما استعدته.</string>
+
+    <string name="ut_tile_panes">%1$d / %2$d</string>
+    <string name="ut_tile_panes_label">ألواح مغلقة</string>
+    <string name="ut_tile_page_label">صفحة أُوقفت</string>
+    <string name="ut_tile_trees_label">أشجار في غابتك</string>
+    <string name="ut_tile_back_label">مستعاد اليوم</string>
+
+    <string name="ut_tool_notes">ملاحظات</string>
+
+    <string name="ut_adult_closed">المحتوى الإباحي مغلق</string>
+    <string name="ut_adult_closed_body">كل تطبيق ومتصفح · %1$d من %2$d ألواح</string>
+    <plurals name="ut_adult_open">
+        <item quantity="zero">لا ألواح مفتوحة</item>
+        <item quantity="one">لوح واحد مفتوح</item>
+        <item quantity="two">لوحان مفتوحان</item>
+        <item quantity="few">%1$d ألواح مفتوحة</item>
+        <item quantity="many">%1$d لوحًا مفتوحًا</item>
+        <item quantity="other">%1$d لوح مفتوح</item>
+    </plurals>
+    <string name="ut_adult_open_body">انظر ما المفتوح وأصلحه من الدرع</string>
+    <string name="ut_adult_cracked">أُوقفت صفحة عند %1$s</string>
+    <string name="ut_adult_cracked_body">لم يضِع شيء. تنفّس لتختم الزجاج</string>
+
+    <string name="ut_three_count">%1$d من 3</string>
+    <string name="ut_three_checked">سجّلت حالك</string>
+    <string name="ut_three_checkin">سجّل حالك</string>
+    <string name="ut_three_checkin_body">كيف اليوم؟ لمسة واحدة</string>
+    <string name="ut_three_pause">وقفة واحدة قبل أي موجز</string>
+    <string name="ut_three_not_yet">ليس بعد اليوم</string>
+    <string name="ut_three_done">تمّ اليوم</string>
+    <string name="ut_three_under">أقل من معدّلك السابق</string>
+    <string name="ut_three_under_body">%1$s من %2$s حتى الآن</string>
+    <string name="ut_three_under_unknown">بضعة أيام من الاستخدام تُعرّف أنروت بمعدّلك السابق</string>
+
+    <string name="ut_help_now">ساعدني الآن</string>
+    <string name="ut_help_seal">تنفّس لتختمه</string>
+
+    <string name="ut_hard_title">مررتُ بلحظة صعبة</string>
+    <string name="ut_hard_body">لا يرى هذا أحد. إنه يغيّر الزجاج فقط.</string>
+    <string name="ut_hard_stopped">بحثتُ عنه، وأُوقف</string>
+    <string name="ut_hard_through">وصلني</string>
+    <string name="ut_hard_pull">مجرد رغبة قوية</string>
+
+    <string name="ut_more_title">المزيد</string>
+    <string name="ut_more_help_body">تنفّس حتى تمرّ</string>
+    <string name="ut_more_hard">لحظة صعبة</string>
+    <string name="ut_more_hard_body">قل ما حدث</string>
+    <string name="ut_more_keep_out">أبقِه بعيدًا</string>
+    <string name="ut_more_your_time">وقتك</string>
+    <string name="ut_more_grow">شاهده ينمو</string>
+    <string name="ut_more_shield">الدرع</string>
+    <string name="ut_more_lists">قوائم الحظر</string>
+    <string name="ut_more_lock">القفل</string>
+    <string name="ut_more_quiet">ساعات الهدوء</string>
+    <string name="ut_more_focus">تركيز</string>
+    <string name="ut_more_wait">انتظار</string>
+    <string name="ut_more_rules">القواعد</string>
+    <string name="ut_more_instead">بدلًا منه</string>
+    <string name="ut_more_woods">غاباتك</string>
+    <string name="ut_more_progress">التقدّم</string>
+    <string name="ut_more_notes">ملاحظات</string>
+    <string name="ut_more_checkin">سجّل حالك</string>
+
+    <string name="ut_breathe">تنفّس</string>
+    <string name="ut_new_rule">قاعدة جديدة</string>
+</resources>

@@ -156,7 +156,7 @@ class WeeklyReport : BroadcastReceiver() {
             val (title, body) = words(context, w)
             Compat.createChannel(context, CHANNEL, R.string.weekly_channel, NotificationManager.IMPORTANCE_DEFAULT)
             val open = PendingIntent.getActivity(context, 20,
-                Intent(context, ShellActivity::class.java).putExtra("page", 2)
+                Intent(context, ShellActivity::class.java).putExtra("page", if (Edition.islamic) 2 else 3)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             notifications.notify(NOTIFICATION_ID, Compat.builder(context, CHANNEL,

@@ -594,8 +594,8 @@ internal fun InsteadStep(name: String, backDays: Int, picks: Set<String>, onTogg
                 label = { Text(stringResource(UnrotAnswers.insteadTitle(key))) })
         }
     }
-    val context = LocalContext.current
-    val preview = UnrotAnswers.INSTEAD.filter { it in picks }.take(2).map { context.getString(UnrotAnswers.insteadAction(it)) }
+    val res = androidx.compose.ui.platform.LocalResources.current
+    val preview = UnrotAnswers.INSTEAD.filter { it in picks }.take(2).map { res.getString(UnrotAnswers.insteadAction(it)) }
     if (preview.isNotEmpty()) {
         val shape = MaterialTheme.shapes.large
         Column(Modifier.fillMaxWidth().unrotFrame(shape).background(LocalHisnStatusColors.current.card, shape).padding(14.dp)) {

@@ -1,5 +1,7 @@
 package app.hisn.android
 
+import app.hisn.android.nativeshell.arabicDigitsContext
+import app.hisn.android.nativeshell.ia
 import android.Manifest
 import android.app.AlertDialog
 import android.content.Intent
@@ -28,6 +30,10 @@ import app.hisn.android.nativeshell.ShellActions
  * the VPN permission and the system settings hand-offs.
  */
 class ShellActivity : ComponentActivity(), ShellActions {
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(arabicDigitsContext(newBase))
+    }
+
     private var requestedTab by mutableIntStateOf(0)
     // Counts tab requests, so asking for the same tab twice still switches to it.
     private var tabRequest by mutableIntStateOf(0)
@@ -95,7 +101,7 @@ class ShellActivity : ComponentActivity(), ShellActions {
     }
 
     private fun tabOf(intent: Intent?): Int =
-        (intent?.getIntExtra("page", 0) ?: 0).coerceIn(0, if (Edition.islamic) 2 else 3)
+        (intent?.getIntExtra("page", 0) ?: 0).coerceIn(0, if (Edition.islamic) 2 else 4)
 
     // ------------------------------------------------------------------ actions
 
@@ -604,14 +610,19 @@ class ShellActivity : ComponentActivity(), ShellActions {
     override fun openGrayScreenHelp() {
         val command = "adb shell pm grant $packageName android.permission.WRITE_SECURE_SETTINGS"
         AlertDialog.Builder(this)
-            .setTitle("Gray screen needs one adb grant")
+            .setTitle(ia("Gray screen needs one adb grant", "الشاشة الرمادية تحتاج إذنًا واحدًا عبر الحاسوب"))
             .setMessage(
-                "Android only lets an app switch the grayscale filter with WRITE_SECURE_SETTINGS, " +
-                    "which is granted once over a computer:\n\n$command\n\n" +
-                    "Without it, Settings › Accessibility › Color correction › Grayscale still works."
+                ia(
+                    "Android only lets an app switch the grayscale filter with WRITE_SECURE_SETTINGS, " +
+                        "which is granted once over a computer:\n\n$command\n\n" +
+                        "Without it, Settings › Accessibility › Color correction › Grayscale still works.",
+                    "لا يسمح أندرويد للتطبيق بتشغيل الشاشة الرمادية إلا بإذن WRITE_SECURE_SETTINGS، " +
+                        "ويُمنح مرة واحدة من حاسوب:\n\n$command\n\n" +
+                        "وبدونه يمكنك تشغيلها من الإعدادات › تسهيلات الاستخدام › تصحيح الألوان › تدرّج الرمادي."
+                )
             )
             .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton("Open Accessibility") { _, _ -> openAccessibility() }
+            .setPositiveButton(ia("Open Accessibility", "افتح تسهيلات الاستخدام")) { _, _ -> openAccessibility() }
             .show()
     }
 

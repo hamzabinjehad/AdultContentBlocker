@@ -139,11 +139,12 @@ fun SettingsScreen(
     ) {
         if (unrotEdition && you) {
             item {
-                UnrotYouCard(
-                    summary = state.personal,
-                    onEdit = { onOpen("personal") },
-                    onWeek = { onOpen("progress") }
-                )
+                UnrotYouHero(state = state, onEdit = { onOpen("personal") })
+            }
+            item { UnrotPlusRow(onOpen = { onOpen("plus") }) }
+            // Debug builds only: a wood of sample days, to look at the trees without weeks of history.
+            if (app.hisn.android.BuildConfig.DEBUG) item {
+                androidx.compose.material3.TextButton(onClick = { onOpen("wood:preview") }) { Text("Wood preview (debug)") }
             }
         }
         if (unrotEdition && you) {

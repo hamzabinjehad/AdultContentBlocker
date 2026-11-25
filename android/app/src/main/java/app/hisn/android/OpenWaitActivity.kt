@@ -1,5 +1,6 @@
 package app.hisn.android
 
+import app.hisn.android.nativeshell.arabicDigitsContext
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -17,6 +18,10 @@ import app.hisn.android.nativeshell.SystemBars
  * Home; "Open" brings the app's own task back once the wait is over. Nothing is blocked.
  */
 class OpenWaitActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(arabicDigitsContext(newBase))
+    }
+
 
     private var app: String = ""
 

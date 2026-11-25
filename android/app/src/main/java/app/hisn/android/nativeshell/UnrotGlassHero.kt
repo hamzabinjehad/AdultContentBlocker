@@ -1,5 +1,7 @@
 package app.hisn.android.nativeshell
 
+import androidx.compose.ui.geometry.Offset
+
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 
 import androidx.compose.material.icons.rounded.Schedule
@@ -83,6 +85,12 @@ private val glassStageNames = intArrayOf(
     R.string.glass_stage_young, R.string.glass_stage_bud, R.string.glass_stage_flower, R.string.glass_stage_tree
 )
 
+/** For the widget (outside Compose): the painting for this much time given back, and the time. */
+fun glassArtFor(givenBackMs: Long): Int = glassArt(glassStage(givenBackMs))
+fun glassShort(ms: Long): String = Wins.short(ms)
+
+internal fun glassStageName(stage: Int): Int = glassStageNames[stage.coerceIn(0, 6)]
+
 /** The painted picture for a stage: one seed, one sprout for the growing stages, one tree. */
 internal fun glassArt(stage: Int): Int = when {
     stage <= 0 -> R.drawable.unrot_glass_seed
@@ -107,6 +115,7 @@ internal fun UnrotGlassHero(givenBackMs: Long, day: Int, quiet: app.hisn.core.Da
         quiet != null && runCatching { quiet.activeAt(now.hour * 60 + now.minute, LocalDate.now().dayOfWeek) }.getOrDefault(false)
     }
     val night = resting && (glass.look == GlassState.Look.CLEAR || glass.look == GlassState.Look.GOLD)
+    androidx.compose.runtime.SideEffect { UnrotMood.quietNow.value = resting }
     val stageName = if (night) stringResource(R.string.glass_resting) else when (glass.look) {
         GlassState.Look.CRACKED -> stringResource(R.string.glass_cracked)
         GlassState.Look.GOLD -> stringResource(R.string.glass_gold)
@@ -137,9 +146,39 @@ internal fun UnrotGlassHero(givenBackMs: Long, day: Int, quiet: app.hisn.core.Da
             else -> glassArt(stage)
         }
         // Between seed and tree the plant is drawn live over the empty glass, so it grows every day.
-        val livePlant = !night && glass.look == GlassState.Look.CLEAR && stage in 1..5
+        // Day and night alike: the empty glass painting with the plant drawn live inside it.
+        // Night tints the glass to moonlight and the plant sleeps; the tree and the cracked,
+        // gold and broken moments keep their paintings, with their own moving air.
+        // The cracked, gold and broken glass are drawn live too (cracks over the empty painting),
+        // so the plant inside keeps its real size; only the tree keeps its paintings.
+        // Since the painted glass (soft 3D jar on a moss mound, the owner's pick of 2026-11-24) every
+        // state shows its own painting: seed, sapling, tree, cracked, gold, broken, night. The plant
+        // that was drawn in code was made for the old cartoon jar and does not fit this one.
+        val livePlant = false
         val shown = if (livePlant) R.drawable.unrot_glass_seed else art
-        Box(Modifier.fillMaxWidth().height(270.dp), contentAlignment = Alignment.Center) {
+        // Touch the glass: it gives a little, the plant rocks on its stem and sparkles.
+        var poke by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+        val give = remember { androidx.compose.animation.core.Animatable(0f) }
+        val haptics = rememberHisnHaptics()
+        val reduceMotion = LocalReduceMotion.current
+        androidx.compose.runtime.LaunchedEffect(poke) {
+            if (poke == 0 || reduceMotion) return@LaunchedEffect
+            give.snapTo(1f)
+            give.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .3f, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow))
+        }
+        Box(
+            Modifier.fillMaxWidth().height(270.dp)
+                .graphicsLayer {
+                    scaleX = 1f + give.value * .035f; scaleY = 1f - give.value * .025f
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, .85f)
+                }
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null,
+                    onClickLabel = stringResource(R.string.glass_touch)
+                ) { haptics.tap(); poke++ },
+            contentAlignment = Alignment.Center
+        ) {
         Crossfade(targetState = shown, label = "glass-art") { res ->
             Box(Modifier.fillMaxWidth().height(270.dp), contentAlignment = Alignment.Center) {
                 // A soft beam from above, like a lamp over the glass (moonlight at night).
@@ -160,6 +199,9 @@ internal fun UnrotGlassHero(givenBackMs: Long, day: Int, quiet: app.hisn.core.Da
                     painterResource(res),
                     contentDescription = stringResource(R.string.glass_image_desc, stageName),
                     contentScale = ContentScale.Fit,
+                    colorFilter = if (night && livePlant) androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+                        androidx.compose.ui.graphics.ColorMatrix().apply { setToScale(.42f, .5f, .95f, 1f) }
+                    ) else null,
                     modifier = Modifier.size(270.dp)
                         .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
                         .drawWithContent {
@@ -172,8 +214,35 @@ internal fun UnrotGlassHero(givenBackMs: Long, day: Int, quiet: app.hisn.core.Da
                 )
             }
         }
-            if (livePlant) GlassPlant(givenBackMs, Modifier.size(270.dp))
-            GlassAir(night, Modifier.fillMaxWidth().height(270.dp))
+            if (livePlant && night) androidx.compose.foundation.Canvas(Modifier.size(270.dp)) {
+                drawGlassMoon(Offset(size.width * .40f, size.height * .33f), size.width * .045f)
+            }
+            if (livePlant) {
+                val broken = !night && glass.look == GlassState.Look.BROKEN
+                GlassPlant(
+                    // Broken: a small dry plant, as if just planted again; what was given back stays.
+                    if (broken) givenBackMs.coerceAtMost(8 * 60_000L) else givenBackMs,
+                    Modifier.size(270.dp), poke = poke, sleep = night,
+                    mood = when {
+                        night -> MOOD_WELL
+                        glass.look == GlassState.Look.CRACKED -> MOOD_DROOP
+                        broken -> MOOD_DRY
+                        else -> MOOD_WELL
+                    }
+                )
+                val hurt = when (glass.look) {
+                    GlassState.Look.CRACKED -> 1
+                    GlassState.Look.GOLD -> 2
+                    GlassState.Look.BROKEN -> 3
+                    else -> 0
+                }
+                if (hurt > 0) GlassCracks(hurt, Modifier.size(270.dp))
+            }
+            GlassAir(night, Modifier.fillMaxWidth().height(270.dp), mood = when (glass.look) {
+                GlassState.Look.GOLD -> AIR_GOLD
+                GlassState.Look.BROKEN, GlassState.Look.CRACKED -> AIR_DIM
+                else -> AIR_CLEAR
+            })
         }
         // Seven stages as dots, the current one long, like CleanPath's page dots.
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {

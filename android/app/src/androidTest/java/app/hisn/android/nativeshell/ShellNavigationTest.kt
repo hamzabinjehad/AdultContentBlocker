@@ -37,6 +37,15 @@ class ShellNavigationTest {
 
     private fun tab(label: String) = rule.onNode(hasText(label) and isSelectable())
 
+    /** Scrolls the page's lazy list until [label] is composed: rows far down are not built yet. */
+    private fun listTo(label: String): androidx.compose.ui.test.SemanticsNodeInteraction {
+        rule.onNode(hasScrollToIndexAction() and SemanticsMatcher.keyIsDefined(
+            SemanticsProperties.VerticalScrollAxisRange
+        )).performScrollToNode(hasText(label))
+        rule.waitForIdle()
+        return rule.onNodeWithText(label)
+    }
+
     private fun ruleRow(label: String, substring: Boolean = true): androidx.compose.ui.test.SemanticsNodeInteraction {
         val row = hasText(label, substring = substring) and hasClickAction()
         rule.onNode(hasScrollToIndexAction() and SemanticsMatcher.keyIsDefined(
@@ -201,9 +210,9 @@ class ShellNavigationTest {
         org.junit.Assume.assumeTrue(unrotEdition)
         val actions = FakeShellActions()
         rule.showShell(actions, tab = RulesTab)
-        rule.onNode(hasText("Endless feeds") and hasClickAction()).performScrollTo().assertIsDisplayed()
-        rule.onNode(hasText("Quiet hours") and hasClickAction()).performScrollTo().assertIsDisplayed()
-        rule.onNode(hasText("Adult sites") and hasClickAction()).performScrollTo().assertIsDisplayed()
+        ruleRow("Endless feeds", substring = false).assertIsDisplayed()
+        ruleRow("Quiet hours", substring = false).assertIsDisplayed()
+        ruleRow("Adult sites", substring = false).assertIsDisplayed()
         rule.onNode(hasText("Add") and hasClickAction()).performClick()
         rule.waitForIdle()
         rule.onNodeWithText("Add a rule").assertIsDisplayed()
@@ -227,7 +236,7 @@ class ShellNavigationTest {
         // away); the Islamic edition keeps the card.
         if (unrotEdition) {
             // The tools row and the floating button both say Breathe; either opens the same pause.
-            rule.onAllNodes(hasText("Breathe") and hasClickAction()).onFirst().performClick()
+            rule.onAllNodes((hasText("Help now") or hasText("Breathe")) and hasClickAction()).onFirst().performClick()
         } else {
             rule.onNodeWithText("Feeling the pull?").performScrollTo().assertIsDisplayed()
             rule.onNode(hasText("Take a pause") and hasClickAction()).performScrollTo().performClick()
@@ -314,7 +323,7 @@ class ShellNavigationTest {
     @Test fun unrotYouKeepsCommitmentsAndMovesToolsOneRowDeeper() {
         org.junit.Assume.assumeTrue(unrotEdition)
         rule.showShell(tab = SettingsTab)
-        rule.onNodeWithText("Commitment").assertIsDisplayed()
+        listTo("Commitment").assertIsDisplayed()
         rule.onNodeWithText("Guardian pairing").performScrollTo().assertIsDisplayed()
         // Tools, appearance and help are one row deeper, all still there.
         rule.onNodeWithText("Theme").assertDoesNotExist()
@@ -323,12 +332,12 @@ class ShellNavigationTest {
         rule.onNode(hasText("Theme") and hasClickAction()).assertIsDisplayed()
         rule.onNode(hasContentDescription("Back") and hasClickAction()).performClick()
         rule.waitForIdle()
-        rule.onNodeWithText("Commitment").assertIsDisplayed()
+        listTo("Commitment").assertIsDisplayed()
     }
 
     @Test fun detailScreenReturnsWithBack() {
         rule.showShell(tab = SettingsTab)
-        rule.onNodeWithText("Permissions").performScrollTo().performClick()
+        listTo("Permissions").performClick()
         rule.waitForIdle()
         rule.onNode(hasContentDescription("Back")).performClick()
         rule.waitForIdle()
@@ -337,7 +346,7 @@ class ShellNavigationTest {
 
     @Test fun permissionRowsHandOffToAndroid() {
         val actions = rule.showShell(tab = SettingsTab)
-        rule.onNodeWithText("Permissions").performScrollTo().performClick()
+        listTo("Permissions").performClick()
         rule.waitForIdle()
         // Every permission reads "off" from the fake; tapping App protection must ask Android.
         // Exactly one match also proves the covered Settings row is hidden from accessibility.

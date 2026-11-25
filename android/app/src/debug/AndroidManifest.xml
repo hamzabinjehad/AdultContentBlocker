@@ -47,5 +47,9 @@
         <activity android:name="app.hisn.android.TimeLimitTestSetupActivity"
             android:exported="true" android:permission="android.permission.DUMP"
             android:theme="@android:style/Theme.NoDisplay" />
+        <!-- Shell-only trampoline for the non-exported block page, to view its variants. -->
+        <activity android:name="app.hisn.android.BlockPageTestActivity"
+            android:exported="true" android:permission="android.permission.DUMP"
+            android:theme="@android:style/Theme.NoDisplay" />
     </application>
 </manifest>

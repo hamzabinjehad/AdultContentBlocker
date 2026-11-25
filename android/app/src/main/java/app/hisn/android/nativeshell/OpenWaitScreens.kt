@@ -115,6 +115,10 @@ fun OpenWaitScreen(
     onOpenFor: ((Int) -> Unit)? = null,
     preview: Boolean = false
 ) {
+    if (app.hisn.android.Edition.islamic) {
+        HisnOpenWait(appLabel, seconds, openedToday, closedToday, reason, onClose, onOpen, onOpenFor)
+        return
+    }
     val colors = MaterialTheme.colorScheme
     var left by rememberSaveable { mutableIntStateOf(seconds) }
     LaunchedEffect(Unit) {
@@ -406,6 +410,10 @@ fun OpenWaitSettings(
                                     }
                                     Text(
                                         if (opened == 0 && closed == 0) stringResource(R.string.open_wait_today_none)
+                                        // Arabic spells the counts out: a lone 0 beside "·" reads like a dot.
+                                        else if (isArabicUi()) "اليوم: " +
+                                            (if (opened == 0) "لم يُفتح" else "فُتح ${timesAr(opened)}") + "، " +
+                                            (if (closed == 0) "ولم يُغلق بدلًا من ذلك" else "وأُغلق بدلًا من ذلك ${timesAr(closed)}")
                                         else stringResource(R.string.open_wait_today_counts, opened, closed),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = colors.onSurfaceVariant

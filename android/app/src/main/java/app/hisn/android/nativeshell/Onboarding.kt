@@ -158,6 +158,7 @@ private val Grants = mapOf(
 internal enum class SetupPage(val title: Int) {
     Welcome(R.string.welcome_title_1),
     Name(R.string.welcome_chat_name),
+    HisnLook(R.string.hisn_look_title),
     Chat(R.string.story_chat_title),
     Focus(R.string.welcome_start_question),
     Hours(R.string.story_hours_question),
@@ -174,6 +175,8 @@ internal enum class SetupPage(val title: Int) {
     LearnChange(R.string.story_learn_change_title),
     Moment(R.string.welcome_moment_question),
     Triggers(R.string.story_triggers_question),
+    HisnDiagnosis(R.string.hisn_diagnosis_title),
+    HisnWayOut(R.string.hisn_way_out_title),
     Reason(R.string.personal_reason_question),
     Goals(R.string.story_goals_question),
     ShowWebsites(R.string.story_show_websites_title),
@@ -210,6 +213,7 @@ internal val ShowPages = listOf(
 private fun storyPages(hours: String, targets: Set<String>, notificationsGranted: Boolean): List<SetupPage> = buildList {
     add(SetupPage.Welcome)
     add(SetupPage.Name)
+    add(SetupPage.HisnLook)
     add(SetupPage.Chat)
     add(SetupPage.Focus)
     add(SetupPage.Hours)
@@ -222,6 +226,9 @@ private fun storyPages(hours: String, targets: Set<String>, notificationsGranted
     addAll(learnPages(targets))
     add(SetupPage.Moment)
     add(SetupPage.Triggers)
+    // What is happening to the person, then what Hisn does about it (OnboardingIslamic.kt).
+    add(SetupPage.HisnDiagnosis)
+    add(SetupPage.HisnWayOut)
     add(SetupPage.Reason)
     add(SetupPage.Goals)
     addAll(showOrder(targets))
@@ -552,6 +559,9 @@ fun Onboarding(
                                 feelings = join(it)
                             }
                             SetupPage.Truth -> TruthPage(name.trim())
+                            SetupPage.HisnLook -> IslamicLookPage()
+                            SetupPage.HisnDiagnosis -> IslamicDiagnosisPage(name.trim(), split(start), hours, split(triggers))
+                            SetupPage.HisnWayOut -> IslamicWayOutPage(split(start), split(triggers))
                             SetupPage.LearnHabit, SetupPage.LearnBrainFeeds, SetupPage.LearnBrainAdult,
                             SetupPage.LearnLoop, SetupPage.LearnFeeds,
                             SetupPage.LearnWillpower, SetupPage.LearnChange -> LearnPage(shown, learnPages(split(start)))

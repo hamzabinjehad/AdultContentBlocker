@@ -87,6 +87,15 @@ fun SectionHeader(
     title: String,
     supporting: String? = null
 ) {
+    if (app.hisn.android.Edition.islamic) {
+        // Hisn: the small bold group label of its Tools page.
+        val look = LocalLook.current
+        Column(Modifier.padding(start = 6.dp, end = 6.dp, top = 10.dp)) {
+            Text(title, color = look.t.sub, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
+            if (supporting != null) Text(supporting, color = look.t.sub, fontSize = 12.5.sp, lineHeight = 17.sp)
+        }
+        return
+    }
     Column(Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp)) {
         // Unrot labels sections like a notebook's printed tabs: small bold label, wide tracking.
         Text(
@@ -112,6 +121,10 @@ fun SectionHeader(
 
 @Composable
 fun PageIntro(text: String) {
+    if (app.hisn.android.Edition.islamic) {
+        Text(text, color = LocalLook.current.t.sub, fontSize = 13.5.sp, lineHeight = 20.sp, modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp))
+        return
+    }
     Text(
         text = text,
         style = MaterialTheme.typography.bodyLarge,
@@ -126,6 +139,13 @@ fun HisnCard(
     containerColor: Color = LocalHisnStatusColors.current.card,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    if (app.hisn.android.Edition.islamic) {
+        // Hisn: the soft 18dp card of the mockup, with its light shadow.
+        val look = LocalLook.current
+        val own = containerColor != LocalHisnStatusColors.current.card
+        Column(modifier.fillMaxWidth().hisnCard(look, 18.dp, if (own) containerColor else look.t.card), content = content)
+        return
+    }
     val shape = MaterialTheme.shapes.large
     Card(
         modifier = modifier
@@ -143,7 +163,7 @@ fun InsetDivider(start: Dp = 68.dp) {
     HorizontalDivider(
         modifier = Modifier.padding(start = start, end = 16.dp),
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+        color = if (app.hisn.android.Edition.islamic) LocalLook.current.t.line else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
     )
 }
 
@@ -189,14 +209,14 @@ fun SettingRow(
     }
     ListItem(
         headlineContent = {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(title, style = rowTitleStyle())
         },
         supportingContent = supporting?.let {
             {
                 Text(
                     text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = rowSubStyle(),
+                    color = rowSubColor()
                 )
             }
         },
@@ -219,15 +239,15 @@ fun SwitchRow(
     val interaction = remember { MutableInteractionSource() }
     ListItem(
         headlineContent = {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(title, style = rowTitleStyle())
         },
         supportingContent = supporting?.let {
             {
                 if (LocalReduceMotion.current) {
                     Text(
                         text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = rowSubStyle(),
+                        color = rowSubColor()
                     )
                 } else {
                     AnimatedContent(
@@ -246,8 +266,8 @@ fun SwitchRow(
                     ) { text ->
                         Text(
                             text = text,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = rowSubStyle(),
+                            color = rowSubColor()
                         )
                     }
                 }
@@ -282,7 +302,7 @@ fun RuleRow(
     val haptics = rememberHisnHaptics()
     ListItem(
         headlineContent = {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(title, style = rowTitleStyle())
         },
         leadingContent = { RowLead(icon) },
         trailingContent = {
@@ -290,8 +310,8 @@ fun RuleRow(
                 if (LocalReduceMotion.current) {
                     Text(
                         text = value,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = rowSubStyle(),
+                        color = rowSubColor()
                     )
                 } else {
                     AnimatedContent(
@@ -310,8 +330,8 @@ fun RuleRow(
                     ) { text ->
                         Text(
                             text = text,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = rowSubStyle(),
+                            color = rowSubColor()
                         )
                     }
                 }
@@ -941,6 +961,14 @@ fun StatStrip(stats: List<Stat>) {
  */
 @Composable
 internal fun RowLead(icon: ImageVector) {
+    if (app.hisn.android.Edition.islamic) {
+        // Hisn: the round soft badge of its Tools rows.
+        val look = LocalLook.current
+        Box(Modifier.size(38.dp).clip(CircleShape).background(look.t.soft), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, tint = look.t.pri, modifier = Modifier.size(20.dp))
+        }
+        return
+    }
     if (!unrotEdition) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
         return
@@ -952,3 +980,18 @@ internal fun RowLead(icon: ImageVector) {
             tint = if (LocalDarkTheme.current) Color(0xFFF2C94F) else Color(0xFF9A6E12))
     }
 }
+
+/** Row title and second line: Hisn uses the mockup's bold 15sp over a quiet 12.5sp. */
+@Composable
+internal fun rowTitleStyle(): androidx.compose.ui.text.TextStyle =
+    if (app.hisn.android.Edition.islamic) MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = LocalLook.current.t.ink)
+    else MaterialTheme.typography.titleMedium
+
+@Composable
+internal fun rowSubStyle(): androidx.compose.ui.text.TextStyle =
+    if (app.hisn.android.Edition.islamic) MaterialTheme.typography.bodyMedium.copy(fontSize = 12.5.sp, lineHeight = 17.sp)
+    else MaterialTheme.typography.bodyMedium
+
+@Composable
+internal fun rowSubColor(): Color =
+    if (app.hisn.android.Edition.islamic) LocalLook.current.t.sub else MaterialTheme.colorScheme.onSurfaceVariant

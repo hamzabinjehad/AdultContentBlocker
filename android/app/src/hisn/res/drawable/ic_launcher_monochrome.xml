@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hisn edition: the flat gate mark from the Hisn prototype, centred in the adaptive-icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:translateX="22" android:translateY="20">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M10 7h8v5h6V7h16v5h6V7h8v27c0 13-9 21.5-22 27C19 55.5 10 47 10 34zM24 52V36.5Q24 27.5 32 22.5Q40 27.5 40 36.5V52z" />
+    </group>
+</vector>

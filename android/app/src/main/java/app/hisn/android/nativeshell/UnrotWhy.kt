@@ -132,7 +132,7 @@ internal fun CostContent(point: StartingPoint?, goals: Set<String>, whenKey: Str
     }
     val feelWords = listOf("tired", "behind", "anxious", "guilty", "numb").filter { it in feel }
     val moodYours = if (feelWords.isEmpty()) null else stringResource(R.string.why_cost_mood_said,
-        feelWords.take(2).joinToString(context.getString(R.string.answers_and)) { context.getString(UnrotAnswers.feelWord(it)) })
+        feelWords.take(2).map { stringResource(UnrotAnswers.feelWord(it)) }.joinToString(stringResource(R.string.answers_and)))
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         CostCard(R.drawable.unrot_3d_target, CostSky, stringResource(R.string.why_cost_focus), focusYours,
             stringResource(R.string.why_cost_focus_body), stringResource(R.string.why_cost_focus_src))

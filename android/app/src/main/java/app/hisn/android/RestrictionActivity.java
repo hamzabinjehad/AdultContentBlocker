@@ -31,6 +31,10 @@ import app.hisn.core.PersonalProfile;
  * exit on finishing the exercise.
  */
 public final class RestrictionActivity extends Activity {
+    @Override protected void attachBaseContext(android.content.Context base) {
+        super.attachBaseContext(app.hisn.android.nativeshell.IslamicCommonKt.arabicDigitsContext(base));
+    }
+
     private static final long BREATH_IN_MS = 4000, BREATH_OUT_MS = 6000;
     private static final int BREATH_CYCLES = 3;
     private static final int[] REMINDERS = {R.string.pause_reminder_1, R.string.pause_reminder_2,

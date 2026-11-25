@@ -1,5 +1,9 @@
 package app.hisn.android
 
+import app.hisn.android.nativeshell.arabicDigitsContext
+import app.hisn.android.nativeshell.HisnBlockMoment
+import app.hisn.android.nativeshell.ia
+
 import app.hisn.android.nativeshell.UnrotAnswers
 import android.content.Intent
 import android.os.Bundle
@@ -68,9 +72,13 @@ import app.hisn.core.ShortVideoSurfaces
  * breathing pause for when the pull is strong. For a closed feed inside a bigger app there is a
  * way back to the rest of that app, so a blocked Reel never costs someone their messages.
  *
- * The Islamic edition keeps [RestrictionActivity] with its reminders.
+ * The Islamic edition draws the same reasons as the Hisn mockup's moments; see HisnBlockMoment.
  */
 class BlockActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(arabicDigitsContext(newBase))
+    }
+
     private enum class Reason { FEED, WHOLE_FEED, LIMIT, QUIET, FOCUS, APP, PAGE_WORD, PAGE_VISUAL }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -167,6 +175,24 @@ class BlockActivity : ComponentActivity() {
             Reason.PAGE_WORD -> stringResource(R.string.restriction_word)
             Reason.PAGE_VISUAL -> stringResource(R.string.restriction_visual)
         }
+        if (Edition.islamic) {
+            // The Hisn mockup's moment: deep with the hadith for a closed page, light for a feed.
+            HisnBlockMoment(
+                adult = reason == Reason.PAGE_WORD || reason == Reason.PAGE_VISUAL,
+                title = title.trimEnd('.'),
+                body = if (reason == Reason.APP) ia("You chose to block it. You can change that in Tools.", "أنت اخترت حجبه، ويمكنك تغيير ذلك من الأدوات.") else body,
+                note = note, tally = tally,
+                restLabel = if (reason == Reason.FEED && app != null) label else null,
+                onHome = { haptics.confirm(); goHome() },
+                onBreathe = {
+                    haptics.tap()
+                    startActivity(PauseEntry.intent(this@BlockActivity).putExtra(BreatheActivity.EXTRA_QUICK, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    finish()
+                },
+                onRest = if (reason == Reason.FEED && app != null && label != null) ({ haptics.tap(); openRest(app) }) else null
+            )
+            return
+        }
         Column(
             Modifier
                 .fillMaxSize()
@@ -229,9 +255,10 @@ class BlockActivity : ComponentActivity() {
                 // said they would rather do. Only shown when they gave them.
                 val context = androidx.compose.ui.platform.LocalContext.current
                 val feelLine = androidx.compose.runtime.remember { UnrotAnswers.feelLine(context) }
-                val instead = androidx.compose.runtime.remember {
+                val res = androidx.compose.ui.platform.LocalResources.current
+                val instead = androidx.compose.runtime.remember(res) {
                     UnrotAnswers.INSTEAD.filter { it in UnrotAnswers.instead(context) }.take(2)
-                        .map { context.getString(UnrotAnswers.insteadAction(it)) }
+                        .map { res.getString(UnrotAnswers.insteadAction(it)) }
                 }
                 if (feelLine != null) {
                     Text(feelLine, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)

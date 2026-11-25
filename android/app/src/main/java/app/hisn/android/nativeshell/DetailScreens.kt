@@ -10,6 +10,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -115,6 +117,26 @@ internal fun DetailScaffold(
     actions: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
+    if (app.hisn.android.Edition.islamic) {
+        // Hisn: the same sky, back arrow and 18sp title as its own pages.
+        val look = LocalLook.current
+        Scaffold(
+            containerColor = look.t.sky,
+            contentColor = look.t.ink,
+            topBar = {
+                Row(
+                    Modifier.fillMaxWidth().background(look.t.sky).statusBarsPadding().padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Back"), tint = look.t.ink) }
+                    Text(title, color = look.t.ink, fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides look.t.ink) { actions() }
+                }
+            }
+        ) { innerPadding -> content(innerPadding) }
+        return
+    }
     Scaffold(
         modifier = if (unrotEdition) Modifier.unrotBackdrop() else Modifier,
         containerColor = if (unrotEdition) Color.Transparent else MaterialTheme.colorScheme.background,
@@ -310,7 +332,7 @@ fun DomainsScreen(
                     title = when (state.domains.size) {
                         0 -> tr("No domains yet")
                         1 -> tr("1 blocked domain")
-                        else -> String.format(tr("%1\$d blocked domains"), state.domains.size)
+                        else -> nums(String.format(tr("%1\$d blocked domains"), state.domains.size))
                     },
                     supporting = stringResource(R.string.domain_rule_scope)
                 )
@@ -500,7 +522,7 @@ fun WordsScreen(
                     title = when (state.words.size) {
                         0 -> tr("No word rules yet")
                         1 -> tr("1 word rule")
-                        else -> String.format(tr("%1\$d word rules"), state.words.size)
+                        else -> nums(String.format(tr("%1\$d word rules"), state.words.size))
                     },
                     supporting = if (state.words.isEmpty()) {
                         tr("Literal matches, saved on this phone. The built-in adult-tag layer is separate.")
@@ -593,7 +615,7 @@ private fun SwipeToDelete(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Remove",
+                        text = ia("Remove", "إزالة"),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -741,13 +763,13 @@ fun AppsScreen(
                     title = if (blocked.isEmpty()) {
                         tr("No apps blocked")
                     } else {
-                        if (blocked.size == 1) tr("1 app blocked") else String.format(tr("%1\$d apps blocked"), blocked.size)
+                        if (blocked.size == 1) tr("1 app blocked") else nums(String.format(tr("%1\$d apps blocked"), blocked.size))
                     },
                     supporting = when {
                         loading -> tr("Reading this phone's apps…")
                         apps.isEmpty() -> tr("No launchable apps were returned by this phone.")
-                        showAll -> String.format(tr("%1\$d apps on this phone. Toggle a row to block it."), apps.size)
-                        else -> String.format(tr("%1\$d launchable apps on this phone. Toggle a row to block it."), apps.size)
+                        showAll -> nums(String.format(tr("%1\$d apps on this phone. Toggle a row to block it."), apps.size))
+                        else -> nums(String.format(tr("%1\$d launchable apps on this phone. Toggle a row to block it."), apps.size))
                     }
                 )
             }
@@ -830,7 +852,7 @@ fun AppsScreen(
             item {
                 ReassuranceRow(
                     icon = Icons.Rounded.Lock,
-                    text = String.format(tr("%1\$d apps selected. The list stays on this phone."), blocked.size)
+                    text = nums(String.format(tr("%1\$d apps selected. The list stays on this phone."), blocked.size))
                 )
             }
         }
@@ -910,7 +932,7 @@ fun LimitScreen(
                 snackbar(
                     HisnMessage(
                         text = "${appLabel(context, packageName)} limited to $minutes min",
-                        actionLabel = "Undo",
+                        actionLabel = ia("Undo", "تراجع"),
                         onAction = {
                             if (previous == null) {
                                 state.removeAppLimit(packageName)
@@ -924,7 +946,7 @@ fun LimitScreen(
         )
     }
 
-    DetailScaffold(if (unrotEdition) stringResource(R.string.shield_row_limits) else "Daily limit", onBack) { innerPadding ->
+    DetailScaffold(if (unrotEdition) stringResource(R.string.shield_row_limits) else ia("Daily limit", "الحد اليومي"), onBack) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
@@ -943,11 +965,11 @@ fun LimitScreen(
                 HisnCard {
                     SwitchRow(
                         icon = Icons.Rounded.Timer,
-                        title = "Use a daily limit",
+                        title = ia("Use a daily limit", "استخدم حدًّا يوميًّا"),
                         supporting = if (state.limit.on) {
-                            if (limited.isEmpty()) "On · No apps selected yet" else "On · ${limited.size} apps limited"
+                            if (limited.isEmpty()) ia("On · No apps selected yet", "مفعّل · لم تختر تطبيقات بعد") else ia("On · ${limited.size} apps limited", "مفعّل · ${limitedAppsAr(limited.size)}")
                         } else {
-                            "Off · Saved apps are not limited"
+                            ia("Off · Saved apps are not limited", "متوقف · التطبيقات المحفوظة بلا حدّ")
                         },
                         checked = state.limit.on,
                         onCheckedChange = state.limit::set
@@ -957,8 +979,8 @@ fun LimitScreen(
 
             item {
                 SectionHeader(
-                    title = if (limited.isEmpty()) "No apps limited yet" else "${limited.size} apps limited",
-                    supporting = "Each limit counts from local midnight and is set per app."
+                    title = if (limited.isEmpty()) ia("No apps limited yet", "لا تطبيقات محدودة بعد") else ia("${limited.size} apps limited", limitedAppsAr(limited.size)),
+                    supporting = ia("Each limit counts from local midnight and is set per app.", "يُحسب كل حدّ من منتصف الليل، ويُضبط لكل تطبيق على حدة.")
                 )
             }
             if (unrotEdition && limited.isEmpty() && !usageAccess) {
@@ -968,10 +990,10 @@ fun LimitScreen(
                 HisnCard {
                     if (limited.isEmpty()) {
                         ListItem(
-                            headlineContent = { Text("Add an app to start", style = MaterialTheme.typography.titleMedium) },
+                            headlineContent = { Text(ia("Add an app to start", "أضف تطبيقًا لتبدأ"), style = MaterialTheme.typography.titleMedium) },
                             supportingContent = {
                                 Text(
-                                    "The limit only applies to the apps you add here.",
+                                    ia("The limit only applies to the apps you add here.", "ينطبق الحدّ على التطبيقات التي تضيفها هنا فقط."),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1008,8 +1030,8 @@ fun LimitScreen(
                                     haptics.tick()
                                     snackbar(
                                         HisnMessage(
-                                            text = "Limit removed",
-                                            actionLabel = "Undo",
+                                            text = ia("Limit removed", "أُزيل الحدّ"),
+                                            actionLabel = ia("Undo", "تراجع"),
                                             onAction = { state.setAppLimit(packageName, previous) }
                                         )
                                     )
@@ -1031,23 +1053,23 @@ fun LimitScreen(
                 ) {
                     Icon(Icons.Rounded.Add, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Add apps")
+                    Text(ia("Add apps", "أضف تطبيقات"))
                 }
             }
 
             if (!usageAccess) {
                 item {
                     SectionHeader(
-                        title = "Usage access",
-                        supporting = "Android needs one special-access grant to report today's screen time."
+                        title = ia("Usage access", "الوصول إلى الاستخدام"),
+                        supporting = ia("Android needs one special-access grant to report today's screen time.", "يحتاج أندرويد إذنًا خاصًّا واحدًا ليعرض وقت الشاشة اليوم.")
                     )
                 }
                 item {
                     HisnCard {
                         SettingRow(
                             icon = Icons.Rounded.Schedule,
-                            title = "Grant usage access",
-                            supporting = "Needed to show how long each app ran today",
+                            title = ia("Grant usage access", "امنح إذن الوصول إلى الاستخدام"),
+                            supporting = ia("Needed to show how long each app ran today", "لازم لعرض مدة استخدام كل تطبيق اليوم"),
                             onClick = { Usage.openSettings(context) }
                         )
                     }
@@ -1057,7 +1079,7 @@ fun LimitScreen(
             item {
                 ReassuranceRow(
                     icon = Icons.Rounded.Lock,
-                    text = "Limits stay on this phone. ${Edition.NAME} keeps no list of what you opened."
+                    text = ia("Limits stay on this phone. ${Edition.NAME} keeps no list of what you opened.", "تبقى الحدود على هذا الهاتف. لا يحتفظ ${Edition.NAME_AR} بقائمة لما فتحته.")
                 )
             }
         }
@@ -1133,7 +1155,7 @@ private fun LimitRow(
                 IconButton(onClick = onRemove) {
                     Icon(
                         Icons.Rounded.Delete,
-                        contentDescription = "Remove the limit for $label"
+                        contentDescription = ia("Remove the limit for $label", "أزل حدّ $label")
                     )
                 }
             }
@@ -1189,21 +1211,24 @@ fun LimitAppsScreen(
         ) {
             item {
                 PageIntro(
-                    "Tap a row to add the app to the daily limit. A new app starts at " +
-                        "${HisnState.DEFAULT_MINUTES} minutes; open Daily limit to change it."
+                    ia(
+                        "Tap a row to add the app to the daily limit. A new app starts at " +
+                            "${HisnState.DEFAULT_MINUTES} minutes; open Daily limit to change it.",
+                        "اضغط صفًّا لإضافة التطبيق إلى الحدّ اليومي. يبدأ التطبيق الجديد بـ ${nums(HisnState.DEFAULT_MINUTES)} دقيقة، وتغيّرها من الحدّ اليومي."
+                    )
                 )
             }
             item {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Search installed apps") },
+                    label = { Text(ia("Search installed apps", "ابحث في التطبيقات المثبّتة")) },
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                     trailingIcon = if (query.isNotEmpty()) {
                         {
                             IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Rounded.Close, contentDescription = "Clear search")
+                                Icon(Icons.Rounded.Close, contentDescription = ia("Clear search", "مسح البحث"))
                             }
                         }
                     } else {
@@ -1215,11 +1240,11 @@ fun LimitAppsScreen(
             item { ShowAllAppsRow(showAll) { showAll = it } }
             item {
                 SectionHeader(
-                    title = "${limited.size} ${if (limited.size == 1) "app" else "apps"} limited",
+                    title = ia("${limited.size} ${if (limited.size == 1) "app" else "apps"} limited", limitedAppsAr(limited.size)),
                     supporting = when {
-                        loading -> "Reading this phone's apps…"
-                        apps.isEmpty() -> "No launchable apps were returned by this phone."
-                        else -> "${apps.size} ${if (showAll) "apps" else "launchable apps"} on this phone."
+                        loading -> ia("Reading this phone's apps…", "تُقرأ تطبيقات هذا الهاتف…")
+                        apps.isEmpty() -> ia("No launchable apps were returned by this phone.", "لم يُرجع هذا الهاتف تطبيقات قابلة للتشغيل.")
+                        else -> ia("${apps.size} ${if (showAll) "apps" else "launchable apps"} on this phone.", "${nums(apps.size)} من التطبيقات على هذا الهاتف.")
                     }
                 )
             }
@@ -1230,13 +1255,13 @@ fun LimitAppsScreen(
                 item {
                     HisnCard {
                         ListItem(
-                            headlineContent = { Text("No app matches", style = MaterialTheme.typography.titleMedium) },
+                            headlineContent = { Text(ia("No app matches", "لا تطبيق مطابق"), style = MaterialTheme.typography.titleMedium) },
                             supportingContent = {
                                 Text(
                                     if (query.isBlank()) {
-                                        "This phone returned no launchable apps."
+                                        ia("This phone returned no launchable apps.", "لم يُرجع هذا الهاتف تطبيقات قابلة للتشغيل.")
                                     } else {
-                                        "Nothing installed matches \"$query\"."
+                                        ia("Nothing installed matches \"$query\".", "لا تطبيق مثبّت يطابق «$query».")
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1287,7 +1312,7 @@ fun LimitAppsScreen(
                                             snackbar(
                                                 HisnMessage(
                                                     text = "${app.label} · ${HisnState.DEFAULT_MINUTES} min a day",
-                                                    actionLabel = "Undo",
+                                                    actionLabel = ia("Undo", "تراجع"),
                                                     onAction = { state.removeAppLimit(app.packageName) }
                                                 )
                                             )
@@ -1298,7 +1323,7 @@ fun LimitAppsScreen(
                                             snackbar(
                                                 HisnMessage(
                                                     text = "${app.label} removed from the limit",
-                                                    actionLabel = "Undo",
+                                                    actionLabel = ia("Undo", "تراجع"),
                                                     onAction = {
                                                         if (previous != null) {
                                                             state.setAppLimit(app.packageName, previous)
@@ -1330,7 +1355,7 @@ private fun MinutesDialog(
     val haptics = rememberHisnHaptics()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Daily limit for $appLabel") },
+        title = { Text(ia("Daily limit for $appLabel", "الحدّ اليومي لـ $appLabel")) },
         text = {
             Column {
                 Row(
@@ -1346,7 +1371,7 @@ private fun MinutesDialog(
                             }
                         }
                     ) {
-                        Icon(Icons.Rounded.Remove, contentDescription = "Five minutes less")
+                        Icon(Icons.Rounded.Remove, contentDescription = ia("Five minutes less", "خمس دقائق أقل"))
                     }
                     Row(
                         modifier = Modifier.weight(1f),
@@ -1373,7 +1398,7 @@ private fun MinutesDialog(
                             }
                         }
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = "Five minutes more")
+                        Icon(Icons.Rounded.Add, contentDescription = ia("Five minutes more", "خمس دقائق أكثر"))
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -1387,12 +1412,12 @@ private fun MinutesDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(minutes) }) {
-                Text("Save")
+                Text(ia("Save", "حفظ"))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(ia("Cancel", "إلغاء"))
             }
         }
     )
@@ -1464,7 +1489,8 @@ fun LockScreen(state: HisnState, onBack: () -> Unit) {
                     )
                 ) {
                     Text(
-                        stringResource(R.string.commitment_start) + " · " +
+                        // Arabic takes a colon: "·" beside a digit reads like a zero.
+                        stringResource(R.string.commitment_start) + (if (isArabicUi()) ": " else " · ") +
                             context.resources.getQuantityString(R.plurals.days, days, days)
                     )
                 }
@@ -2205,13 +2231,41 @@ fun InfoScreen(key: String, onBack: () -> Unit) {
             Spacer(Modifier.height(24.dp))
             ReassuranceRow(
                 icon = Icons.Rounded.Lock,
-                text = "${Edition.NAME} keeps matching on this phone."
+                text = ia("${Edition.NAME} keeps matching on this phone.", "يُجري ${Edition.NAME_AR} المطابقة على هذا الهاتف.")
             )
         }
     }
 }
 
-private fun infoFor(key: String): Pair<String, String> = when (key) {
+private fun infoFor(key: String): Pair<String, String> = if (isArabicUi()) infoForAr(key) else infoForEn(key)
+
+private fun infoForAr(key: String): Pair<String, String> {
+    val n = Edition.NAME_AR
+    return when (key) {
+        "uninstall" -> "حماية إلغاء التثبيت" to
+            "في النسخة المباشرة، يستطيع $n إغلاق شاشتي إلغاء التثبيت والتعطيل ما دام قفل الحماية يعمل. نسخة متجر Play لا تتضمن هذا الحارس. إعدادات أندرويد ومسح البيانات تبقى خارج تحكّم $n ما لم يكن الهاتف مُدارًا بطريقة أخرى."
+        "keep" -> "إبقاء الحماية تعمل" to
+            "قد يوقف أندرويد الخدمات التي تعمل في الخلفية. يفحص المراقب كل ${nums(15)} دقيقة وينبّهك إذا توقفت طبقة، لكنه لا يستطيع إعادة تشغيلها بنفسه. افتح $n بعد إعادة تشغيل الهاتف أو تغيير إذن."
+        "guardian" -> "الاقتران بالوليّ" to
+            "الاقتران بحاسوب الوليّ يتيح لسياسة موقّعة أن تضيف قيودًا. لا يمكنها إنهاء القفل قبل موعده، ولا يحتاج $n إلى حساب لذلك."
+        "how" -> "كيف يعمل $n" to
+            "يجمع $n بين مرشّح DNS، وحظر التطبيقات كاملةً، وفحص النصوص والوسوم والصور على الهاتف نفسه. تجري المطابقة على الهاتف. لا حساب ولا سجلّ تصفّح. قفل النظام (مدة استخدام الشاشة، مالك الجهاز، MDM) منفصل عن قواعد $n."
+        "bypass" -> "ما الذي قد يتجاوز $n" to
+            "يغطي مرشّح DNS طلبات أسماء النطاقات المدعومة، لا الاتصالات المباشرة بعناوين IP ولا الإجابات المخزّنة ولا التطبيقات التي تشغّل DNS مشفّرًا خاصًّا بها. فحص النصوص والوسوم والصور يغطي التطبيقات التي تختارها فقط، وقد يتدخل بعد ظهور المحتوى. يستطيع أندرويد إيقاف الخدمات أو سحب الأذونات. قفل الحماية يجمّد القواعد داخل $n، لا إعدادات أندرويد ولا إلغاء التثبيت."
+        "privacy" -> "الخصوصية" to
+            "تجري المطابقة على الهاتف. لا تُرفع النصوص ولا اللقطات ولا محتوى الصفحات. لا يحتفظ $n بسجلّ تصفّح. محدّث القوائم يستلم القائمة الموقّعة فقط. نفق DNS يرسل الطلبات المسموحة إلى الخادم المضبوط، كما توضّح شاشة DNS."
+        "language" -> "اللغة" to
+            "يتبع $n لغة هذا الهاتف. العربية والإنجليزية متوفرتان، وعلى أندرويد ${nums(13)} وما بعده يمكنك اختيار لغة لـ $n وحده من الإعدادات › التطبيقات › $n › اللغة."
+        "gap" -> "الفحص الخلفي" to
+            "وجد المراقب طبقة توقفت. أعد تشغيلها من الحماية، ثم شغّل فحص مسار DNS من الإعدادات › تشخيص الجلسة للتأكد من المسار."
+        "about" -> "عن $n" to
+            "$n ${app.hisn.android.BuildConfig.VERSION_NAME}: حماية من المحتوى الإباحي لأندرويد تعمل على الهاتف أولًا. مرشّح DNS وحظر للتطبيقات وفحص للنصوص والصور، كلها على هذا الهاتف. لا حساب ولا سحابة ولا سجلّ تصفّح."
+        else -> "عن $n" to
+            "يُجري $n المطابقة على هذا الهاتف. لا حساب ولا سحابة ولا سجلّ تصفّح."
+    }
+}
+
+private fun infoForEn(key: String): Pair<String, String> = when (key) {
     "uninstall" -> "Uninstall protection" to
         "On the direct build, ${Edition.NAME} can close the uninstall and disable screens while a protection lock is active. The Play build omits that guard. Android settings and a data wipe remain outside ${Edition.NAME}'s control unless the phone is managed separately."
     "keep" -> "Keep protection running" to
@@ -2242,6 +2296,8 @@ fun DetailHost(
     onNavigate: (String) -> Unit
 ) {
     when {
+        // The Islamic edition's own pages (calendar, adhkar, Help now...).
+        detail.startsWith("hisn:") -> IslamicDetail(detail, state, onBack, onNavigate)
         // Unrot's second-pass pages; the Islamic edition keeps the ones below.
         unrotEdition && detail == "apps" -> UnrotYourAppsScreen(state, onBack, onNavigate)
         unrotEdition && detail == "lock" -> UnrotLockScreen(state, onBack)
@@ -2251,6 +2307,8 @@ fun DetailHost(
         unrotEdition && detail == "info:why" -> UnrotWhyScreen(state, onBack, onNavigate)
         detail == "lists" -> UnrotListsScreen(state, onBack, onNavigate)
         unrotEdition && detail == "notes" -> UnrotNotesScreen(onBack)
+        unrotEdition && detail == "plus" -> UnrotPlusScreen(onBack)
+        unrotEdition && app.hisn.android.BuildConfig.DEBUG && detail == "wood:preview" -> UnrotWoodPreview(onBack)
         // Unrot has no "Check a site"; an old link opens the lists instead.
         unrotEdition && detail == "sitecheck" -> UnrotListsScreen(state, onBack, onNavigate)
         // Unrot: "Your lists" has the list update and the export/import, so the two old pages open it.
@@ -2286,4 +2344,12 @@ fun DetailHost(
         detail.startsWith("info:") -> InfoScreen(detail.removePrefix("info:"), onBack)
         else -> InfoScreen("about", onBack)
     }
+}
+
+/** "3 apps limited" in Arabic's four count forms. */
+private fun limitedAppsAr(n: Int): String = when {
+    n == 1 -> "تطبيق واحد له حدّ"
+    n == 2 -> "تطبيقان لهما حدّ"
+    n in 3..10 -> "${nums(n)} تطبيقات لها حدّ"
+    else -> "${nums(n)} تطبيقًا لها حدّ"
 }

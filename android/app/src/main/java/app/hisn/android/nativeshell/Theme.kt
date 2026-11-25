@@ -490,18 +490,28 @@ fun HisnTheme(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
+    // The Islamic edition follows the chosen look (Fajr, Madinah, Layl); Layl is its dark mode.
+    val look = if (Edition.islamic) { HisnLooks.load(context); HisnLooks.current.value } else null
+    @Suppress("NAME_SHADOWING") val darkTheme = look?.dark ?: darkTheme
     val target = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        Edition.islamic -> if (darkTheme) IslamicDarkColors else IslamicLightColors
+        look != null -> look.scheme(if (look.dark) IslamicDarkColors else IslamicLightColors)
         darkTheme -> UnrotDarkColors
         else -> UnrotLightColors
     }
-    val colors = animateScheme(target)
+    // Unrot at night takes the colour of the moment (growing, working, a hard moment, …).
+    val mood = if (look == null && darkTheme && !dynamicColor && !Edition.islamic) rememberUnrotMood() else null
+    val colors = animateScheme(if (mood != null) UnrotMood.scheme(target, mood) else target)
     val status = animateStatus(
         when {
+            // Shared cards (settings, rules, protection) take the look's own card colour.
+            look != null -> (if (darkTheme) DarkStatusColors else LightStatusColors).copy(card = look.t.card, cardMuted = look.t.soft)
             Edition.islamic -> if (darkTheme) DarkStatusColors else LightStatusColors
-            darkTheme -> UnrotDarkStatusColors
+            darkTheme -> if (mood != null) UnrotDarkStatusColors.copy(
+                card = UnrotMood.card(mood) ?: UnrotDarkStatusColors.card,
+                cardMuted = UnrotMood.cardMuted(mood) ?: UnrotDarkStatusColors.cardMuted
+            ) else UnrotDarkStatusColors
             else -> UnrotLightStatusColors
         }
     )
@@ -509,10 +519,11 @@ fun HisnTheme(
     val arabic = androidx.compose.ui.platform.LocalConfiguration.current.let {
         androidx.core.os.ConfigurationCompat.getLocales(it)[0]?.language == "ar"
     }
+    UiLanguage.arabic = arabic
     val unrot = !Edition.islamic
     val typography = if (unrot && !arabic) UnrotTypography else HisnTypography
     val shapes = if (unrot) UnrotShapes else HisnShapes
-    CompositionLocalProvider(LocalHisnStatusColors provides status, LocalDarkTheme provides darkTheme) {
+    CompositionLocalProvider(LocalHisnStatusColors provides status, LocalDarkTheme provides darkTheme, LocalLook provides (look ?: HisnLook.FAJR)) {
         MaterialTheme(
             colorScheme = colors,
             typography = typography,

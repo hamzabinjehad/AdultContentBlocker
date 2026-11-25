@@ -1,5 +1,6 @@
 package app.hisn.android
 
+import app.hisn.android.nativeshell.arabicDigitsContext
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -22,7 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import app.hisn.android.nativeshell.HisnTheme
-import app.hisn.android.nativeshell.Onboarding
+import app.hisn.android.nativeshell.HisnOnboarding
 import app.hisn.android.nativeshell.OnboardingActions
 import app.hisn.android.nativeshell.OnboardingProtectionState
 import app.hisn.android.nativeshell.OnboardingProtectionState.NEEDS_ATTENTION
@@ -42,6 +43,10 @@ import kotlinx.coroutines.delay
  * Owns the system hand-offs and reads live protection for the first-run flow.
  */
 class WelcomeActivity : ComponentActivity(), UnrotSetupActions {
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(arabicDigitsContext(newBase))
+    }
+
     private data class ProtectionReading(val state: OnboardingProtectionState, val issue: Int? = null)
 
     private var refresh by mutableIntStateOf(0)
@@ -91,12 +96,11 @@ class WelcomeActivity : ComponentActivity(), UnrotSetupActions {
             HisnTheme(darkTheme = dark) {
                 SystemBars(dark)
                 if (Edition.islamic) {
-                    Onboarding(
+                    HisnOnboarding(
                         actions = this,
                         directBuild = BuildConfig.SELF_PROTECTION,
                         initialName = saved.name,
-                        initialPreset = saved.preset,
-                        initialReason = saved.reason,
+                        initialReason = if (saved.preset == PersonalProfile.CUSTOM) saved.reason else "",
                         refresh = refresh
                     )
                 } else {
@@ -279,6 +283,7 @@ class WelcomeActivity : ComponentActivity(), UnrotSetupActions {
         when (key) {
             "tags" -> rules?.adultWordsEnabled == true
             "images" -> rules?.visualEnabled == true
+            "allapps" -> app.hisn.core.ScanScope.all(rules?.scannedApps)
             else -> false
         }
     } catch (unreadable: RuntimeException) {
@@ -301,6 +306,8 @@ class WelcomeActivity : ComponentActivity(), UnrotSetupActions {
                 R.string.visual_enable, R.string.visual_short, R.string.visual_disclosure,
                 R.string.save_rules, write
             )
+            // The page has already shown "Check every app?" with what it costs.
+            "allapps" -> write()
         }
     }
 
@@ -329,6 +336,10 @@ class WelcomeActivity : ComponentActivity(), UnrotSetupActions {
             when (key) {
                 "tags" -> store.update(store.domainText(), store.wordText(), rules.blockedApps, rules.scannedApps, on)
                 "images" -> store.updateVisual(on)
+                "allapps" -> store.update(
+                    store.domainText(), store.wordText(), rules.blockedApps,
+                    app.hisn.core.ScanScope.with(rules.scannedApps, on), rules.adultWordsEnabled
+                )
             }
         } catch (refused: RuntimeException) {
             toast(R.string.policy_unavailable)

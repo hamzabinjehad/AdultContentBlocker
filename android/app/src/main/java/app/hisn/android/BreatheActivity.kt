@@ -1,5 +1,6 @@
 package app.hisn.android
 
+import app.hisn.android.nativeshell.arabicDigitsContext
 import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import android.view.WindowManager
@@ -107,6 +108,10 @@ import app.hisn.core.BreathPattern
  * while the words and the count still guide the breath.
  */
 class BreatheActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(arabicDigitsContext(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(

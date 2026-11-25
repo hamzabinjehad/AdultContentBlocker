@@ -63,6 +63,7 @@
         </activity>
         <activity android:name=".RestrictionActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".BreatheActivity" android:exported="false" android:excludeFromRecents="true" />
+        <activity android:name=".HisnBreatheActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".BlockActivity" android:exported="false" android:excludeFromRecents="true" />
         <receiver android:name=".DayWidget" android:exported="false" android:label="@string/today_day_label">
             <intent-filter>

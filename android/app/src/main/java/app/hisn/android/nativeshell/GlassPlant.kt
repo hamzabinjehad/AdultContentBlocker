@@ -1,5 +1,15 @@
 package app.hisn.android.nativeshell
 
+import androidx.compose.ui.graphics.BlendMode
+
+import androidx.compose.ui.graphics.CompositingStrategy
+
+import androidx.compose.ui.graphics.graphicsLayer
+
+import kotlinx.coroutines.launch
+
+import androidx.compose.ui.graphics.drawscope.scale
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -79,9 +89,10 @@ private fun at(g: Float, vararg v: Float): Float {
 }
 
 @Composable
-internal fun GlassPlant(givenBackMs: Long, modifier: Modifier = Modifier) {
+internal fun GlassPlant(givenBackMs: Long, modifier: Modifier = Modifier, poke: Int = 0, sleep: Boolean = false, mood: Int = MOOD_WELL) {
     val reduce = LocalReduceMotion.current
-    val target = glassGrowth(givenBackMs).coerceIn(1f, 5.99f)
+    // Below 1 (the first five minutes) the shoot is still coming out of the seed: drawn small.
+    val target = glassGrowth(givenBackMs).coerceIn(.3f, 5.99f)
     // Grows from where it was to where it is, with a little overshoot, like a plant stretching.
     val grown = remember { Animatable(if (reduce) target else (target - .35f).coerceAtLeast(.6f)) }
     val stage = target.toInt()
@@ -95,25 +106,46 @@ internal fun GlassPlant(givenBackMs: Long, modifier: Modifier = Modifier) {
         if (stage > seenStage && !reduce) { burst.snapTo(0f); burst.animateTo(1f, tween(1400)) }
         seenStage = stage
     }
+    // A touch: the stem springs to one side and rocks back, and a few sparkles fly.
+    val wiggle = remember { Animatable(0f) }
+    LaunchedEffect(poke) {
+        if (poke == 0 || reduce) return@LaunchedEffect
+        wiggle.snapTo(1f)
+        launch { wiggle.animateTo(0f, spring(dampingRatio = .22f, stiffness = Spring.StiffnessLow)) }
+        burst.snapTo(.35f); burst.animateTo(1f, tween(900))
+    }
     val wind = rememberInfiniteTransition(label = "plant-wind")
     val phase by wind.animateFloat(0f, (2 * PI).toFloat(),
         infiniteRepeatable(tween(6200, easing = LinearEasing), RepeatMode.Restart), label = "phase")
-    Canvas(modifier) {
-        val p = if (reduce) 0f else phase
+    // At night the plant sleeps: drawn on its own layer so moonlight can tint it.
+    // A dry plant is tinted too, so it also gets its own layer.
+    val layered = sleep || mood == MOOD_DRY
+    Canvas(if (layered) modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen } else modifier) {
+        val p = if (reduce) 0f else if (sleep) phase * .5f else phase
         val side = size.height
         val left = (size.width - side * 682f / 688f) / 2f
         val base = Offset(left + side * 682f / 688f * BaseX, side * BaseY)
-        drawPlant(base, side, grown.value, p, burst.value)
+        val g = grown.value
+        // Under one, the same young sprout drawn smaller, as if just breaking the soil.
+        if (g < 1f) scale(g.coerceAtLeast(.3f), pivot = base) { drawPlant(base, side, 1f, p, burst.value, wiggle.value, sleep, mood) }
+        else drawPlant(base, side, g, p, burst.value, wiggle.value, sleep, mood)
+        if (sleep) drawRect(Color(0xFF1B2A6B).copy(alpha = .38f), blendMode = BlendMode.SrcAtop)
+        if (mood == MOOD_DRY) drawRect(Color(0xFF8A6A3A).copy(alpha = .55f), blendMode = BlendMode.SrcAtop)
     }
 }
 
-private fun DrawScope.drawPlant(base: Offset, side: Float, g: Float, phase: Float, burst: Float) {
+private fun DrawScope.drawPlant(base: Offset, side: Float, g: Float, phase: Float, burst: Float, wiggle: Float = 0f, sleep: Boolean = false, mood: Int = MOOD_WELL) {
     val u = side / 100f // one unit = 1% of the picture
     val ink = (u * .62f).coerceAtLeast(1.2f)
     // Squash and stretch for a moment when a new stage arrives.
     val pop = if (burst < 1f) sin(burst * PI.toFloat()) * (1f - burst) else 0f
     val stemH = at(g, 7f, 12f, 19f, 25f, 29.5f, 31f) * u * (1f + pop * .12f)
-    val sway = sin(phase) * at(g, 1.6f, 2.0f, 2.4f, 2.6f, 2.8f, 3f)
+    val hurt = mood != MOOD_WELL
+    // Hurt, the stem leans and hardly moves; asleep, it barely sways.
+    val sway = sin(phase) * at(g, 1.6f, 2.0f, 2.4f, 2.6f, 2.8f, 3f) * (if (sleep) .4f else if (hurt) .3f else 1f) +
+        wiggle * 14f + (if (hurt) 7f else 0f)
+    // Asleep, the leaves fold up towards the stem, like a plant at night; hurt, they hang down.
+    val fold = if (sleep) 22f else if (hurt) -24f else 0f
     rotate(sway, pivot = base) {
         val tip = Offset(base.x + sin(phase * 2f) * u * .5f, base.y - stemH)
         val ctrl = Offset(base.x + u * 2.2f, base.y - stemH * .55f)
@@ -142,16 +174,16 @@ private fun DrawScope.drawPlant(base: Offset, side: Float, g: Float, phase: Floa
             val len = n.size * u * open
             val flutter = sin(phase * 1.7f + i * 1.3f) * 4f
             val lift = if (i % 2 == 0) 0f else 8f
-            drawLeaf(at, len, -90f - 90f + n.tilt + lift + flutter, ink)
-            drawLeaf(at, len * .94f, -n.tilt - lift - flutter, ink)
+            drawLeaf(at, len, -90f - 90f + n.tilt + lift + flutter + fold, ink)
+            drawLeaf(at, len * .94f, -n.tilt - lift - flutter - fold, ink)
         }
         // The top pair: the sprout's first two leaves, which stay biggest until the bud comes.
         val topLen = at(g, 6.2f, 8.4f, 8.8f, 7.6f, 7.0f, 7.0f) * u
         val f2 = sin(phase * 1.9f) * 5f
         val hasBud = g >= 3.8f
         val leafAt = if (hasBud) onStem(.93f) else tip
-        drawLeaf(leafAt, topLen, -150f + f2, ink)
-        drawLeaf(leafAt, topLen * 1.04f, -32f - f2, ink, dew = g >= 1.4f)
+        drawLeaf(leafAt, topLen, -150f + f2 + fold, ink)
+        drawLeaf(leafAt, topLen * 1.04f, -32f - f2 - fold, ink, dew = g >= 1.4f && !sleep && !hurt)
 
         when {
             g >= 5f -> drawFlower(tip, u * at(g, 0f, 0f, 0f, 0f, 3.6f, 5.6f), ((g - 5f) / .7f).coerceIn(0f, 1f), phase, ink)
@@ -272,7 +304,7 @@ internal fun DrawScope.drawStar(c: Offset, r: Float, color: Color) {
  * rise slowly and twinkle, and every few seconds a glint runs across the glass.
  */
 @Composable
-internal fun GlassAir(night: Boolean, modifier: Modifier = Modifier) {
+internal fun GlassAir(night: Boolean, modifier: Modifier = Modifier, mood: Int = AIR_CLEAR) {
     val reduce = LocalReduceMotion.current
     val air = rememberInfiniteTransition(label = "glass-air")
     val t by air.animateFloat(0f, 1f, infiniteRepeatable(tween(24_000, easing = LinearEasing), RepeatMode.Restart), label = "t")
@@ -282,7 +314,14 @@ internal fun GlassAir(night: Boolean, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val time = if (reduce) .3f else t
         val gl = if (reduce) .5f else glow
-        val light = if (night) Color(0xFFB9C6FF) else Color(0xFFFFE39A)
+        // Gold after a seal: brighter, warmer motes; after a break the air goes still and dim.
+        val light = when {
+            night -> Color(0xFFB9C6FF)
+            mood == AIR_GOLD -> Color(0xFFFFD25A)
+            mood == AIR_DIM -> Color(0xFFCFC2A8)
+            else -> Color(0xFFFFE39A)
+        }
+        val moteAlpha = when (mood) { AIR_GOLD -> 1.25f; AIR_DIM -> .45f; else -> 1f }
         val side = size.height
         val left = (size.width - side) / 2f
         // The glow round the glass, slowly breathing.
@@ -297,7 +336,8 @@ internal fun GlassAir(night: Boolean, modifier: Modifier = Modifier) {
             val tw = .5f + .5f * sin(time * 6.283f * 6f + m[3] * 2f)
             val edge = (minOf(y, 1f - y) * 5f).coerceIn(0f, 1f)
             val p = Offset(left + x * side, y * side * .9f)
-            drawStar(p, side * (.006f + .006f * tw), light.copy(alpha = (.35f + .55f * tw) * edge))
+            val big = if (mood == AIR_GOLD) 1.35f else 1f
+            drawStar(p, side * (.006f + .006f * tw) * big, light.copy(alpha = ((.35f + .55f * tw) * edge * moteAlpha).coerceIn(0f, 1f)))
         }
         // A glint across the dome: a soft white band, only during the first part of each cycle.
         if (!reduce && glint < .28f) {
@@ -320,4 +360,81 @@ internal fun GlassAir(night: Boolean, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+internal const val AIR_CLEAR = 0
+internal const val AIR_GOLD = 1
+internal const val AIR_DIM = 2
+
+internal const val MOOD_WELL = 0
+/** The glass cracked: the plant droops until a breath seals it. */
+internal const val MOOD_DROOP = 1
+/** The glass broke: the plant dries, small again, until a new day. */
+internal const val MOOD_DRY = 2
+
+/** The crack lines across the glass, in the painting's 0..100 square (design/glasshouse-2026-11-24-home). */
+private val crackLines = listOf(
+    floatArrayOf(60f, 36f, 55f, 30f, 52f, 24f), floatArrayOf(60f, 36f, 66f, 31f, 70f, 27f),
+    floatArrayOf(60f, 36f, 63f, 43f, 61f, 50f, 64f, 57f), floatArrayOf(60f, 36f, 54f, 40f, 48f, 39f, 43f, 44f),
+    floatArrayOf(60f, 36f, 67f, 38f, 73f, 42f), floatArrayOf(55f, 30f, 51f, 32f)
+)
+private val breakLines = listOf(floatArrayOf(60f, 36f, 58f, 48f, 50f, 56f), floatArrayOf(60f, 36f, 72f, 50f))
+private val shards = listOf(
+    floatArrayOf(30f, 74f, 35f, 71f, 37f, 75f), floatArrayOf(66f, 75f, 72f, 73f, 71f, 77f),
+    floatArrayOf(44f, 76f, 47f, 72f, 50f, 75f), floatArrayOf(58f, 77f, 62f, 74f, 63f, 77f)
+)
+
+private fun DrawScope.linePath(pts: FloatArray, u: Float, o: Offset): Path = Path().apply {
+    moveTo(o.x + pts[0] * u, o.y + pts[1] * u)
+    var i = 2
+    while (i < pts.size) { lineTo(o.x + pts[i] * u, o.y + pts[i + 1] * u); i += 2 }
+}
+
+/**
+ * The glass's hurt drawn live over the empty painting: a crack (dark line, white edge), the same
+ * crack sealed with a shimmering gold seam, or a break with more lines and shards at the foot.
+ * [look]: 1 cracked, 2 gold, 3 broken.
+ */
+@Composable
+internal fun GlassCracks(look: Int, modifier: Modifier = Modifier) {
+    val reduce = LocalReduceMotion.current
+    val shine = rememberInfiniteTransition(label = "gold-seam")
+    val t by shine.animateFloat(0f, 1f, infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Restart), label = "t")
+    Canvas(modifier) {
+        val side = size.minDimension
+        val u = side / 100f
+        val o = Offset((size.width - side) / 2f, (size.height - side) / 2f)
+        val lines = if (look == 3) crackLines + breakLines else crackLines
+        val gold = look == 2
+        lines.forEach { pts ->
+            val path = linePath(pts, u, o)
+            drawPath(path, if (gold) Color(0xFF7A4A08) else Color(0xFF140E08).copy(alpha = .7f),
+                style = Stroke(u * (if (gold) .8f else .6f), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+            if (gold) {
+                drawPath(path, Color(0xFFFFD25A).copy(alpha = .35f), style = Stroke(u * 1.4f, cap = StrokeCap.Round))
+                drawPath(path, Color(0xFFFFD25A), style = Stroke(u * .45f, cap = StrokeCap.Round,
+                    pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(u * 4f, u * 1.2f), if (reduce) 0f else -t * u * 5.2f)))
+            } else {
+                drawPath(path, Color.White.copy(alpha = .85f), style = Stroke(u * .3f, cap = StrokeCap.Round))
+            }
+        }
+        if (look == 3) shards.forEach { pts ->
+            val p = linePath(pts, u, o).apply { close() }
+            drawPath(p, Color(0xFFDDE6EE).copy(alpha = .55f))
+            drawPath(p, Color.White.copy(alpha = .8f), style = Stroke(u * .2f))
+        }
+    }
+}
+
+/** The moon in the night glass, drawn so the empty painting can be the night one too. */
+internal fun DrawScope.drawGlassMoon(at: Offset, r: Float) {
+    val moon = Path().apply {
+        addOval(androidx.compose.ui.geometry.Rect(at - Offset(r, r), Size(r * 2, r * 2)))
+    }
+    val bite = Path().apply {
+        addOval(androidx.compose.ui.geometry.Rect(at - Offset(r * .45f, r * 1.25f), Size(r * 2, r * 2)))
+    }
+    val crescent = Path.combine(androidx.compose.ui.graphics.PathOperation.Difference, moon, bite)
+    drawCircle(Brush.radialGradient(listOf(Color(0xFFDDE4FF).copy(alpha = .35f), Color.Transparent), center = at, radius = r * 3f), r * 3f, at)
+    drawPath(crescent, Color(0xFFE9EEFF))
 }

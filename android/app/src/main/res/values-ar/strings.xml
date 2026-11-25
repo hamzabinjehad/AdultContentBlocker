@@ -1080,7 +1080,7 @@
         <item quantity="other">%1$d تطبيق لها حد يومي</item>
     </plurals>
     <plurals name="saved_domains">
-        <item quantity="zero">%1$d نطاق</item>
+        <item quantity="zero">لا نطاقات</item>
         <item quantity="one">نطاق واحد</item>
         <item quantity="two">نطاقان</item>
         <item quantity="few">%1$d نطاقات</item>
@@ -1088,7 +1088,7 @@
         <item quantity="other">%1$d نطاق</item>
     </plurals>
     <plurals name="saved_words">
-        <item quantity="zero">%1$d قاعدة كلمات</item>
+        <item quantity="zero">لا قواعد كلمات</item>
         <item quantity="one">قاعدة كلمات واحدة</item>
         <item quantity="two">قاعدتا كلمات</item>
         <item quantity="few">%1$d قواعد كلمات</item>
@@ -1096,7 +1096,7 @@
         <item quantity="other">%1$d قاعدة كلمات</item>
     </plurals>
     <plurals name="blocked_apps_count">
-        <item quantity="zero">%1$d تطبيق</item>
+        <item quantity="zero">لا تطبيقات</item>
         <item quantity="one">تطبيق واحد</item>
         <item quantity="two">تطبيقان</item>
         <item quantity="few">%1$d تطبيقات</item>
@@ -1104,7 +1104,7 @@
         <item quantity="other">%1$d تطبيق</item>
     </plurals>
     <plurals name="inspected_apps_count">
-        <item quantity="zero">%1$d تطبيق للفحص</item>
+        <item quantity="zero">لا تطبيقات للفحص</item>
         <item quantity="one">تطبيق واحد للفحص</item>
         <item quantity="two">تطبيقان للفحص</item>
         <item quantity="few">%1$d تطبيقات للفحص</item>
@@ -1120,7 +1120,7 @@
         <item quantity="other">%1$d تطبيق مُبقى متاح</item>
     </plurals>
     <plurals name="selected_apps">
-        <item quantity="zero">%1$d تطبيق محدد</item>
+        <item quantity="zero">لا تطبيقات محددة</item>
         <item quantity="one">تطبيق واحد محدد</item>
         <item quantity="two">تطبيقان محددان</item>
         <item quantity="few">%1$d تطبيقات محددة</item>
@@ -1374,7 +1374,7 @@
     <string name="breathe_alt_chosen">اختيار جيد. افعله الآن؛ هذا سيبقى هنا.</string>
     <string name="breathe_back">العودة إلى يومي</string>
     <plurals name="breathe_tally">
-        <item quantity="zero">%1$d استراحات اليوم</item>
+        <item quantity="zero">لا استراحات اليوم</item>
         <item quantity="one">أول استراحة اليوم</item>
         <item quantity="two">استراحتان اليوم</item>
         <item quantity="few">%1$d استراحات اليوم</item>
@@ -1531,7 +1531,7 @@
     <string name="limit_intro">ضع لكل تطبيق حدًّا يوميًا خاصًا به. عند انتهاء وقت اليوم يُغلق التطبيق حتى الغد. يقرأ حصن سجل وقت الشاشة الخاص بأندرويد؛ لا يغادر شيء الهاتف.</string>
     <string name="widget_day_description">عدّ أيامك واستراحة تنفّس بلمسة واحدة</string>
     <string name="widget_day_start">ابدأ العدّ</string>
-    <string name="tab_today">الرئيسية</string>
+    <string name="tab_today">اليوم</string>
     <string name="tab_shield">الدرع</string>
     <string name="tab_progress">التقدّم</string>
     <string name="tab_you">أنت</string>
@@ -1543,7 +1543,7 @@
     <string name="today_num_blocked">حُجبت منذ تشغيل المرشّح</string>
     <string name="rules_all">كل القواعد</string>
     <plurals name="shield_apps">
-        <item quantity="zero">%1$d تطبيق</item>
+        <item quantity="zero">لا تطبيقات</item>
         <item quantity="one">تطبيق واحد</item>
         <item quantity="two">تطبيقان</item>
         <item quantity="few">%1$d تطبيقات</item>
@@ -1626,7 +1626,7 @@
         <item quantity="other">%1$d سنة مع حصن.</item>
     </plurals>
     <plurals name="milestone_pauses">
-        <item quantity="zero">%1$d وقفة</item>
+        <item quantity="zero">لا وقفات</item>
         <item quantity="one">وقفة واحدة</item>
         <item quantity="two">وقفتين</item>
         <item quantity="few">%1$d وقفات</item>
@@ -2372,7 +2372,7 @@
     <string name="plan_start_limit">%1$d دقيقة يوميًا</string>
     <string name="plan_start_feed">أغلق المقاطع</string>
     <string name="plan_start_set">اضبطه</string>
-    <plurals name="plan_feeds_closed"><item quantity="zero">أُغلقت %d مرة اليوم</item><item quantity="one">أُغلقت مرة اليوم</item><item quantity="two">أُغلقت مرتين اليوم</item><item quantity="few">أُغلقت %d مرات اليوم</item><item quantity="many">أُغلقت %d مرة اليوم</item><item quantity="other">أُغلقت %d مرة اليوم</item></plurals>
+    <plurals name="plan_feeds_closed"><item quantity="zero">لم تُغلق اليوم</item><item quantity="one">أُغلقت مرة اليوم</item><item quantity="two">أُغلقت مرتين اليوم</item><item quantity="few">أُغلقت %d مرات اليوم</item><item quantity="many">أُغلقت %d مرة اليوم</item><item quantity="other">أُغلقت %d مرة اليوم</item></plurals>
     <string name="why_year_next">ماذا يكلّفني هذا؟</string>
     <string name="why_cost_next">لماذا هو صعب؟</string>
     <string name="why_why">هذه الصفحات تستخدم أرقامك وإجاباتك، وأبحاثًا مذكورة المصدر فقط. لا شيء هنا تقييم.</string>
@@ -2884,4 +2884,68 @@
         <item quantity="many">الألواح الـ%1$d كلها مغلقة</item>
         <item quantity="other">الألواح الـ%1$d كلها مغلقة</item>
     </plurals>
+    <string name="glass_touch">المس نبتتك</string>
+    <string name="hisn_look_title">اختر طابعك</string>
+    <string name="hisn_diagnosis_title">هذا ما يحدث معك</string>
+    <string name="hisn_way_out_title">المخرج</string>
+    <string name="you_day_since">اليوم %1$d مع Unrot · منذ %2$s</string>
+    <string name="you_reason_label">سببك</string>
+    <string name="you_record_given">مستعادة</string>
+    <plurals name="you_record_trees">
+        <item quantity="zero">شجرة في غابتك</item>
+        <item quantity="one">شجرة في غابتك</item>
+        <item quantity="two">شجرتان في غابتك</item>
+        <item quantity="few">شجرات في غابتك</item>
+        <item quantity="many">شجرة في غابتك</item>
+        <item quantity="other">شجرة في غابتك</item>
+    </plurals>
+    <plurals name="you_record_seams">
+        <item quantity="zero">خيط ذهبي</item>
+        <item quantity="one">خيط ذهبي</item>
+        <item quantity="two">خيطان ذهبيان</item>
+        <item quantity="few">خيوط ذهبية</item>
+        <item quantity="many">خيطًا ذهبيًا</item>
+        <item quantity="other">خيط ذهبي</item>
+    </plurals>
+    <string name="you_record_stage">نبتتك الآن</string>
+    <string name="share_sprout">شارك نبتتك</string>
+    <string name="share_sprout_sub">نبتتك ووقتك المستعاد. ولا شيء أبدًا عن المحتوى للبالغين.</string>
+    <string name="share_sprout_line">مستعادة من الخلاصات اللانهائية</string>
+    <string name="widget_given_label">UNROT · وقت مستعاد</string>
+    <string name="glass_channel">زجاجك</string>
+    <string name="glass_notice_title">انشرخ زجاجك</string>
+    <string name="glass_notice_body">%1$s لتختمه بالذهب. نفس بطيء واحد يكفي للبدء.</string>
+    <string name="plus_title">أنروت بلس</string>
+    <string name="plus_lede">لقواعدك وغابتك. الحماية لك من الأصل.</string>
+    <string name="plus_owned">بلس مفعّل. شكرًا لك.</string>
+    <string name="plus_with">مع بلس</string>
+    <string name="plus_rules">قواعد للتطبيقات بقدر ما تحتاج</string>
+    <string name="plus_rules_sub">المجاني يحفظ 3 قواعد انتظار أو حدود</string>
+    <string name="plus_support">تطبيق بلا إعلانات</string>
+    <string name="plus_support_sub">لا شيء يُباع ولا شيء يغادر هاتفك. بلس هو ما يموّل ذلك</string>
+    <string name="plus_soon">قادم إلى بلس</string>
+    <string name="plus_soon_sub">أنواع أكثر من الأشجار وأكثر من غابة</string>
+    <string name="plus_free">مجاني دائمًا</string>
+    <string name="plus_free_block">حجب محتوى البالغين، كل الألواح</string>
+    <string name="plus_free_breathe">التنفّس، ساعدني الآن، والزجاج</string>
+    <string name="plus_free_lock">القفل</string>
+    <string name="plus_free_rules">ساعات الهدوء وأول 3 قواعد للتطبيقات</string>
+    <string name="plus_no_store">بلس يُباع عبر متجر جوجل، وهذه النسخة من التطبيق بلا متجر.</string>
+    <string name="plus_loading">نسأل متجر جوجل عن الأسعار…</string>
+    <string name="plus_yearly">سنوي</string>
+    <string name="plus_monthly">شهري</string>
+    <string name="plus_lifetime">مرة واحدة</string>
+    <string name="plus_trial_days">%1$d أيام مجانًا</string>
+    <string name="plus_start_trial">جرّب %1$d أيام مجانًا</string>
+    <string name="plus_start">ابدأ بلس</string>
+    <string name="plus_restore">استعادة المشتريات</string>
+    <string name="plus_note">ألغِ في أي وقت من متجر جوجل. حظر تطبيق مجاني دائمًا.</string>
+    <string name="plus_row_sub">قواعد أكثر الآن، وأشجار أكثر قريبًا</string>
+    <string name="plus_row_owned">بلس مفعّل</string>
+    <string name="plus_rules_limit">المجاني يحفظ %1$d قواعد انتظار أو حدود. حظر تطبيق مجاني دائمًا.</string>
+    <string name="plus_unlock">افتح مع بلس</string>
+    <string name="tab_rules">القواعد</string>
+    <string name="shield_panes_count">%1$d / %2$d</string>
+    <string name="pane_see_apps">رؤية التطبيق المفتوح</string>
+    <string name="home_help_now">ساعدني الآن</string>
 </resources>

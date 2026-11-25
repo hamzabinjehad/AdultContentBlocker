@@ -113,6 +113,10 @@ private data class NavItem(
     val unselectedIcon: ImageVector
 )
 
+/** Unrot's five tabs, in order: Today 0, Shield 1, Rules 2, Progress 3, You 4. */
+internal const val UNROT_TAB_RULES = 2
+internal const val UNROT_TAB_PROGRESS = 3
+
 @Composable
 fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0, initialDetail: String? = null) {
     var selectedTab by rememberSaveable { mutableIntStateOf(initialTab) }
@@ -129,7 +133,7 @@ fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0, init
     val copy = protectionCopy(
         androidx.core.os.ConfigurationCompat.getLocales(configuration)[0] ?: java.util.Locale.ENGLISH
     )
-    val dark = when (state.themeMode) {
+    val dark = if (app.hisn.android.Edition.islamic) HisnLooks.load(context).let { HisnLooks.current.value.dark } else when (state.themeMode) {
         "dark" -> true
         "light" -> false
         else -> isSystemInDarkTheme()
@@ -274,7 +278,16 @@ fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0, init
                             }
                         )
                 ) {
-                    HisnScaffold(
+                    if (app.hisn.android.Edition.islamic) IslamicScaffold(
+                        selectedTab = selectedTab,
+                        onSelect = {
+                            if (it != selectedTab) haptics.nav()
+                            selectedTab = it
+                        },
+                        state = state,
+                        copy = copy,
+                        onOpen = navigateDetail
+                    ) else UnrotScaffold(
                         selectedTab = selectedTab,
                         onSelect = {
                             if (it != selectedTab) haptics.nav()
@@ -366,6 +379,7 @@ private fun HisnScaffold(
         listOf(
             androidx.compose.ui.res.stringResource(app.hisn.android.R.string.tab_today),
             androidx.compose.ui.res.stringResource(app.hisn.android.R.string.tab_shield),
+            androidx.compose.ui.res.stringResource(app.hisn.android.R.string.tab_rules),
             androidx.compose.ui.res.stringResource(app.hisn.android.R.string.tab_progress),
             androidx.compose.ui.res.stringResource(app.hisn.android.R.string.tab_you)
         )
@@ -377,8 +391,9 @@ private fun HisnScaffold(
         listOf(
             NavItem(titles[0], Icons.Filled.Home, Icons.Outlined.Home),
             NavItem(titles[1], Icons.Filled.Shield, Icons.Outlined.Shield),
-            NavItem(titles[2], Icons.Filled.InsertChart, Icons.Outlined.InsertChart),
-            NavItem(titles[3], Icons.Filled.Person, Icons.Outlined.Person)
+            NavItem(titles[2], Icons.Filled.Tune, Icons.Outlined.Tune),
+            NavItem(titles[3], Icons.Filled.InsertChart, Icons.Outlined.InsertChart),
+            NavItem(titles[4], Icons.Filled.Person, Icons.Outlined.Person)
         )
     } else {
         listOf(
@@ -448,8 +463,8 @@ private fun HisnScaffold(
                             showLogo = false,
                             scrollBehavior = scrollBehavior,
                             shieldChip = if (unrotTabs && selectedTab == 0) ({ onSelect(1) }) else null,
-                        onAdd = if (unrotTabs && selectedTab == 1) ({ addSheet = true }) else null,
-                        onHelp = if (unrotTabs && selectedTab == 2) ({ helpSheet = true }) else null,
+                        onAdd = if (unrotTabs && selectedTab == UNROT_TAB_RULES) ({ addSheet = true }) else null,
+                        onHelp = if (unrotTabs && selectedTab == UNROT_TAB_PROGRESS) ({ helpSheet = true }) else null,
                             state = state
                         )
                         HisnContent(
@@ -478,8 +493,8 @@ private fun HisnScaffold(
                         showLogo = !unrotTabs,
                         scrollBehavior = scrollBehavior,
                         shieldChip = if (unrotTabs && selectedTab == 0) ({ onSelect(1) }) else null,
-                        onAdd = if (unrotTabs && selectedTab == 1) ({ addSheet = true }) else null,
-                        onHelp = if (unrotTabs && selectedTab == 2) ({ helpSheet = true }) else null,
+                        onAdd = if (unrotTabs && selectedTab == UNROT_TAB_RULES) ({ addSheet = true }) else null,
+                        onHelp = if (unrotTabs && selectedTab == UNROT_TAB_PROGRESS) ({ helpSheet = true }) else null,
                         state = state
                     )
                 },
@@ -722,8 +737,10 @@ private fun HisnContent(
                 when (tab) {
                     0 -> ProtectionScreen(state = state, copy = copy, onOpen = onOpen,
                         mode = HomeMode.Today, onShowShield = { onSelectTab(1) })
-                    1 -> ProtectionScreen(state = state, copy = copy, onOpen = onOpen, mode = HomeMode.Shield)
-                    2 -> ProgressContent(state = state, onOpen = onOpen)
+                    // Shield is the adult protection alone; app rules have their own tab.
+                    1 -> ProtectionScreen(state = state, copy = copy, onOpen = onOpen, mode = HomeMode.Shield, part = SHIELD_ADULT)
+                    UNROT_TAB_RULES -> ProtectionScreen(state = state, copy = copy, onOpen = onOpen, mode = HomeMode.Shield, part = SHIELD_FEEDS)
+                    UNROT_TAB_PROGRESS -> ProgressContent(state = state, onOpen = onOpen)
                     else -> SettingsScreen(state = state, onOpen = onOpen)
                 }
             } else when (tab) {

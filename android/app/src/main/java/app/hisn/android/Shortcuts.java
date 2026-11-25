@@ -13,9 +13,10 @@ import java.util.List;
 /** The launcher's long-press shortcuts: the breathing pause, then one tab of the shell each. */
 final class Shortcuts {
     /** The shell's tabs, as read from the "page" extra. */
-    static final int TAB_RULES = 1;
-    // The general edition has four tabs (Today, Shield, Progress, You): settings live on You.
-    static final int TAB_SETTINGS = Edition.islamic ? 2 : 3;
+    // The general edition has five tabs (Today, Shield, Rules, Progress, You): rules have their own
+    // tab and settings live on You.
+    static final int TAB_RULES = Edition.islamic ? 1 : 2;
+    static final int TAB_SETTINGS = Edition.islamic ? 2 : 4;
 
     private Shortcuts() { }
 

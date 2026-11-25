@@ -256,7 +256,7 @@ internal fun UnrotYourAppsScreen(state: HisnState, onBack: () -> Unit, onOpen: (
         }
     }
     sheetFor?.let { row ->
-        AppRuleSheet(row, state, onDismiss = { sheetFor = null; version++ })
+        AppRuleSheet(row, state, onPlus = { onOpen("plus") }, onDismiss = { sheetFor = null; version++ })
     }
 }
 
@@ -387,7 +387,7 @@ private fun RuleChip(rule: AppRule, limit: Int?) {
 /** Every way to rein one app in, firmest last, with what opening it will look like. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AppRuleSheet(row: AppRow, state: HisnState, onDismiss: () -> Unit) {
+private fun AppRuleSheet(row: AppRow, state: HisnState, onPlus: () -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val haptics = rememberHisnHaptics()
     val snackbar = LocalHisnSnackbar.current
@@ -400,6 +400,12 @@ private fun AppRuleSheet(row: AppRow, state: HisnState, onDismiss: () -> Unit) {
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val savedText = stringResource(R.string.yourapps_saved, row.label)
     val refusedText = stringResource(R.string.yourapps_refused)
+    // A wait or a limit on one more app than the free three is Plus. Blocking an app stays free:
+    // it is how an adult app is kept out.
+    val timed = remember { (state.appLimits.keys + OpenWaitStore.apps(context)).size }
+    val hadTimed = current == AppRule.WAIT || current == AppRule.LIMIT
+    val needsPlus = !hadTimed && (chosen == AppRule.WAIT || chosen == AppRule.LIMIT) &&
+        !UnrotPlus.open(context, app.hisn.core.PlusGate.Feature.MORE_RULES, timed)
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
@@ -459,15 +465,19 @@ private fun AppRuleSheet(row: AppRow, state: HisnState, onDismiss: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(14.dp))
+            if (needsPlus) Text(stringResource(R.string.plus_rules_limit, app.hisn.core.PlusGate.FREE_RULES),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
             Button(
                 onClick = {
+                    if (needsPlus) { haptics.nav(); onDismiss(); onPlus(); return@Button }
                     val ok = applyRule(context, state, row, chosen, minutes) && applyQuiet(state, row.packageName, quiet)
                     if (ok) haptics.confirm() else haptics.reject()
                     snackbar(HisnMessage(if (ok) savedText else refusedText))
                     onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
-            ) { Text(stringResource(R.string.yourapps_save)) }
+            ) { Text(stringResource(if (needsPlus) R.string.plus_unlock else R.string.yourapps_save)) }
             if (current != AppRule.NONE && current != AppRule.FEED) {
                 TextButton(
                     onClick = {

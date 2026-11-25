@@ -149,6 +149,10 @@ fun HisnSwitch(checked: Boolean, enabled: Boolean = true) {
         checked = checked,
         onCheckedChange = null,
         enabled = enabled,
+        colors = if (app.hisn.android.Edition.islamic) LocalLook.current.t.let {
+            androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = it.kept, checkedThumbColor = Color.White,
+                checkedIconColor = it.kept, uncheckedTrackColor = it.soft, uncheckedBorderColor = it.line, uncheckedThumbColor = it.sub)
+        } else androidx.compose.material3.SwitchDefaults.colors(),
         thumbContent = if (checked) {
             {
                 Icon(

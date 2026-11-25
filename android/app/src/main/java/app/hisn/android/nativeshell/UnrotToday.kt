@@ -363,7 +363,8 @@ internal fun UnrotPauseFab(
         shadowElevation = if (pill) 10.dp else 3.dp
     ) {
         // "Breathe", the same word as the tools row, so the two read as one thing.
-        val label = stringResource(if (sealing) R.string.home_breathe_seal else R.string.today_tool_breathe)
+        // The prototype's one gold button on Today: "Help now" (it opens Breathe).
+        val label = stringResource(if (sealing) R.string.home_breathe_seal else R.string.home_help_now)
         Row(
             Modifier
                 .heightIn(min = 56.dp)

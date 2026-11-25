@@ -47,6 +47,16 @@ public final class DayWidget extends AppWidgetProvider {
         try { feeds = WeeklyReport.widgetLine(context); } catch (RuntimeException unavailable) { }
         views.setViewVisibility(R.id.widget_feeds, feeds == null ? android.view.View.GONE : android.view.View.VISIBLE);
         if (feeds != null) views.setTextViewText(R.id.widget_feeds, feeds);
+        // Unrot: the glass and the time given back, the two numbers Today leads with.
+        if (!Edition.islamic) {
+            views.setViewVisibility(R.id.widget_glass, android.view.View.VISIBLE);
+            views.setImageViewResource(R.id.widget_glass, GlassMoments.widgetArt(context));
+            String given = GlassMoments.widgetGiven(context);
+            if (given != null) {
+                views.setTextViewText(R.id.widget_label, context.getString(R.string.widget_given_label));
+                views.setTextViewText(R.id.widget_day, given);
+            }
+        }
         int flags = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
         Intent app = new Intent(context, ShellActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         views.setOnClickPendingIntent(R.id.widget_root, PendingIntent.getActivity(context, 10, app, flags));

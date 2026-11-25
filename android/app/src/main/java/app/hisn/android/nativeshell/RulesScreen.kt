@@ -216,7 +216,8 @@ fun RulesScreen(
                     supporting = if (state.scanAll.on) {
                         tr("On · Adult tags and image checks read every app")
                     } else {
-                        String.format(tr("Off · Checks read only the apps you chose (%1\$d)"), state.scannedCount)
+                        if (state.scannedCount == 0 && isArabicUi()) "متوقف · تقرأ الفحوص التطبيقات التي تختارها فقط، ولم تختر شيئًا بعد"
+                        else nums(String.format(tr("Off · Checks read only the apps you chose (%1\$d)"), state.scannedCount))
                     },
                     checked = state.scanAll.on,
                     onCheckedChange = { wanted ->

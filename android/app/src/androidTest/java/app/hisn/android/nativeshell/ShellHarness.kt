@@ -143,5 +143,5 @@ fun SemanticsNode.insideHorizontalScroll(): Boolean {
 internal const val RulesTab = 1
 internal val RulesDetail: String? get() = if (unrotEdition) "rules" else null
 internal val SettingsTab: Int get() = if (unrotEdition) 3 else 2
-internal val HomeTabLabel: String get() = if (unrotEdition) "Home" else "Protection"
+internal val HomeTabLabel: String get() = if (unrotEdition) "Today" else "Protection"
 internal val SettingsTabLabel: String get() = if (unrotEdition) "You" else "Settings"

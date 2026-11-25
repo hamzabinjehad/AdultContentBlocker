@@ -571,9 +571,10 @@ internal fun UnrotHealthScreen(state: HisnState, onBack: () -> Unit, onOpen: (St
     val needs = checks.count { it.ok == false }
     val canRoute = (state.dnsState == DnsVpnService.State.RUNNING || state.dnsState == DnsVpnService.State.DEGRADED) &&
         state.check != DnsVpnService.CheckState.CHECKING
-    val report = remember(checks) {
+    val res = androidx.compose.ui.platform.LocalResources.current
+    val report = remember(checks, res) {
         buildString {
-            append(context.getString(R.string.health_title)).append('\n')
+            append(res.getString(R.string.health_title)).append('\n')
             append("${app.hisn.android.Edition.NAME} ${BuildConfig.VERSION_NAME} · Android ${android.os.Build.VERSION.RELEASE}\n")
             checks.forEach { append("- ").append(it.title).append(": ").append(it.line).append('\n') }
         }

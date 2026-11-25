@@ -51,7 +51,8 @@ internal fun Modifier.unrotFrame(shape: Shape, hero: Boolean = false): Modifier 
 internal fun Modifier.unrotBackdrop(): Modifier {
     val base = MaterialTheme.colorScheme.background
     if (Edition.islamic) return this.background(base)
-    val glow = if (LocalDarkTheme.current) Color(0xFF3A3018).copy(alpha = 0.95f) else Color(0xFFFFF0C4).copy(alpha = 0.9f)
+    // At night the glow is the colour of the moment (gold at rest, green growing, ember in a hard moment).
+    val glow = if (LocalDarkTheme.current) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f) else Color(0xFFFFF0C4).copy(alpha = 0.9f)
     return this.drawBehind {
         drawRect(base)
         drawRect(

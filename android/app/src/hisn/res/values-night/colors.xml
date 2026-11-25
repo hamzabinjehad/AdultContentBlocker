@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hisn edition: the gate mark sits on the Fajr look's deep indigo, in the icon and the splash. -->
+<resources>
+    <color name="ic_launcher_background">#2B1A5E</color>
+    <color name="splash_background">#2B1A5E</color>
+</resources>
