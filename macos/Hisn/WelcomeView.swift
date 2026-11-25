@@ -24,8 +24,25 @@ struct WelcomeView: View {
     }
 
     var body: some View {
+        if MacEdition.isUnrot {
+            // Unrot has its own first run: the problem, the answer, the person's part.
+            UnrotWelcomeView(initialStep: step) { dismiss() }
+                .onDisappear { if !AppDelegate.isHostingTests { welcomeCompleted = true } }
+        } else {
+            legacyBody
+        }
+    }
+
+    private var legacyBody: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
+                if MacEdition.isUnrot {
+                    Image("UnrotGlassSprout").resizable().scaledToFill()
+                        .frame(width: 24, height: 24).clipShape(Circle()).accessibilityHidden(true)
+                    Text(verbatim: MacEdition.unrot.displayName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(HnPalette.ink)
+                } else {
                 HnMark(size: 24)
                 Text("Hisn")
                     .font(.system(size: 14, weight: .semibold))
@@ -33,6 +50,7 @@ struct WelcomeView: View {
                 Text(verbatim: "حصن")
                     .font(.system(size: 10.5))
                     .foregroundStyle(HnPalette.muted)
+                }
                 Spacer()
                 Button("Skip") { dismiss() }
                     .buttonStyle(.borderless)
@@ -218,7 +236,8 @@ struct WelcomeView: View {
                         Image(systemName: "checkmark.shield.fill")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(HnPalette.calm)
-                        Text("Private windows are covered in every browser Hisn can control.")
+                        Text(MacEdition.isUnrot ? "Private windows are covered in every browser Unrot can control."
+                                                : "Private windows are covered in every browser Hisn can control.")
                             .font(.hnCallout())
                             .foregroundStyle(HnPalette.calm)
                     }
@@ -263,7 +282,7 @@ struct WelcomeView: View {
 
     private func finish() {
         dismiss()
-        AppNavigation.shared.open(.setup)
+        AppNavigation.shared.open(MacEdition.isUnrot ? .today : .setup)
     }
 
     private func layerRow(_ symbol: String, _ title: LocalizedStringKey,

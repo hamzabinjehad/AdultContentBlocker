@@ -11,6 +11,12 @@ import SwiftUI
 ///
 /// The vocabulary stays small: one filled action, one accent, one hairline.
 /// State is carried by a word and a symbol; colour is the third signal.
+/// Sizes that differ between the editions. Unrot's surfaces are rounder,
+/// to match the rows on its Today page.
+enum HnMetrics {
+    static var radius: CGFloat { MacEdition.isUnrot ? 16 : 12 }
+}
+
 /// Which product this build is: Hisn (the Islamic edition, ink blue) or Unrot
 /// (the general edition, gold, with Today and the sprout). One code base; the
 /// edition changes the accent, the sidebar and the first page.
@@ -35,16 +41,16 @@ enum MacEdition: String {
 }
 
 enum HnPalette {
-    static let canvas = dynamic(light: 0xF4F1EB, dark: 0x151412, unrotLight: 0xFAF8F4, unrotDark: 0x1B1814)
-    static let sidebar = dynamic(light: 0xECE7DE, dark: 0x1C1A17, unrotLight: 0xF3EBDC, unrotDark: 0x26211A)
-    static let card = dynamic(light: 0xFFFFFF, dark: 0x24211C, unrotLight: 0xFFFFFF, unrotDark: 0x28241E)
+    static let canvas = dynamic(light: 0xF4F1EB, dark: 0x151412, unrotLight: 0xFAF8F4, unrotDark: 0x1F1F1F)
+    static let sidebar = dynamic(light: 0xECE7DE, dark: 0x1C1A17, unrotLight: 0xF3EBDC, unrotDark: 0x191919)
+    static let card = dynamic(light: 0xFFFFFF, dark: 0x24211C, unrotLight: 0xFFFFFF, unrotDark: 0x2A2A2A)
     /// A quiet fill for segments, disabled states and grouping.
     static let soft = dynamic(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.045, darkAlpha: 0.07)
     /// A field or well inside a surface.
-    static let raised = dynamic(light: 0xF6F3EC, dark: 0x302C26)
-    static let ink = dynamic(light: 0x1D1B18, dark: 0xF2EEE6)
-    static let muted = dynamic(light: 0x6E675D, dark: 0xA9A296)
-    static let faint = dynamic(light: 0x766D61, dark: 0xA29A8D)
+    static let raised = dynamic(light: 0xF6F3EC, dark: 0x302C26, unrotDark: 0x333333)
+    static let ink = dynamic(light: 0x1D1B18, dark: 0xF2EEE6, unrotDark: 0xFFFFFF)
+    static let muted = dynamic(light: 0x6E675D, dark: 0xA9A296, unrotDark: 0x999999)
+    static let faint = dynamic(light: 0x766D61, dark: 0xA29A8D, unrotDark: 0x7A7A7A)
     static let line = dynamic(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.10, darkAlpha: 0.11)
     static let lineStrong = dynamic(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.17, darkAlpha: 0.19)
 
@@ -80,11 +86,17 @@ enum HnPalette {
 
 extension Font {
     /// The one editorial voice: a serif statement, used once per page.
-    static func hnDisplay() -> Font { .system(size: 32, weight: .semibold, design: .serif) }
-    static func hnDisplaySmall() -> Font { .system(size: 22, weight: .semibold, design: .serif) }
+    static func hnDisplay() -> Font {
+        MacEdition.isUnrot ? .system(size: 26, weight: .bold) : .system(size: 32, weight: .semibold, design: .serif)
+    }
+    static func hnDisplaySmall() -> Font {
+        MacEdition.isUnrot ? .system(size: 20, weight: .bold) : .system(size: 22, weight: .semibold, design: .serif)
+    }
     /// A measured number, in the same serif voice.
     static func hnFigure(_ size: CGFloat = 40) -> Font {
-        .system(size: size, weight: .semibold, design: .serif)
+        // Unrot's numbers are the system's rounded face, as in Screen Time and Fitness.
+        MacEdition.isUnrot ? .system(size: size, weight: .semibold, design: .rounded)
+                           : .system(size: size, weight: .semibold, design: .serif)
     }
     static func hnPageTitle() -> Font { .system(size: 28, weight: .bold) }
     static func hnHero() -> Font { .system(size: 22, weight: .semibold) }
@@ -130,11 +142,11 @@ struct HnCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(padding)
             .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: HnMetrics.radius, style: .continuous)
                     .fill(HnPalette.card)
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: HnMetrics.radius, style: .continuous)
                     .strokeBorder(HnPalette.line, lineWidth: 1)
                     .accessibilityHidden(true)
                     .allowsHitTesting(false)
@@ -222,11 +234,12 @@ struct HnSectionLabel: View {
                     .foregroundStyle(HnPalette.faint)
                     .accessibilityHidden(true)
             }
+            // Unrot follows System Settings: a plain sentence-case header.
             Text(title)
-                .font(.hnSection())
-                .tracking(direction == .rightToLeft ? 0 : 0.8)
-                .textCase(.uppercase)
-                .foregroundStyle(HnPalette.muted)
+                .font(MacEdition.isUnrot ? .system(size: 14, weight: .medium) : .hnSection())
+                .tracking(direction == .rightToLeft || MacEdition.isUnrot ? 0 : 0.8)
+                .textCase(MacEdition.isUnrot ? nil : .uppercase)
+                .foregroundStyle(MacEdition.isUnrot ? HnPalette.ink : HnPalette.muted)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             if let trailing {
@@ -261,20 +274,24 @@ struct HnPageHeader: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Rectangle()
-                    .fill(HnPalette.accent)
-                    .frame(width: 18, height: 2)
-                    .accessibilityHidden(true)
-                Text(eyebrow)
-                    .font(.hnSection())
-                    .tracking(direction == .rightToLeft ? 0 : 0.8)
-                    .textCase(.uppercase)
-                    .foregroundStyle(HnPalette.muted)
+        VStack(alignment: .leading, spacing: MacEdition.isUnrot ? 3 : 8) {
+            // In Unrot the page's name is in the toolbar, where a Mac window
+            // keeps it; the page starts with its statement in the system face.
+            if !MacEdition.isUnrot {
+                HStack(spacing: 8) {
+                    Rectangle()
+                        .fill(HnPalette.accent)
+                        .frame(width: 18, height: 2)
+                        .accessibilityHidden(true)
+                    Text(eyebrow)
+                        .font(.hnSection())
+                        .tracking(direction == .rightToLeft ? 0 : 0.8)
+                        .textCase(.uppercase)
+                        .foregroundStyle(HnPalette.muted)
+                }
             }
             title
-                .font(.hnDisplay())
+                .font(MacEdition.isUnrot ? .system(size: 22, weight: .bold) : .hnDisplay())
                 .foregroundStyle(HnPalette.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
@@ -933,6 +950,32 @@ struct HnField: ViewModifier {
 extension View {
     func hnField(monospaced: Bool = false) -> some View {
         modifier(HnField(monospaced: monospaced))
+    }
+
+    /// The window's one filled toolbar button; a plain bordered one otherwise.
+    @ViewBuilder
+    func hnProminent(_ prominent: Bool) -> some View {
+        if prominent {
+            buttonStyle(.borderedProminent).tint(HnPalette.accent)
+        } else {
+            buttonStyle(.bordered)
+        }
+    }
+
+    /// Unrot has no toolbar band: its pages start under the window buttons
+    /// with their own title, and carry their actions beside it.
+    @ViewBuilder
+    func hnNoToolbarIfUnrot() -> some View {
+        if MacEdition.isUnrot, #available(macOS 13.0, *) {
+            toolbar(.hidden, for: .windowToolbar)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func hnDarkIfUnrot() -> some View {
+        if MacEdition.isUnrot { preferredColorScheme(.dark) } else { self }
     }
 
     /// The readable column shared by every page.

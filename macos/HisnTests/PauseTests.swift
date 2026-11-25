@@ -14,6 +14,38 @@ final class PauseTests: XCTestCase {
         return calendar
     }
 
+    func testBreathPatternsFollowTheAndroidApp() {
+        let sigh = BreathPattern.sigh
+        XCTAssertEqual(sigh.breathLength, 10)
+        XCTAssertEqual(sigh.phases, [.breatheIn, .topUp, .out])
+        XCTAssertGreaterThan(sigh.duration(2), sigh.duration(0) + sigh.duration(1))
+        let start = sigh.position(at: 0, rounds: 3)
+        XCTAssertEqual(start.breath, 0); XCTAssertEqual(start.phase, .breatheIn); XCTAssertFalse(start.finished)
+        XCTAssertEqual(start.secondsLeft, 3)
+        XCTAssertEqual(start.scale, BreathPattern.rest, accuracy: 0.001)
+        XCTAssertEqual(sigh.position(at: 2.999, rounds: 3).secondsLeft, 1)
+        XCTAssertEqual(sigh.position(at: 3, rounds: 3).phase, .topUp)
+        XCTAssertEqual(sigh.position(at: 4, rounds: 3).phase, .out)
+        XCTAssertEqual(sigh.position(at: 4, rounds: 3).secondsLeft, 6)
+        XCTAssertEqual(sigh.position(at: 4, rounds: 3).scale, 1, accuracy: 0.001)
+        XCTAssertEqual(sigh.position(at: 10, rounds: 3).breath, 1)
+        XCTAssertEqual(sigh.position(at: 25, rounds: 3).breath, 2)
+        let end = sigh.position(at: 30, rounds: 3)
+        XCTAssertTrue(end.finished); XCTAssertEqual(end.secondsLeft, 0); XCTAssertEqual(end.progress, 1)
+        XCTAssertTrue(sigh.position(at: 99, rounds: 3).finished)
+        XCTAssertFalse(sigh.position(at: 31, rounds: 5).finished)
+        XCTAssertEqual(sigh.position(at: -5, rounds: 3).breath, 0)
+        XCTAssertEqual(BreathPattern.even.position(at: 3.9, rounds: 3).phase, .breatheIn)
+        XCTAssertEqual(BreathPattern.even.ringTarget(.breatheIn), 1)
+        XCTAssertLessThan(sigh.ringTarget(.breatheIn), sigh.ringTarget(.topUp))
+        XCTAssertEqual(BreathPattern.fromKey("even"), .even)
+        XCTAssertEqual(BreathPattern.fromKey(nil), .sigh)
+        XCTAssertEqual(BreathPattern.fromKey("box"), .sigh)
+        XCTAssertEqual(BreathPattern.lengthText(rounds: 3), "30 sec")
+        XCTAssertEqual(BreathPattern.lengthText(rounds: 6), "1 min")
+        XCTAssertEqual(BreathPattern.lengthText(rounds: 10), "1 min 40 sec")
+    }
+
     func testTallyStartsAtOneAndMergesTheSameMoment() {
         let base = Date(timeIntervalSince1970: 1_800_000_000)
         let first = PauseTally.recording(nil, now: base)

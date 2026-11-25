@@ -160,6 +160,24 @@ enum AppCatalog {
         return bundleID.split(separator: ".").last.map(String.init) ?? bundleID
     }
 
+    /// Whether an app or site is the kind people lose time in: a known feed,
+    /// video, news, shopping, game or chat site, or an app the developer filed
+    /// under games, social, entertainment, video or news.
+    static func isDistracting(_ subject: String) -> Bool {
+        if subject.hasPrefix("site:") {
+            let host = String(subject.dropFirst(5))
+            return SiteCategory.allCases.contains { $0.sites.contains { host == $0 || host.hasSuffix("." + $0) } }
+        }
+        guard subject.hasPrefix("app:") else { return false }
+        let id = String(subject.dropFirst(4))
+        guard id != Bundle.main.bundleIdentifier, !DistractionEngine.defaultAlwaysAllowed.contains(id),
+              let url = url(for: id),
+              let category = Bundle(url: url)?.object(forInfoDictionaryKey: "LSApplicationCategoryType") as? String
+        else { return false }
+        return category.contains("games") || ["public.app-category.social-networking", "public.app-category.entertainment",
+                                              "public.app-category.video", "public.app-category.news"].contains(category)
+    }
+
     static func icon(for bundleID: String) -> NSImage? {
         url(for: bundleID).map { NSWorkspace.shared.icon(forFile: $0.path) }
     }
@@ -243,7 +261,25 @@ enum RuleTemplate: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The picture a new rule of this kind starts with.
+    var emoji: String {
+        switch self {
+        case .dailyLimit: return "⏳"
+        case .wait: return "🌬️"
+        case .schedule: return "💻"
+        case .feedsOnly: return "📰"
+        case .quietHours: return "🌙"
+        case .alwaysClosed: return "🚫"
+        }
+    }
+
     func make() -> DistractionRule {
+        var rule = plain()
+        rule.emoji = emoji
+        return rule
+    }
+
+    private func plain() -> DistractionRule {
         switch self {
         case .dailyLimit:
             return DistractionRule(name: String(localized: "Feeds"), targets: Self.commonSites,
@@ -496,6 +532,60 @@ struct DistractionRulesPage: View {
     }
 }
 
+/// Sites grouped the way people think of them, to add in one click. Our own
+/// short lists of well-known names; the person can remove any of them after.
+enum SiteCategory: String, CaseIterable, Identifiable {
+    case social, video, news, shopping, games, chat
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .social: return String(localized: "Social")
+        case .video: return String(localized: "Video")
+        case .news: return String(localized: "News")
+        case .shopping: return String(localized: "Shopping")
+        case .games: return String(localized: "Games")
+        case .chat: return String(localized: "Chat")
+        }
+    }
+
+    var sites: [String] {
+        switch self {
+        case .social: return ["x.com", "instagram.com", "facebook.com", "reddit.com", "tiktok.com", "threads.net",
+                              "snapchat.com", "pinterest.com", "linkedin.com", "tumblr.com", "bsky.app"]
+        case .video: return ["youtube.com", "twitch.tv", "netflix.com", "tiktok.com", "primevideo.com",
+                             "disneyplus.com", "vimeo.com", "dailymotion.com"]
+        case .news: return ["news.google.com", "bbc.com", "cnn.com", "nytimes.com", "theguardian.com",
+                            "news.ycombinator.com", "spiegel.de", "aljazeera.com"]
+        case .shopping: return ["amazon.com", "ebay.com", "aliexpress.com", "temu.com", "etsy.com", "shein.com"]
+        case .games: return ["store.steampowered.com", "epicgames.com", "roblox.com", "chess.com", "poki.com"]
+        case .chat: return ["discord.com", "web.whatsapp.com", "web.telegram.org", "messenger.com", "slack.com"]
+        }
+    }
+
+    var targets: Set<RuleTarget> { Set(sites.compactMap(RuleTarget.normalizedSite).map(RuleTarget.site)) }
+}
+
+/// A rule's picture: its emoji when it has one, as Opal shows its blocks,
+/// otherwise the coloured symbol tile.
+struct RuleGlyph: View {
+    let rule: DistractionRule
+    var size: CGFloat = 38
+
+    var body: some View {
+        if let emoji = rule.emoji, !emoji.isEmpty {
+            Text(verbatim: emoji).font(.system(size: size * 0.82))
+                .frame(width: size, height: size)
+                .accessibilityHidden(true)
+        } else {
+            RuleTile(symbol: RuleTile.symbol(for: rule), tint: RuleTile.tint(for: rule), size: size)
+        }
+    }
+
+    static let choices = ["⏳", "🌬️", "💻", "📰", "🌙", "🚫", "🎯", "📚", "🎮", "💬", "🛍️", "🎬", "☀️", "🏋️", "🧘", "✍️"]
+}
+
 /// A coloured rounded tile with a symbol, like the icons in System Settings.
 struct RuleTile: View {
     let symbol: String
@@ -516,6 +606,10 @@ struct RuleTile: View {
 
     static func symbol(for rule: DistractionRule) -> String {
         if case .block = rule.action, feedsOnly(rule) { return RuleTemplate.feedsOnly.symbol }
+        // A window that crosses midnight is a night rule.
+        if case .block = rule.action, let window = rule.window, window.endMinute < window.startMinute {
+            return RuleTemplate.quietHours.symbol
+        }
         return RuleSummary.symbol(rule.action, hasWindow: rule.window != nil)
     }
 
@@ -586,7 +680,7 @@ private struct RuleRow: View {
 
 // MARK: - Editor
 
-private struct RuleEditor: View {
+struct RuleEditor: View {
     @Binding var rule: DistractionRule
     let isNew: Bool
     let message: (text: String, isError: Bool)?
@@ -618,7 +712,17 @@ private struct RuleEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 10) {
-                RuleTile(symbol: RuleTile.symbol(for: rule), tint: RuleTile.tint(for: rule), size: 34)
+                Menu {
+                    ForEach(RuleGlyph.choices, id: \.self) { choice in
+                        Button(choice) { rule.emoji = choice }
+                    }
+                    Divider()
+                    Button("No picture") { rule.emoji = nil }
+                } label: {
+                    RuleGlyph(rule: rule, size: 34)
+                }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                .help("Choose a picture")
                 VStack(alignment: .leading, spacing: 1) {
                     TextField("Name", text: $rule.name)
                         .textFieldStyle(.plain).font(.system(size: 15, weight: .semibold))
@@ -769,6 +873,12 @@ private struct RuleEditor: View {
                 } label: { Label("Add app", systemImage: "app.badge") }
                 .fixedSize()
                 Menu {
+                    ForEach(SiteCategory.allCases) { category in
+                        Button("\(category.title) · \(category.sites.count) sites") { rule.targets.formUnion(category.targets) }
+                    }
+                } label: { Label("Category", systemImage: "square.grid.2x2") }
+                .fixedSize()
+                Menu {
                     ForEach(FeedSurface.allCases, id: \.self) { surface in
                         Button {
                             let target = RuleTarget.surface(surface)
@@ -914,16 +1024,16 @@ struct RuleTemplateSheet: View {
                 ForEach(RuleTemplate.allCases) { template in
                     Button { choose(template) } label: {
                         VStack(alignment: .leading, spacing: 8) {
-                            RuleTile(symbol: template.symbol, tint: template.tint, size: 32)
-                            Text(verbatim: template.title).font(.system(size: 13, weight: .semibold)).foregroundStyle(HnPalette.ink)
+                            Text(verbatim: template.emoji).font(.system(size: 30)).accessibilityHidden(true)
+                            Text(verbatim: template.title).font(.system(size: 14, weight: .medium)).foregroundStyle(HnPalette.ink)
                             Text(verbatim: template.blurb).font(.hnCaption()).foregroundStyle(HnPalette.muted)
                                 .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                             Spacer(minLength: 0)
                         }
                         .padding(14).frame(maxWidth: .infinity, minHeight: 128, alignment: .topLeading)
-                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .fill(hovered == template ? HnPalette.raised : HnPalette.card))
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(hovered == template ? HnPalette.accent : HnPalette.line, lineWidth: hovered == template ? 1.5 : 0.5))
                     }
                     .buttonStyle(.plain)
@@ -960,7 +1070,7 @@ struct FocusStartSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
-                RuleTile(symbol: "target", tint: Color(red: 0.16, green: 0.50, blue: 0.92), size: 36)
+                Text(verbatim: "🎯").font(.system(size: 32)).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Start Focus").font(.hnTitle())
                     Text("Everything in your rules, and the big feeds, close until it ends.")

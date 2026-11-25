@@ -91,12 +91,22 @@ func handle(_ message: [String: Any]) -> [String: Any] {
         // is the only evidence available for an unpacked extension whose
         // "Allow in Incognito" toggle the person controls by hand.
         let incognitoAllowed = message["incognitoAllowed"] as? Bool
-        ExtensionPresence.record(browser: launchingBrowser, processID: launchingBrowserPID,
-                                 incognitoAllowed: incognitoAllowed, in: defaults)
+        // An extension that the browser only lets act on some sites ("On
+        // click", "On specific sites") is enabled and still polls, but checks
+        // nothing. Its heartbeat is not a check-in: it is recorded as limited
+        // and the browser is treated like one with the extension switched off.
+        // An older extension does not send the field and is counted as before.
+        let siteAccessLimited = (message["siteAccess"] as? Bool) == false
+        if siteAccessLimited {
+            ExtensionPresence.recordLimited(browser: launchingBrowser, in: defaults)
+        } else {
+            ExtensionPresence.record(browser: launchingBrowser, processID: launchingBrowserPID,
+                                     incognitoAllowed: incognitoAllowed, in: defaults)
+        }
         // And to the filter, over the code-signed channel, where the browser
         // guard trusts it: a `defaults write` loop can fake the stamp above,
         // not this one.
-        if FilterLink.shared.isConfigured, let browser = launchingBrowser {
+        if !siteAccessLimited, FilterLink.shared.isConfigured, let browser = launchingBrowser {
             _ = FilterLink.shared.submit(.checkIn(browser: browser, processID: launchingBrowserPID), timeout: 0.5)
         }
 

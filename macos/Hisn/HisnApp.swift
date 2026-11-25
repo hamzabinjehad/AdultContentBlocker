@@ -30,7 +30,7 @@ struct HisnApp: App {
             .commands {
                 CommandGroup(replacing: .newItem) {}
                 CommandMenu("Go") {
-                    ForEach(ContentView.Page.allCases.filter { MacEdition.isUnrot || $0 != .today }) { page in
+                    ForEach(ContentView.Page.allCases.filter { MacEdition.isUnrot || ($0 != .today && $0 != .progress) }) { page in
                         Button(page.title) { MainWindow.show(page) }
                             .keyboardShortcut(shortcut(for: page), modifiers: .command)
                     }
@@ -63,6 +63,7 @@ struct HisnApp: App {
     private func shortcut(for page: ContentView.Page) -> KeyEquivalent {
         switch page {
         case .today:    return "0"
+        case .progress: return "9"
         case .overview: return "1"
         case .setup:    return "2"
         case .rules:    return "3"

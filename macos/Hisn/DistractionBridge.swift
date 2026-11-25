@@ -40,7 +40,7 @@ public enum DistractionBridge {
             }
         }
         let decision = DistractionEngine.decide(.page(page), at: now, rules: book.rules, day: day,
-                                                focus: book.focus, calendar: calendar)
+                                                focus: book.focus, exceptions: book.exceptions, calendar: calendar)
         switch decision {
         case .allow:
             return ["ok": true, "action": "allow"]
@@ -49,11 +49,14 @@ public enum DistractionBridge {
                                         "ruleName": name(of: id, in: book), "seconds": seconds,
                                         "openMinutes": openMinutes]
             if let opensLeft { reply["opensLeft"] = opensLeft }
+            if let own = book.ownReason { reply["own"] = own }
             return reply
         case let .block(id, reason, until):
             let rule = book.rules.first { $0.id == id }
             var reply: [String: Any] = ["ok": true, "action": "block", "rule": id.uuidString,
                                         "ruleName": name(of: id, in: book), "reason": reason.rawValue]
+            if let own = book.ownReason { reply["own"] = own }
+            reply["pass"] = EmergencyPass.available(lastUsed: book.emergencyPassUsed, at: now)
             if let until { reply["until"] = until.timeIntervalSince1970 * 1000 }
             // A feed surface on a page that is otherwise allowed: the extension
             // hides the feed and leaves the page, instead of closing the tab.
@@ -127,6 +130,48 @@ public enum DistractionBridge {
         return book
     }
 
+    /// Sites people lose time in. The extension reports time for these and for
+    /// rule sites only, so ordinary browsing never crosses the channel.
+    public static let knownDistracting: Set<String> = [
+        "x.com", "instagram.com", "facebook.com", "reddit.com", "tiktok.com", "threads.net", "snapchat.com",
+        "pinterest.com", "linkedin.com", "tumblr.com", "bsky.app",
+        "youtube.com", "twitch.tv", "netflix.com", "primevideo.com", "disneyplus.com", "vimeo.com", "dailymotion.com",
+        "news.google.com", "bbc.com", "cnn.com", "nytimes.com", "theguardian.com", "news.ycombinator.com",
+        "spiegel.de", "aljazeera.com",
+        "amazon.com", "ebay.com", "aliexpress.com", "temu.com", "etsy.com", "shein.com",
+        "store.steampowered.com", "epicgames.com", "roblox.com", "chess.com", "poki.com",
+        "discord.com", "web.whatsapp.com", "web.telegram.org", "messenger.com", "slack.com",
+    ]
+
+    /// The reply to `op: "watch"`: which hosts the extension must ask about.
+    /// `all` is true while a Focus session closes everything but its chosen
+    /// sites, because then every page needs a decision.
+    public static func watch(book: RuleBook, now: Date) -> [String: Any] {
+        var hosts = Set<String>()
+        func add(_ targets: Set<RuleTarget>) {
+            for target in targets {
+                switch target {
+                case let .site(host): hosts.insert(host)
+                case let .surface(surface): hosts.formUnion(surface.aliases)
+                case .app: break
+                }
+            }
+        }
+        for rule in book.rules where rule.enabled { add(rule.targets) }
+        var all = false
+        var focusUntil: Double?
+        if let focus = book.focus, focus.isRunning(at: now) {
+            add(focus.targets)
+            all = focus.allowOnly
+            focusUntil = focus.until.timeIntervalSince1970 * 1000
+        }
+        var reply: [String: Any] = ["ok": true, "all": all, "hosts": hosts.sorted(),
+                                    "usageHosts": knownDistracting.union(hosts).sorted()]
+        if let focusUntil { reply["focusUntil"] = focusUntil }
+        if let reason = book.ownReason { reply["reason"] = reason }
+        return reply
+    }
+
     /// The whole native-messaging case, for `HisnBridge/main.swift`.
     public static func handle(_ message: [String: Any], defaults: UserDefaults?, now: Date,
                               calendar: Calendar = .current) -> [String: Any] {
@@ -134,6 +179,7 @@ public enum DistractionBridge {
             guard let url = message["url"] as? String else { return ["ok": false, "reason": "no-url"] }
             return decide(url: url, book: loadBook(defaults), inbox: loadInbox(defaults), now: now, calendar: calendar)
         }
+        if message["op"] as? String == "watch" { return watch(book: loadBook(defaults), now: now) }
         guard let report = report(from: message, now: now) else { return ["ok": false, "reason": "bad-report"] }
         // A snooze the rule's strictness does not offer is refused here, not trusted from the page.
         if report.kind == .snooze, let id = report.rule {

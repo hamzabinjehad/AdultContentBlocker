@@ -175,18 +175,28 @@ final class PauseWindowController: NSObject, NSWindowDelegate {
             window.makeKeyAndOrderFront(nil)
             return
         }
-        let view = PauseView { [weak self] in self?.window?.close() }
-        let window = NSWindow(contentViewController: NSHostingController(rootView: view))
+        let unrot = MacEdition.isUnrot
+        let close: () -> Void = { [weak self] in self?.window?.close() }
+        let window = unrot
+            ? NSWindow(contentViewController: NSHostingController(rootView: UnrotBreatheView(onClose: close)))
+            : NSWindow(contentViewController: NSHostingController(rootView: PauseView(onClose: close)))
         window.title = String(localized: "Take a pause…")
         window.styleMask = [.titled, .closable]
         // The pause follows the system appearance like every other surface.
         window.titlebarAppearsTransparent = true
-        window.backgroundColor = .windowBackgroundColor
+        window.backgroundColor = unrot ? NSColor(UnrotBreatheView.night) : .windowBackgroundColor
+        if unrot {
+            // Night gold in both appearances, and the whole window drags like a panel.
+            window.appearance = NSAppearance(named: .darkAqua)
+            window.styleMask.insert(.fullSizeContentView)
+            window.titleVisibility = .hidden
+            window.isMovableByWindowBackground = true
+        }
         window.isReleasedWhenClosed = false
         window.delegate = self
+        window.setContentSize(unrot ? NSSize(width: 520, height: 680) : NSSize(width: 460, height: 640))
+        window.minSize = unrot ? NSSize(width: 480, height: 620) : NSSize(width: 420, height: 560)
         window.center()
-        window.setContentSize(NSSize(width: 460, height: 640))
-        window.minSize = NSSize(width: 420, height: 560)
         self.window = window
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)

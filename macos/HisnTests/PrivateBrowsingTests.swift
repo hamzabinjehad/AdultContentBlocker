@@ -65,6 +65,38 @@ final class PrivateBrowsingTests: XCTestCase {
         XCTAssertEqual(s.extensionChecked.map(\.name), ["Google Chrome"])
     }
 
+    /// Chrome's "On click" or "On specific sites" leaves the extension enabled
+    /// and polling while it can check nothing. That heartbeat must not count.
+    func testAnExtensionLimitedToSomeSitesIsNotACheckIn() throws {
+        let name = TestNamespace.make()
+        defer { TestNamespace.dispose(name) }
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        ExtensionPresence.recordLimited(browser: "com.google.Chrome", at: now, in: defaults)
+        XCTAssertNil(ExtensionPresence.lastSeen(browser: "com.google.Chrome", in: defaults),
+                     "a limited heartbeat leaves no check-in for the browser guard to trust")
+        XCTAssertNil(defaults.object(forKey: ExtensionPresence.anyBrowserKey))
+        let limited = defaults.object(forKey: ExtensionPresence.limitedKey) as? Date
+        XCTAssertEqual(limited, now)
+
+        XCTAssertTrue(ExtensionPresence.siteAccessLimited(lastSeen: nil, limitedSeen: now, now: now.addingTimeInterval(20)))
+        XCTAssertFalse(ExtensionPresence.siteAccessLimited(lastSeen: now.addingTimeInterval(10), limitedSeen: now,
+                                                           now: now.addingTimeInterval(20)),
+                       "a later full check-in means access was restored")
+        XCTAssertFalse(ExtensionPresence.siteAccessLimited(lastSeen: nil, limitedSeen: now,
+                                                           now: now.addingTimeInterval(ExtensionPresence.incognitoFreshFor + 1)),
+                       "an old answer says nothing about now")
+        XCTAssertFalse(ExtensionPresence.siteAccessLimited(lastSeen: nil, limitedSeen: nil, now: now))
+
+        let layer = ProtectionStatus.extensionLayer(lastSeen: now.addingTimeInterval(-30), limitedSeen: now,
+                                                    now: now.addingTimeInterval(5))
+        XCTAssertEqual(layer.state, .problem, "the Shield never calls a limited extension connected")
+        XCTAssertEqual(ProtectionStatus.extensionLayer(lastSeen: now, limitedSeen: nil, now: now.addingTimeInterval(5)).state, .ok)
+        XCTAssertFalse(BrowserGuardPolicy.extensionAlive(
+            lastSeen: ExtensionPresence.lastSeen(browser: "com.google.Chrome", in: defaults), now: now),
+            "so during a lock the browser is treated like one with the extension switched off")
+    }
+
     func testTheExtensionIncognitoAnswerExpiresWithItsHeartbeat() throws {
         let name = TestNamespace.make()
         defer { TestNamespace.dispose(name) }

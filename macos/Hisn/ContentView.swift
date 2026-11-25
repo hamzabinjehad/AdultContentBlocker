@@ -34,16 +34,17 @@ struct ContentView: View {
     }
 
     enum Page: String, CaseIterable, Identifiable {
-        case today, overview, setup, rules, focus, lock, settings
+        case today, progress, overview, setup, rules, focus, lock, settings
 
         var id: String { rawValue }
 
         var title: LocalizedStringKey {
             switch self {
             case .today:    return "Today"
+            case .progress: return "Progress"
             case .overview: return MacEdition.isUnrot ? "Shield" : "Overview"
             case .setup:    return "Protected Setup"
-            case .rules:    return "Blocking Rules"
+            case .rules:    return MacEdition.isUnrot ? "Block lists" : "Blocking Rules"
             case .focus:    return "Limits and Focus"
             case .lock:     return "Lock"
             case .settings: return "Settings"
@@ -53,6 +54,7 @@ struct ContentView: View {
         var systemImage: String {
             switch self {
             case .today:    return "sun.max"
+            case .progress: return "chart.bar"
             case .overview: return "checkmark.shield"
             case .setup:    return "checklist"
             case .rules:    return "list.bullet.rectangle"
@@ -64,6 +66,7 @@ struct ContentView: View {
         var subtitle: LocalizedStringKey {
             switch self {
             case .today: return "design.page.today"
+            case .progress: return "design.page.progress"
             case .overview: return "design.page.overview"
             case .setup: return "design.page.setup"
             case .rules: return "design.page.rules"
@@ -88,10 +91,12 @@ struct ContentView: View {
 
         var pages: [Page] {
             switch self {
-            case .day:        return MacEdition.isUnrot ? [.today, .focus] : []
-            case .protection: return [.overview, .setup, .rules]
-            case .commitment: return MacEdition.isUnrot ? [.lock] : [.focus, .lock]
-            case .app:        return [.settings]
+            // Unrot keeps one short list, like Opal: the day, the shield, and
+            // the three places you rarely go. Setup opens from Shield.
+            case .day:        return MacEdition.isUnrot ? [.today, .overview, .rules, .progress, .lock, .settings] : []
+            case .protection: return MacEdition.isUnrot ? [] : [.overview, .setup, .rules]
+            case .commitment: return MacEdition.isUnrot ? [] : [.focus, .lock]
+            case .app:        return MacEdition.isUnrot ? [] : [.settings]
             }
         }
     }
@@ -100,18 +105,29 @@ struct ContentView: View {
         // A sidebar split that also builds for macOS 12: see `HnMainSplit`.
         HnMainSplit {
             VStack(spacing: 0) {
-                brandHeader
-                if MacEdition.isUnrot { breatheButton }
-                VStack(alignment: .leading, spacing: 18) {
+                // A Mac sidebar starts under the window buttons with its list;
+                // the app's name is in the menu bar and the Dock already.
+                if MacEdition.isUnrot {
+                    UnrotNewRuleButton {
+                        navigation.page = .today
+                        navigation.newRuleRequested = true
+                    }
+                    .padding(.horizontal, 12).padding(.top, 46).padding(.bottom, 14)
+                } else {
+                    brandHeader
+                }
+                VStack(alignment: .leading, spacing: MacEdition.isUnrot ? 14 : 18) {
                     ForEach(SidebarGroup.allCases.filter { !$0.pages.isEmpty }, id: \.self) { group in
                         VStack(alignment: .leading, spacing: 2) {
+                            if !MacEdition.isUnrot {
                             Text(group.title)
-                                .font(.system(size: 10.5, weight: .semibold))
-                                .tracking(layoutDirection == .rightToLeft ? 0 : 0.7)
-                                .textCase(.uppercase)
+                                .font(.system(size: MacEdition.isUnrot ? 11 : 10.5, weight: .semibold))
+                                .tracking(layoutDirection == .rightToLeft || MacEdition.isUnrot ? 0 : 0.7)
+                                .textCase(MacEdition.isUnrot ? nil : .uppercase)
                                 .foregroundStyle(HnPalette.muted)
                                 .padding(.horizontal, 10)
                                 .padding(.bottom, 2)
+                            }
                             ForEach(group.pages) { page in
                                 SidebarRow(page: page,
                                            selected: (navigation.page ?? .overview) == page,
@@ -127,9 +143,9 @@ struct ContentView: View {
                 Spacer(minLength: 0)
 
                 if MacEdition.isUnrot {
-                    UnrotSidebarSprout(store: .shared) { navigation.page = .today }
+                    UnrotSidebarGlass(store: .shared) { navigation.page = .today }
                         .padding(.horizontal, 8)
-                        .padding(.bottom, 6)
+                        .padding(.bottom, 14)
                 }
                 SidebarStatus(lock: lock, filter: filter) { navigation.page = .overview }
                     .padding(.horizontal, 8)
@@ -140,13 +156,18 @@ struct ContentView: View {
                 ScrollView {
                     Group {
                         switch page ?? .overview {
+                        case .progress:
+                            UnrotProgressPage().frame(maxWidth: 720, alignment: .leading)
                         case .today:
-                            UnrotTodayPage { navigation.page = $0 }
+                            UnrotHomePage().frame(maxWidth: 720, alignment: .leading)
                         case .overview:
                             OverviewPage(lock: lock, filter: filter,
                                          openSiteCheck: { activeSheet = .siteCheck }) { navigation.page = $0 }
                         case .setup:
                             SetupPage(filter: filter) { navigation.page = $0 }
+                        case .rules where MacEdition.isUnrot:
+                            UnrotBlockListsPage(isLocked: lock.isLocked, managed: ManagedMode.current())
+                                .frame(maxWidth: 720, alignment: .leading)
                         case .rules:
                             RulesPage(isLocked: lock.isLocked,
                                       managed: ManagedMode.current(),
@@ -161,7 +182,7 @@ struct ContentView: View {
                     }
                     .hnColumn()
                     .padding(.horizontal, 32)
-                    .padding(.top, 28)
+                    .padding(.top, MacEdition.isUnrot ? 22 : 28)
                     .padding(.bottom, 40)
                 }
                 .id(page ?? .overview)
@@ -173,9 +194,20 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle(Text(verbatim: MacEdition.current.displayName))
+            // Unrot's pages carry their own large title, as Opal's do; the
+            // toolbar keeps only the actions.
+            .navigationTitle(Text(verbatim: MacEdition.isUnrot ? "" : MacEdition.current.displayName))
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
+                    if MacEdition.isUnrot {
+                        Button { PauseWindowController.shared.show() } label: {
+                            Label("Breathe", systemImage: "wind").labelStyle(.titleAndIcon)
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(HnPalette.accent)
+                        .help("A slow breath, any time")
+                    }
                     Button { activeSheet = .siteCheck } label: {
                         Image(systemName: "magnifyingglass")
                     }
@@ -188,14 +220,16 @@ struct ContentView: View {
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 12, weight: .semibold))
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(HnPalette.accent)
+                        .hnProminent(!MacEdition.isUnrot)
                         .help(title)
                     }
                 }
             }
         }
         .tint(HnPalette.accent)
+        // Unrot is a dark app, like its glass: one look, day and night.
+        .hnDarkIfUnrot()
+        .hnNoToolbarIfUnrot()
         .frame(minWidth: 760, minHeight: 560)
         // The window SwiftUI made for this view: first-launch size, and a
         // close button that hides instead of destroying it.
@@ -268,29 +302,6 @@ struct ContentView: View {
         return Text(page.title) + Text(verbatim: " · ") + Text("Locked · \(lock.remainingDescription) left")
     }
 
-    /// Unrot's one always-there action, at the head of the sidebar.
-    private var breatheButton: some View {
-        Button { PauseWindowController.shared.show() } label: {
-            HStack(spacing: 7) {
-                Image(systemName: "wind").font(.system(size: 12, weight: .bold))
-                Text("Breathe").font(.system(size: 13, weight: .semibold))
-                Spacer(minLength: 0)
-                Text(verbatim: "⇧⌘P").font(.system(size: 11)).opacity(0.55)
-            }
-            .padding(.horizontal, 12).frame(height: 32)
-            .foregroundStyle(HnPalette.onAccent)
-            .background(Capsule().fill(LinearGradient(colors: [Color(red: 0.95, green: 0.76, blue: 0.35),
-                                                               Color(red: 0.85, green: 0.60, blue: 0.12)],
-                                                      startPoint: .top, endPoint: .bottom)))
-            .overlay(Capsule().stroke(Color.white.opacity(0.35), lineWidth: 0.5))
-            .shadow(color: Color(red: 0.79, green: 0.54, blue: 0.07).opacity(0.3), radius: 6, y: 2)
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 12)
-        .padding(.bottom, 14)
-        .help("A slow breath, any time")
-    }
-
     private var brandHeader: some View {
         HStack(spacing: 9) {
             HnMark(size: 26)
@@ -328,11 +339,11 @@ private struct SidebarRow: View {
             HStack(spacing: 9) {
                 Image(systemName: page.systemImage)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(selected ? HnPalette.accentText : HnPalette.muted)
-                    .frame(width: 16)
+                    .foregroundStyle(selected || MacEdition.isUnrot ? HnPalette.accentText : HnPalette.muted)
+                    .frame(width: MacEdition.isUnrot ? 20 : 16)
                     .accessibilityHidden(true)
                 Text(page.title)
-                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                    .font(.system(size: 13, weight: selected && !MacEdition.isUnrot ? .semibold : .regular))
                     .foregroundStyle(HnPalette.ink)
                     .lineLimit(1)
                 Spacer(minLength: 4)
@@ -344,14 +355,16 @@ private struct SidebarRow: View {
                 }
             }
             .padding(.horizontal, 10)
-            .frame(minHeight: 36)
+            .frame(minHeight: MacEdition.isUnrot ? 30 : 36)
             .background {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(selected ? HnPalette.accentSoft
+                // Unrot uses the Mac's own sidebar selection: a neutral rounded
+                // highlight, with the icon carrying the accent.
+                RoundedRectangle(cornerRadius: MacEdition.isUnrot ? 8 : 6, style: .continuous)
+                    .fill(selected ? (MacEdition.isUnrot ? Color.primary.opacity(0.09) : HnPalette.accentSoft)
                           : hovered ? HnPalette.soft : Color.clear)
             }
             .overlay(alignment: .leading) {
-                if selected {
+                if selected, !MacEdition.isUnrot {
                     RoundedRectangle(cornerRadius: 1, style: .continuous)
                         .fill(HnPalette.accent)
                         .frame(width: 2, height: 15)
@@ -733,6 +746,7 @@ private struct OverviewPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
+            if MacEdition.isUnrot { unrotHeader } else {
             HStack(alignment: .center, spacing: 18) {
                 Image(systemName: protection.level.symbolName)
                     .font(.system(size: 30, weight: .regular))
@@ -746,6 +760,7 @@ private struct OverviewPage: View {
                              caption: protection.plainSummary)
             }
             .padding(.bottom, 6)
+            }
 
             if let managed = protection.managed, managed.isManaged {
                 ManagedBanner(managed: managed)
@@ -795,8 +810,11 @@ private struct OverviewPage: View {
                          systemImage: "exclamationmark.triangle.fill", level: .problem)
             }
 
-            HnTwoColumn(railWidth: 260, main: { layersSheet }, rail: { rail })
+            if MacEdition.isUnrot { unrotLayers } else {
+                HnTwoColumn(railWidth: 260, main: { layersSheet }, rail: { rail })
+            }
         }
+        .frame(maxWidth: MacEdition.isUnrot ? 720 : .infinity, alignment: .leading)
         .onAppear {
             rememberReadiness(protection)
         }
@@ -814,6 +832,161 @@ private struct OverviewPage: View {
         .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
             Task { await readSetup() }
         }
+    }
+
+    // MARK: Unrot: the same rows as Today, no dashboard
+
+    private var unrotHeader: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(verbatim: protection.plainHeadline)
+                .font(.hnDisplay()).foregroundStyle(HnPalette.ink)
+                .accessibilityAddTraits(.isHeader)
+            Text(verbatim: unrotHeaderLine)
+                .font(.system(size: 13)).foregroundStyle(HnPalette.muted).monospacedDigit()
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var unrotHeaderLine: String {
+        var parts = [protection.plainSummary]
+        if let blocked = todayBlocked { parts.append(String(localized: "\(blocked) blocked today")) }
+        if pausesToday > 0 { parts.append(String(localized: "\(pausesToday) pauses today")) }
+        return parts.joined(separator: " · ")
+    }
+
+    private static func emoji(for layer: ProtectionStatus.Layer) -> String {
+        switch layer.id {
+        case "filter": return "🛡️"
+        case "hosts": return "📋"
+        case "extension": return "🧩"
+        case "privateBrowsing": return "🕶️"
+        case "managed", "policy": return "🏢"
+        default: return "🔒"
+        }
+    }
+
+    @ViewBuilder private var unrotLayers: some View {
+        let open = protection.layers.filter { !$0.ok }
+        let working = protection.layers.filter(\.ok)
+        if !open.isEmpty {
+            unrotSection("Needs you") {
+                ForEach(open) { layer in
+                    Button { goTo(.setup) } label: { unrotRow(layer, link: true) }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text(layer.name) + Text(verbatim: ": ") + Text(layer.stateLabel))
+                        .accessibilityHint(Text(layer.detail))
+                }
+            }
+        }
+        if !working.isEmpty {
+            unrotSection("Working") {
+                ForEach(working) { layer in
+                    unrotRow(layer, link: false)
+                        .accessibilityElement(children: .combine)
+                }
+            }
+        }
+        unrotSection("Lock") {
+            Button { goTo(.lock) } label: {
+                HoverSurface {
+                    HStack(spacing: 12) {
+                        Text(verbatim: lock.isLocked ? "🔒" : "🔓").font(.system(size: 30)).frame(width: 40, height: 40)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(verbatim: lock.isLocked ? String(localized: "Locked") : String(localized: "No lock running"))
+                                .font(.system(size: 16, weight: .medium)).foregroundStyle(HnPalette.ink)
+                            Text(verbatim: unrotLockLine)
+                                .font(.system(size: 12.5)).foregroundStyle(HnPalette.muted).lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                        }
+                        Spacer(minLength: 8)
+                        Image(systemName: "chevron.forward").font(.system(size: 11, weight: .semibold)).foregroundStyle(HnPalette.faint)
+                    }
+                    .padding(.horizontal, 16).padding(.vertical, 15)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+        unrotSection("Tools") {
+            HStack(spacing: 10) {
+                unrotQuick("Check a website", symbol: "magnifyingglass", action: openSiteCheck)
+                    .accessibilityIdentifier("overview.siteCheck")
+                unrotQuick("Take a pause…", symbol: "wind") { PauseWindowController.shared.show() }
+                    .accessibilityIdentifier("overview.pause")
+            }
+        }
+        HStack(spacing: 6) {
+            Image(systemName: "lock.shield").font(.system(size: 11, weight: .medium)).accessibilityHidden(true)
+            Text("Matching stays on this Mac. There is no account and no browsing log.")
+            Spacer(minLength: 8)
+            if let checked = guardian.lastChecked {
+                Text("Last check")
+                Text(checked, style: .time)
+            }
+        }
+        .font(.system(size: 12)).foregroundStyle(HnPalette.faint)
+    }
+
+    private var unrotLockLine: String {
+        if lock.isLocked {
+            return lockStatus.detail ?? String(localized: "The lock is running. Manage it to see the time left and the way out.")
+        }
+        if let next = nextLock {
+            return String(localized: "Next daily lock \(next.start.formatted(date: .omitted, time: .shortened))–\(next.end.formatted(date: .omitted, time: .shortened)).")
+        }
+        return String(localized: "Protection stays on. A lock makes it harder to turn off.")
+    }
+
+    private func unrotSection<Content: View>(_ title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.system(size: 14, weight: .medium)).foregroundStyle(HnPalette.ink)
+                .accessibilityAddTraits(.isHeader)
+            content()
+        }
+    }
+
+    private func unrotRow(_ layer: ProtectionStatus.Layer, link: Bool) -> some View {
+        HoverSurface {
+            HStack(spacing: 12) {
+                Text(verbatim: Self.emoji(for: layer)).font(.system(size: 30)).frame(width: 40, height: 40)
+                    .opacity(layer.ok ? 1 : 0.55)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(layer.name).font(.system(size: 16, weight: .medium)).foregroundStyle(HnPalette.ink)
+                    Text(layer.detail).font(.system(size: 12.5)).foregroundStyle(HnPalette.muted)
+                        .lineLimit(2).multilineTextAlignment(.leading).monospacedDigit()
+                }
+                Spacer(minLength: 8)
+                HStack(spacing: 6) {
+                    if layer.ok { Circle().fill(HnPalette.calm).frame(width: 7, height: 7) }
+                    Text(layer.stateLabel).font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(layer.ok ? HnPalette.calm : (layer.state == .problem ? layer.tint : HnPalette.muted))
+                }
+                .padding(.horizontal, 11).frame(height: 30)
+                .background(Capsule().fill(layer.ok ? HnPalette.calmSoft : Color.white.opacity(0.07)))
+                .fixedSize()
+                if link {
+                    Image(systemName: "chevron.forward").font(.system(size: 11, weight: .semibold)).foregroundStyle(HnPalette.faint)
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 15)
+        }
+        .contentShape(Rectangle())
+    }
+
+    private func unrotQuick(_ title: LocalizedStringKey, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HoverSurface {
+                HStack(spacing: 8) {
+                    Image(systemName: symbol).font(.system(size: 13, weight: .bold)).foregroundStyle(HnPalette.accentText)
+                    Text(title).font(.system(size: 14, weight: .semibold)).foregroundStyle(HnPalette.ink)
+                }
+                .frame(maxWidth: .infinity).frame(height: 48)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// The evidence, as a table. One sheet, one row per layer, no nested cards.
@@ -3654,7 +3827,7 @@ struct PartnerReleaseCard: View {
     }
 }
 
-private struct SettingsPage: View {
+struct SettingsPage: View {
     let isLocked: Bool
     let managed: ManagedMode
 
@@ -3663,8 +3836,282 @@ private struct SettingsPage: View {
     @State private var message: String?
     @State private var isError = false
     @State private var showBrowserHelp = false
+    @State private var pane: UnrotPane? = SettingsPage.initialPane
+    /// Set by the render tests to capture one topic.
+    static var initialPane: UnrotPane?
+    @ObservedObject private var grayscale = ScreenGrayscale.shared
 
     var body: some View {
+        Group {
+            if MacEdition.isUnrot { unrotBody } else { legacyBody }
+        }
+        .onAppear(perform: load)
+        .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
+    }
+
+    // MARK: Unrot: a short list of topics, each on its own page
+
+    enum UnrotPane: String, CaseIterable, Identifiable {
+        case checking, browsers, mac, partner, gray, device, language, about
+        var id: String { rawValue }
+        var emoji: String {
+            switch self {
+            case .checking: return "🔎"
+            case .browsers: return "🧩"
+            case .mac: return "⚡️"
+            case .partner: return "🤝"
+            case .gray: return "🌫️"
+            case .device: return "🏢"
+            case .language: return "🌐"
+            case .about: return "📄"
+            }
+        }
+        var title: LocalizedStringKey {
+            switch self {
+            case .checking: return "Checking"
+            case .browsers: return "Browsers"
+            case .mac: return "Works with your Mac"
+            case .partner: return "Accountability partner"
+            case .gray: return "Gray screen"
+            case .device: return "Device management"
+            case .language: return "Language"
+            case .about: return "Details"
+            }
+        }
+    }
+
+    private func unrotCaption(_ pane: UnrotPane) -> String {
+        switch pane {
+        case .checking:
+            let on = [settings.hostKeywords, settings.text, settings.visual].filter { $0 }.count
+            return String(localized: "\(on) of 3 checks on · strictness \(settings.textSensitivity)")
+        case .browsers: return String(localized: "Connect a browser and see which ones are covered")
+        case .mac: return String(localized: "macOS Focus, Shortcuts and Spotlight")
+        case .partner: return String(localized: "Someone you trust holds the way out")
+        case .gray: return grayscale.isOn ? String(localized: "On") : String(localized: "Off")
+        case .device: return String(localized: "For a Mac enrolled by an organization")
+        case .language: return Locale.current.localizedString(forIdentifier: Locale.current.identifier) ?? ""
+        case .about: return String(localized: "List version, updates and how protection works")
+        }
+    }
+
+    @ViewBuilder private var unrotBody: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            if let pane {
+                Button { self.pane = nil; message = nil } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.backward").font(.system(size: 11, weight: .semibold))
+                        Text("Settings").font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundStyle(HnPalette.muted).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut("[", modifiers: .command)
+                HStack(spacing: 10) {
+                    Text(verbatim: pane.emoji).font(.system(size: 24)).accessibilityHidden(true)
+                    Text(pane.title).font(.hnDisplay()).foregroundStyle(HnPalette.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
+                .padding(.top, -10)
+                if managed.isManaged { ManagedBanner(managed: managed) }
+                unrotPane(pane)
+            } else {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Settings").font(.hnDisplay()).foregroundStyle(HnPalette.ink)
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Rules live on Today. Lists live in Block lists. The rest is here.")
+                        .font(.system(size: 13)).foregroundStyle(HnPalette.muted)
+                }
+                VStack(spacing: 8) {
+                    ForEach(UnrotPane.allCases) { item in
+                        Button { pane = item; message = nil } label: {
+                            HoverSurface {
+                                HStack(spacing: 12) {
+                                    Text(verbatim: item.emoji).font(.system(size: 26)).frame(width: 40, height: 36)
+                                        .accessibilityHidden(true)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(item.title).font(.system(size: 16, weight: .medium)).foregroundStyle(HnPalette.ink)
+                                        Text(verbatim: unrotCaption(item))
+                                            .font(.system(size: 12.5)).foregroundStyle(HnPalette.muted).lineLimit(1)
+                                            .monospacedDigit()
+                                    }
+                                    Spacer(minLength: 8)
+                                    Image(systemName: "chevron.forward").font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(HnPalette.faint)
+                                }
+                                .padding(.horizontal, 16).padding(.vertical, 12)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("settings.\(item.rawValue)")
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: 720, alignment: .leading)
+    }
+
+    @ViewBuilder private func unrotPane(_ pane: UnrotPane) -> some View {
+        switch pane {
+        case .checking: unrotChecking
+        case .browsers:
+            HnGroup(title: "Browser extension") {
+                HnGroupRow { ExtensionVisualGuidance() }
+                HnHairline(inset: 16)
+                HnGroupRow {
+                    HnLinkRow(systemImage: "puzzlepiece.extension", title: "How to connect a browser") {
+                        showBrowserHelp = true
+                    }
+                }
+            }
+            BrowsersSection(isLocked: isLocked || managed.isManaged)
+            HnCard { BrowserFirstGuide() }
+        case .mac: unrotMac
+        case .partner: PartnerSection(isLocked: isLocked, managed: managed)
+        case .gray: GrayscaleSection(isLocked: isLocked, managed: managed)
+        case .device: DeviceManagementSection()
+        case .language: LanguageSection()
+        case .about:
+            DetailsSection()
+            HnGroup(title: "Help") {
+                HnGroupRow {
+                    HnLinkRow(systemImage: "sparkles", title: "How Unrot works") {
+                        AppNavigation.shared.welcomeRequested = true
+                    }
+                }
+            }
+        }
+    }
+
+    /// What only a Mac can do: the system's own Focus modes and Shortcuts drive Unrot.
+    private var unrotMac: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if #available(macOS 13.0, *) {
+                unrotMacRow("🌙", "Follow a Focus of your Mac",
+                            "Pick Work, Sleep or any Focus. While it is on, Unrot closes the apps and sites in your rules and the big feeds, and opens them when it ends. In System Settings choose Focus, a Focus, Focus Filters, Add Filter, then this app.",
+                            button: "Open Focus settings") {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.Focus-Settings.extension") { NSWorkspace.shared.open(url) }
+                }
+                unrotMacRow("⚡️", "Shortcuts and Spotlight",
+                            "Three actions: Start Focus, Breathe and Time given back. Give one a keyboard shortcut, put it in the menu bar, or run it at a time of day.",
+                            button: "Open Shortcuts") {
+                    if let url = URL(string: "shortcuts://") { NSWorkspace.shared.open(url) }
+                }
+            } else {
+                unrotMacRow("⚡️", "Needs macOS 13 or later",
+                            "Focus filters and Shortcuts actions arrive with macOS 13. Everything else works on this Mac.",
+                            button: nil) {}
+            }
+            unrotMacRow("🧭", "Menu bar", "Click the menu bar item for today at a glance, Focus and Breathe. Right-click it for every command.",
+                        button: nil) {}
+        }
+    }
+
+    private func unrotMacRow(_ emoji: String, _ title: LocalizedStringKey, _ detail: LocalizedStringKey,
+                             button: LocalizedStringKey?, action: @escaping () -> Void) -> some View {
+        HoverSurface {
+            HStack(alignment: .center, spacing: 12) {
+                Text(verbatim: emoji).font(.system(size: 26)).frame(width: 38).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).font(.system(size: 15, weight: .medium)).foregroundStyle(HnPalette.ink)
+                    Text(detail).font(.system(size: 12.5)).foregroundStyle(HnPalette.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                if let button {
+                    Button(action: action) {
+                        Text(button).font(.system(size: 12, weight: .semibold)).foregroundStyle(HnPalette.ink)
+                            .padding(.horizontal, 12).frame(height: 28).background(Capsule().fill(Color.white.opacity(0.12)))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 13)
+        }
+    }
+
+    /// The three checks and their strictness. Each switch applies at once; a
+    /// change a lock refuses snaps back and says why.
+    private var unrotChecking: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let message, isError {
+                HnNotice(title: nil, verbatim: message, systemImage: "lock.fill", level: .caution)
+            }
+            unrotCheck("Match keywords in addresses",
+                       "Catches a site registered today, before any list has it. Works in every app on this Mac.",
+                       \.hostKeywords)
+            unrotCheck("Check the words on a page",
+                       "Reads page text in a connected browser. Pages with almost no text can be missed.",
+                       \.text)
+            unrotCheck("Check images and videos",
+                       "Looks at pictures and video frames in a connected browser, on this Mac only.",
+                       \.visual)
+            HoverSurface {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("How strict").font(.system(size: 15, weight: .medium)).foregroundStyle(HnPalette.ink)
+                        Spacer()
+                        Text(verbatim: "\(settings.textSensitivity)")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded)).foregroundStyle(HnPalette.accentText)
+                            .monospacedDigit()
+                    }
+                    Slider(value: Binding(get: { Double(settings.textSensitivity) },
+                                          set: { settings.textSensitivity = Int($0) }),
+                           in: 0...100, step: 5) { editing in if !editing { applyNow() } }
+                        .tint(HnPalette.accent)
+                        .accessibilityLabel("How strict")
+                    HStack {
+                        Text("Fewer pages blocked")
+                        Spacer()
+                        Text("More pages blocked")
+                    }
+                    .font(.system(size: 12)).foregroundStyle(HnPalette.faint)
+                    Text("Higher catches more, and blocks more pages that turn out to be innocent. Medical and reference sites are never checked this way.")
+                        .font(.system(size: 12.5)).foregroundStyle(HnPalette.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 14)
+            }
+            .disabled(!settings.text)
+            .opacity(settings.text ? 1 : 0.5)
+        }
+    }
+
+    private func unrotCheck(_ title: LocalizedStringKey, _ detail: LocalizedStringKey,
+                            _ key: WritableKeyPath<Inspection.Settings, Bool>) -> some View {
+        HoverSurface {
+            HStack(alignment: .center, spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).font(.system(size: 15, weight: .medium)).foregroundStyle(HnPalette.ink)
+                    Text(detail).font(.system(size: 12.5)).foregroundStyle(HnPalette.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Toggle(isOn: Binding(get: { settings[keyPath: key] },
+                                     set: { settings[keyPath: key] = $0; applyNow() })) { Text(title) }
+                    .labelsHidden().toggleStyle(.switch).tint(HnPalette.accent)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 13)
+        }
+    }
+
+    private func applyNow() {
+        guard settings != saved else { return }
+        do {
+            try Inspection.save(settings, locked: isLocked || managed.isManaged)
+            FilterSync.soon()
+            saved = settings
+            isError = false
+            message = nil
+        } catch {
+            settings = saved
+            isError = true
+            message = error.localizedDescription
+        }
+    }
+
+    private var legacyBody: some View {
         VStack(alignment: .leading, spacing: 24) {
             HnPageHeader(eyebrow: "Settings", title: "How Hisn checks",
                          caption: "The detail behind the status.")
@@ -3752,8 +4199,6 @@ private struct SettingsPage: View {
             LanguageSection()
             DetailsSection()
         }
-        .onAppear(perform: load)
-        .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
     }
 
     private func load() {

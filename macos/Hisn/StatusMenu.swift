@@ -11,6 +11,8 @@ final class AppNavigation: ObservableObject {
     /// A menu-bar request to open the site-check sheet on the next window
     /// appearance. The window consumes and clears it.
     @Published var siteCheckRequested = false
+    /// Unrot: the sidebar's New rule button asks Today to open its sheet.
+    @Published var newRuleRequested = false
     /// A request from the Overview or Setup to open the private-window sheet.
     @Published var privateBrowsingRequested = false
     /// Re-open the short explanation from Settings, for someone who skipped it.
@@ -58,6 +60,18 @@ enum MainWindow {
     /// the design asks for (`.defaultSize` is macOS 13), and make closing hide
     /// rather than destroy it.
     @MainActor
+    /// Unrot's window has no title bar band: one dark surface from the window
+    /// buttons down, draggable anywhere on its background, like Opal's.
+    static func styleForUnrot(_ window: NSWindow) {
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.titlebarSeparatorStyle = .none
+        window.styleMask.insert(.fullSizeContentView)
+        window.isMovableByWindowBackground = true
+        window.backgroundColor = NSColor(calibratedWhite: 0.12, alpha: 1)
+    }
+
+    @MainActor
     static func adopt(_ window: NSWindow) {
         // The layout tests host `ContentView` in throwaway windows at chosen
         // sizes; adopting one would resize it and install a close button
@@ -74,6 +88,8 @@ enum MainWindow {
                 window.center()
             }
         }
+
+        if MacEdition.isUnrot { styleForUnrot(window) }
 
         if !(window.delegate is MainWindowCloseProxy) {
             let proxy = MainWindowCloseProxy(forwarding: window.delegate)
@@ -324,6 +340,8 @@ enum StatusMenuAction: Equatable {
     case blockSite
     case checkSite
     case toggleGrayscale
+    case startFocus(minutes: Int)
+    case openToday
 }
 
 /// The menu's facts, gathered once. Separating them from the rows lets the
@@ -350,6 +368,14 @@ struct StatusMenuState: Equatable {
     var blockedToday: Int?
     var lockLengths: [TimeInterval]
     var grayscale: Grayscale?
+    /// Unrot only: the sprout's line and Focus, at the head of the menu.
+    var unrot: Unrot? = nil
+
+    struct Unrot: Equatable {
+        var givenBack: String
+        var stage: String
+        var focusUntil: String?
+    }
 
     var isLocked: Bool {
         if case .locked = lock { return true }
@@ -360,6 +386,18 @@ struct StatusMenuState: Equatable {
 enum StatusMenuModel {
     /// Read the live state. Everything the menu shows is a fact the menu is
     /// rebuilt from as it opens, not a subscription.
+    /// The sprout's line for the menu, in the Unrot edition only.
+    @MainActor
+    static func unrotState() -> StatusMenuState.Unrot? {
+        guard MacEdition.isUnrot else { return nil }
+        let store = DistractionStore.shared
+        let now = store.clock()
+        let sprout = SproutProgress(givenBack: store.book.givenBackSeconds(at: now, calendar: store.calendar))
+        let focus = store.book.focus.flatMap { $0.isRunning(at: now) ? DistractionPanelModel.time($0.until, now: now) : nil }
+        return .init(givenBack: SproutProgress.parts(sprout.givenBack).map { $0.0 + $0.1 }.joined(separator: " "),
+                     stage: SproutProgress.name(sprout.stage), focusUntil: focus)
+    }
+
     @MainActor
     static func liveState(lock: LockManager,
                           filter: FilterController,
@@ -399,7 +437,8 @@ enum StatusMenuModel {
             pausesToday: pauses,
             blockedToday: blocked,
             lockLengths: QuickLock.lengths,
-            grayscale: grayscaleState)
+            grayscale: grayscaleState,
+            unrot: unrotState())
     }
 
     /// Everything the menu shows, in order, from the state it shows it for.
@@ -426,9 +465,22 @@ enum StatusMenuModel {
             entries.append(.info(String(localized: "Blocked connections today: \(count)")))
         }
 
+        if let unrot = state.unrot {
+            entries.append(.info(String(localized: "\(unrot.givenBack) given back · \(unrot.stage)")))
+            if let until = unrot.focusUntil { entries.append(.info(String(localized: "Focus until \(until)"))) }
+        }
+
         entries.append(.separator)
-        entries.append(.action(.openOverview, title: String(localized: "Open Hisn"),
-                               symbol: "macwindow"))
+        if state.unrot != nil {
+            entries.append(.action(.openToday, title: String(localized: "Open Unrot"), symbol: "macwindow"))
+            if state.unrot?.focusUntil == nil {
+                entries.append(.action(.startFocus(minutes: 25), title: String(localized: "Focus for 25 minutes"),
+                                       symbol: "target"))
+            }
+        } else {
+            entries.append(.action(.openOverview, title: String(localized: "Open Hisn"),
+                                   symbol: "macwindow"))
+        }
         if !state.isLocked {
             // The moment a lock matters most is the moment it is hardest to
             // go and set one up: one click from the menu bar, then a
@@ -486,7 +538,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         // validation would enable the disabled fact rows.
         menu.autoenablesItems = false
         menu.delegate = self
-        item.menu = menu
+        if MacEdition.isUnrot {
+            // Unrot: a click opens the panel; a right-click, or the panel's ⋯, opens the full menu.
+            item.button?.target = self
+            item.button?.action = #selector(statusItemClicked(_:))
+            item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        } else {
+            item.menu = menu
+        }
         statusItem = item
         self.menu = menu
 
@@ -511,11 +570,60 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu = nil
     }
 
+    // MARK: Unrot panel
+
+    private var popover: NSPopover?
+
+    @objc private func statusItemClicked(_ sender: Any?) {
+        let event = NSApp.currentEvent
+        if event?.type == .rightMouseUp || event?.modifierFlags.contains(.control) == true {
+            showFullMenu()
+        } else {
+            Task { @MainActor in self.togglePanel() }
+        }
+    }
+
+    private func showFullMenu() {
+        popover?.performClose(nil)
+        guard let statusItem, let menu else { return }
+        statusItem.menu = menu
+        statusItem.button?.performClick(nil)
+        statusItem.menu = nil
+    }
+
+    @MainActor private func togglePanel() {
+        if let popover, popover.isShown { popover.performClose(nil); return }
+        guard let button = statusItem?.button else { return }
+        let store = DistractionStore.shared
+        store.tick()
+        let now = store.clock()
+        let state = StatusMenuModel.liveState(lock: .shared, filter: .shared, grayscale: .shared)
+        let close: () -> Void = { [weak self] in self?.popover?.performClose(nil) }
+        let panel = UnrotMenuPanel(
+            summary: MenuPanelSummary(book: store.book, now: now, calendar: store.calendar),
+            protection: state.protectionHeadline, now: now,
+            onFocus: {
+                let targets = Set(store.book.rules.flatMap(\.targets)).union(RuleTemplate.commonSites)
+                _ = store.startFocus(minutes: 25, intent: "", targets: targets, allowOnly: false, strictness: .gentle)
+                close()
+            },
+            onBreathe: { close(); PauseWindowController.shared.show() },
+            onOpen: { close(); MainWindow.show(.today) },
+            onMore: { [weak self] in self?.showFullMenu() })
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.appearance = NSAppearance(named: .darkAqua)
+        popover.contentViewController = NSHostingController(rootView: panel)
+        self.popover = popover
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        popover.contentViewController?.view.window?.makeKey()
+    }
+
     private func refreshIcon() {
         guard let button = statusItem?.button else { return }
         let icon = MenuBarIcon.shared
         button.image = icon.image
-        button.title = icon.remainingText ?? String(localized: "Hisn")
+        button.title = icon.remainingText ?? (MacEdition.isUnrot ? MacEdition.unrot.displayName : String(localized: "Hisn"))
     }
 
     // MARK: NSMenuDelegate
@@ -592,6 +700,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             QuickLock.confirmAndStart(seconds)
         case .pause:
             PauseWindowController.shared.show()
+        case .openToday:
+            MainWindow.show(.today)
+        case let .startFocus(minutes):
+            let store = DistractionStore.shared
+            let targets = Set(store.book.rules.flatMap(\.targets)).union(RuleTemplate.commonSites)
+            _ = store.startFocus(minutes: minutes, intent: "", targets: targets, allowOnly: false, strictness: .gentle)
         case .blockSite:
             QuickBlock.promptAndAdd()
         case .checkSite:

@@ -4,6 +4,85 @@
     "" : {
       "shouldTranslate" : false
     },
+    "%@ closes again in a minute" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ تُغلق من جديد بعد دقيقة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ closes again in a minute"
+          }
+        }
+      }
+    },
+    "%@ domains from another list. This app’s own list is not merged in." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ نطاقًا من قائمة أخرى. قائمة هذا التطبيق نفسها غير مدمجة."
+          }
+        }
+      }
+    },
+    "%@ given back · %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ وقت مُستعاد · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ given back · %2$@"
+          }
+        }
+      }
+    },
+    "%@ given back." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ مُستعاد."
+          }
+        }
+      }
+    },
+    "%@ in %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ بعد %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ in %2$@"
+          }
+        }
+      }
+    },
+    "%@ in feeds today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ في الخلاصات اليوم"
+          }
+        }
+      }
+    },
     "%@ left of %@" : {
       "localizations" : {
         "ar" : {
@@ -16,6 +95,117 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ left of %2$@"
+          }
+        }
+      }
+    },
+    "%@ left · until %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بقي %1$@ · حتى %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ left · until %2$@"
+          }
+        }
+      }
+    },
+    "%@ today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ اليوم"
+          }
+        }
+      }
+    },
+    "%@ · %@ in feeds · %lld pauses · %lld closed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@ في الخلاصات · %3$lld وقفات · %4$lld إغلاقات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@ in feeds · %3$lld pauses · %4$lld closed"
+          }
+        }
+      }
+    },
+    "%@ · %lld sites" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld مواقع"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld sites"
+          }
+        }
+      }
+    },
+    "%@ · stage %lld of 7" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · المرحلة %2$lld من 7"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · stage %2$lld of 7"
+          }
+        }
+      }
+    },
+    "%@, stage %lld of 7" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@، المرحلة %2$lld من 7"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, stage %2$lld of 7"
+          }
+        }
+      }
+    },
+    "%lld back if you halve it" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld تعود إن قلّلتها للنصف"
+          }
+        }
+      }
+    },
+    "%lld blocked today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld محجوب اليوم"
           }
         }
       }
@@ -68,6 +258,32 @@
         }
       }
     },
+    "%lld min" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld دقيقة"
+          }
+        }
+      }
+    },
+    "%lld min %lld sec" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld دقيقة و%2$lld ثانية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld min %2$lld sec"
+          }
+        }
+      }
+    },
     "%lld minutes" : {
       "localizations" : {
         "ar" : {
@@ -84,6 +300,22 @@
         }
       }
     },
+    "%lld of %lld layers working" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld من %2$lld طبقات تعمل"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld layers working"
+          }
+        }
+      }
+    },
     "%lld of %lld opens left" : {
       "localizations" : {
         "ar" : {
@@ -96,6 +328,48 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$lld of %2$lld opens left"
+          }
+        }
+      }
+    },
+    "%lld of %lld seconds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld من %2$lld ثانية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld seconds"
+          }
+        }
+      }
+    },
+    "%lld of 3 checks on · strictness %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld من 3 فحوص مفعّلة · الصرامة %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of 3 checks on · strictness %2$lld"
+          }
+        }
+      }
+    },
+    "%lld pauses today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld وقفة اليوم"
           }
         }
       }
@@ -132,6 +406,173 @@
         }
       }
     },
+    "%lld sec" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ثانية"
+          }
+        }
+      }
+    },
+    "%lld still on feeds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ما زالت للخلاصات"
+          }
+        }
+      }
+    },
+    "%lld%% less feed time" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقت خلاصات أقل بـ%lld%%"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% less feed time"
+          }
+        }
+      }
+    },
+    "%lld%% more feed time" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقت خلاصات أكثر بـ%lld%%"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% more feed time"
+          }
+        }
+      }
+    },
+    "+%lld more" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld أخرى"
+          }
+        }
+      }
+    },
+    "A breath first" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نَفَس أولًا"
+          }
+        }
+      }
+    },
+    "A daily limit on feeds is a good first one." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حد يومي للخلاصات بداية جيدة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A daily limit on feeds is a good first one."
+          }
+        }
+      }
+    },
+    "A full bar is your usual day. Shorter is time given back." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العمود الكامل هو يومك المعتاد. الأقصر وقت مُستعاد."
+          }
+        }
+      }
+    },
+    "A heavy day adds nothing and takes nothing away." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اليوم الثقيل لا يضيف شيئًا ولا يأخذ شيئًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A heavy day adds nothing and takes nothing away."
+          }
+        }
+      }
+    },
+    "A little more…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قليلًا بعد…"
+          }
+        }
+      }
+    },
+    "A locked rule covers this site, so it can’t be added right now." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قاعدة مقفلة تشمل هذا الموقع، فلا يمكن إضافته الآن."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A locked rule covers this site, so it can’t be added right now."
+          }
+        }
+      }
+    },
+    "A locked rule covers this site. You can add it after %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قاعدة مقفلة تشمل هذا الموقع. يمكنك إضافته بعد %@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A locked rule covers this site. You can add it after %@."
+          }
+        }
+      }
+    },
+    "A locked rule offers no way around." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القاعدة المقفلة لا تترك طريقًا للالتفاف."
+          }
+        }
+      }
+    },
     "A longer Focus is already running." : {
       "localizations" : {
         "ar" : {
@@ -148,6 +589,36 @@
         }
       }
     },
+    "A page is blocked when these appear often in it, so avoid common words." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُحجب الصفحة حين تتكرر فيها هذه الكلمات، فتجنّب الكلمات الشائعة."
+          }
+        }
+      }
+    },
+    "A pause before the app opens." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقفة قبل أن يُفتح التطبيق."
+          }
+        }
+      }
+    },
+    "A second short sip of air to fill up" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رشفة هواء قصيرة ثانية لتمتلئ"
+          }
+        }
+      }
+    },
     "A short breath and a question before an app or site opens." : {
       "localizations" : {
         "ar" : {
@@ -160,6 +631,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A short breath and a question before an app or site opens."
+          }
+        }
+      }
+    },
+    "A short checklist switches on adult protection for every app on this Mac." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قائمة قصيرة تفعّل حماية المحتوى الإباحي لكل تطبيق على هذا الجهاز."
+          }
+        }
+      }
+    },
+    "A slip is not the end. I will come back." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التعثّر ليس النهاية. سأعود."
+          }
+        }
+      }
+    },
+    "A slot machine on your desk" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آلة قمار على مكتبك"
+          }
+        }
+      }
+    },
+    "A slow breath for the moment you reach for it anyway." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نَفَس هادئ للحظة التي تمدّ يدك إليه رغم ذلك."
+          }
+        }
+      }
+    },
+    "A slow breath, any time" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نفَس هادئ، في أي وقت"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A slow breath, any time"
           }
         }
       }
@@ -192,6 +721,81 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A weaker “%1$@” applies at %2$@."
+          }
+        }
+      }
+    },
+    "A word or a phrase" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كلمة أو عبارة"
+          }
+        }
+      }
+    },
+    "About %@ a day is %lld days a year." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نحو %1$@ يوميًا يساوي %2$lld يومًا في السنة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About %1$@ a day is %2$lld days a year."
+          }
+        }
+      }
+    },
+    "About %@ a day over %lld days" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نحو %1$@ يوميًا خلال %2$lld أيام"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About %1$@ a day over %2$lld days"
+          }
+        }
+      }
+    },
+    "Add a rule" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف قاعدة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a rule"
+          }
+        }
+      }
+    },
+    "Add a site, like music.youtube.com" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف موقعًا، مثل music.youtube.com"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a site, like music.youtube.com"
           }
         }
       }
@@ -260,6 +864,88 @@
         }
       }
     },
+    "Adding here waits until the lock ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإضافة هنا تنتظر حتى ينتهي القفل."
+          }
+        }
+      }
+    },
+    "Adult content" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المحتوى الإباحي"
+          }
+        }
+      }
+    },
+    "Adult content stays blocked on this Mac, quietly and in private." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المحتوى الإباحي يبقى محجوبًا على هذا الجهاز، بهدوء وخصوصية."
+          }
+        }
+      }
+    },
+    "Adult content stays out." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المحتوى الإباحي يبقى خارجًا."
+          }
+        }
+      }
+    },
+    "Adult content, the same trap stronger" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المحتوى الإباحي، الفخ نفسه أقوى"
+          }
+        }
+      }
+    },
+    "Adult content, the strongest trap" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المحتوى الإباحي، أقوى الفخاخ"
+          }
+        }
+      }
+    },
+    "Adult protection is already yours. Pick what else you want; each becomes a rule you can change on Today." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية المحتوى الإباحي لك من الآن. اختر ما تريده أيضًا؛ كل خيار يصبح قاعدة يمكنك تغييرها من «اليوم»."
+          }
+        }
+      }
+    },
+    "Adult sites, words and images are blocked in every app and browser, private windows included. A lock makes it hard to turn off." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُحجب المواقع والكلمات والصور الإباحية في كل تطبيق ومتصفح، ومنها النوافذ الخاصة. والقفل يصعّب إيقافها."
+          }
+        }
+      }
+    },
     "After a pause" : {
       "localizations" : {
         "ar" : {
@@ -272,6 +958,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "After a pause"
+          }
+        }
+      }
+    },
+    "After your first full day with a rule, this shows your feed time against your own “before”." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بعد أول يوم كامل مع قاعدة، يعرض هذا وقت الخلاصات مقارنةً بما كان «قبل»."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After your first full day with a rule, this shows your feed time against your own “before”."
+          }
+        }
+      }
+    },
+    "Against your own “before” of %@ a day, over the finished days of this week." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مقارنةً بما كان «قبل»، %@ في اليوم، على الأيام المنتهية من هذا الأسبوع."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Against your own “before” of %@ a day, over the finished days of this week."
           }
         }
       }
@@ -292,6 +1010,23 @@
         }
       }
     },
+    "All rules" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل القواعد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All rules"
+          }
+        }
+      }
+    },
     "All the apps and sites in this rule share the time." : {
       "localizations" : {
         "ar" : {
@@ -304,6 +1039,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "All the apps and sites in this rule share the time."
+          }
+        }
+      }
+    },
+    "Always blocked, with every subdomain. Paste several at once." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محجوبة دائمًا مع كل نطاقاتها الفرعية. يمكنك لصق عدة مواقع دفعة واحدة."
           }
         }
       }
@@ -324,7 +1069,39 @@
         }
       }
     },
+    "Always on, and private. Sites, words and images are blocked." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل دائمًا وبخصوصية. تُحجب المواقع والكلمات والصور."
+          }
+        }
+      }
+    },
+    "An endless feed never gives you a place to stop." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التصفح بلا نهاية لا يمنحك مكانًا للتوقف."
+          }
+        }
+      }
+    },
+    "An urge is a wave" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإغراء موجة"
+          }
+        }
+      }
+    },
     "and" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -356,6 +1133,37 @@
         }
       }
     },
+    "Apps and sites that only distract you are closed with a rule." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التطبيقات والمواقع التي تشتتك فقط تُغلق بقاعدة."
+          }
+        }
+      }
+    },
+    "Apps without internet" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تطبيقات بلا إنترنت"
+          }
+        }
+      }
+    },
+    "Asleep until 07:00" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نائم حتى 07:00"
+          }
+        }
+      }
+    },
     "At set hours" : {
       "localizations" : {
         "ar" : {
@@ -372,6 +1180,102 @@
         }
       }
     },
+    "Back to my day" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العودة إلى يومي"
+          }
+        }
+      }
+    },
+    "Before Unrot: %@ a day" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبل Unrot: %@ في اليوم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Unrot: %@ a day"
+          }
+        }
+      }
+    },
+    "Block lists" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قوائم الحجب"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block lists"
+          }
+        }
+      }
+    },
+    "Blocked in every app and every browser on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محجوب في كل تطبيق وكل متصفح على هذا الجهاز."
+          }
+        }
+      }
+    },
+    "Boredom, tiredness and endless feeds are where a slip starts. These close that road:" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الملل والتعب والخلاصات التي لا تنتهي هي حيث يبدأ التعثّر. وهذه تسدّ ذلك الطريق:"
+          }
+        }
+      }
+    },
+    "Breath %lld of %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النفس %1$lld من %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breath %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Breathe" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنفّس"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breathe"
+          }
+        }
+      }
+    },
     "Breathe for" : {
       "localizations" : {
         "ar" : {
@@ -384,6 +1288,101 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Breathe for"
+          }
+        }
+      }
+    },
+    "Breathe with ${applicationName}" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنفّس مع ${applicationName}"
+          }
+        }
+      }
+    },
+    "Breathing pattern" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمط التنفس"
+          }
+        }
+      }
+    },
+    "Browsers" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المتصفحات"
+          }
+        }
+      }
+    },
+    "Bud" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برعم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bud"
+          }
+        }
+      }
+    },
+    "Category" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فئة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category"
+          }
+        }
+      }
+    },
+    "Chat" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محادثة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat"
+          }
+        }
+      }
+    },
+    "Choose a picture" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر صورة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a picture"
           }
         }
       }
@@ -420,6 +1419,16 @@
         }
       }
     },
+    "Click the menu bar item for today at a glance, Focus and Breathe. Right-click it for every command." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انقر عنصر شريط القوائم لترى يومك بلمحة مع التركيز والتنفس. وانقر بالزر الأيمن لكل الأوامر."
+          }
+        }
+      }
+    },
     "Close chosen apps and sites from 9 to 5 on workdays." : {
       "localizations" : {
         "ar" : {
@@ -432,6 +1441,47 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close chosen apps and sites from 9 to 5 on workdays."
+          }
+        }
+      }
+    },
+    "Close distracting apps and sites" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أغلق التطبيقات والمواقع المشتتة"
+          }
+        }
+      }
+    },
+    "Close distractions" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أغلق المشتتات"
+          }
+        }
+      }
+    },
+    "Close the private-window gap" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أغلق ثغرة النوافذ الخاصة"
+          }
+        }
+      }
+    },
+    "Close, limit or pause what pulls you in. By the hour, by the day, or every time you open it." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أغلق ما يجذبك أو حدّده أو أوقفه مؤقتًا. بالساعة، باليوم، أو في كل مرة تفتحه."
           }
         }
       }
@@ -452,6 +1502,32 @@
         }
       }
     },
+    "Closed this week" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إغلاقات هذا الأسبوع"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closed this week"
+          }
+        }
+      }
+    },
+    "Closed until %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مغلق حتى %@"
+          }
+        }
+      }
+    },
     "Closed while the rule runs." : {
       "localizations" : {
         "ar" : {
@@ -468,6 +1544,62 @@
         }
       }
     },
+    "Closes your distracting apps and sites for a set time." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يغلق تطبيقاتك ومواقعك المشتتة لمدة محددة."
+          }
+        }
+      }
+    },
+    "Connect a browser and see which ones are covered" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اربط متصفحًا واعرف أيها مشمول بالحماية"
+          }
+        }
+      }
+    },
+    "Connect your browser" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اربط متصفحك"
+          }
+        }
+      }
+    },
+    "Covered in every browser Unrot can control." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مشمولة في كل متصفح يستطيع Unrot التحكم به."
+          }
+        }
+      }
+    },
+    "d" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "d"
+          }
+        }
+      }
+    },
     "Daily limit" : {
       "localizations" : {
         "ar" : {
@@ -480,6 +1612,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Daily limit"
+          }
+        }
+      }
+    },
+    "Days with Unrot" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أيام مع Unrot"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Days with Unrot"
           }
         }
       }
@@ -516,6 +1664,38 @@
         }
       }
     },
+    "design.page.progress" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أسبوعك مقارنةً بما كان قبل، وحديقتك، ويومك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your week against your before, your garden, and your day."
+          }
+        }
+      }
+    },
+    "design.page.today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نبتتك، يومك، وما يعمل الآن."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sprout, your day, and what is running now."
+          }
+        }
+      }
+    },
     "Discard" : {
       "localizations" : {
         "ar" : {
@@ -528,6 +1708,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Discard"
+          }
+        }
+      }
+    },
+    "Drink a glass of water" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اشرب كوب ماء"
           }
         }
       }
@@ -564,6 +1754,37 @@
         }
       }
     },
+    "Even 4·6" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متساوٍ ٤·٦"
+          }
+        }
+      }
+    },
+    "Evenings back" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استعادة الأمسيات"
+          }
+        }
+      }
+    },
+    "Every hour it gives back grows the plant under the glass." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل ساعة يعيدها إليك تُنمّي النبتة تحت الزجاج."
+          }
+        }
+      }
+    },
     "Everything distracting closes at night, 22:00 to 07:00." : {
       "localizations" : {
         "ar" : {
@@ -592,6 +1813,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Everything in your rules, and the big feeds, close until it ends."
+          }
+        }
+      }
+    },
+    "Everything stays on this Mac. There is no account and no browsing log." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل شيء يبقى على هذا الجهاز. لا حساب ولا سجل تصفح."
           }
         }
       }
@@ -644,6 +1876,42 @@
         }
       }
     },
+    "Feed closed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الخلاصة مغلقة"
+          }
+        }
+      }
+    },
+    "Feed time a day" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقت الخلاصات يوميًا"
+          }
+        }
+      }
+    },
+    "Feed time, last 7 days" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقت الخلاصات، آخر 7 أيام"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feed time, last 7 days"
+          }
+        }
+      }
+    },
     "Feeds" : {
       "localizations" : {
         "ar" : {
@@ -656,6 +1924,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Feeds"
+          }
+        }
+      }
+    },
+    "Feeds and short videos are built to have no end, so the time goes without a decision. How long do they take from you on a normal day?" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الخلاصات والمقاطع القصيرة مصممة بلا نهاية، فيذهب الوقت دون قرار منك. كم تأخذ منك في يوم عادي؟"
+          }
+        }
+      }
+    },
+    "Feeds are built to keep you. Four tricks, and how Unrot answers each." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الخلاصات مصممة لتبقيك. أربع حيل، وكيف يرد Unrot على كل منها."
           }
         }
       }
@@ -676,6 +1966,16 @@
         }
       }
     },
+    "Fewer pages blocked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صفحات محجوبة أقل"
+          }
+        }
+      }
+    },
     "Firm" : {
       "localizations" : {
         "ar" : {
@@ -688,6 +1988,124 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Firm"
+          }
+        }
+      }
+    },
+    "First and most important. A short checklist switches on adult protection for every app on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأول والأهم. قائمة قصيرة تفعّل حماية المحتوى الإباحي لكل تطبيق على هذا الجهاز."
+          }
+        }
+      }
+    },
+    "Fix" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أصلح"
+          }
+        }
+      }
+    },
+    "Flower" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زهرة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flower"
+          }
+        }
+      }
+    },
+    "Focus 25 m" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تركيز 25 د"
+          }
+        }
+      }
+    },
+    "Focus at work" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تركيز في العمل"
+          }
+        }
+      }
+    },
+    "Focus filters and Shortcuts actions arrive with macOS 13. Everything else works on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فلاتر التركيز وإجراءات الاختصارات تأتي مع macOS 13. وكل ما عداها يعمل على هذا الجهاز."
+          }
+        }
+      }
+    },
+    "Focus for 25 minutes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ركّز 25 دقيقة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus for 25 minutes"
+          }
+        }
+      }
+    },
+    "Focus is on" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التركيز يعمل"
+          }
+        }
+      }
+    },
+    "Focus is on for %lld minutes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التركيز يعمل لمدة %lld دقيقة."
+          }
+        }
+      }
+    },
+    "Focus now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ركّز الآن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus now"
           }
         }
       }
@@ -708,6 +2126,26 @@
         }
       }
     },
+    "Follow a Focus of your Mac" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اتبع أحد أنماط التركيز في جهازك"
+          }
+        }
+      }
+    },
+    "For a Mac enrolled by an organization" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لجهاز Mac مسجَّل لدى مؤسسة"
+          }
+        }
+      }
+    },
     "For how long" : {
       "localizations" : {
         "ar" : {
@@ -724,6 +2162,49 @@
         }
       }
     },
+    "From your own use" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "من استخدامك أنت"
+          }
+        }
+      }
+    },
+    "Fully grown. It keeps counting." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اكتمل نموها. وما زال العدّ مستمرًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fully grown. It keeps counting."
+          }
+        }
+      }
+    },
+    "Games" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ألعاب"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Games"
+          }
+        }
+      }
+    },
     "Gentle" : {
       "localizations" : {
         "ar" : {
@@ -736,6 +2217,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gentle"
+          }
+        }
+      }
+    },
+    "Get ready" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استعدّ"
           }
         }
       }
@@ -772,6 +2263,115 @@
         }
       }
     },
+    "given back" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُستعاد"
+          }
+        }
+      }
+    },
+    "given back from feeds, on this Mac" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقت مُستعاد من الخلاصات، على هذا الماك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "given back from feeds, on this Mac"
+          }
+        }
+      }
+    },
+    "given back · %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقت مُستعاد · %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "given back · %@"
+          }
+        }
+      }
+    },
+    "Good choice. Go do it now; this will be here." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختيار جيد. افعله الآن؛ هذا سيبقى هنا."
+          }
+        }
+      }
+    },
+    "h" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "س"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "h"
+          }
+        }
+      }
+    },
+    "Halving it is a common, real result. That is the goal, not zero." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقليلها للنصف نتيجة شائعة وحقيقية. هذا هو الهدف، لا الصفر."
+          }
+        }
+      }
+    },
+    "Hard to switch off" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صعب الإيقاف"
+          }
+        }
+      }
+    },
+    "Help" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مساعدة"
+          }
+        }
+      }
+    },
+    "Here is how you get %lld days back." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هكذا تستعيد %lld يومًا."
+          }
+        }
+      }
+    },
     "Hide home feeds and short videos. Search and links keep working." : {
       "localizations" : {
         "ar" : {
@@ -784,6 +2384,63 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hide home feeds and short videos. Search and links keep working."
+          }
+        }
+      }
+    },
+    "Higher catches more, and blocks more pages that turn out to be innocent. Medical and reference sites are never checked this way." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأعلى يلتقط أكثر، ويحجب صفحات بريئة أكثر. المواقع الطبية والمرجعية لا تُفحص بهذه الطريقة أبدًا."
+          }
+        }
+      }
+    },
+    "Hisn cannot confirm an extension connection from %@. Reinstall or enable it in %@’s extensions page, set its site access to “On all sites” and check its app connection, or %@ will close." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يستطيع حصن تأكيد اتصال الإضافة من %1$@. أعد تثبيتها أو تفعيلها من صفحة الإضافات في %2$@، واجعل وصولها إلى المواقع «على جميع المواقع»، وتحقق من اتصالها بالتطبيق، وإلا سيُغلَق %3$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hisn cannot confirm an extension connection from %1$@. Reinstall or enable it in %2$@’s extensions page and check its app connection, or %3$@ will close."
+          }
+        }
+      }
+    },
+    "Home feeds and short videos are hidden" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُخفى الخلاصات الرئيسية والمقاطع القصيرة"
+          }
+        }
+      }
+    },
+    "How Unrot answers it" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كيف يجيب Unrot"
+          }
+        }
+      }
+    },
+    "How Unrot works" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كيف يعمل Unrot"
           }
         }
       }
@@ -804,6 +2461,42 @@
         }
       }
     },
+    "I want my evenings back." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أريد أن أسترجع أمسياتي."
+          }
+        }
+      }
+    },
+    "I will pause before I scroll." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سأتوقف قبل أن أتصفح."
+          }
+        }
+      }
+    },
+    "Ideas" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أفكار"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ideas"
+          }
+        }
+      }
+    },
     "If I want to stop early" : {
       "localizations" : {
         "ar" : {
@@ -816,6 +2509,43 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "If I want to stop early"
+          }
+        }
+      }
+    },
+    "in" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شهيق"
+          }
+        }
+      }
+    },
+    "in feeds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "في الخلاصات"
+          }
+        }
+      }
+    },
+    "In feeds today" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "في الخلاصات اليوم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In feeds today"
           }
         }
       }
@@ -868,6 +2598,99 @@
         }
       }
     },
+    "It grows with every hour you get back." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تكبر مع كل ساعة تستعيدها."
+          }
+        }
+      }
+    },
+    "It is strongest when you are tired, bored or alone." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يكون أقوى حين تكون متعبًا أو ضجرًا أو وحيدًا."
+          }
+        }
+      }
+    },
+    "It isn’t weak willpower." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليست إرادة ضعيفة."
+          }
+        }
+      }
+    },
+    "It learns your weak hours" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يتعلّم ساعات ضعفك"
+          }
+        }
+      }
+    },
+    "It passes faster than it feels. What would help next?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تمرّ أسرع مما تبدو. ما الذي يساعدك الآن؟"
+          }
+        }
+      }
+    },
+    "It rises, peaks and falls, usually within minutes, whether you act on it or not. Notice it, breathe four in and six out, let it pass, then choose." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعلو ويبلغ ذروته ثم يهدأ، غالبًا خلال دقائق، سواء استجبت له أم لا. لاحظه، تنفّس أربعًا شهيقًا وستًّا زفيرًا، دعه يمرّ، ثم اختر."
+          }
+        }
+      }
+    },
+    "It sleeps at night" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ينام ليلًا"
+          }
+        }
+      }
+    },
+    "It steps in at the moment you reach for it." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يتدخل في اللحظة التي تمدّ يدك فيها."
+          }
+        }
+      }
+    },
+    "Just less scrolling" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تمرير أقل فحسب"
+          }
+        }
+      }
+    },
     "Keep it as it is" : {
       "localizations" : {
         "ar" : {
@@ -880,6 +2703,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keep it as it is"
+          }
+        }
+      }
+    },
+    "Last 7 days" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخر 7 أيام"
+          }
+        }
+      }
+    },
+    "Let it all go, longer than the breath in" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أخرج الهواء كله، أطول من الشهيق"
+          }
+        }
+      }
+    },
+    "Let’s get them back" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لنستعدها"
           }
         }
       }
@@ -900,6 +2753,42 @@
         }
       }
     },
+    "Limit to %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حدّده بـ %@"
+          }
+        }
+      }
+    },
+    "Limited to some sites. In the browser’s extension settings, set its site access to “On all sites”." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعمل على بعض المواقع فقط. من إعدادات الإضافة في المتصفح، اجعل وصولها إلى المواقع «على جميع المواقع»."
+          }
+        }
+      }
+    },
+    "Limiting" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحدّ"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limiting"
+          }
+        }
+      }
+    },
     "Limits and Focus" : {
       "localizations" : {
         "ar" : {
@@ -912,6 +2801,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Limits and Focus"
+          }
+        }
+      }
+    },
+    "Limits and opens you choose ahead." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حدود وفتحات تختارها مسبقًا."
           }
         }
       }
@@ -932,6 +2831,26 @@
         }
       }
     },
+    "List version, updates and how protection works" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إصدار القائمة والتحديثات وكيف تعمل الحماية"
+          }
+        }
+      }
+    },
+    "Lock, block a site and more" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل وحجب موقع وغير ذلك"
+          }
+        }
+      }
+    },
     "Longer each time I open it today" : {
       "localizations" : {
         "ar" : {
@@ -944,6 +2863,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Longer each time I open it today"
+          }
+        }
+      }
+    },
+    "Looks at pictures and video frames in a connected browser, on this Mac only." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفحص الصور ولقطات الفيديو في متصفح مرتبط، على هذا الجهاز فقط."
+          }
+        }
+      }
+    },
+    "m" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "د"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "m"
+          }
+        }
+      }
+    },
+    "macOS Focus, Shortcuts and Spotlight" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تركيز macOS والاختصارات وSpotlight"
           }
         }
       }
@@ -964,6 +2919,53 @@
         }
       }
     },
+    "Measured on this Mac. Nothing here leaves it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مَقيس على هذا الماك. لا شيء هنا يغادره."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measured on this Mac. Nothing here leaves it."
+          }
+        }
+      }
+    },
+    "Menu bar" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شريط القوائم"
+          }
+        }
+      }
+    },
+    "Messages and calls still work." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الرسائل والمكالمات تبقى تعمل."
+          }
+        }
+      }
+    },
+    "Minutes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الدقائق"
+          }
+        }
+      }
+    },
     "Mon–Fri" : {
       "localizations" : {
         "ar" : {
@@ -976,6 +2978,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mon–Fri"
+          }
+        }
+      }
+    },
+    "More" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المزيد"
+          }
+        }
+      }
+    },
+    "More pages blocked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صفحات محجوبة أكثر"
           }
         }
       }
@@ -996,6 +3018,23 @@
         }
       }
     },
+    "Most time" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أكثر وقت"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Most time"
+          }
+        }
+      }
+    },
     "Name" : {
       "localizations" : {
         "ar" : {
@@ -1008,6 +3047,68 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Name"
+          }
+        }
+      }
+    },
+    "Needs macOS 13 or later" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يتطلب macOS 13 أو أحدث"
+          }
+        }
+      }
+    },
+    "Needs you" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بحاجة إليك"
+          }
+        }
+      }
+    },
+    "Never blocked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تُحجب أبدًا"
+          }
+        }
+      }
+    },
+    "Never closed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تُغلق أبدًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Never closed"
+          }
+        }
+      }
+    },
+    "Never closed · %lld sites" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تُغلق أبدًا · %lld مواقع"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Never closed · %lld sites"
           }
         }
       }
@@ -1044,6 +3145,22 @@
         }
       }
     },
+    "News" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أخبار"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "News"
+          }
+        }
+      }
+    },
     "next day" : {
       "localizations" : {
         "ar" : {
@@ -1056,6 +3173,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "next day"
+          }
+        }
+      }
+    },
+    "No adult content" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا محتوى إباحي"
           }
         }
       }
@@ -1076,6 +3203,16 @@
         }
       }
     },
+    "No Ignore button" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا زر تجاهل"
+          }
+        }
+      }
+    },
     "No limit" : {
       "localizations" : {
         "ar" : {
@@ -1092,6 +3229,32 @@
         }
       }
     },
+    "No picture" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بلا صورة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No picture"
+          }
+        }
+      }
+    },
+    "No rule yet. Make one from New rule on Today whenever you are ready." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا قاعدة بعد. أنشئ واحدة من «قاعدة جديدة» في «اليوم» متى كنت جاهزًا."
+          }
+        }
+      }
+    },
     "No rules yet" : {
       "localizations" : {
         "ar" : {
@@ -1104,6 +3267,62 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No rules yet"
+          }
+        }
+      }
+    },
+    "No rules yet. Start with an idea below." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا قواعد بعد. ابدأ بفكرة من الأسفل."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No rules yet. Start with an idea below."
+          }
+        }
+      }
+    },
+    "No rules yet. The ring fills once one runs." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا قواعد بعد. تمتلئ الحلقة حين تعمل قاعدة."
+          }
+        }
+      }
+    },
+    "No words yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا كلمات بعد."
+          }
+        }
+      }
+    },
+    "Not a site" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس موقعًا"
+          }
+        }
+      }
+    },
+    "Not a wall, a pause." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس جدارًا، بل وقفة."
           }
         }
       }
@@ -1140,6 +3359,64 @@
         }
       }
     },
+    "Nothing counted yet today. Unrot counts only which app is in front, never what is in it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُحسب شيء بعد اليوم. يعدّ Unrot التطبيق الذي في المقدمة فقط، لا ما بداخله."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing counted yet today. Unrot counts only which app is in front, never what is in it."
+          }
+        }
+      }
+    },
+    "Nothing here yet. For example, music.youtube.com." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء هنا بعد. مثلًا music.youtube.com."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing here yet. For example, music.youtube.com."
+          }
+        }
+      }
+    },
+    "Nothing is closed right now." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء مغلق الآن."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing is closed right now."
+          }
+        }
+      }
+    },
+    "Nothing is let through." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء مستثنى."
+          }
+        }
+      }
+    },
     "Nothing is running right now" : {
       "localizations" : {
         "ar" : {
@@ -1152,6 +3429,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nothing is running right now"
+          }
+        }
+      }
+    },
+    "Nothing yet today. Unrot counts only the app in front, and keeps it on this Mac." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء بعد اليوم. يعدّ Unrot التطبيق الذي في المقدمة فقط، ويبقيه على هذا الماك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing yet today. Unrot counts only the app in front, and keeps it on this Mac."
+          }
+        }
+      }
+    },
+    "Now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الآن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now"
           }
         }
       }
@@ -1188,6 +3498,43 @@
         }
       }
     },
+    "One click closes all of it for as long as you choose." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نقرة واحدة تغلق كل ذلك للمدة التي تختارها."
+          }
+        }
+      }
+    },
+    "One emergency pass a week." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصريح طوارئ واحد في الأسبوع."
+          }
+        }
+      }
+    },
+    "One glass a day. A light day grows a tree, a heavy day stays a seed. Nothing dies." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زجاجة لكل يوم. اليوم الخفيف يُنبت شجرة، واليوم الثقيل يبقى بذرة. لا شيء يموت."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One glass a day. A light day grows a tree, a heavy day stays a seed. Nothing dies."
+          }
+        }
+      }
+    },
     "One hour a day for feeds, shared. Then they close until tomorrow." : {
       "localizations" : {
         "ar" : {
@@ -1200,6 +3547,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "One hour a day for feeds, shared. Then they close until tomorrow."
+          }
+        }
+      }
+    },
+    "One hour a day for feeds, then they close" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ساعة واحدة يوميًا للخلاصات، ثم تُغلق"
+          }
+        }
+      }
+    },
+    "Only the feed closes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُغلق الخلاصة فقط"
+          }
+        }
+      }
+    },
+    "Open Focus settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح إعدادات التركيز"
           }
         }
       }
@@ -1220,6 +3597,42 @@
         }
       }
     },
+    "Open Shortcuts" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح الاختصارات"
+          }
+        }
+      }
+    },
+    "Open Today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح «اليوم»"
+          }
+        }
+      }
+    },
+    "Open Unrot" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح Unrot"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Unrot"
+          }
+        }
+      }
+    },
     "Opens a day" : {
       "localizations" : {
         "ar" : {
@@ -1232,6 +3645,47 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Opens a day"
+          }
+        }
+      }
+    },
+    "Opens a slow breath for the moment you reach for something." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفتح نَفَسًا هادئًا للحظة التي تمدّ يدك فيها."
+          }
+        }
+      }
+    },
+    "Optional. Pick what fits; you can change or remove it on Today." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختياري. اختر ما يناسبك؛ يمكنك تغييره أو حذفه من «اليوم»."
+          }
+        }
+      }
+    },
+    "Out through your mouth, for six" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "من الفم، حتى ستة"
+          }
+        }
+      }
+    },
+    "Over fifty years that is %@ years of waking life." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "على مدى خمسين سنة هذا %@ سنوات من عمرك."
           }
         }
       }
@@ -1284,6 +3738,95 @@
         }
       }
     },
+    "Pauses this week" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقفات هذا الأسبوع"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pauses this week"
+          }
+        }
+      }
+    },
+    "Pausing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يتوقف أولًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausing"
+          }
+        }
+      }
+    },
+    "Pick any. Each one becomes a rule you can change later on Today." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر ما شئت. كل واحد يصبح قاعدة يمكنك تغييرها لاحقًا من «اليوم»."
+          }
+        }
+      }
+    },
+    "Pick Work, Sleep or any Focus. While it is on, Unrot closes the apps and sites in your rules and the big feeds, and opens them when it ends. In System Settings choose Focus, a Focus, Focus Filters, Add Filter, then this app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر العمل أو النوم أو أي نمط تركيز. ما دام يعمل يغلق Unrot التطبيقات والمواقع في قواعدك والخلاصات الكبرى، ويفتحها حين ينتهي. في إعدادات النظام اختر التركيز، ثم نمطًا، ثم فلاتر التركيز، ثم إضافة فلتر، ثم هذا التطبيق."
+          }
+        }
+      }
+    },
+    "Private windows are covered in every browser Unrot can control." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة مشمولة في كل متصفح يستطيع Unrot التحكم به."
+          }
+        }
+      }
+    },
+    "Private windows skip the extension until you turn them off." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة تتجاوز الإضافة حتى توقفها."
+          }
+        }
+      }
+    },
+    "Progress" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التقدّم"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progress"
+          }
+        }
+      }
+    },
     "Quiet hours" : {
       "localizations" : {
         "ar" : {
@@ -1296,6 +3839,47 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quiet hours"
+          }
+        }
+      }
+    },
+    "Quiet hours and Focus for those times." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ساعات هادئة وتركيز لتلك الأوقات."
+          }
+        }
+      }
+    },
+    "Quiet hours start." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تبدأ ساعات الهدوء."
+          }
+        }
+      }
+    },
+    "Read 10 pages" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقرأ عشر صفحات"
+          }
+        }
+      }
+    },
+    "Reads page text in a connected browser. Pages with almost no text can be missed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يقرأ نص الصفحة في متصفح مرتبط. قد تفوته الصفحات شبه الخالية من النص."
           }
         }
       }
@@ -1332,6 +3916,27 @@
         }
       }
     },
+    "Rounds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجولات"
+          }
+        }
+      }
+    },
+    "Rules" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القواعد"
+          }
+        }
+      }
+    },
     "Rules for the apps and sites that pull you away. Adult protection is separate and always on." : {
       "localizations" : {
         "ar" : {
@@ -1344,6 +3949,43 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rules for the apps and sites that pull you away. Adult protection is separate and always on."
+          }
+        }
+      }
+    },
+    "Rules live on Today. Lists live in Block lists. The rest is here." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القواعد في «اليوم». القوائم في «قوائم الحجب». والباقي هنا."
+          }
+        }
+      }
+    },
+    "Running now" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل الآن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running now"
+          }
+        }
+      }
+    },
+    "Says how much time Unrot has given back so far." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يخبرك كم أعاد إليك Unrot من الوقت حتى الآن."
           }
         }
       }
@@ -1364,6 +4006,62 @@
         }
       }
     },
+    "Screen Time closes the whole site." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«مدة استخدام الجهاز» تغلق الموقع كله."
+          }
+        }
+      }
+    },
+    "Screen Time offers Ignore Limit." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«مدة استخدام الجهاز» تعرض «تجاهل الحد»."
+          }
+        }
+      }
+    },
+    "Search" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بحث"
+          }
+        }
+      }
+    },
+    "Search and links still work." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البحث والروابط تبقى تعمل."
+          }
+        }
+      }
+    },
+    "Seed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بذرة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seed"
+          }
+        }
+      }
+    },
     "Select a rule to change it" : {
       "localizations" : {
         "ar" : {
@@ -1376,6 +4074,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Select a rule to change it"
+          }
+        }
+      }
+    },
+    "Shield" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الدرع"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shield"
+          }
+        }
+      }
+    },
+    "Shopping" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسوّق"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shopping"
+          }
+        }
+      }
+    },
+    "Shortcuts and Spotlight" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الاختصارات وSpotlight"
+          }
+        }
+      }
+    },
+    "Show me" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أرِني"
           }
         }
       }
@@ -1396,6 +4146,46 @@
         }
       }
     },
+    "Sigh" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنهيدة"
+          }
+        }
+      }
+    },
+    "Sit back and let your shoulders drop" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استرخِ في جلستك ودع كتفيك ترتخيان"
+          }
+        }
+      }
+    },
+    "Sites" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المواقع"
+          }
+        }
+      }
+    },
+    "Sites and feeds are closed inside a connected browser. Apps are closed everywhere." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُغلق المواقع والخلاصات داخل متصفح مرتبط. وتُغلق التطبيقات في كل مكان."
+          }
+        }
+      }
+    },
     "Sites and feeds need Unrot’s browser extension to be on." : {
       "localizations" : {
         "ar" : {
@@ -1412,6 +4202,73 @@
         }
       }
     },
+    "Sites are closed in a connected browser. Apps are closed everywhere." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُغلق المواقع في متصفح مرتبط. وتُغلق التطبيقات في كل مكان."
+          }
+        }
+      }
+    },
+    "Sites that are never closed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مواقع لا تُغلق أبدًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sites that are never closed"
+          }
+        }
+      }
+    },
+    "Sleep" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوم"
+          }
+        }
+      }
+    },
+    "slowly out" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زفير بطيء"
+          }
+        }
+      }
+    },
+    "Slowly out…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زفير بطيء…"
+          }
+        }
+      }
+    },
+    "Slowly, through your nose" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ببطء، من الأنف"
+          }
+        }
+      }
+    },
     "Snapchat Spotlight" : {
       "localizations" : {
         "ar" : {
@@ -1424,6 +4281,32 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Snapchat Spotlight"
+          }
+        }
+      }
+    },
+    "Social" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تواصل اجتماعي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Social"
+          }
+        }
+      }
+    },
+    "Someone you trust holds the way out" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شخص تثق به يملك مفتاح الخروج"
           }
         }
       }
@@ -1456,6 +4339,32 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Something you’ve decided you’re done with."
+          }
+        }
+      }
+    },
+    "Sprout" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نبتة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprout"
+          }
+        }
+      }
+    },
+    "Start" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ"
           }
         }
       }
@@ -1508,6 +4417,17 @@
         }
       }
     },
+    "Start Focus in ${applicationName}" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ التركيز في ${applicationName}"
+          }
+        }
+      }
+    },
     "Start Focus…" : {
       "localizations" : {
         "ar" : {
@@ -1556,6 +4476,63 @@
         }
       }
     },
+    "Starting in %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تبدأ بعد %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starting in %@"
+          }
+        }
+      }
+    },
+    "Starting in %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نبدأ بعد %lld"
+          }
+        }
+      }
+    },
+    "Take your time back" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استعد وقتك"
+          }
+        }
+      }
+    },
+    "Ten seconds to breathe." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عشر ثوانٍ للتنفس."
+          }
+        }
+      }
+    },
+    "Text someone you like" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راسل شخصًا تحبه"
+          }
+        }
+      }
+    },
     "That doesn’t look like a site address." : {
       "localizations" : {
         "ar" : {
@@ -1572,6 +4549,229 @@
         }
       }
     },
+    "The app still opens, but it cannot reach the internet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يبقى التطبيق يُفتح، لكنه لا يصل إلى الإنترنت."
+          }
+        }
+      }
+    },
+    "The big feeds close from 22:00 to 07:00" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُغلق الخلاصات الكبرى من 22:00 إلى 07:00"
+          }
+        }
+      }
+    },
+    "The big feeds close from 9 to 5 on workdays" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُغلق الخلاصات الكبرى من 9 إلى 5 في أيام العمل"
+          }
+        }
+      }
+    },
+    "The core, always on and private. Sites, words and images are blocked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأساس، يعمل دائمًا وبخصوصية. تُحجب المواقع والكلمات والصور."
+          }
+        }
+      }
+    },
+    "The dashed line is your “before”. Gold is under it, amber is over it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الخط المتقطع هو «قبل». الذهبي تحته، والكهرماني فوقه."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The dashed line is your “before”. Gold is under it, amber is over it."
+          }
+        }
+      }
+    },
+    "The feed closes" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُغلق الخلاصة"
+          }
+        }
+      }
+    },
+    "The home feed is hidden." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُخفى الخلاصة الرئيسية."
+          }
+        }
+      }
+    },
+    "The pull is smaller now." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الرغبة أصغر الآن."
+          }
+        }
+      }
+    },
+    "The pull rises, peaks and passes. You only have to wait it out." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الرغبة تعلو، ثم تبلغ ذروتها، ثم تمرّ. يكفي أن تنتظرها حتى تهدأ."
+          }
+        }
+      }
+    },
+    "the rest of your year" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بقية سنتك"
+          }
+        }
+      }
+    },
+    "The same pull as a feed, and much harder to walk away from." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجذب نفسه كما في الخلاصات، والابتعاد أصعب بكثير."
+          }
+        }
+      }
+    },
+    "The same pull, harder to walk away from." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجذب نفسه، والابتعاد أصعب."
+          }
+        }
+      }
+    },
+    "The Shield is what Unrot is for" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الدرع هو غاية Unrot"
+          }
+        }
+      }
+    },
+    "Then you choose again." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثم تختار من جديد."
+          }
+        }
+      }
+    },
+    "Then you choose, with opens left." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثم تختار، وما زالت لك فتحات."
+          }
+        }
+      }
+    },
+    "There’s no bottom" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا قاع"
+          }
+        }
+      }
+    },
+    "These always open, even when a list or a word would block them." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُفتح دائمًا، حتى لو كانت قائمة أو كلمة ستحجبها."
+          }
+        }
+      }
+    },
+    "These are built to keep you. Four traps, and how Unrot answers each." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه مصممة لتبقيك. أربعة فخاخ، وكيف يرد Unrot على كل منها."
+          }
+        }
+      }
+    },
+    "These sites stay open under every rule and in Focus. Adult protection ignores this list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تبقى هذه المواقع مفتوحة تحت كل قاعدة وفي التركيز. الحماية من المحتوى الإباحي تتجاهل هذه القائمة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These sites stay open under every rule and in Focus. Adult protection ignores this list."
+          }
+        }
+      }
+    },
+    "This Mac today, hour by hour" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الماك اليوم، ساعة بساعة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac today, hour by hour"
+          }
+        }
+      }
+    },
     "This makes the rule weaker, so it applies at %@. You can cancel it until then." : {
       "localizations" : {
         "ar" : {
@@ -1584,6 +4784,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This makes the rule weaker, so it applies at %@. You can cancel it until then."
+          }
+        }
+      }
+    },
+    "This rule can be removed on Today." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكن حذف هذه القاعدة من «اليوم»."
           }
         }
       }
@@ -1620,6 +4830,46 @@
         }
       }
     },
+    "This rule could not be added. Try it from New rule." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت إضافة هذه القاعدة. جرّبها من «قاعدة جديدة»."
+          }
+        }
+      }
+    },
+    "Three actions: Start Focus, Breathe and Time given back. Give one a keyboard shortcut, put it in the menu bar, or run it at a time of day." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثلاثة إجراءات: بدء التركيز، وتنفّس، والوقت المُستعاد. امنح أحدها اختصار لوحة مفاتيح، أو ضعه في شريط القوائم، أو شغّله في وقت من اليوم."
+          }
+        }
+      }
+    },
+    "Three things left for you" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثلاثة أمور بقيت عليك"
+          }
+        }
+      }
+    },
+    "Through your nose, for four" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "من الأنف، حتى أربعة"
+          }
+        }
+      }
+    },
     "TikTok" : {
       "localizations" : {
         "ar" : {
@@ -1632,6 +4882,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "TikTok"
+          }
+        }
+      }
+    },
+    "Time given back" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الوقت المُستعاد"
+          }
+        }
+      }
+    },
+    "Time given back in ${applicationName}" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الوقت المُستعاد في ${applicationName}"
+          }
+        }
+      }
+    },
+    "Time to wrap up." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حان وقت الإنهاء."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time to wrap up."
+          }
+        }
+      }
+    },
+    "Times a rule kept something shut" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرات أبقت قاعدة شيئًا مغلقًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Times a rule kept something shut"
           }
         }
       }
@@ -1652,6 +4956,23 @@
         }
       }
     },
+    "Times you stopped to breathe first" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرات توقفت لتتنفس أولًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Times you stopped to breathe first"
+          }
+        }
+      }
+    },
     "to" : {
       "localizations" : {
         "ar" : {
@@ -1664,6 +4985,32 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "to"
+          }
+        }
+      }
+    },
+    "To yourself, not to us. It stays on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لنفسك، لا لنا. ويبقى على هذا الجهاز."
+          }
+        }
+      }
+    },
+    "Today on this Mac" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اليوم على هذا الماك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today on this Mac"
           }
         }
       }
@@ -1684,6 +5031,52 @@
         }
       }
     },
+    "Too short" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قصير جدًا"
+          }
+        }
+      }
+    },
+    "top up" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زيادة"
+          }
+        }
+      }
+    },
+    "Tree" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شجرة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tree"
+          }
+        }
+      }
+    },
+    "Turn on the Shield" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فعّل الدرع"
+          }
+        }
+      }
+    },
     "Turn this rule on or off" : {
       "localizations" : {
         "ar" : {
@@ -1700,6 +5093,90 @@
         }
       }
     },
+    "Two leaves" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ورقتان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two leaves"
+          }
+        }
+      }
+    },
+    "Unrot blocks adult content on this Mac. It also gives back the time that feeds take, with no decision from you. How long do they take on a normal day?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحجب Unrot المحتوى الإباحي على هذا الجهاز. ويعيد إليك أيضًا الوقت الذي تأخذه الخلاصات دون قرار منك. كم تأخذ في يوم عادي؟"
+          }
+        }
+      }
+    },
+    "Unrot closes the apps and sites that eat your day, and shows you the time you got back." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يغلق Unrot التطبيقات والمواقع التي تلتهم يومك، ويريك الوقت الذي استعدته."
+          }
+        }
+      }
+    },
+    "Unrot hides only the feed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unrot يخفي الخلاصة فقط."
+          }
+        }
+      }
+    },
+    "Unrot shows your own words when the pull comes: on the pause, on a closed app and while you breathe." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعرض Unrot كلماتك أنت حين يأتي الإغراء: عند الوقفة، وعلى التطبيق المغلق، وأثناء التنفس."
+          }
+        }
+      }
+    },
+    "Upcoming" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قادمة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upcoming"
+          }
+        }
+      }
+    },
+    "Urge surfing comes from mindfulness-based relapse prevention (Bowen and Marlatt, 2009)." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«ركوب الموجة» من أبحاث الوقاية من الانتكاس القائمة على اليقظة (بوين ومارلات، ٢٠٠٩)."
+          }
+        }
+      }
+    },
     "Used for today" : {
       "localizations" : {
         "ar" : {
@@ -1712,6 +5189,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Used for today"
+          }
+        }
+      }
+    },
+    "Video" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فيديو"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video"
           }
         }
       }
@@ -1748,6 +5241,16 @@
         }
       }
     },
+    "Walk for 5 minutes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "امشِ خمس دقائق"
+          }
+        }
+      }
+    },
     "Weekends" : {
       "localizations" : {
         "ar" : {
@@ -1764,6 +5267,26 @@
         }
       }
     },
+    "What do you want back?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ماذا تريد أن تستعيد؟"
+          }
+        }
+      }
+    },
+    "What helps" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما يساعد"
+          }
+        }
+      }
+    },
     "What is it for?" : {
       "localizations" : {
         "ar" : {
@@ -1776,6 +5299,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "What is it for?"
+          }
+        }
+      }
+    },
+    "What it adds up to" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما يتراكم منه"
           }
         }
       }
@@ -1828,6 +5361,56 @@
         }
       }
     },
+    "When it is hard, I will breathe first." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حين يصعب الأمر، سأتنفّس أولًا."
+          }
+        }
+      }
+    },
+    "When it pulls anyway: Breathe, from the menu bar or Today." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وإن جذبك رغم ذلك: تنفّس، من شريط القوائم أو من «اليوم»."
+          }
+        }
+      }
+    },
+    "While this Focus is on, Unrot closes the apps and sites in your rules and the big feeds." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما دام هذا التركيز يعمل يغلق Unrot التطبيقات والمواقع في قواعدك والخلاصات الكبرى."
+          }
+        }
+      }
+    },
+    "Why does this matter to you?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لماذا يهمك هذا؟"
+          }
+        }
+      }
+    },
+    "Why it’s hard" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لماذا يصعب"
+          }
+        }
+      }
+    },
     "Work hours" : {
       "localizations" : {
         "ar" : {
@@ -1840,6 +5423,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Work hours"
+          }
+        }
+      }
+    },
+    "Working" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل"
+          }
+        }
+      }
+    },
+    "Works with your Mac" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل مع جهازك Mac"
           }
         }
       }
@@ -1876,6 +5479,195 @@
         }
       }
     },
+    "You decide the rules on a calm day. Unrot keeps them when you would not." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنت تضع القواعد في يوم هادئ. وUnrot يحفظها حين لا تفعل."
+          }
+        }
+      }
+    },
+    "You never know if the next video is the good one, so you keep pulling." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تعرف إن كان المقطع التالي هو الجيد، فتواصل السحب."
+          }
+        }
+      }
+    },
+    "You open a game." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفتح لعبة."
+          }
+        }
+      }
+    },
+    "You open YouTube." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفتح YouTube."
+          }
+        }
+      }
+    },
+    "You said: “%@”" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قلتَ: «%@»"
+          }
+        }
+      }
+    },
+    "Young plant" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نبتة صغيرة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Young plant"
+          }
+        }
+      }
+    },
+    "Your apps close till morning." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُغلق تطبيقاتك حتى الصباح."
+          }
+        }
+      }
+    },
+    "Your day" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يومك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your day"
+          }
+        }
+      }
+    },
+    "Your first week" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أسبوعك الأول"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your first week"
+          }
+        }
+      }
+    },
+    "Your garden" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حديقتك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your garden"
+          }
+        }
+      }
+    },
+    "Your Mac’s Screen Time can limit an app. Unrot goes where it stops:" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«مدة استخدام الجهاز» في Mac تستطيع تحديد تطبيق. وUnrot يكمل من حيث تتوقف:"
+          }
+        }
+      }
+    },
+    "Your own additions to adult protection. Changes apply at once." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافاتك الخاصة إلى حماية المحتوى الإباحي. تُطبَّق التغييرات فورًا."
+          }
+        }
+      }
+    },
+    "Your part" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دورك"
+          }
+        }
+      }
+    },
+    "Your plan" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خطتك"
+          }
+        }
+      }
+    },
+    "Your plant" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نبتتك"
+          }
+        }
+      }
+    },
+    "Your pledge" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعهّدك"
+          }
+        }
+      }
+    },
     "Your rules" : {
       "localizations" : {
         "ar" : {
@@ -1888,6 +5680,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your rules"
+          }
+        }
+      }
+    },
+    "Your usual day: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يومك المعتاد: %@"
           }
         }
       }
@@ -2272,9 +6074,6 @@
         }
       }
     },
-    "%lld" : {
-      "shouldTranslate" : false
-    },
     "%lld domains" : {
       "localizations" : {
         "ar" : {
@@ -2534,9 +6333,6 @@
           }
         }
       }
-    },
-    "✓" : {
-      "shouldTranslate" : false
     },
     "1. Get the enrollment profile from your organization.\n2. Open it, or open Device Management, and approve it in System Settings.\n3. Return here and check again." : {
       "localizations" : {
@@ -5988,22 +9784,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حصن"
-          }
-        }
-      }
-    },
-    "Hisn cannot confirm an extension connection from %@. Reinstall or enable it in %@’s extensions page and check its app connection, or %@ will close." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا يستطيع حصن تأكيد اتصال الإضافة من %1$@. أعد تثبيتها أو تفعيلها من صفحة الإضافات في %2$@ وتحقق من اتصالها بالتطبيق، وإلا سيُغلَق %3$@."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hisn cannot confirm an extension connection from %1$@. Reinstall or enable it in %2$@’s extensions page and check its app connection, or %3$@ will close."
           }
         }
       }

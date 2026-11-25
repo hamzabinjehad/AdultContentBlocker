@@ -43,6 +43,38 @@ public enum ExtensionPresence {
 
     public static let incognitoFreshFor: TimeInterval = 90
 
+    /// When an extension last said "I am running, but this browser only lets
+    /// me act on some sites". Chrome's site-access setting ("On click", "On
+    /// specific sites") leaves the extension enabled and its heartbeat alive
+    /// while taking away every page it could check. Such a heartbeat is
+    /// recorded here and nowhere else: it must never count as a check-in.
+    public static let limitedKey = "extensionLimitedSeen"
+
+    public static func limitedKey(forBrowser bundleID: String) -> String {
+        "extensionLimited.\(bundleID)"
+    }
+
+    /// A heartbeat from an extension without access to every site. The
+    /// check-in stamps are deliberately left alone, so the browser guard and
+    /// the Shield see this browser exactly as they see one whose extension
+    /// was switched off.
+    public static func recordLimited(browser bundleID: String?, at now: Date = Date(),
+                                     in defaults: UserDefaults?) {
+        defaults?.set(now, forKey: limitedKey)
+        if let bundleID, !bundleID.isEmpty {
+            defaults?.set(now, forKey: limitedKey(forBrowser: bundleID))
+        }
+    }
+
+    /// Whether the newest word from any extension is "limited", and still fresh.
+    public static func siteAccessLimited(lastSeen: Date?, limitedSeen: Date?, now: Date) -> Bool {
+        guard let limitedSeen else { return false }
+        let age = now.timeIntervalSince(limitedSeen)
+        guard age >= -60, age < incognitoFreshFor else { return false }
+        if let lastSeen, lastSeen > limitedSeen { return false }
+        return true
+    }
+
     /// Called by the bridge on every heartbeat. `incognitoAllowed` is absent
     /// from older extensions and is left untouched in that case rather than
     /// being silently treated as "not allowed".

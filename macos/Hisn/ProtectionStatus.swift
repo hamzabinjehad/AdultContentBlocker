@@ -42,10 +42,16 @@ public struct ProtectionEvidence: Equatable {
     public var filter: FilterEvidence
     /// When the browser extension last polled the bridge, or nil if never.
     public var extensionLastSeen: Date?
+    /// The last heartbeat from an extension without access to every site.
+    public var extensionLimitedSeen: Date?
     public var now: Date
     /// Blocking entries in /etc/hosts, or nil when not measured (then the
     /// row is left out rather than guessed).
     public var hostsEntries: Int?
+    /// How many of those entries this app's own installer wrote (the marked
+    /// block). Nil when not measured. Zero means the file holds someone
+    /// else's list only.
+    public var hostsOwnEntries: Int?
     /// Whether this build could run the system filter at all. An unsigned
     /// build — no paid Apple team — cannot, and its filter row says so
     /// instead of offering a button that can only fail.
@@ -115,7 +121,7 @@ public struct ProtectionEvidence: Equatable {
                 filterEvidence = .silent
             }
         }
-        return ProtectionEvidence(
+        var evidence = ProtectionEvidence(
             filter: filterEvidence,
             extensionLastSeen: d?.object(forKey: "extensionLastSeen") as? Date,
             hostsEntries: HostsFile.blockingEntries(),
@@ -123,6 +129,9 @@ public struct ProtectionEvidence: Equatable {
             filterBlock: FilterLink.shared.buildBlock,
             policyRecoveryRequired: authority?.record.recoveryRequired ?? false,
             policyPersistenceError: authority?.persistenceError)
+        evidence.hostsOwnEntries = HostsFile.ownEntries()
+        evidence.extensionLimitedSeen = d?.object(forKey: ExtensionPresence.limitedKey) as? Date
+        return evidence
     }
 
     /// The same evidence plus the browser policy the window shows. Kept
@@ -155,6 +164,28 @@ public enum HostsFile {
         let count = count(in: data)
         cache = (mtime, count)
         return count
+    }
+
+    public static let beginMark = "# >>> hisn blocklist begin >>>"
+    public static let endMark = "# <<< hisn blocklist end <<<"
+    private static var ownCache: (mtime: Date, count: Int)?
+
+    /// Entries inside the block `macos/block_dns.sh` writes. Zero when the
+    /// file has no such block, for example after another tool replaced it.
+    public static func ownEntries(path: String = "/etc/hosts") -> Int? {
+        guard let mtime = (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate]
+                as? Date else { return nil }
+        if let ownCache, ownCache.mtime == mtime { return ownCache.count }
+        guard let data = FileManager.default.contents(atPath: path) else { return nil }
+        let count = ownCount(in: data)
+        ownCache = (mtime, count)
+        return count
+    }
+
+    static func ownCount(in data: Data) -> Int {
+        guard let begin = data.range(of: Data(beginMark.utf8)) else { return 0 }
+        let end = data.range(of: Data(endMark.utf8), in: begin.upperBound..<data.endIndex)?.lowerBound ?? data.endIndex
+        return count(in: data.subdata(in: begin.upperBound..<end))
     }
 
     static func count(in data: Data) -> Int {
@@ -280,8 +311,9 @@ public struct ProtectionStatus: Equatable {
                                       block: evidence.filterBlock,
                                       managedFilter: evidence.managedMode?.filterManaged == true)
         }
-        let ext = Self.extensionLayer(lastSeen: evidence.extensionLastSeen, now: evidence.now)
-        let hosts = evidence.hostsEntries.map(Self.hostsLayer)
+        let ext = Self.extensionLayer(lastSeen: evidence.extensionLastSeen,
+                                      limitedSeen: evidence.extensionLimitedSeen, now: evidence.now)
+        let hosts = evidence.hostsEntries.map { Self.hostsLayer($0, own: evidence.hostsOwnEntries) }
         let privateLayer = evidence.privateBrowsing.flatMap(Self.privateBrowsingLayer)
         let managedLayer: Layer? = evidence.managedMode?.isManaged == true
             ? Layer(name: String(localized: "Organization policy"),
@@ -345,8 +377,16 @@ public struct ProtectionStatus: Equatable {
         }
     }
 
-    private static func hostsLayer(_ entries: Int) -> Layer {
-        entries >= ProtectionEvidence.hostsMinimum
+    static func hostsLayer(_ entries: Int, own: Int? = nil) -> Layer {
+        // A full hosts file that holds none of this app's entries is someone
+        // else's list. It still blocks, so the row stays ready, but it must
+        // not pass for the app's own, larger list.
+        if entries >= ProtectionEvidence.hostsMinimum, own == 0 {
+            return Layer(name: String(localized: "Hosts-file blocklist"),
+                         detail: String(localized: "\(entries.formatted()) domains from another list. This app’s own list is not merged in."),
+                         state: .ok, action: nil)
+        }
+        return entries >= ProtectionEvidence.hostsMinimum
             ? Layer(name: String(localized: "Hosts-file blocklist"),
                     detail: String(localized: "\(entries.formatted()) domains listed for clients using the system resolver"),
                     state: .ok, action: nil)
@@ -426,8 +466,13 @@ public struct ProtectionStatus: Equatable {
         return Layer(name: name, detail: detail, state: .ok, action: nil)
     }
 
-    private static func extensionLayer(lastSeen: Date?, now: Date) -> Layer {
+    static func extensionLayer(lastSeen: Date?, limitedSeen: Date? = nil, now: Date) -> Layer {
         let name = String(localized: "Browser extension")
+        if ExtensionPresence.siteAccessLimited(lastSeen: lastSeen, limitedSeen: limitedSeen, now: now) {
+            return Layer(name: name,
+                         detail: String(localized: "Limited to some sites. In the browser’s extension settings, set its site access to “On all sites”."),
+                         state: .problem, action: .reconnectExtension)
+        }
         guard let lastSeen else {
             return Layer(name: name, detail: String(localized: "Not set up"),
                          state: .missing, action: .installExtension)

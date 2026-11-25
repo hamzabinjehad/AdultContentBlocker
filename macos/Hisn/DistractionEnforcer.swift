@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import SwiftUI
+import UserNotifications
 
 /// Enforces Unrot's distraction rules on Mac apps.
 ///
@@ -71,9 +72,30 @@ public final class DistractionEnforcer {
         if endingFront { panel.hide() }
     }
 
+    /// The end each rule's "closes again" notice was last sent for.
+    private var announced: [UUID: Date] = [:]
+
+    private func announceRelocks() {
+        let book = store.book
+        for item in RelockNotice.due(day: book.day, rules: book.rules, now: LockStore.trustedNow(), announced: announced) {
+            announced[item.rule] = item.at
+            guard !AppDelegate.isHostingTests, let rule = book.rules.first(where: { $0.id == item.rule }) else { continue }
+            let center = UNUserNotificationCenter.current()
+            center.requestAuthorization(options: [.alert]) { granted, _ in
+                guard granted else { return }
+                let content = UNMutableNotificationContent()
+                content.title = String(localized: "\(rule.name) closes again in a minute")
+                content.body = String(localized: "Time to wrap up.")
+                center.add(UNNotificationRequest(identifier: "unrot.relock.\(rule.id.uuidString)",
+                                                 content: content, trigger: nil))
+            }
+        }
+    }
+
     private func tick() {
         flush(endingFront: false)
         store.tick()
+        announceRelocks()
         if let current = front, let app = NSRunningApplication(processIdentifier: current.pid) {
             evaluate(app)
         }
@@ -224,6 +246,11 @@ struct DistractionPanelModel {
     var kind: Kind
     var eyebrow: String
     var title: String
+    /// The person's own reason as a line for the panel, or nil when they gave none.
+    static func own(_ book: RuleBook) -> String? {
+        book.ownReason.map { String(localized: "You said: “\($0)”") }
+    }
+
     var detail: String
     var openTitle: String?
     var opensLeft: Int?
@@ -250,7 +277,7 @@ struct DistractionPanelModel {
             kind = .wait(seconds: seconds)
             eyebrow = ruleName
             title = String(localized: "What did you open \(appName) for?")
-            detail = String(localized: "Breathe out slowly while the ring fills.")
+            detail = Self.own(book) ?? String(localized: "Breathe out slowly while the ring fills.")
             openTitle = String(localized: "Open for \(openMinutes) minutes")
             self.opensLeft = opensLeft
             if case let .wait(_, _, perDay?, _) = rule?.action { opensPerDay = perDay } else { opensPerDay = nil }
@@ -274,7 +301,7 @@ struct DistractionPanelModel {
             case .scheduled:
                 eyebrow = time.map { String(localized: "\(ruleName) · until \($0)") } ?? ruleName
                 title = String(localized: "\(appName) is closed for now")
-                detail = String(localized: "You chose this earlier, for a calmer day.")
+                detail = Self.own(book) ?? String(localized: "You chose this earlier, for a calmer day.")
             case .blocked:
                 eyebrow = ruleName
                 title = String(localized: "\(appName) is closed")
@@ -328,21 +355,24 @@ struct DistractionPanelView: View {
                 .padding(24)
         }
         .onReceive(ticker) { _ in if remaining > 0 { remaining -= 1 } }
+        .environment(\.colorScheme, .dark)
     }
 
     private var card: some View {
         VStack(spacing: 12) {
             HStack(spacing: 8) {
-                if let icon = model.appIcon {
-                    Image(nsImage: icon).resizable().frame(width: 20, height: 20)
-                }
                 Text(model.eyebrow).font(.system(size: 12, weight: .semibold)).foregroundColor(.secondary)
+            }
+            if case .closed = model.kind, let icon = model.appIcon {
+                Image(nsImage: icon).resizable().frame(width: 56, height: 56)
+                    .saturation(0.2).opacity(0.85)
+                    .accessibilityHidden(true)
             }
             if case .wait(let seconds) = model.kind {
                 ring(progress: seconds == 0 ? 1 : 1 - Double(remaining) / Double(seconds))
             }
             Text(model.title)
-                .font(.system(size: 24, weight: .bold, design: .serif))
+                .font(.system(size: 22, weight: .bold))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             if !model.detail.isEmpty {
@@ -357,9 +387,10 @@ struct DistractionPanelView: View {
         .padding(.horizontal, 28)
         .padding(.vertical, 26)
         .background(
+            // Unrot's own dark gray, whatever the system appearance.
             RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(Color(nsColor: .windowBackgroundColor).opacity(0.86))
-                .shadow(color: .black.opacity(0.35), radius: 40, y: 20)
+                .fill(Color(white: 0.13).opacity(0.94))
+                .shadow(color: .black.opacity(0.45), radius: 40, y: 20)
         )
         .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Color.white.opacity(0.18), lineWidth: 0.5))
     }
@@ -370,7 +401,7 @@ struct DistractionPanelView: View {
             Circle().trim(from: 0, to: progress).stroke(gold, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 1), value: progress)
-            Text(verbatim: remaining > 0 ? "\(remaining)" : "✓").font(.system(size: 26, weight: .bold, design: .serif))
+            Text(verbatim: remaining > 0 ? "\(remaining)" : "✓").font(.system(size: 26, weight: .bold, design: .rounded))
         }
         .frame(width: 84, height: 84)
         .accessibilityLabel(remaining > 0 ? String(localized: "\(remaining) seconds") : String(localized: "Ready"))

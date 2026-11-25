@@ -133,6 +133,15 @@ APP_SOURCES = SHARED + [
     "Hisn/DistractionRulesView.swift",
     # Unrot's first page: the sprout under glass, today, what is running.
     "Hisn/UnrotToday.swift",
+    # Unrot's one page (Now / Later / Ideas), the sidebar glass and New rule pill.
+    "Hisn/UnrotHome.swift",
+    # Progress: the week against your own before, the garden, today's hours.
+    "Hisn/UnrotProgress.swift",
+    "Hisn/UnrotBreathe.swift",
+    "Hisn/UnrotBlockLists.swift",
+    "Hisn/UnrotMenuPanel.swift",
+    "Hisn/UnrotWelcome.swift",
+    "Hisn/UnrotIntents.swift",
 ]
 
 # Every string the app shows, in English and Arabic. A String Catalog: Xcode
@@ -440,7 +449,7 @@ def main() -> int:
     app_settings = {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "CODE_SIGN_ENTITLEMENTS": "Hisn/Hisn.entitlements",
-        "CURRENT_PROJECT_VERSION": "33",
+        "CURRENT_PROJECT_VERSION": "34",
         "MARKETING_VERSION": "1.1.18",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "Hisn/Info.plist",
@@ -452,7 +461,7 @@ def main() -> int:
     }
     filter_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnFilter/HisnFilter.entitlements",
-        "CURRENT_PROJECT_VERSION": "33",
+        "CURRENT_PROJECT_VERSION": "34",
         "MARKETING_VERSION": "1.1.18",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "HisnFilter/Info.plist",
@@ -463,7 +472,7 @@ def main() -> int:
     }
     bridge_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnBridge/HisnBridge.entitlements",
-        "CURRENT_PROJECT_VERSION": "33",
+        "CURRENT_PROJECT_VERSION": "34",
         "MARKETING_VERSION": "1.1.18",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "GENERATE_INFOPLIST_FILE": "YES",
@@ -473,7 +482,7 @@ def main() -> int:
     safari_settings = {
         "APPLICATION_EXTENSION_API_ONLY": "YES",
         "CODE_SIGN_ENTITLEMENTS": "HisnSafariExtension/HisnSafariExtension.entitlements",
-        "CURRENT_PROJECT_VERSION": "33",
+        "CURRENT_PROJECT_VERSION": "34",
         "MARKETING_VERSION": "1.1.18",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "HisnSafariExtension/Info.plist",

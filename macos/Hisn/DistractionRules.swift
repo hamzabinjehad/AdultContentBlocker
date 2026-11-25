@@ -279,10 +279,15 @@ public struct DistractionRule: Codable, Identifiable, Hashable, Sendable {
     /// nil: the rule runs all day, every day.
     public var window: TimeWindow?
     public var strictness: Strictness
+    /// The rule's picture: one emoji the person chose. Optional, so rules
+    /// saved before it existed still load.
+    public var emoji: String?
 
     public init(id: UUID = UUID(), name: String, enabled: Bool = true, targets: Set<RuleTarget>,
-                action: RuleAction, window: TimeWindow? = nil, strictness: Strictness = .gentle) {
+                action: RuleAction, window: TimeWindow? = nil, strictness: Strictness = .gentle,
+                emoji: String? = nil) {
         self.id = id
+        self.emoji = emoji
         self.name = name
         self.enabled = enabled
         self.targets = targets
@@ -424,8 +429,12 @@ public enum DistractionEngine {
     public static func decide(_ subject: Subject, at now: Date, rules: [DistractionRule], day: RuleDay,
                               focus: FocusSessionState?, distracting: (Subject) -> Bool = { _ in true },
                               alwaysAllowed: Set<String> = defaultAlwaysAllowed,
+                              exceptions: Set<String> = [],
                               calendar: Calendar) -> RuleDecision {
         if case .app(let id) = subject, alwaysAllowed.contains(id) { return .allow }
+        // A site the person marked "never closed" stays open under every rule
+        // and in Focus: music.youtube.com while youtube.com is limited.
+        if case .page(let url) = subject, isException(url, exceptions) { return .allow }
 
         if let focus, focus.isRunning(at: now) {
             let chosen = focus.targets.contains { DistractionRule.target($0, covers: subject) }
@@ -476,6 +485,13 @@ public enum DistractionEngine {
         return .allow
     }
 
+    /// Whether a page's host is an exception or a subdomain of one.
+    public static func isException(_ url: URL, _ exceptions: Set<String>) -> Bool {
+        guard !exceptions.isEmpty, let raw = url.host?.lowercased() else { return false }
+        let host = raw.hasPrefix("www.") ? String(raw.dropFirst(4)) : raw
+        return exceptions.contains { host == $0 || host.hasSuffix("." + $0) }
+    }
+
     /// A stable id for blocks caused by Focus, so the panel can tell them apart.
     public static let focusRuleID = UUID(uuidString: "00000000-0000-0000-0000-0000000F0C05")!
 
@@ -500,6 +516,31 @@ public enum DistractionEngine {
         next.opens[rule.id, default: 0] += 1
         next.openUntil[rule.id] = now.addingTimeInterval(TimeInterval(openMinutes * 60))
         return next
+    }
+}
+
+// MARK: - A word before it closes again
+
+/// "Discord closes again in a minute": said once, shortly before an open or
+/// extra minutes run out, so the end is never a surprise mid-sentence.
+public enum RelockNotice {
+    public static let lead: TimeInterval = 60
+
+    public struct Item: Equatable, Sendable {
+        public var rule: UUID
+        public var at: Date
+    }
+
+    /// Rules whose open or extra minutes end within `lead`, and whose end has
+    /// not been announced yet (`announced` maps a rule to the end it was told for).
+    public static func due(day: RuleDay, rules: [DistractionRule], now: Date,
+                           announced: [UUID: Date]) -> [Item] {
+        rules.compactMap { rule in
+            let ends = [day.openUntil[rule.id], day.snoozedUntil[rule.id]].compactMap { $0 }
+                .filter { $0 > now && $0.timeIntervalSince(now) <= lead }
+            guard rule.enabled, let end = ends.min(), announced[rule.id] != end else { return nil }
+            return Item(rule: rule.id, at: end)
+        }
     }
 }
 
@@ -764,5 +805,77 @@ public enum TimeGivenBack {
     /// Stage 1 to 7.
     public static func stage(forSeconds seconds: Double) -> Int {
         (stageStarts.lastIndex { seconds >= $0 } ?? 0) + 1
+    }
+}
+
+/// One finished day of use, kept as the largest few subjects and their seconds.
+/// It never leaves the Mac, and holds hosts and app ids only.
+public struct UsageDay: Codable, Equatable, Sendable {
+    public var day: String
+    public var seconds: [String: Double]
+
+    public init(day: String, seconds: [String: Double]) {
+        self.day = day
+        self.seconds = seconds
+    }
+
+    public static let kept = 14
+    public static let subjectsPerDay = 12
+}
+
+/// A rule worth offering, read from the person's own use: something known to
+/// distract, used a lot, that no rule covers yet.
+public struct UsageSuggestion: Equatable, Identifiable, Sendable {
+    public var subject: String
+    /// Average seconds a day over the days looked at.
+    public var perDay: Double
+    public var today: Double
+    public var days: Int
+    public var limitMinutes: Int
+
+    public var id: String { subject }
+
+    public static let window = 7
+    public static let minimumPerDay: Double = 20 * 60
+    public static let minimumToday: Double = 30 * 60
+
+    public var target: RuleTarget? {
+        if subject.hasPrefix("app:") { return .app(String(subject.dropFirst(4))) }
+        if subject.hasPrefix("site:") { return RuleTarget.normalizedSite(String(subject.dropFirst(5))).map(RuleTarget.site) }
+        return nil
+    }
+
+    static func subjectValue(_ subject: String) -> Subject? {
+        if subject.hasPrefix("app:") { return .app(String(subject.dropFirst(4))) }
+        if subject.hasPrefix("site:"), let url = URL(string: "https://" + subject.dropFirst(5) + "/") { return .page(url) }
+        return nil
+    }
+
+    /// Half of the usual day, in quarter hours, between 15 minutes and 2 hours.
+    public static func limit(forPerDay seconds: Double) -> Int {
+        let half = Int(seconds / 60 / 2)
+        return min(120, max(15, half / 15 * 15))
+    }
+
+    public static func suggest(today: [String: Double], past: [UsageDay], rules: [DistractionRule],
+                               exceptions: Set<String>, isDistracting: (String) -> Bool,
+                               limit: Int = 2) -> [UsageSuggestion] {
+        let recent = Array(past.suffix(window - 1))
+        let days = recent.count + 1
+        var totals = today
+        for day in recent { for (subject, seconds) in day.seconds { totals[subject, default: 0] += seconds } }
+        let active = rules.filter(\.enabled)
+        return totals.compactMap { subject, total -> UsageSuggestion? in
+            let perDay = total / Double(days)
+            let now = today[subject] ?? 0
+            guard perDay >= minimumPerDay || now >= minimumToday, isDistracting(subject),
+                  let value = subjectValue(subject) else { return nil }
+            if subject.hasPrefix("site:"), exceptions.contains(String(subject.dropFirst(5))) { return nil }
+            if active.contains(where: { $0.covers(value) }) { return nil }
+            return UsageSuggestion(subject: subject, perDay: perDay, today: now, days: days,
+                                   limitMinutes: Self.limit(forPerDay: max(perDay, now)))
+        }
+        .sorted { ($0.perDay, $0.subject) > ($1.perDay, $1.subject) }
+        .prefix(limit).map { $0 }
     }
 }

@@ -26,6 +26,43 @@ public struct RuleBook: Codable, Equatable, Sendable {
     public var history: [DayTotal] = []
     /// The person's own "before", in seconds of feeds a day (asked in first run).
     public var beforePerDay: Double = 105 * 60
+    /// Sites no rule may close. Optional so books saved before it existed load.
+    public var exceptionHosts: Set<String>?
+    /// The last two weeks of use, a few subjects a day, for suggestions. Optional so older saves load.
+    public var usageDays: [UsageDay]?
+    /// The person's own reason, in their words, shown back when the pull comes. Never leaves the Mac.
+    public var ownReason: String?
+    /// Set while a session was started by the Mac's own Focus, so only that session ends with it.
+    public var systemFocusUntil: Date?
+
+    public var exceptions: Set<String> { exceptionHosts ?? [] }
+    public static let maxExceptions = 100
+
+    /// Adds or removes a never-closed site. Removing only tightens. Adding
+    /// loosens, so it is refused while the Mac's lock runs, and while a locked
+    /// rule that covers the site is running (until that rule's window ends).
+    public mutating func setException(_ input: String, on: Bool, lockUntil: Date?, at now: Date,
+                                      calendar: Calendar) -> Outcome {
+        guard let host = RuleTarget.normalizedSite(input) else { return .invalid(["site"]) }
+        var hosts = exceptions
+        if !on {
+            hosts.remove(host)
+            exceptionHosts = hosts
+            return .applied
+        }
+        if hosts.contains(host) { return .applied }
+        if hosts.count >= Self.maxExceptions { return .invalid(["too-many"]) }
+        if let lockUntil, lockUntil > now { return .refused(until: lockUntil) }
+        if let url = URL(string: "https://" + host + "/") {
+            for rule in rules where rule.strictness == .locked && rule.isRunning(at: now, calendar: calendar)
+                && rule.covers(.page(url)) {
+                return .refused(until: rule.window?.interval(containing: now, calendar: calendar)?.end)
+            }
+        }
+        hosts.insert(host)
+        exceptionHosts = hosts
+        return .applied
+    }
 
     public struct DayTotal: Codable, Equatable, Sendable {
         public var day: String
@@ -91,6 +128,13 @@ public struct RuleBook: Codable, Equatable, Sendable {
         }
     }
 
+    /// Rules to offer from the person's own use, largest first.
+    public func suggestions(isDistracting: (String) -> Bool, limit: Int = 2) -> [UsageSuggestion] {
+        let today = Dictionary(uniqueKeysWithValues: ledger.topSubjects(limit: 50).map { ($0.subject, $0.seconds) })
+        return UsageSuggestion.suggest(today: today, past: usageDays ?? [], rules: rules, exceptions: exceptions,
+                                       isDistracting: isDistracting, limit: limit)
+    }
+
     /// Starts a new local day: yesterday's totals go to history, counts reset.
     public mutating func roll(to key: String) {
         guard key != dayKey else { return }
@@ -99,6 +143,15 @@ public struct RuleBook: Codable, Equatable, Sendable {
             history.append(DayTotal(day: dayKey, feedSeconds: feedSeconds,
                                     pauses: day.opens.values.reduce(0, +), closed: closedToday))
             if history.count > Self.maxHistory { history.removeFirst(history.count - Self.maxHistory) }
+        }
+        if !dayKey.isEmpty, ledger.day == dayKey {
+            let top = ledger.topSubjects(limit: UsageDay.subjectsPerDay).filter { $0.seconds >= 60 }
+            if !top.isEmpty {
+                var days = usageDays ?? []
+                days.append(UsageDay(day: dayKey, seconds: Dictionary(uniqueKeysWithValues: top.map { ($0.subject, $0.seconds) })))
+                if days.count > UsageDay.kept { days.removeFirst(days.count - UsageDay.kept) }
+                usageDays = days
+            }
         }
         dayKey = key
         day = RuleDay()
@@ -238,9 +291,17 @@ public final class DistractionStore: ObservableObject {
 
     public func cancelPending(_ id: UUID) { mutate { $0.cancelPending(id) } }
 
+    @discardableResult
+    public func setException(_ host: String, on: Bool) -> RuleBook.Outcome {
+        var next = book
+        let outcome = next.setException(host, on: on, lockUntil: lockUntil(), at: clock(), calendar: calendar)
+        commit(next)
+        return outcome
+    }
+
     public func decide(_ subject: Subject) -> RuleDecision {
         DistractionEngine.decide(subject, at: clock(), rules: book.rules, day: book.day,
-                                 focus: book.focus, calendar: calendar)
+                                 focus: book.focus, exceptions: book.exceptions, calendar: calendar)
     }
 
     public func record(subject: String, from start: Date, to end: Date) {
@@ -282,6 +343,16 @@ public final class DistractionStore: ObservableObject {
         return used
     }
 
+    /// The Mac's own Focus turned on or off (see `UnrotFocusFilter`).
+    public func systemFocus(on: Bool, targets: Set<RuleTarget>) {
+        mutate { $0.systemFocus(on: on, targets: targets, at: clock()) }
+    }
+
+    public func setReason(_ text: String) {
+        let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(140))
+        mutate { $0.ownReason = trimmed.isEmpty ? nil : trimmed }
+    }
+
     public func setBefore(minutesPerDay: Int) {
         mutate { $0.beforePerDay = Double(max(0, min(1440, minutesPerDay)) * 60) }
     }
@@ -296,5 +367,24 @@ public final class DistractionStore: ObservableObject {
         guard next != book else { return }
         book = next
         if let data = try? JSONEncoder().encode(next) { defaults?.set(data, forKey: Self.key) }
+    }
+}
+
+extension RuleBook {
+    /// The Mac's Focus turned on or off. A session started this way is gentle
+    /// and ends with the system Focus; one the person started by hand is never
+    /// replaced or ended from here.
+    public mutating func systemFocus(on: Bool, targets: Set<RuleTarget>, at now: Date) {
+        if on {
+            if let focus, focus.isRunning(at: now) { return }
+            let until = now.addingTimeInterval(min(12 * 3600, FocusSessionState.maxLength))
+            if startFocus(FocusSessionState(startedAt: now, until: until, intent: "", targets: targets,
+                                            allowOnly: false, strictness: .gentle)) {
+                systemFocusUntil = until
+            }
+        } else {
+            if let mark = systemFocusUntil, focus?.until == mark { endFocus() }
+            systemFocusUntil = nil
+        }
     }
 }

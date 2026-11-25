@@ -1001,8 +1001,8 @@ public final class BrowserGuard: ObservableObject {
         case .extensionSilent:
             return String(localized: """
                 Hisn cannot confirm an extension connection from \(name). Reinstall \
-                or enable it in \(name)’s extensions page and check its app \
-                connection, or \(name) will close.
+                or enable it in \(name)’s extensions page, set its site access to \
+                “On all sites” and check its app connection, or \(name) will close.
                 """)
         case .uncovered:
             return String(localized: """
