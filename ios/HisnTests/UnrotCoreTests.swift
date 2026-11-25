@@ -429,4 +429,151 @@ final class UnrotCoreTests: XCTestCase {
         XCTAssertEqual(trend.percent, -30)
         XCTAssertNil(WeekTrend.make(days14: days, today: days.last!, feed: [days[12]: 50]))
     }
+
+    func testFeedBeforeStartIsIgnored() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
+        let start = cal.date(from: DateComponents(year: 2026, month: 11, day: 23, hour: 9))!
+        let days = ["2026-11-21": 200, "2026-11-22": 180, "2026-11-23": 40, "2026-11-24": 30]
+        XCTAssertEqual(UnrotFormat.since(start, days, calendar: cal), ["2026-11-23": 40, "2026-11-24": 30])
+        XCTAssertEqual(UnrotFormat.since(nil, days, calendar: cal), days)
+    }
+
+    func testShowingUpMilestones() {
+        XCTAssertEqual(ShowingUp.make(day: 1), .init(day: 1, reached: 1, next: 3, part: 0))
+        XCTAssertEqual(ShowingUp.make(day: 15).reached, 14)
+        XCTAssertEqual(ShowingUp.make(day: 15).next, 30)
+        XCTAssertEqual(ShowingUp.make(day: 15).daysToNext, 15)
+        XCTAssertEqual(ShowingUp.make(day: 22).part, 0.5, accuracy: 0.001)
+        XCTAssertEqual(ShowingUp.make(day: 400).next, nil)
+        XCTAssertEqual(ShowingUp.make(day: 400).part, 1)
+        XCTAssertEqual(ShowingUp.make(day: 0).day, 1)
+        XCTAssertEqual(ShowingUp.make(day: 15).lineKey, "u.showing.14")
+    }
+
+    func testAgainstBefore() {
+        XCTAssertNil(AgainstBefore.make(feed: nil, before: 200))
+        XCTAssertNil(AgainstBefore.make(feed: 100, before: 0))
+        XCTAssertEqual(AgainstBefore.make(feed: 120, before: 240), .init(difference: -120, part: 0.5))
+        XCTAssertEqual(AgainstBefore.make(feed: 600, before: 240)?.part, 1)
+        XCTAssertEqual(AgainstBefore.make(feed: 240, before: 240)?.difference, 0)
+    }
+
+    func testFocusClock() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        XCTAssertEqual(FocusClock.remaining(until: 1_000 + 1122, now: now), 1122)
+        XCTAssertEqual(FocusClock.remaining(until: 900, now: now), 0)
+        XCTAssertEqual(FocusClock.text(seconds: 1122), "18:42")
+        XCTAssertEqual(FocusClock.text(seconds: 3900), "1:05:00")
+        XCTAssertEqual(FocusClock.part(until: 1_000 + 750, lengthMinutes: 25, now: now), 0.5, accuracy: 0.001)
+        XCTAssertEqual(FocusClock.part(until: 1_000, lengthMinutes: 0, now: now), 0)
+        XCTAssertEqual(FocusClock.step(5, by: -5), 5)
+        XCTAssertEqual(FocusClock.step(180, by: 5), 180)
+        XCTAssertEqual(FocusClock.step(25, by: 5), 30)
+    }
+
+    func testCheckInNext() {
+        XCTAssertEqual(CheckInNext.suggest(mood: 3, pull: "stress"), .breathe)
+        XCTAssertEqual(CheckInNext.suggest(mood: 2, pull: "bored"), .instead)
+        XCTAssertEqual(CheckInNext.suggest(mood: 1, pull: "tired"), .rest)
+        XCTAssertEqual(CheckInNext.suggest(mood: 4, pull: "alone"), .reachOut)
+        XCTAssertEqual(CheckInNext.suggest(mood: 0, pull: "none"), .gentle)
+        XCTAssertEqual(CheckInNext.suggest(mood: 3, pull: "none"), .keep)
+        XCTAssertNil(CheckInNext.keep.actionKey)
+        XCTAssertEqual(CheckInNext.rest.actionKey, "u.next.rest.action")
+    }
+
+    func testWeeklyRecap() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!; cal.firstWeekday = 2
+        // Tuesday 24 November 2026: last week is Mon 16 to Sun 22.
+        let now = cal.date(from: DateComponents(year: 2026, month: 11, day: 24, hour: 12))!
+        let weeks = WeeklyRecap.weeks(now: now, calendar: cal)!
+        XCTAssertEqual(weeks.last.first, "2026-11-16")
+        XCTAssertEqual(weeks.last.last, "2026-11-22")
+        XCTAssertEqual(weeks.before.first, "2026-11-09")
+        let feed = ["2026-11-16": 100, "2026-11-17": 100, "2026-11-09": 200, "2026-11-10": 200]
+        let recap = WeeklyRecap.make(now: now, feed: feed, gains: ["2026-11-16": 60], before: 180,
+                                     breaths: ["2026-11-18": 2, "2026-11-23": 5],
+                                     pulls: ["2026-11-17": "tired", "2026-11-19": "tired", "2026-11-20": "none"], calendar: cal)!
+        XCTAssertEqual(recap.weekKey, "2026-11-16")
+        XCTAssertEqual(recap.stats.average, 100)
+        XCTAssertEqual(recap.stats.givenBack, 60)
+        XCTAssertEqual(recap.pauses, 2)
+        XCTAssertEqual(recap.checkIns, 3)
+        XCTAssertEqual(recap.topPull, "tired")
+        XCTAssertEqual(recap.change, -50)
+        XCTAssertTrue(recap.hasAnything)
+        let empty = WeeklyRecap.make(now: now, feed: [:], gains: [:], before: 180, breaths: [:], pulls: [:], calendar: cal)!
+        XCTAssertFalse(empty.hasAnything)
+        XCTAssertNil(empty.change)
+    }
+
+    func testPullHours() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
+        let day = cal.date(from: DateComponents(year: 2026, month: 11, day: 20))!.timeIntervalSince1970
+        let times = [21, 21, 22, 22, 9, 23].map { day + Double($0 * 3600 + 60) }
+        let b = PullHours.buckets(times, calendar: cal)
+        XCTAssertEqual(b[21], 2); XCTAssertEqual(b[22], 2); XCTAssertEqual(b.reduce(0, +), 6)
+        XCTAssertEqual(PullHours.peak(b), 21)
+        XCTAssertNil(PullHours.peak(PullHours.buckets(Array(times.prefix(4)), calendar: cal)))
+        var wrap = Array(repeating: 0, count: 24); wrap[23] = 3; wrap[0] = 3
+        XCTAssertEqual(PullHours.peak(wrap), 23)
+        XCTAssertEqual(PullHours.slot(beforeHour: 21), "evening")
+        XCTAssertEqual(PullHours.slot(beforeHour: 23), "bed")
+        XCTAssertEqual(PullHours.slot(beforeHour: 14), "work")
+        XCTAssertEqual(PullHours.slot(beforeHour: 2), "bed")
+        XCTAssertEqual(PullHours.slot(beforeHour: 8), "morning")
+    }
+
+    // MARK: - The colour of the moment (matches Android's GlassMoodTest)
+
+    func testMoodPutsTheMostUrgentStateFirst() {
+        XCTAssertEqual(UnrotMood.of(look: .broken, focusRunning: true, quietNow: true), .slip)
+        XCTAssertEqual(UnrotMood.of(look: .cracked, focusRunning: true, quietNow: true), .hard)
+        XCTAssertEqual(UnrotMood.of(look: .clear, focusRunning: true, quietNow: true), .night)
+        XCTAssertEqual(UnrotMood.of(look: .gold, focusRunning: false, quietNow: true), .night)
+        XCTAssertEqual(UnrotMood.of(look: .clear, focusRunning: true, quietNow: false), .working)
+        XCTAssertEqual(UnrotMood.of(look: .gold, focusRunning: false, quietNow: false), .rest)
+        XCTAssertEqual(UnrotMood.of(look: .clear, focusRunning: false, quietNow: false), .growing)
+    }
+
+    // MARK: - Unrot Plus (matches Android's PlusGateTest)
+
+    func testPlusGateKeepsThreeRulesAndTwoWoodsFree() {
+        XCTAssertTrue(PlusGate.open(.moreRules, plus: false, have: 2))
+        XCTAssertFalse(PlusGate.open(.moreRules, plus: false, have: 3))
+        XCTAssertTrue(PlusGate.open(.moreRules, plus: true, have: 40))
+        XCTAssertTrue(PlusGate.open(.moreWoods, plus: false, have: 1))
+        XCTAssertFalse(PlusGate.open(.moreWoods, plus: false, have: 2))
+        XCTAssertFalse(PlusGate.open(.treeKinds, plus: false))
+        XCTAssertTrue(PlusGate.open(.seasons, plus: true))
+    }
+
+    func testPlusIsOnWhileASubscriptionRunsOrForGood() {
+        XCTAssertFalse(PlusGate.active(now: 1000, paidUntil: 0, lifetime: false))
+        XCTAssertTrue(PlusGate.active(now: 1000, paidUntil: 2000, lifetime: false))
+        XCTAssertFalse(PlusGate.active(now: 3000, paidUntil: 2000, lifetime: false))
+        XCTAssertTrue(PlusGate.active(now: 3000, paidUntil: 0, lifetime: true))
+    }
+
+    // MARK: - Your wood (same layout as Android's placeTrees)
+
+    func testWoodKeepsTreesOffThePath() {
+        for count in [1, 4, 7, 18, 24, 45] {
+            let spots = WoodLayout.spots(count: count)
+            XCTAssertEqual(spots.count, count)
+            for spot in spots {
+                let x = spot.x * 360
+                XCTAssertFalse(x > 160 && x < 222, "a tree stands on the path at \(x) for \(count) trees")
+                XCTAssertTrue(spot.y > 0.4 && spot.y < 0.95)
+            }
+        }
+        XCTAssertTrue(WoodLayout.spots(count: 0).isEmpty)
+    }
+
+    func testWoodKindsAreEarnedWithDays() {
+        XCTAssertEqual(WoodLayout.kind(dayNumber: 1), "oak")
+        XCTAssertEqual(WoodLayout.kind(dayNumber: 6), "oak")
+        XCTAssertTrue(["oak", "pine"].contains(WoodLayout.kind(dayNumber: 9)))
+        XCTAssertFalse((1..<45).map { WoodLayout.kind(dayNumber: $0) }.contains("willow"))
+    }
 }

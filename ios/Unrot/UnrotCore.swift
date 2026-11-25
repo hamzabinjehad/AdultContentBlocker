@@ -167,6 +167,14 @@ enum UnrotFormat {
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
+    /// Feed readings from the start day on. Days before Unrot began (left by an
+    /// earlier setup, or a reset start) must not show as progress.
+    static func since(_ start: Date?, _ days: [String: Int], calendar: Calendar = .current) -> [String: Int] {
+        guard let start else { return days }
+        let first = dayKey(start, calendar: calendar)
+        return days.filter { $0.key >= first }
+    }
+
     /// Day 1 is the start day.
     static func dayNumber(start: Date, now: Date, calendar: Calendar = .current) -> Int {
         let a = calendar.startOfDay(for: start), b = calendar.startOfDay(for: now)
@@ -382,5 +390,258 @@ struct WeekTrend: Equatable {
         let split = whole.count - 7
         guard let now = average(whole[split...]), let before = average(whole[..<split]), before > 0 else { return nil }
         return WeekTrend(thisWeek: now, lastWeek: before)
+    }
+}
+
+/// "Showing up": the day count as milestones, never reset by a heavy day.
+/// The line belongs to the last milestone reached; the bar runs to the next.
+enum ShowingUp {
+    static let milestones = [1, 3, 7, 14, 30, 60, 90, 180, 365]
+
+    struct Line: Equatable {
+        let day: Int
+        let reached: Int
+        let next: Int?
+        /// 0...1 from the last milestone to the next (1 past the last).
+        let part: Double
+        var lineKey: String { "u.showing.\(reached)" }
+        var daysToNext: Int? { next.map { $0 - day } }
+    }
+
+    static func make(day: Int) -> Line {
+        let d = max(1, day)
+        let reached = milestones.last { $0 <= d } ?? 1
+        let next = milestones.first { $0 > d }
+        let part = next.map { Double(d - reached) / Double($0 - reached) } ?? 1
+        return Line(day: d, reached: reached, next: next, part: part)
+    }
+}
+
+/// One day's feed time against the person's own usual day, for a bar centred
+/// on "before": negative is under (good), positive is over. `part` is the
+/// share of half the bar, capped at 1.
+struct AgainstBefore: Equatable {
+    let difference: Int
+    let part: Double
+
+    static func make(feed: Int?, before: Int) -> AgainstBefore? {
+        guard let feed, before > 0 else { return nil }
+        let diff = feed - before
+        return AgainstBefore(difference: diff, part: min(1, Double(abs(diff)) / Double(before)))
+    }
+}
+
+/// Focus as a clock: what is left, as "mm:ss" (or "h:mm:ss"), and how much of
+/// the session is still ahead for the ring.
+enum FocusClock {
+    static func remaining(until: TimeInterval, now: Date) -> Int {
+        max(0, Int((until - now.timeIntervalSince1970).rounded(.up)))
+    }
+
+    static func text(seconds: Int) -> String {
+        let h = seconds / 3600, m = (seconds % 3600) / 60, s = seconds % 60
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%02d:%02d", m, s)
+    }
+
+    /// 1 at the start, 0 at the end.
+    static func part(until: TimeInterval, lengthMinutes: Int, now: Date) -> Double {
+        guard lengthMinutes > 0 else { return 0 }
+        return min(1, Double(remaining(until: until, now: now)) / Double(lengthMinutes * 60))
+    }
+
+    /// The picker's steps: 5 to 180 minutes, by 5.
+    static func step(_ minutes: Int, by delta: Int) -> Int { min(180, max(5, minutes + delta)) }
+}
+
+/// After a check-in: one small thing that fits what the person said, in the
+/// spirit of "what do you need?" (CleanPath's best idea, without its scores).
+enum CheckInNext: String, Equatable {
+    case breathe, instead, rest, reachOut, gentle, keep
+
+    static func suggest(mood: Int, pull: String) -> CheckInNext {
+        switch pull {
+        case "stress": return .breathe
+        case "bored": return .instead
+        case "tired": return .rest
+        case "alone": return .reachOut
+        default: return mood <= 1 ? .gentle : .keep
+        }
+    }
+
+    var icon: String { Self.icons[self] ?? "sparkles" }
+    private static let icons: [CheckInNext: String] = [.breathe: "wind", .instead: "lightbulb", .rest: "bed.double",
+                                                       .reachOut: "message", .gentle: "heart", .keep: "sun.max"]
+    var titleKey: String { "u.next.\(rawValue)" }
+    var bodyKey: String { "u.next.\(rawValue).body" }
+    /// The button, when there is one to press.
+    var actionKey: String? { self == .keep ? nil : "u.next.\(rawValue).action" }
+}
+
+/// Last week in one look: the calendar week before this one, its numbers,
+/// and how its feed time compares with the week before it.
+struct WeeklyRecap: Equatable {
+    let weekKey: String
+    let days: [String]
+    let stats: RangeStats
+    let pauses: Int
+    let checkIns: Int
+    let topPull: String?
+    /// Change in average feed time against the week before, in percent
+    /// (negative is less); nil without measured days in both.
+    let change: Int?
+
+    var hasAnything: Bool { stats.measuredDays > 0 || pauses > 0 || checkIns > 0 || stats.givenBack > 0 }
+
+    /// The seven day keys of the week before `now`'s week, and of the one before that.
+    static func weeks(now: Date, calendar: Calendar = .current) -> (last: [String], before: [String])? {
+        guard let thisWeek = calendar.dateInterval(of: .weekOfYear, for: now)?.start,
+              let lastStart = calendar.date(byAdding: .day, value: -7, to: thisWeek),
+              let beforeStart = calendar.date(byAdding: .day, value: -14, to: thisWeek) else { return nil }
+        func keys(_ start: Date) -> [String] {
+            (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }.map { UnrotFormat.dayKey($0, calendar: calendar) }
+        }
+        return (keys(lastStart), keys(beforeStart))
+    }
+
+    static func make(now: Date, feed: [String: Int], gains: [String: Int], before: Int,
+                     breaths: [String: Int], pulls: [String: String], calendar: Calendar = .current) -> WeeklyRecap? {
+        guard let weeks = weeks(now: now, calendar: calendar) else { return nil }
+        let today = UnrotFormat.dayKey(now, calendar: calendar)
+        let stats = RangeStats.make(days: weeks.last, today: today, feed: feed, gains: gains, before: before)
+        let earlier = RangeStats.make(days: weeks.before, today: today, feed: feed, gains: gains, before: before)
+        let change = stats.average.flatMap { now in
+            earlier.average.flatMap { $0 > 0 ? Int((Double(now - $0) / Double($0) * 100).rounded()) : nil }
+        }
+        let weekPulls = weeks.last.compactMap { pulls[$0] }
+        return WeeklyRecap(weekKey: weeks.last[0], days: weeks.last, stats: stats,
+                           pauses: weeks.last.reduce(0) { $0 + (breaths[$1] ?? 0) },
+                           checkIns: weekPulls.count, topPull: MoodWeek.topPull(weekPulls), change: change)
+    }
+}
+
+/// When the pull comes: finished pauses by hour of day, the busiest two-hour
+/// window, and the gentle reminder that lands just before it.
+enum PullHours {
+    static let minimumPauses = 5
+
+    static func buckets(_ times: [TimeInterval], calendar: Calendar = .current) -> [Int] {
+        var counts = Array(repeating: 0, count: 24)
+        for t in times { counts[calendar.component(.hour, from: Date(timeIntervalSince1970: t))] += 1 }
+        return counts
+    }
+
+    /// The first hour of the busiest two-hour window (wrapping past midnight),
+    /// once there are enough pauses to say anything.
+    static func peak(_ buckets: [Int]) -> Int? {
+        guard buckets.count == 24, buckets.reduce(0, +) >= minimumPauses else { return nil }
+        let best = (0..<24).max { a, b in
+            let sa = buckets[a] + buckets[(a + 1) % 24], sb = buckets[b] + buckets[(b + 1) % 24]
+            return sa == sb ? a > b : sa < sb
+        }
+        guard let best, buckets[best] + buckets[(best + 1) % 24] >= 3 else { return nil }
+        return best
+    }
+
+}
+
+// MARK: - The colour of the moment
+
+/// Living colour: the app has no single colour, it takes the colour of what the
+/// person is doing. One state at a time, the most urgent first, so a cracked
+/// glass is never hidden behind a running Focus session. Same table as
+/// Android's `GlassMood`.
+enum UnrotMood: String, Equatable {
+    /// Clean days, the plant is rising. Green ground.
+    case growing
+    /// Focus is running. Cool and still.
+    case working
+    /// The glass is cracked: the seal window is open. Ember.
+    case hard
+    /// Sealed with gold today. The lamp-lit room.
+    case rest
+    /// Quiet hours are on now. Indigo, low light.
+    case night
+    /// The glass is broken. Colour drains out until it is whole again.
+    case slip
+
+    static func of(look: GlassState.Look, focusRunning: Bool, quietNow: Bool) -> UnrotMood {
+        if look == .broken { return .slip }
+        if look == .cracked { return .hard }
+        if quietNow { return .night }
+        if focusRunning { return .working }
+        if look == .gold { return .rest }
+        return .growing
+    }
+}
+
+// MARK: - Unrot Plus
+
+/// What Unrot Plus sells, and what it never does. One table, so the line between
+/// free and paid is decided in one place. Same numbers as Android's `PlusGate`.
+///
+/// Never sold: blocking adult content (every pane), Breathe and Help now, the
+/// glass, the lock, quiet hours, and the clean wood with its earned trees.
+enum PlusGate {
+    /// Time rules a free account can keep (the adult filter is not counted).
+    static let freeRules = 3
+    /// Woods a free account can keep: the clean wood and one more.
+    static let freeWoods = 2
+    /// Days of history a free account can look back over.
+    static let freeHistoryDays = 14
+
+    enum Feature { case moreRules, moreWoods, treeKinds, seasons, woodWidget, longHistory }
+
+    /// Whether `feature` is open. `have` is how many the person already keeps
+    /// (rules or woods); it is ignored for features that are simply on or off.
+    static func open(_ feature: Feature, plus: Bool, have: Int = 0) -> Bool {
+        if plus { return true }
+        switch feature {
+        case .moreRules: return have < freeRules
+        case .moreWoods: return have < freeWoods
+        default: return false
+        }
+    }
+
+    /// Plus is on while a subscription runs or for good after a one-time purchase.
+    static func active(now: TimeInterval, paidUntil: TimeInterval, lifetime: Bool) -> Bool {
+        lifetime || paidUntil > now
+    }
+}
+
+// MARK: - Your wood
+
+/// Where trees stand on the drawn hill and which kind a day grew. Pure, so
+/// Android's wood and this one stay the same picture (same numbers as
+/// `placeTrees` and `TreeKind` in UnrotWood.kt).
+enum WoodLayout {
+    struct Spot: Equatable { let x: Double; let y: Double; let scale: Double }
+
+    /// The crest of the hill, in the picture's own 360 × 300 units.
+    static func crest(_ x: Double) -> Double { 124 + 15 * pow((x - 180) / 150, 2) }
+
+    /// Oldest days at the back, newest at the front, in one to four rows. Trees
+    /// stand on the two grass banks only: the path down the middle stays clear.
+    /// Positions are fractions of the picture.
+    static func spots(count n: Int) -> [Spot] {
+        guard n > 0 else { return [] }
+        let rows = n <= 6 ? 1 : n <= 18 ? 2 : n <= 32 ? 3 : 4
+        let per = max(1, Int((Double(n) / Double(rows)).rounded(.up)))
+        return (0..<n).map { i in
+            let r = i / per, c = i % per
+            let inRow = min(per, n - r * per)
+            let u = (Double(c) + 0.5 + (r % 2 == 1 ? 0.22 : -0.08)) / Double(inRow)
+            let x = u < 0.5 ? 38 + u * 2 * 114 : 232 + (u - 0.5) * 2 * 92
+            let y = crest(x) + (rows == 1 ? 44 : 20) + Double(r) * 33
+            return Spot(x: x / 360, y: y / 300, scale: (0.74 + Double(r) * 0.13) * (n <= 8 ? 1.7 : 1))
+        }
+    }
+
+    /// Kinds are earned with days: oak from day 1, pine 7, cherry 14, lemon 21, olive 30, willow 45.
+    static let kinds: [(name: String, day: Int)] = [("oak", 1), ("pine", 7), ("cherry", 14), ("lemon", 21), ("olive", 30), ("willow", 45)]
+
+    /// The kind of tree day `dayNumber` grew: one of the kinds unlocked by then, picked steadily.
+    static func kind(dayNumber: Int) -> String {
+        let open = kinds.filter { $0.day <= max(1, dayNumber) }
+        return open[(dayNumber * 7) % open.count].name
     }
 }

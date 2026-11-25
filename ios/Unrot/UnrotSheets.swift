@@ -3,9 +3,13 @@ import SwiftUI
 /// The daily check-in: mood and what pulls. Only on this phone.
 struct UnrotCheckInSheet: View {
     @ObservedObject var store: UnrotStore
+    /// Runs the suggestion's tool once the sheet has closed.
+    var onNext: (CheckInNext) -> Void = { _ in }
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @State private var mood: Int?
     @State private var pull: String?
+    @State private var next: CheckInNext?
 
     static let moods: [(String, LocalizedStringKey)] = [("cloud.rain", "u.mood.0"), ("cloud", "u.mood.1"),
         ("cloud.sun", "u.mood.2"), ("sun.max", "u.mood.3"), ("sparkles", "u.mood.4")]
@@ -13,7 +17,17 @@ struct UnrotCheckInSheet: View {
         ("stress", "u.pull.stress"), ("alone", "u.pull.alone"), ("none", "u.pull.none")]
 
     var body: some View {
-        USheet(title: "u.checkin.title", subtitle: "u.checkin.private", tall: true) {
+        USheet(title: next == nil ? "u.checkin.title" : "u.next.title",
+               subtitle: next == nil ? "u.checkin.private" : "u.next.sub", tall: true) {
+            if let next { suggestion(next) } else { form }
+        }
+        .onAppear {
+            mood = store.checkedInToday?.mood
+            pull = store.checkedInToday?.pull
+        }
+    }
+
+    @ViewBuilder private var form: some View {
             HStack(spacing: 6) {
                 ForEach(Self.moods.indices, id: \.self) { i in
                     Button { mood = i } label: {
@@ -39,16 +53,41 @@ struct UnrotCheckInSheet: View {
             UGoldButton(title: "u.checkin.done", wide: true) {
                 guard let mood else { return }
                 store.checkIn(mood: mood, pull: pull ?? "none")
-                dismiss()
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                withAnimation(.snappy) { next = CheckInNext.suggest(mood: mood, pull: pull ?? "none") }
             }
             .disabled(mood == nil)
             .opacity(mood == nil ? 0.5 : 1)
             .padding(.top, 6)
+    }
+
+    /// One thing that fits what was just said, and a way out.
+    @ViewBuilder private func suggestion(_ next: CheckInNext) -> some View {
+        VStack(spacing: 14) {
+            Image(systemName: next.icon).font(.system(size: 30, weight: .semibold)).foregroundStyle(UPalette.goldLight)
+                .frame(width: 84, height: 84)
+                .background(UPalette.gold.opacity(0.14), in: Circle())
+                .overlay { Circle().strokeBorder(UPalette.gold.opacity(0.4)) }
+                .accessibilityHidden(true)
+            Text(LocalizedStringKey(next.titleKey)).font(.uDisplay(26)).foregroundStyle(UPalette.ink)
+                .multilineTextAlignment(.center).accessibilityAddTraits(.isHeader)
+            Text(LocalizedStringKey(next.bodyKey)).font(.subheadline).foregroundStyle(UPalette.dim)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
         }
-        .onAppear {
-            mood = store.checkedInToday?.mood
-            pull = store.checkedInToday?.pull
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+        if let action = next.actionKey {
+            UGoldButton(title: LocalizedStringKey(action), systemImage: next.icon, wide: true) {
+                dismiss()
+                if next == .reachOut {
+                    if let url = URL(string: "sms:") { openURL(url) }
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { onNext(next) }
+                }
+            }
         }
+        UPillButton(title: "u.done", systemImage: "checkmark") { dismiss() }
     }
 }
 
@@ -352,10 +391,7 @@ struct UnrotFocusSheet: View {
     var body: some View {
         USheet(title: "u.focus.title", subtitle: "u.focus.body") {
             if store.focusActive {
-                UCard {
-                    Text("u.focus.until \(Date(timeIntervalSince1970: store.focusUntil).formatted(date: .omitted, time: .shortened))")
-                        .font(.headline).foregroundStyle(UPalette.ink)
-                }
+                running
                 UPillButton(title: "u.focus.end", systemImage: "stop.fill") { onEnd(); dismiss() }
             } else if !canClose {
                 UCard { Text("u.focus.needsRule").foregroundStyle(UPalette.ink).fixedSize(horizontal: false, vertical: true) }
@@ -364,22 +400,7 @@ struct UnrotFocusSheet: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { onChooseApps() }
                 }
             } else {
-                HStack(spacing: 8) {
-                    ForEach([15, 25, 45, 60, 90], id: \.self) { value in
-                        Button { minutes = value } label: {
-                            Text(verbatim: "\(value)")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity, minHeight: 48)
-                                .foregroundStyle(minutes == value ? UPalette.onGold : UPalette.ink)
-                                .background {
-                                    if minutes == value { Capsule().fill(UPalette.goldFill) } else { Capsule().fill(UPalette.card) }
-                                }
-                        }
-                        .buttonStyle(UPressStyle())
-                        .accessibilityLabel(Text("u.focus.minutes \(value)"))
-                        .accessibilityAddTraits(minutes == value ? .isSelected : [])
-                    }
-                }
+                picker
                 if failed {
                     Text("u.focus.failed").font(.footnote).foregroundStyle(UPalette.warn)
                 }
@@ -388,6 +409,102 @@ struct UnrotFocusSheet: View {
                 }
             }
         }
+    }
+
+    // MARK: - Choosing
+
+    /// The length as a big clock with steps either side, the usual lengths
+    /// as chips, and when it would end.
+    private var picker: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 16) {
+                stepButton("minus", -5, "u.focus.less")
+                Text(verbatim: FocusClock.text(seconds: minutes * 60))
+                    .font(.uDisplay(56)).monospacedDigit().foregroundStyle(UPalette.ink)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                    .frame(maxWidth: .infinity)
+                    .contentTransition(.numericText())
+                    .accessibilityLabel(Text("u.focus.minutes \(minutes)"))
+                    .accessibilityAdjustableAction { direction in
+                        switch direction {
+                        case .increment: change(5)
+                        case .decrement: change(-5)
+                        @unknown default: break
+                        }
+                    }
+                stepButton("plus", 5, "u.focus.more")
+            }
+            let ends = Date().addingTimeInterval(Double(minutes * 60)).formatted(date: .omitted, time: .shortened)
+            Text("u.focus.endsAt \(ends)").font(.footnote).foregroundStyle(UPalette.dim)
+            HStack(spacing: 8) {
+                ForEach([15, 25, 45, 60, 90], id: \.self) { value in
+                    Button { change(value - minutes) } label: {
+                        Text(verbatim: "\(value)")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity, minHeight: 40)
+                            .foregroundStyle(minutes == value ? UPalette.onGold : UPalette.ink)
+                            .background {
+                                if minutes == value { Capsule().fill(UPalette.goldFill) } else { Capsule().fill(UPalette.card) }
+                            }
+                    }
+                    .buttonStyle(UPressStyle())
+                    .accessibilityLabel(Text("u.focus.minutes \(value)"))
+                    .accessibilityAddTraits(minutes == value ? .isSelected : [])
+                }
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    private func stepButton(_ icon: String, _ delta: Int, _ label: LocalizedStringKey) -> some View {
+        Button { change(delta) } label: {
+            Image(systemName: icon).font(.title3.weight(.bold)).foregroundStyle(UPalette.ink)
+                .frame(width: 52, height: 52)
+                .background(UPalette.card, in: Circle())
+                .overlay { Circle().strokeBorder(UPalette.cardLine) }
+        }
+        .buttonStyle(UPressStyle())
+        .accessibilityLabel(Text(label))
+    }
+
+    private func change(_ delta: Int) {
+        withAnimation(.snappy) { minutes = FocusClock.step(minutes, by: delta) }
+        UISelectionFeedbackGenerator().selectionChanged()
+    }
+
+    // MARK: - Running
+
+    /// A live countdown inside a gold ring that empties as the time passes.
+    private var running: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let left = FocusClock.remaining(until: store.focusUntil, now: context.date)
+            let part = FocusClock.part(until: store.focusUntil, lengthMinutes: store.focusLength, now: context.date)
+            let leftText = UnrotFormat.short(minutes: (left + 59) / 60)
+            VStack(spacing: 10) {
+                ZStack {
+                    Circle().stroke(Color.white.opacity(0.08), lineWidth: 10)
+                    Circle().trim(from: 0, to: part)
+                        .stroke(UPalette.goldFill, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .animation(.linear(duration: 1), value: part)
+                    VStack(spacing: 2) {
+                        Text(verbatim: FocusClock.text(seconds: left))
+                            .font(.uDisplay(44)).monospacedDigit().foregroundStyle(UPalette.ink)
+                            .lineLimit(1).minimumScaleFactor(0.6)
+                        Text("u.focus.left").font(.caption.weight(.heavy)).tracking(1.2).textCase(.uppercase)
+                            .foregroundStyle(UPalette.goldLight)
+                    }
+                    .padding(20)
+                }
+                .frame(width: 210, height: 210)
+                .frame(maxWidth: .infinity)
+                let until = Date(timeIntervalSince1970: store.focusUntil).formatted(date: .omitted, time: .shortened)
+                Text("u.focus.until \(until)").font(.footnote).foregroundStyle(UPalette.dim)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("u.focus.leftA11y \(leftText)"))
+        }
+        .padding(.vertical, 6)
     }
 }
 
@@ -488,5 +605,87 @@ struct UnrotHelpSheet: View {
                 .accessibilityHint(Text(open == i ? "u.help.hide" : "u.help.show"))
             }
         }
+    }
+}
+
+/// Last week in one look: what came back, how the feed time moved, and the
+/// small things that held it. Opening it marks the week as seen.
+struct UnrotWeekRecapSheet: View {
+    let recap: WeeklyRecap
+    let onSeen: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private var range: String {
+        guard let firstKey = recap.days.first, let lastKey = recap.days.last,
+              let first = UnrotFormat.date(fromKey: firstKey),
+              let last = UnrotFormat.date(fromKey: lastKey) else { return "" }
+        return (first..<last).formatted(.interval.month(.abbreviated).day())
+    }
+
+    var body: some View {
+        USheet(title: "u.recap.title", subtitle: LocalizedStringKey(range), tall: true) {
+            VStack(spacing: 4) {
+                HStack(spacing: 10) {
+                    Text(verbatim: "❦").foregroundStyle(UPalette.gold).scaleEffect(x: -1)
+                    Text(verbatim: UnrotFormat.short(minutes: recap.stats.givenBack))
+                        .font(.uDisplay(44)).foregroundStyle(UPalette.ink).lineLimit(1).minimumScaleFactor(0.6)
+                    Text(verbatim: "❦").foregroundStyle(UPalette.gold)
+                }
+                Text("u.recap.given").font(.caption.weight(.heavy)).tracking(1.2).textCase(.uppercase)
+                    .foregroundStyle(UPalette.goldLight)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .accessibilityElement(children: .combine)
+
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                tile(recap.stats.average.map { UnrotFormat.short(minutes: $0) } ?? "—", "u.recap.average", change)
+                tile("\(recap.stats.underBefore)/\(recap.stats.measuredDays)", "u.recap.under", nil)
+                tile("\(recap.pauses)", "u.recap.pauses", nil)
+                tile("\(recap.checkIns)/7", "u.recap.checkins",
+                     mostly)
+            }
+            if let lightest = recap.stats.lightest, let date = UnrotFormat.date(fromKey: lightest.key) {
+                HStack {
+                    Image(systemName: "leaf").foregroundStyle(UPalette.leaf)
+                    let day = date.formatted(.dateTime.weekday(.wide))
+                    let minutes = UnrotFormat.short(minutes: lightest.minutes)
+                    Text("u.recap.lightest \(day) \(minutes)").font(.subheadline).foregroundStyle(UPalette.ink)
+                    Spacer()
+                }
+                .padding(14)
+                .background(UPalette.leaf.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+            Text("u.recap.private").font(.caption).foregroundStyle(UPalette.dim)
+                .fixedSize(horizontal: false, vertical: true)
+            UGoldButton(title: "u.done", wide: true) { dismiss() }
+        }
+        .onAppear(perform: onSeen)
+    }
+
+    private var mostly: Text? {
+        guard let pull = recap.topPull else { return nil }
+        let name = Text(uKey("u.pull.", pull))
+        return Text("u.recap.mostly \(name)").foregroundColor(UPalette.dim)
+    }
+
+    private var change: Text? {
+        guard let c = recap.change, c != 0 else { return nil }
+        let amount = "\(abs(c))%"
+        return c < 0 ? Text("u.recap.down \(amount)").foregroundColor(UPalette.leaf)
+                     : Text("u.recap.up \(amount)").foregroundColor(UPalette.warn)
+    }
+
+    private func tile(_ value: String, _ label: LocalizedStringKey, _ detail: Text?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(verbatim: value).font(.uDisplay(26)).foregroundStyle(UPalette.ink).lineLimit(1).minimumScaleFactor(0.6)
+            Text(label).font(.caption).foregroundStyle(UPalette.dim)
+            if let detail { detail.font(.caption.weight(.semibold)) }
+        }
+        .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
+        .padding(14)
+        .background(UPalette.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(UPalette.cardLine) }
+        .accessibilityElement(children: .combine)
     }
 }

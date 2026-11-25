@@ -89,6 +89,52 @@ small Screen Time pieces.
   two weeks are measured. UI pass: a status-bar scrim on every tab, labelled
   Check in / Hard moment pills (Breathe stays the one gold action), an empty
   chart state, and a light tick on tab changes.
+- **A true first day.** Feed readings from before the start day are ignored,
+  so a new person never sees borrowed progress; Home says how the plant starts
+  growing (choose feed apps in Shield), days before the start are faded in the
+  garden, and empty charts and meters stay quiet instead of showing zeros.
+- **After the pull passes.** Breathe's end screen offers "Do something
+  instead", which closes Breathe and opens the person's own Instead ideas; the
+  notes field now prompts ("Something to read when the pull comes…") instead of
+  showing a sample note.
+- **Typing and large text.** The name step focuses its field on arrival and
+  Return moves on; at accessibility text sizes the path summary and the chart
+  header stack instead of breaking words, and the chart hint is never clipped.
+- **Ideas from Opal and CleanPath, in Unrot's own look.** Home has a
+  "Showing up" card: the day number on a gold medallion, a line for the last
+  milestone (1, 3, 7, 14, 30, 60, 90, 180, 365 days; it never resets) and a
+  thin bar to the next. Each past day shows its feed time on a bar centred on
+  the person's own "before", filling left in green when under and right in
+  amber when over (Opal's own-average bars, without an invented score). The
+  shared Hisn screens (apps, blocking layers, commitment, vault, everything)
+  now use Unrot's warm palette and backdrop instead of Hisn's navy.
+- **Focus as a clock** (after Opal's timer). Choosing: a large serif "25:00"
+  with − and + in five-minute steps (5 to 180; VoiceOver can swipe to adjust),
+  the usual lengths as chips and "Ends at 7:16 AM". Running: a live countdown
+  inside a gold ring that empties, and a slim gold "Focus · 19 m left" line on
+  Home that opens it. Debug: `-unrot-demo focus`, `-unrot-canfocus`.
+- **"For you now" after a check-in** (CleanPath's "what do you need?", without
+  its scores). The sheet turns into one suggestion that fits the answer, with
+  one button: stress → Breathe, boredom → an Instead idea, tired → Focus and
+  the phone face down, alone → Messages, a heavy day with nothing pulling →
+  a kind word and Breathe, a good day → a warm line and Done (`CheckInNext`).
+- **Your week, in one look.** Once a new week starts and last week holds
+  anything, Home shows a small card ("9 h 35 given back, and what held it")
+  that opens a recap: time given back, feed time a day with its change on the
+  week before, days under the person's before, pauses, check-ins with what
+  pulled most, and the lightest day. Opening or putting it away marks that
+  week seen (`WeeklyRecap`, key `unrot.recap.seen`). Private; never on a share
+  card. Debug: `-unrot-demo recap`.
+- **When the pull comes** (CleanPath's peak-hour idea). Each finished Breath
+  keeps its time on the phone (`unrot.pause.times`, newest 400). Once there are
+  five, Progress shows 24 hour bars with the busiest two hours in gold ("Most
+  of your pauses come between 2 PM and 4 PM") and, unless a reminder already
+  lands before them, "Remind me at 12:15 PM", which adds that time to the
+  person's reminders and asks iOS once (`PullHours`).
+- **A little motion.** The given-back time counts up from 0 the first time
+  Home shows in a session, and the week's plants grow up out of their pots one
+  after another when Progress opens (`Pot` and the hero number animate). Both
+  stay still with Reduce Motion.
 - **How the week felt** on Progress: each day's check-in mood and the pull that
   came up most, with a nudge to plan Focus or Instead for it.
 - **Help and questions** in You: eight honest answers (deleting, counting,

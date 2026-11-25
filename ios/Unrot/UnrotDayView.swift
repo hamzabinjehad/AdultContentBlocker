@@ -23,6 +23,7 @@ struct UnrotDayView: View {
             header
             plant
             numbers
+            against
             checkIn
             notes
             if summary.triesStopped > 0 { keptOut }
@@ -87,7 +88,7 @@ struct UnrotDayView: View {
         return HStack(spacing: 10) {
             tile(label: "u.day.feed",
                  value: s.feed.map { $0 == 0 ? "< 10 m" : "≥ " + UnrotFormat.short(minutes: $0) } ?? "—",
-                 detail: s.difference.map { diffText($0) }, tint: s.difference.map { $0 <= 0 ? UPalette.leaf : UPalette.warn })
+                 detail: s.isToday ? s.difference.map { diffText($0) } : nil, tint: s.difference.map { $0 <= 0 ? UPalette.leaf : UPalette.warn })
             tile(label: "u.day.given",
                  value: s.isToday ? "…" : s.gain.map { UnrotFormat.short(minutes: $0) } ?? "—",
                  detail: s.isToday ? Text("u.day.countedTomorrow") : nil, tint: UPalette.goldLight)
@@ -111,6 +112,46 @@ struct UnrotDayView: View {
         .background(UPalette.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(UPalette.cardLine) }
         .accessibilityElement(children: .combine)
+    }
+
+    // MARK: - Against the usual day
+
+    /// The day's feed time on a bar centred on the person's own "before":
+    /// it fills left in green when under, right in amber when over.
+    @ViewBuilder private var against: some View {
+        if let a = AgainstBefore.make(feed: summary.feed, before: summary.before), !summary.isToday {
+            let amount = UnrotFormat.short(minutes: abs(a.difference))
+            let tint = a.difference <= 0 ? UPalette.leaf : UPalette.warn
+            UCard(padding: 14) {
+                HStack(alignment: .firstTextBaseline) {
+                    ULabel("u.against.title")
+                    Spacer()
+                    Group {
+                        if a.difference == 0 { Text("u.against.even") }
+                        else if a.difference < 0 { Text("u.against.under \(amount)") }
+                        else { Text("u.against.over \(amount)") }
+                    }
+                    .font(.subheadline.weight(.bold)).foregroundStyle(tint)
+                }
+                GeometryReader { geo in
+                    let half = geo.size.width / 2
+                    let width = max(a.difference == 0 ? 0 : 6, half * a.part)
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.08)).frame(height: 8)
+                        Capsule().fill(tint.gradient)
+                            .frame(width: width, height: 8)
+                            .offset(x: a.difference <= 0 ? half - width : half)
+                        Rectangle().fill(UPalette.ink).frame(width: 2, height: 18).offset(x: half - 1)
+                    }
+                    .frame(height: 18)
+                    .environment(\.layoutDirection, .leftToRight)
+                }
+                .frame(height: 18)
+                Text("u.against.before").font(.caption2.weight(.bold)).textCase(.uppercase)
+                    .foregroundStyle(UPalette.dim).frame(maxWidth: .infinity)
+            }
+            .accessibilityElement(children: .combine)
+        }
     }
 
     // MARK: - Check-in

@@ -19,6 +19,7 @@ struct UnrotYouView: View {
     @State private var editingReason = false
     @State private var editingIdeas = false
     @State private var confirmReplay = false
+    @State private var showingPlus = false
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
@@ -26,6 +27,9 @@ struct UnrotYouView: View {
             VStack(spacing: 16) {
                 UTitleBar(title: "u.tab.you") { EmptyView() }
                 profile
+                record
+                shareButton
+                UnrotPlusRow { showingPlus = true }
                 yourPlan
                 keepOn
                 settings
@@ -41,6 +45,7 @@ struct UnrotYouView: View {
         .scrollIndicators(.hidden)
         .sheet(isPresented: $editingBefore) { BeforeEditor(store: store) }
         .sheet(isPresented: $showingHelp) { UnrotHelpSheet() }
+        .sheet(isPresented: $showingPlus) { UnrotPlusSheet() }
         .sheet(isPresented: $editingReason) { ReasonEditor(store: store) }
         .sheet(isPresented: $editingIdeas) { InsteadEditor(store: store) }
         .alert("u.you.replayTitle", isPresented: $confirmReplay) {
@@ -52,11 +57,15 @@ struct UnrotYouView: View {
     private var profile: some View {
         UCard {
             HStack(spacing: 14) {
-                Text(verbatim: String(store.answers.name.first.map(String.init) ?? "✿"))
-                    .font(.uDisplay(28)).foregroundStyle(UPalette.onGold)
-                    .frame(width: 60, height: 60)
-                    .background(RadialGradient(colors: [Color(red: 1, green: 0.89, blue: 0.6), Color(red: 0.788, green: 0.553, blue: 0.133)],
-                                               center: UnitPoint(x: 0.4, y: 0.35), startRadius: 0, endRadius: 40), in: Circle())
+                // The sprout as the avatar: the glass painting for today's stage.
+                Image(GlassStage.art(stage: GlassStage.stage(givenBackMinutes: store.givenBackMinutes), look: .clear, night: false))
+                    .resizable().scaledToFill()
+                    .frame(width: 84, height: 84)
+                    .frame(width: 64, height: 64)
+                    .background(RadialGradient(colors: [Color(red: 0.23, green: 0.16, blue: 0.07), Color(red: 0.07, green: 0.05, blue: 0.02)],
+                                               center: .center, startRadius: 0, endRadius: 40))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(.white.opacity(0.1), lineWidth: 1))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 3) {
                     (store.answers.name.isEmpty ? Text("u.you.gardener") : Text(verbatim: store.answers.name))
@@ -70,6 +79,64 @@ struct UnrotYouView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    // MARK: - Record and share
+
+    private var stage: Int { GlassStage.stage(givenBackMinutes: store.givenBackMinutes) }
+
+    /// What they have grown, never what they were shielded from.
+    private var record: some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+            recordTile(UnrotFormat.short(minutes: store.givenBackMinutes), "u.you.recordGiven")
+            recordTile("\(store.seams)", "u.you.recordSeams")
+            recordTile("\(store.day())", "u.you.recordDays")
+            recordTile(nil, "u.you.recordStage", stageKey: LocalizedStringKey(GlassStage.nameKeys[stage]))
+        }
+    }
+
+    private func recordTile(_ value: String?, _ label: LocalizedStringKey, stageKey: LocalizedStringKey? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Group {
+                if let value { Text(verbatim: value) } else if let stageKey { Text(stageKey) }
+            }
+            .font(.title3.weight(.heavy)).foregroundStyle(UPalette.goldLight).lineLimit(1).minimumScaleFactor(0.7)
+            Text(label).font(.caption).foregroundStyle(UPalette.dim).lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .background(Color(red: 0.08, green: 0.08, blue: 0.07), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.05), lineWidth: 1))
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The share card: the sprout, its stage and the time given back. Nothing else, ever.
+    @MainActor private var shareImage: Image {
+        let card = SproutShareCard(stage: stage, givenBack: store.givenBackMinutes)
+            .environment(\.locale, Locale(identifier: language.isEmpty ? Locale.current.identifier : language))
+        let renderer = ImageRenderer(content: card)
+        renderer.scale = 3
+        return renderer.uiImage.map { Image(uiImage: $0) } ?? Image(GlassStage.art(stage: stage, look: .clear, night: false))
+    }
+
+    private var shareButton: some View {
+        ShareLink(item: shareImage, preview: SharePreview(Text("u.you.share"), image: shareImage)) {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.arrow.up").font(.title3.weight(.semibold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("u.you.share").font(.headline.weight(.heavy))
+                    Text("u.you.shareSub").font(.caption).opacity(0.8).multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(Color(red: 0.16, green: 0.11, blue: 0.01))
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .frame(maxWidth: .infinity, minHeight: 64)
+            .background(LinearGradient(colors: [Color(red: 1, green: 0.84, blue: 0.42), Color(red: 0.85, green: 0.6, blue: 0.12)],
+                                       startPoint: .top, endPoint: .bottom),
+                        in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     private var yourPlan: some View {
@@ -94,15 +161,15 @@ struct UnrotYouView: View {
                 rowLabel("lock.shield", "u.lock.row", value: nil)
             }
             Divider().overlay(UPalette.cardLine)
-            NavigationLink { CommitmentSetupView(protection: protection, usage: usage, vault: vault) } label: {
+            NavigationLink { CommitmentSetupView(protection: protection, usage: usage, vault: vault).unrotRoom() } label: {
                 rowLabel("lock", "u.you.commitment", value: protection.commitmentActive ? "u.pane.on" : nil)
             }
             Divider().overlay(UPalette.cardLine)
-            NavigationLink { VaultSetupView(protection: protection, vault: vault, lockDevice: lockDevice) } label: {
+            NavigationLink { VaultSetupView(protection: protection, vault: vault, lockDevice: lockDevice).unrotRoom() } label: {
                 rowLabel("key", "u.you.vault", value: nil)
             }
             Divider().overlay(UPalette.cardLine)
-            NavigationLink { BlockingLayersSetupView(protection: protection) } label: {
+            NavigationLink { BlockingLayersSetupView(protection: protection).unrotRoom() } label: {
                 rowLabel("checkmark.shield", "u.you.layers", value: nil)
             }
         }
@@ -142,7 +209,7 @@ struct UnrotYouView: View {
             .frame(minHeight: 44)
             Divider().overlay(UPalette.cardLine)
             NavigationLink {
-                MoreView(protection: protection, usage: usage, vault: vault, lockDevice: lockDevice, language: $language)
+                MoreView(protection: protection, usage: usage, vault: vault, lockDevice: lockDevice, language: $language).unrotRoom()
             } label: {
                 rowLabel("ellipsis.circle", "u.you.everything", value: nil)
             }
@@ -256,3 +323,25 @@ struct InsteadEditor: View {
     }
 }
 
+
+/// The picture shared from You: dark glasshouse, the stage's painting, UNROT, the
+/// stage name and the time given back from endless feeds.
+struct SproutShareCard: View {
+    let stage: Int
+    let givenBack: Int
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(GlassStage.art(stage: stage, look: .clear, night: false))
+                .resizable().scaledToFit().frame(width: 300, height: 300)
+            Text(verbatim: "UNROT").font(.caption.weight(.heavy)).tracking(4).foregroundStyle(UPalette.gold)
+            Text(LocalizedStringKey(GlassStage.nameKeys[stage])).font(.title3.weight(.heavy)).foregroundStyle(.white)
+            Text(verbatim: UnrotFormat.short(minutes: givenBack))
+                .font(.system(size: 44, weight: .heavy)).foregroundStyle(UPalette.goldLight)
+            Text("u.you.shareLine").font(.footnote).foregroundStyle(UPalette.dim)
+        }
+        .padding(.vertical, 28).frame(width: 360, height: 450)
+        .background(RadialGradient(colors: [Color(red: 0.23, green: 0.16, blue: 0.06), Color(red: 0.04, green: 0.03, blue: 0.02)],
+                                   center: UnitPoint(x: 0.5, y: 0.35), startRadius: 0, endRadius: 380))
+    }
+}

@@ -145,7 +145,10 @@ struct UnrotOnboarding: View {
             TextField("u.ob.name.placeholder", text: $answers.name)
                 .font(.uDisplay(24)).foregroundStyle(UPalette.ink)
                 .textContentType(.givenName)
+                .submitLabel(.next)
                 .focused($typing)
+                .onSubmit { typing = false; go(1) }
+                .task { try? await Task.sleep(nanoseconds: 450_000_000); typing = true }
                 .padding(16)
                 .background(UPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .overlay { RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(UPalette.gold.opacity(0.7)) }

@@ -17,12 +17,21 @@ struct UnrotRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(MobileProtectionPolicy.lockAttestationKey) private var lockAttestationData = Data()
 
-    enum Tab: Int, CaseIterable { case home, shield, progress, you }
-    enum Sheet: String, Identifiable { case checkIn, hard, instead, notes, focus, more, info, rule, lock; var id: String { rawValue } }
+    /// Five tabs, as in the prototype: Shield is the adult protection alone, app rules have their own tab.
+    enum Tab: Int, CaseIterable { case home, shield, rules, progress, you }
+    enum Sheet: String, Identifiable { case checkIn, hard, instead, notes, focus, more, info, rule, lock, recap; var id: String { rawValue } }
 
     @State private var tab: Tab = .home
     @State private var sheet: Sheet?
     @State private var breathing = false
+    #if DEBUG
+    /// Screenshots: `-unrot-canfocus` shows the Focus picker without chosen apps.
+    static let debugFocus = ProcessInfo.processInfo.arguments.contains("-unrot-canfocus")
+    #else
+    static let debugFocus = false
+    #endif
+    /// A sheet to open once Breathe has closed.
+    @State private var afterBreathe: Sheet?
     @State private var pausePrompt: UnrotPausePrompt?
     @State private var stageUp: StageUp?
     @State private var notesStart: Date?
@@ -40,8 +49,11 @@ struct UnrotRootView: View {
         }
         .preferredColorScheme(.dark)
         .sheet(item: $sheet) { which in sheetView(which) }
-        .fullScreenCover(isPresented: $breathing) {
-            UnrotBreatheView(store: store) { breathing = false }
+        .fullScreenCover(isPresented: $breathing, onDismiss: {
+            if afterBreathe != nil { sheet = afterBreathe; afterBreathe = nil }
+        }) {
+            UnrotBreatheView(store: store, onClose: { breathing = false },
+                             onInstead: { afterBreathe = .instead; breathing = false })
         }
         .fullScreenCover(item: $stageUp) { up in
             UnrotStageUpView(stage: up.stage, givenBack: store.givenBackMinutes, day: store.day()) { stageUp = nil }
@@ -92,25 +104,72 @@ struct UnrotRootView: View {
             TabView(selection: $tab) {
                 NavigationStack { home.toolbar(.hidden, for: .navigationBar).toolbar(.hidden, for: .tabBar) }.tag(Tab.home)
                 NavigationStack { shield.toolbar(.hidden, for: .navigationBar).toolbar(.hidden, for: .tabBar) }.tag(Tab.shield)
+                NavigationStack { rules.toolbar(.hidden, for: .navigationBar).toolbar(.hidden, for: .tabBar) }.tag(Tab.rules)
                 NavigationStack { progress.toolbar(.hidden, for: .navigationBar).toolbar(.hidden, for: .tabBar) }.tag(Tab.progress)
                 NavigationStack { you.toolbar(.hidden, for: .navigationBar).toolbar(.hidden, for: .tabBar) }.tag(Tab.you)
             }
             .toolbar(.hidden, for: .tabBar)
             .modifier(ClearTabBackground())
             statusScrim
-            if store.tourSeen || tab != .home { dock }
+            if store.tourSeen || tab != .home {
+                VStack(spacing: 10) {
+                    if tab == .home { helpBar }
+                    dock
+                }
+            }
         }
+        .environment(\.uTones, tones)
+    }
+
+    private var tones: UTones { UTones.of(mood) }
+
+    /// Help under the thumb on Today: Help now (Breathe to seal it while cracked) and the hard moment.
+    private var helpBar: some View {
+        let sealing = store.glass(now: protection.now).look == .cracked
+        return HStack(spacing: 8) {
+            Button { breathing = true } label: {
+                HStack(spacing: 9) {
+                    Image("obj_wave").resizable().scaledToFit().frame(width: 26, height: 26).accessibilityHidden(true)
+                    Text(sealing ? "u.td.help.seal" : "u.home.helpNow").font(.system(size: 16, weight: .bold))
+                }
+                .foregroundStyle(tones.goldInk)
+                .frame(maxWidth: .infinity, minHeight: 54)
+                .background(tones.goldFill, in: Capsule())
+                .overlay { Capsule().strokeBorder(Color.white.opacity(0.25)) }
+                .shadow(color: .black.opacity(0.45), radius: 11, y: 8)
+            }
+            .buttonStyle(UPressStyle())
+            .layoutPriority(1)
+            Button { sheet = .hard } label: {
+                Text("u.td.hard").font(.system(size: 13.5, weight: .semibold)).foregroundStyle(tones.ink)
+                    .multilineTextAlignment(.center).lineLimit(2)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, minHeight: 54)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .background(Color(red: 0.157, green: 0.129, blue: 0.094).opacity(0.7), in: Capsule())
+                    .overlay { Capsule().strokeBorder(Color.white.opacity(0.10)) }
+                    .shadow(color: .black.opacity(0.4), radius: 11, y: 8)
+            }
+            .buttonStyle(UPressStyle())
+            .frame(maxWidth: 160)
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: 560)
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
     }
 
     /// The status bar never sits on top of scrolled text: the room darkens under it.
     private var statusScrim: some View {
         GeometryReader { geo in
             VStack(spacing: 0) {
-                LinearGradient(stops: [.init(color: UPalette.base, location: 0),
-                                       .init(color: UPalette.base.opacity(0.85), location: 0.6),
-                                       .init(color: UPalette.base.opacity(0), location: 1)],
+                // Nearly solid under the clock, then a long soft fade so no edge shows.
+                let top = geo.safeAreaInsets.top, height = top + 40
+                LinearGradient(stops: [.init(color: tones.cv, location: 0),
+                                       .init(color: tones.cv.opacity(0.94), location: top * 0.8 / height),
+                                       .init(color: tones.cv.opacity(0.6), location: top / height),
+                                       .init(color: tones.cv.opacity(0), location: 1)],
                                startPoint: .top, endPoint: .bottom)
-                    .frame(height: geo.safeAreaInsets.top + 22)
+                    .frame(height: height)
                 Spacer(minLength: 0)
             }
             .ignoresSafeArea()
@@ -119,83 +178,95 @@ struct UnrotRootView: View {
         .accessibilityHidden(true)
     }
 
-    private var backdropMood: UBackdrop.Mood {
-        let glass = store.glass(now: protection.now)
-        if glass.look == .cracked || glass.look == .broken { return .wilt }
-        if facts.quietNow { return .night }
-        return .day
+    /// The colour of the moment, shared by every tab so the app reads as one room.
+    private var mood: UnrotMood {
+        UnrotMood.of(look: store.glass(now: protection.now).look, focusRunning: store.focusActive, quietNow: facts.quietNow)
     }
+    private var backdropMood: UBackdrop.Mood { UBackdrop(mood).mood }
 
     private var home: some View {
         UnrotHomeView(store: store, shield: facts, now: protection.now,
-                      onShield: { tab = .shield }, onTool: open, onInfo: { sheet = .info })
+                      onShield: { tab = .shield }, onTool: open, onInfo: { sheet = .info },
+                      onRecap: { sheet = .recap }, onProgress: { tab = .progress })
             .background(UBackdrop(mood: backdropMood))
     }
 
     private var shield: some View {
         UnrotShieldView(protection: protection, usage: usage, vault: vault, lockDevice: lockDevice,
-                        facts: facts, onAddRule: { sheet = .rule })
-            .background(UBackdrop(mood: facts.checked && !facts.openPanes.isEmpty ? .warn : .day))
+                        facts: facts, onAddRule: { sheet = .rule }, part: .adult)
+            .background(UBackdrop(mood: facts.checked && !facts.openPanes.isEmpty ? .warn : backdropMood))
+    }
+
+    private var rules: some View {
+        UnrotShieldView(protection: protection, usage: usage, vault: vault, lockDevice: lockDevice,
+                        facts: facts, onAddRule: { sheet = .rule }, part: .feeds)
+            .background(UBackdrop(mood: backdropMood))
     }
 
     private var progress: some View {
         UnrotProgressView(store: store, facts: facts, now: protection.now,
                           onOpenNotes: { day in notesStart = day; sheet = .notes },
                           onCheckIn: { sheet = .checkIn })
-            .background(UBackdrop())
+            .background(UBackdrop(mood: backdropMood))
     }
 
     private var you: some View {
         UnrotYouView(store: store, protection: protection, usage: usage, vault: vault,
                      lockDevice: lockDevice, language: $language, onTool: open, onHome: { tab = .home })
-            .background(UBackdrop())
+            .background(UBackdrop(mood: backdropMood))
     }
 
-    /// Breathe floats over Home; the pill bar is under everything.
+    /// The iPhone tab bar, as in the prototype: a floating glass capsule with the five
+    /// places, and Breathe as its own circle beside it, one tap away on every tab.
     private var dock: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 4) {
+        HStack(spacing: 10) {
+            HStack(spacing: 0) {
                 ForEach(Tab.allCases, id: \.self) { item in
                     Button {
                         if tab != item { UISelectionFeedbackGenerator().selectionChanged() }
                         tab = item
                     } label: {
-                        VStack(spacing: 3) {
-                            Image(systemName: icon(item)).font(.system(size: 18, weight: .semibold))
-                            Text(uKey("u.tab.", ["home", "shield", "progress", "you"][item.rawValue]))
-                                .font(.caption2.weight(tab == item ? .bold : .medium))
+                        VStack(spacing: 1) {
+                            Image(systemName: icon(item)).font(.system(size: 17, weight: .semibold))
+                            Text(uKey("u.tab.", ["home", "shield", "rules", "progress", "you"][item.rawValue]))
+                                .font(.system(size: 10, weight: .semibold))
+                                .lineLimit(1).minimumScaleFactor(0.8)
                         }
-                        .foregroundStyle(tab == item ? Color(red: 0.07, green: 0.05, blue: 0.02) : UPalette.dim)
-                        .frame(maxWidth: .infinity, minHeight: 52)
-                        .background(tab == item ? Color.white : .clear, in: Capsule())
+                        .foregroundStyle(tab == item ? tones.gold : Color(white: 0.87))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(tab == item ? Color.white.opacity(0.12) : .clear, in: Capsule())
                         .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(tab == item ? [.isSelected, .isButton] : .isButton)
                 }
             }
-            .padding(6)
-            .background(UPalette.navBar, in: Capsule())
-            .overlay { Capsule().strokeBorder(Color.white.opacity(0.08)) }
-            .shadow(color: .black.opacity(0.5), radius: 16, y: 6)
-            .frame(maxWidth: 520)
-            // Like iOS's own tab bar: labels stop growing past a size, so they never wrap.
-            .dynamicTypeSize(...DynamicTypeSize.xLarge)
+            .padding(4)
+            .frame(height: 62)
+            .background(.ultraThinMaterial, in: Capsule())
+            .background(Color(white: 0.19).opacity(0.78), in: Capsule())
+            .overlay { Capsule().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5) }
+            .shadow(color: .black.opacity(0.4), radius: 15, y: 10)
+            Button { breathing = true } label: {
+                Image(systemName: "wind").font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(tones.gold)
+                    .frame(width: 62, height: 62)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .background(Color(white: 0.19).opacity(0.78), in: Circle())
+                    .overlay { Circle().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5) }
+                    .shadow(color: .black.opacity(0.4), radius: 15, y: 10)
+            }
+            .buttonStyle(UPressStyle())
+            .accessibilityLabel(Text("u.tool.breathe"))
         }
+        .frame(maxWidth: 560)
+        // Like iOS's own tab bar: labels stop growing past a size, so they never wrap.
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .padding(.horizontal, 14)
-        .padding(.bottom, 6)
-        .padding(.top, 28)
-        .background(alignment: .bottom) {
-            // Content fades out behind the bar instead of sitting under it.
-            LinearGradient(stops: [.init(color: UPalette.base.opacity(0), location: 0),
-                                   .init(color: UPalette.base, location: 0.45)],
-                           startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
-        }
+        .padding(.bottom, 2)
     }
 
-    private func icon(_ tab: Tab) -> String { ["house", "shield", "chart.bar", "person"][tab.rawValue] }
+    private func icon(_ tab: Tab) -> String { ["sun.max", "shield", "slider.horizontal.3", "chart.bar", "person"][tab.rawValue] }
 
     // MARK: - Tools and sheets
 
@@ -214,14 +285,22 @@ struct UnrotRootView: View {
 
     @ViewBuilder private func sheetView(_ which: Sheet) -> some View {
         switch which {
-        case .checkIn: UnrotCheckInSheet(store: store)
+        case .checkIn:
+            UnrotCheckInSheet(store: store) { next in
+                switch next {
+                case .breathe, .gentle: open(.breathe)
+                case .instead: open(.instead)
+                case .rest: open(.focus)
+                case .reachOut, .keep: break
+                }
+            }
         case .hard: UnrotHardMomentSheet(store: store) { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { breathing = true } }
         case .instead:
             UnrotInsteadSheet(store: store, canClose: usage.configuration != nil,
                               onChooseApps: { sheet = .rule }) { startFocus(minutes: 15) }
         case .notes: UnrotNotesSheet(store: store, startDay: notesStart)
         case .focus:
-            UnrotFocusSheet(store: store, canClose: usage.configuration != nil,
+            UnrotFocusSheet(store: store, canClose: usage.configuration != nil || Self.debugFocus,
                             onChooseApps: { sheet = .rule },
                             onStart: { startFocus(minutes: $0) }, onEnd: endFocus)
         case .more:
@@ -229,6 +308,10 @@ struct UnrotRootView: View {
                 if tool == .rules { tab = .shield; sheet = .rule } else { open(tool) }
             }
         case .info: UnrotGivenBackInfo()
+        case .recap:
+            if let recap = store.recap(now: protection.now) {
+                UnrotWeekRecapSheet(recap: recap) { store.markRecapSeen(recap.weekKey) }
+            }
         case .lock:
             NavigationStack {
                 UnrotLockView(protection: protection, vault: vault, lockDevice: lockDevice)

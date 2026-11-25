@@ -120,3 +120,15 @@ enum ReminderScheduler {
         (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge])) ?? false
     }
 }
+
+extension PullHours {
+    /// The reminder slot whose time is the latest at or before the window's
+    /// start; for windows before the morning one, the night before ("bed").
+    static func slot(beforeHour hour: Int) -> String {
+        let start = hour * 60
+        let earlier = ReminderPlan.slots.values
+            .filter { $0.hour * 60 + $0.minute <= start }
+            .max { ($0.hour, $0.minute) < ($1.hour, $1.minute) }
+        return earlier?.key ?? "bed"
+    }
+}

@@ -26,8 +26,17 @@ UNROT_APP_SOURCES = ["Unrot/UnrotCore.swift", "Unrot/UnrotStore.swift", "Unrot/U
                      "Unrot/UnrotSheets.swift", "Unrot/UnrotBreatheView.swift", "Unrot/UnrotShieldView.swift",
                      "Unrot/UnrotProgressView.swift", "Unrot/UnrotYouView.swift", "Unrot/UnrotOnboarding.swift",
                      "Unrot/UnrotLockView.swift", "Unrot/UnrotMoments.swift", "Unrot/UnrotReminders.swift",
-                     "Unrot/UnrotDayView.swift"]
+                     "Unrot/UnrotDayView.swift", "Unrot/UnrotPlus.swift", "Unrot/UnrotWood.swift"]
 # Android's reviewed reminder pack, shared as-is so both phones show the same lines.
+# The Islamic edition's own face (first run, looks, Help now) on the shared protection.
+HISN_ISLAMIC_SOURCES = ["Hisn/Islamic/HisnLook.swift", "Hisn/Islamic/HisnContent.swift",
+                        "Hisn/Islamic/HisnOnboardingView.swift", "Hisn/Islamic/HisnHelpView.swift",
+                        "Hisn/Islamic/HisnIslamicRoot.swift", "Hisn/Islamic/HisnData.swift",
+                        "Hisn/Islamic/HisnOnboardingPages.swift",
+    "Hisn/Islamic/HisnShell.swift",
+    "Hisn/Islamic/HisnAdhkarData.swift"]
+HISN_SAYINGS = "../android/app/src/hisn/assets/sayings/sayings.tsv"
+HISN_ART = "Hisn/HisnArt.xcassets"
 UNROT_REMINDERS = "../android/app/src/general/assets/reminders/reminders.json"
 UNROT_TEST_SOURCES = ["HisnTests/UnrotCoreTests.swift"]
 
@@ -120,6 +129,9 @@ def main(safari_only: bool = False, domain_only: bool = False,
     for name in sources:
         if name != tests:
             sources[name] = ["Shared/Edition.swift", *sources[name]]
+    islamic = not general and not safari_only
+    if islamic:
+        sources[app] += HISN_ISLAMIC_SOURCES
     if general:
         # Hisn's tests import HisnMobile; the Unrot test bundle has its own.
         sources[app] += UNROT_APP_SOURCES
@@ -136,6 +148,8 @@ def main(safari_only: bool = False, domain_only: bool = False,
                  monitor: [privacy], scanner: [privacy],
                  shield_config: [privacy], shield_action: [privacy], proxy: [privacy],
                  **{blocker: [privacy] for blocker in blockers}}
+    if islamic:
+        resources[app] += [HISN_ART, HISN_SAYINGS]
     if general:
         resources[app] += ["Unrot/UnrotArt.xcassets", UNROT_REMINDERS]
         resources[widget] = ["Unrot/UnrotArt.xcassets", privacy]
@@ -152,7 +166,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
     for path in paths:
         kind = {".swift": "sourcecode.swift", ".strings": "text.plist.strings", ".json": "text.json",
                 ".xcassets": "folder.assetcatalog", ".xcprivacy": "text.xml",
-                ".txt": "text"}[Path(path).suffix]
+                ".txt": "text", ".tsv": "text"}[Path(path).suffix]
         refs[path] = p.add(oid("ios-file", path), "PBXFileReference", {
             "lastKnownFileType": kind, "path": q(path), "sourceTree": '"<group>"',
         })
@@ -223,7 +237,8 @@ def main(safari_only: bool = False, domain_only: bool = False,
         phases = [phase(name, "PBXSourcesBuildPhase", [refs[path] for path in sources[name]]),
                   phase(name, "PBXFrameworksBuildPhase", []),
                   phase(name, "PBXResourcesBuildPhase", [loc, refs["Hisn/Assets.xcassets"], refs[privacy], refs["Hisn/Notices.txt"]]
-                        + ([refs["Unrot/UnrotArt.xcassets"], refs[UNROT_REMINDERS]] if general else []) if name == app else
+                        + ([refs["Unrot/UnrotArt.xcassets"], refs[UNROT_REMINDERS]] if general else [])
+                        + ([refs[HISN_ART], refs[HISN_SAYINGS]] if islamic else []) if name == app else
                         [loc, *[refs[path] for path in resources[name]]] if name == widget else
                         [refs[path] for path in resources.get(name, [])])]
         extra = {"PRODUCT_BUNDLE_IDENTIFIER": q(app_identifier if name == app else

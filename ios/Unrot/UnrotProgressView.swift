@@ -6,6 +6,13 @@ import SwiftUI
 /// days, the week's feed bars, the calm meters and the private "kept out" card.
 /// A heavy day is a small plant, never a dead one; nothing here is ever wiped.
 struct UnrotProgressView: View {
+    @AppStorage(ReminderScheduler.enabledKey) private var remindersOn = false
+    @Environment(\.dynamicTypeSize) private var typeSize
+    /// Rows that sit side by side stack once text is at an accessibility size.
+    private var rowLayout: AnyLayout {
+        typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+                                     : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+    }
     @ObservedObject var store: UnrotStore
     let facts: UnrotShieldFacts
     let now: Date
@@ -16,6 +23,9 @@ struct UnrotProgressView: View {
     private static let trendIcons = ["arrow.down.right", "arrow.up.right"]
     @State private var scrubDay: Date?
     @State private var openDay: DayRef?
+    /// The week's plants grow in once, when Progress first appears.
+    @State private var grown = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var onOpenNotes: (Date) -> Void = { _ in }
     var onCheckIn: () -> Void = {}
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -52,12 +62,14 @@ struct UnrotProgressView: View {
                     }
                     .accessibilityLabel(Text("u.progress.explain"))
                 }
+                // The wood opens the page, as in the prototype: clean days are the main result.
+                UnrotWoodCard(store: store, now: now)
                 gauge
                 tiles
-                garden
                 path
                 bars
                 meters
+                pullHours
                 moodWeek
                 keptOut
             }
@@ -179,7 +191,7 @@ struct UnrotProgressView: View {
                             VStack(spacing: 1) {
                                 Pot(size: future ? 0 : plantSize(gain: store.gains[key], today: key == store.today(now)))
                                     .frame(width: 30, height: 30)
-                                    .opacity(future ? 0.25 : 1)
+                                    .opacity(future ? 0.25 : beforeStart(key) ? 0.4 : 1)
                                 Text(verbatim: "\(cal.component(.day, from: day))").font(.system(size: 9))
                                     .foregroundStyle(key == store.today(now) ? UPalette.goldLight : UPalette.dim)
                             }
@@ -205,8 +217,11 @@ struct UnrotProgressView: View {
                     let gain = store.gains[key]
                     Button { openDay = DayRef(date: date) } label: {
                     VStack(spacing: 4) {
-                        Pot(size: plantSize(gain: gain, today: isToday))
+                        Pot(size: grown || reduceMotion ? plantSize(gain: gain, today: isToday) : 0)
                             .frame(height: 64)
+                            .animation(reduceMotion ? nil : .spring(response: 0.7, dampingFraction: 0.7)
+                                .delay(0.08 * Double(week.firstIndex(of: date) ?? 0)), value: grown)
+                            .opacity(beforeStart(key) ? 0.4 : 1)
                         Text(date.formatted(.dateTime.weekday(.narrow)))
                             .font(.caption2.weight(isToday ? .bold : .regular))
                             .foregroundStyle(isToday ? UPalette.goldLight : UPalette.dim)
@@ -219,9 +234,16 @@ struct UnrotProgressView: View {
                     .accessibilityLabel(Text(date.formatted(.dateTime.weekday(.wide))))
                     .accessibilityAddTraits(.isButton)
                     .accessibilityValue(gain.map { Text("u.garden.gain \(UnrotFormat.short(minutes: $0))") }
-                                        ?? Text(isToday ? "u.garden.growing" : "u.garden.none"))
+                                        ?? Text(isToday ? "u.garden.growing" : beforeStart(key) ? "u.day.beforeStart" : "u.garden.none"))
                 }
             }
+            .onAppear { grown = true }
+    }
+
+    /// Days before Unrot began: shown faded, nothing grew there yet.
+    private func beforeStart(_ key: String) -> Bool {
+        guard let start = store.startedAt else { return false }
+        return key < UnrotFormat.dayKey(start)
     }
 
     // MARK: - Your path
@@ -305,12 +327,15 @@ struct UnrotProgressView: View {
             }
             .padding(.horizontal, 4)
             .accessibilityHidden(true)
-            HStack(alignment: .firstTextBaseline) {
-                Text(LocalizedStringKey(GlassStage.nameKeys[current])).font(.headline).foregroundStyle(UPalette.ink)
-                if let key = steps[current].reached, let date = UnrotFormat.date(fromKey: key) {
-                    Text(date.formatted(.dateTime.day().month(.abbreviated))).font(.caption).foregroundStyle(UPalette.dim)
+            rowLayout {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(LocalizedStringKey(GlassStage.nameKeys[current])).font(.headline).foregroundStyle(UPalette.ink)
+                        .fixedSize()
+                    if let key = steps[current].reached, let date = UnrotFormat.date(fromKey: key) {
+                        Text(date.formatted(.dateTime.day().month(.abbreviated))).font(.caption).foregroundStyle(UPalette.dim)
+                    }
                 }
-                Spacer()
+                if !typeSize.isAccessibilitySize { Spacer() }
                 if current < GlassStage.last, let left = GlassStage.minutesToNext(givenBackMinutes: store.givenBackMinutes) {
                     let nextName = Text(LocalizedStringKey(GlassStage.nameKeys[current + 1]))
                     let leftText = UnrotFormat.short(minutes: left)
@@ -339,9 +364,9 @@ struct UnrotProgressView: View {
         let before = store.answers.beforeMinutes
         let shown = scrubDay.flatMap { d in points.first { Calendar.current.isDate($0.date, inSameDayAs: d) } }
         return UCard {
-            HStack {
+            rowLayout {
                 ULabel(range == .week ? "u.week.title" : "u.range.monthTitle")
-                Spacer()
+                if !typeSize.isAccessibilitySize { Spacer() }
                 HStack(spacing: 2) {
                     ForEach(ChartRange.allCases, id: \.self) { value in
                         Button {
@@ -349,6 +374,7 @@ struct UnrotProgressView: View {
                         } label: {
                             Text(LocalizedStringKey(value.titleKey))
                                 .font(.caption.weight(range == value ? .bold : .regular))
+                                .lineLimit(1).fixedSize()
                                 .foregroundStyle(range == value ? Color(red: 0.14, green: 0.09, blue: 0.03) : UPalette.dim)
                                 .padding(.horizontal, 12).frame(minHeight: 32)
                                 .background(range == value ? Color(red: 1, green: 0.97, blue: 0.90) : .clear, in: Capsule())
@@ -381,11 +407,11 @@ struct UnrotProgressView: View {
                             .foregroundStyle(UPalette.goldLight)
                     }
                     .font(.footnote.weight(.semibold))
-                } else {
+                } else if points.contains(where: { $0.minutes != nil }) {
                     Text("u.chart.tapHint").font(.footnote).foregroundStyle(UPalette.dim)
                 }
             }
-            .frame(height: 18, alignment: .leading)
+            .frame(minHeight: 18, alignment: .leading)
             Chart {
                 ForEach(points, id: \.date) { point in
                     if let minutes = point.minutes {
@@ -442,7 +468,7 @@ struct UnrotProgressView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text("u.week.title"))
             .accessibilityChartDescriptor(FeedChartDescriptor(points: points))
-            rangeNumbers(days)
+            if points.contains(where: { $0.minutes != nil }) { rangeNumbers(days) }
             Text(facts.feedWatched ? "u.week.legend" : "u.feed.notWatched")
                 .font(.caption).foregroundStyle(UPalette.dim).fixedSize(horizontal: false, vertical: true)
         }
@@ -513,7 +539,7 @@ struct UnrotProgressView: View {
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.white.opacity(0.08))
-                        Capsule().fill(tint).frame(width: geo.size.width * min(1, max(0.02, part)))
+                        if part > 0 { Capsule().fill(tint).frame(width: max(8, geo.size.width * min(1, part))) }
                     }
                 }
                 .frame(height: 8)
@@ -563,6 +589,80 @@ struct UnrotProgressView: View {
 
     // MARK: - Kept out (private)
 
+    // MARK: - When the pull comes
+
+    /// Pauses by hour, the busiest two hours in gold, and a reminder that
+    /// lands just before them. Hidden until there are enough pauses.
+    @ViewBuilder private var pullHours: some View {
+        let buckets = PullHours.buckets(store.pauseTimes)
+        if let peak = PullHours.peak(buckets) {
+            let top = max(1, buckets.max() ?? 1)
+            let slotKey = PullHours.slot(beforeHour: peak)
+            let covered = remindersOn && store.answers.when.contains(slotKey)
+            UCard {
+                ULabel("u.pullHours.title")
+                HStack(alignment: .bottom, spacing: 3) {
+                    ForEach(0..<24, id: \.self) { hour in
+                        let inPeak = hour == peak || hour == (peak + 1) % 24
+                        Capsule()
+                            .fill(inPeak ? AnyShapeStyle(UPalette.goldFill) : AnyShapeStyle(Color.white.opacity(buckets[hour] > 0 ? 0.28 : 0.08)))
+                            .frame(height: max(4, 56 * Double(buckets[hour]) / Double(top)))
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .frame(height: 56, alignment: .bottom)
+                .environment(\.layoutDirection, .leftToRight)
+                .accessibilityHidden(true)
+                // Each label starts at its own hour's bar.
+                GeometryReader { geo in
+                    ForEach([0, 6, 12, 18], id: \.self) { hour in
+                        Text(verbatim: hourLabel(hour)).font(.caption2).foregroundStyle(UPalette.dim)
+                            .fixedSize()
+                            .offset(x: geo.size.width * Double(hour) / 24)
+                    }
+                }
+                .frame(height: 14)
+                .environment(\.layoutDirection, .leftToRight)
+                .accessibilityHidden(true)
+                let from = hourLabel(peak), to = hourLabel((peak + 2) % 24)
+                Text("u.pullHours.peak \(from) \(to)").font(.subheadline).foregroundStyle(UPalette.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let slot = ReminderPlan.slots[slotKey] {
+                    let at = slotTime(slot)
+                    if covered {
+                        Label { Text("u.pullHours.covered \(at)") } icon: { Image(systemName: "bell.badge") }
+                            .font(.footnote).foregroundStyle(UPalette.leaf)
+                    } else {
+                        UPillButton(title: "u.pullHours.remind \(at)", systemImage: "bell") { remind(before: slotKey) }
+                    }
+                }
+            }
+        }
+    }
+
+    private func hourLabel(_ hour: Int) -> String {
+        let date = Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: now) ?? now
+        return date.formatted(.dateTime.hour())
+    }
+
+    private func slotTime(_ slot: ReminderPlan.Slot) -> String {
+        let date = Calendar.current.date(bySettingHour: slot.hour, minute: slot.minute, second: 0, of: now) ?? now
+        return date.formatted(date: .omitted, time: .shortened)
+    }
+
+    /// Adds the slot to the person's times, turns reminders on (asking iOS
+    /// once, from this tap) and plans the coming week.
+    private func remind(before slotKey: String) {
+        store.update { if !$0.when.contains(slotKey) { $0.when.append(slotKey) } }
+        let when = store.answers.when
+        Task {
+            guard await ReminderScheduler.requestPermission() else { return }
+            await MainActor.run { remindersOn = true }
+            await ReminderScheduler.reschedule(on: true, when: when)
+        }
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+
     private var keptOut: some View {
         UCard {
             HStack(spacing: 8) {
@@ -601,8 +701,13 @@ struct UnrotProgressView: View {
 }
 
 /// A pot with a plant whose size is the day's gain. Never dead.
-struct Pot: View {
-    let size: Double
+struct Pot: View, Animatable {
+    var size: Double
+    /// Lets a plant grow smoothly when its size changes.
+    var animatableData: Double {
+        get { size }
+        set { size = newValue }
+    }
 
     var body: some View {
         Canvas { context, canvas in

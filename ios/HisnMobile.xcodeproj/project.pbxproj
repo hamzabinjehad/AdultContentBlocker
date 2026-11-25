@@ -5,6 +5,12 @@
 	};
 	objectVersion = 56;
 	objects = {
+		3B6C0A4246D5CB77467353C5  = {
+			isa = PBXFileReference;
+			lastKnownFileType = text;
+			path = "../android/app/src/hisn/assets/sayings/sayings.tsv";
+			sourceTree = "<group>";
+		};
 		58148B49A40E82D8CBE9F579  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -131,6 +137,12 @@
 			path = "Hisn/DNSRouteProbe.swift";
 			sourceTree = "<group>";
 		};
+		CF22647E1DE5DCBCD8A5C504  = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder.assetcatalog;
+			path = "Hisn/HisnArt.xcassets";
+			sourceTree = "<group>";
+		};
 		05D3E25C09E84BF6A4E4E3F9  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -153,6 +165,60 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "Hisn/HisnUI.swift";
+			sourceTree = "<group>";
+		};
+		A44D0923BEDFBAA85DF0DBC8  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/Islamic/HisnAdhkarData.swift";
+			sourceTree = "<group>";
+		};
+		9F8894CB9233913963F17729  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/Islamic/HisnContent.swift";
+			sourceTree = "<group>";
+		};
+		05EFE085C08ECDE7F703884D  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/Islamic/HisnData.swift";
+			sourceTree = "<group>";
+		};
+		D8685069A241EE93963610C7  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/Islamic/HisnHelpView.swift";
+			sourceTree = "<group>";
+		};
+		3A26A91A36F037BF8EE8D858  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/Islamic/HisnIslamicRoot.swift";
+			sourceTree = "<group>";
+		};
+		113C6B72FC238488CB547D46  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/Islamic/HisnLook.swift";
+			sourceTree = "<group>";
+		};
+		D889AE1A630F969E6C6E8BA4  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/Islamic/HisnOnboardingPages.swift";
+			sourceTree = "<group>";
+		};
+		F7B547528F1ED52F63073FF6  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/Islamic/HisnOnboardingView.swift";
+			sourceTree = "<group>";
+		};
+		6C7A6CCF739D53BA6DFE1E90  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/Islamic/HisnShell.swift";
 			sourceTree = "<group>";
 		};
 		F144496A1CD93678A10B07E0  = {
@@ -604,6 +670,7 @@
 		C7F72C0E6EDDC20FF9C16D2F  = {
 			isa = PBXGroup;
 			children = (
+				3B6C0A4246D5CB77467353C5,
 				58148B49A40E82D8CBE9F579,
 				AD749F27C885AF47D2DFEDB3,
 				1AC01D8272F7B9928ACCA554,
@@ -625,10 +692,20 @@
 				5EF93C39AE0A12F863A953BC,
 				11FE4E426F2729B3E0ED3082,
 				32FC3F8B0EE251656944860E,
+				CF22647E1DE5DCBCD8A5C504,
 				05D3E25C09E84BF6A4E4E3F9,
 				9B58D6F32A0B01CC13845E15,
 				04C0750083C97DDB24B4923E,
 				9E23A713F382FFCA64AA280A,
+				A44D0923BEDFBAA85DF0DBC8,
+				9F8894CB9233913963F17729,
+				05EFE085C08ECDE7F703884D,
+				D8685069A241EE93963610C7,
+				3A26A91A36F037BF8EE8D858,
+				113C6B72FC238488CB547D46,
+				D889AE1A630F969E6C6E8BA4,
+				F7B547528F1ED52F63073FF6,
+				6C7A6CCF739D53BA6DFE1E90,
 				F144496A1CD93678A10B07E0,
 				FCE2B547D5D74B8316E364F7,
 				5F9265D85EAD1C04BD50005C,
@@ -894,6 +971,42 @@
 			isa = PBXBuildFile;
 			fileRef = F75157D9F3F6FD446D4554B2;
 		};
+		9FB7DFBBA07021AD5535137C  = {
+			isa = PBXBuildFile;
+			fileRef = 113C6B72FC238488CB547D46;
+		};
+		C8AD42B3084AFCDB4A467795  = {
+			isa = PBXBuildFile;
+			fileRef = 9F8894CB9233913963F17729;
+		};
+		B2A7C0796DD5FAB1A7B9B686  = {
+			isa = PBXBuildFile;
+			fileRef = F7B547528F1ED52F63073FF6;
+		};
+		EC913C9865C17C9F7915D8E4  = {
+			isa = PBXBuildFile;
+			fileRef = D8685069A241EE93963610C7;
+		};
+		A29F0655F144C09AF754085B  = {
+			isa = PBXBuildFile;
+			fileRef = 3A26A91A36F037BF8EE8D858;
+		};
+		BF0CFA6AFBB872471E71D83B  = {
+			isa = PBXBuildFile;
+			fileRef = 05EFE085C08ECDE7F703884D;
+		};
+		A0C092A35CD709C9984DA437  = {
+			isa = PBXBuildFile;
+			fileRef = D889AE1A630F969E6C6E8BA4;
+		};
+		4A703C29604F0C4AEA218FE9  = {
+			isa = PBXBuildFile;
+			fileRef = 6C7A6CCF739D53BA6DFE1E90;
+		};
+		008931898D73E5227DCBB9CA  = {
+			isa = PBXBuildFile;
+			fileRef = A44D0923BEDFBAA85DF0DBC8;
+		};
 		8677145FDA9C24C7C2212F65  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -950,6 +1063,15 @@
 				6307C624C25779677EE9E939,
 				8BB35C3CE4955B1835EF1FE6,
 				E5BF8E834ACC9E9A7001D37D,
+				9FB7DFBBA07021AD5535137C,
+				C8AD42B3084AFCDB4A467795,
+				B2A7C0796DD5FAB1A7B9B686,
+				EC913C9865C17C9F7915D8E4,
+				A29F0655F144C09AF754085B,
+				BF0CFA6AFBB872471E71D83B,
+				A0C092A35CD709C9984DA437,
+				4A703C29604F0C4AEA218FE9,
+				008931898D73E5227DCBB9CA,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -976,6 +1098,14 @@
 			isa = PBXBuildFile;
 			fileRef = 4FBC244AD919421502A7BBD6;
 		};
+		659687EF7927C1729505058F  = {
+			isa = PBXBuildFile;
+			fileRef = CF22647E1DE5DCBCD8A5C504;
+		};
+		E078EEDB7B8F5F56206296DE  = {
+			isa = PBXBuildFile;
+			fileRef = 3B6C0A4246D5CB77467353C5;
+		};
 		953CC888EC97B82BA9E79C30  = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -984,6 +1114,8 @@
 				6B43281553FE8E2D9017CADA,
 				641429C6AD0AEDA866D5713D,
 				135A41FF702DD46D00207B8D,
+				659687EF7927C1729505058F,
+				E078EEDB7B8F5F56206296DE,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

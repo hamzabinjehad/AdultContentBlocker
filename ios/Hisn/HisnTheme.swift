@@ -10,6 +10,30 @@ import ManagedSettings
 /// The colours are chosen for 4.5:1 body text on their own surface, and every
 /// state is also carried by words, never by colour alone.
 enum HnPalette {
+#if UNROT
+    // Unrot (dark only) shows these shared screens in its own warm room:
+    // near-black brown, cream ink, gold text and a bronze fill that keeps
+    // white labels at 4.7:1.
+    static let canvas = dynamic(light: 0x0E0A06, dark: 0x0E0A06)
+    static let card = dynamic(light: 0x1C1712, dark: 0x1C1712)
+    static let soft = dynamic(light: 0x29221A, dark: 0x29221A)
+    static let ink = dynamic(light: 0xF6EEDD, dark: 0xF6EEDD)
+    static let muted = dynamic(light: 0xA99D86, dark: 0xA99D86)
+    static let line = dynamic(light: 0xFFFFFF, dark: 0xFFFFFF, lightAlpha: 0.09, darkAlpha: 0.09)
+    static let accent = Color(red: 0.604, green: 0.416, blue: 0.071)
+    static let accentText = dynamic(light: 0xFFDF8A, dark: 0xFFDF8A)
+    static let accentSoft = dynamic(light: 0x3A2810, dark: 0x3A2810)
+    static let inkCard = Color(red: 0.071, green: 0.047, blue: 0.024)
+    static let onInk = Color.white
+    static let onInkMuted = Color(white: 0.74)
+    static let calm = dynamic(light: 0x8FD39A, dark: 0x8FD39A)
+    static let calmSoft = dynamic(light: 0x18291A, dark: 0x18291A)
+    static let ember = dynamic(light: 0xFFB366, dark: 0xFFB366)
+    static let emberSoft = dynamic(light: 0x33200F, dark: 0x33200F)
+    static let onInkAccent = Color(red: 1.0, green: 0.875, blue: 0.541)
+    static let onInkCalm = Color(red: 0.561, green: 0.827, blue: 0.604)
+    static let onInkEmber = Color(red: 1.0, green: 0.702, blue: 0.4)
+#else
     static let canvas = dynamic(light: 0xF5F2EB, dark: 0x0A0B10)
     static let card = dynamic(light: 0xFFFFFF, dark: 0x15171F)
     static let soft = dynamic(light: 0xECE8DE, dark: 0x1E212B)
@@ -36,6 +60,8 @@ enum HnPalette {
     static let onInkAccent = Color(red: 0.74, green: 0.74, blue: 1.0)
     static let onInkCalm = Color(red: 0.47, green: 0.85, blue: 0.67)
     static let onInkEmber = Color(red: 0.99, green: 0.75, blue: 0.48)
+
+#endif
 
     private static func dynamic(light: UInt32, dark: UInt32,
                                 lightAlpha: CGFloat = 1, darkAlpha: CGFloat = 1) -> Color {

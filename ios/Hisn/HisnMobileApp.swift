@@ -26,7 +26,7 @@ struct HisnMobileApp: App {
         #if UNROT
         UnrotRootView(protection: protection, language: $language)
         #else
-        MobileRootView(protection: protection, language: $language)
+        HisnIslamicRoot(protection: protection, language: $language)
         #endif
     }
 

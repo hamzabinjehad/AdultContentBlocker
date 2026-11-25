@@ -7,6 +7,8 @@ import SwiftUI
 struct UnrotBreatheView: View {
     @ObservedObject var store: UnrotStore
     let onClose: () -> Void
+    /// After the pull passes: go to one of the person's own Instead ideas.
+    var onInstead: (() -> Void)? = nil
 
     enum Phase: Equatable { case ready, countdown(Date), breathing(Date), done(sealed: Bool) }
 
@@ -196,8 +198,17 @@ struct UnrotBreatheView: View {
             Text("u.breathe.today \(store.breathsToday())")
                 .font(.footnote.weight(.semibold)).foregroundStyle(UPalette.goldLight)
             Spacer()
-            UGoldButton(title: "u.done", wide: true, action: onClose)
-                .padding(.horizontal, 20).padding(.bottom, 24)
+            VStack(spacing: 6) {
+                UGoldButton(title: "u.done", wide: true, action: onClose)
+                if let onInstead {
+                    Button(action: onInstead) {
+                        Label("u.breathe.instead", systemImage: "lightbulb")
+                            .font(.subheadline.weight(.semibold)).foregroundStyle(UPalette.goldLight)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                }
+            }
+            .padding(.horizontal, 20).padding(.bottom, 16)
         }
     }
 

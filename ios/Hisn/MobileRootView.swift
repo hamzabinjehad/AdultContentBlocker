@@ -20,8 +20,18 @@ struct MobileRootView: View {
     /// The marker that confirmation must carry to count on this install on this iPhone.
     @StateObject private var lockDevice: LockConfirmationDevice
 
+    /// The Islamic edition puts "Help now" in the middle of the tab bar; nil keeps the four tabs.
+    var onHelp: (() -> Void)?
+    /// The Help slot's label, given by the edition that adds it.
+    var helpLabel = "Help"
+    /// The tag of the Help slot. Choosing it opens Help and leaves the current tab selected.
+    private static let helpTag = 9
+
     init(protection: ProtectionController, language: Binding<String>, initialTab: Int = 0,
-         vault: PasscodeVaultController? = nil, lockDevice: LockConfirmationDevice? = nil) {
+         vault: PasscodeVaultController? = nil, lockDevice: LockConfirmationDevice? = nil,
+         onHelp: (() -> Void)? = nil, helpLabel: String = "Help") {
+        self.onHelp = onHelp
+        self.helpLabel = helpLabel
         self.protection = protection
         self._language = language
         self._selectedTab = State(initialValue: (0...3).contains(initialTab) ? initialTab : 0)
@@ -56,6 +66,12 @@ struct MobileRootView: View {
                     NavigationStack { apps.toolbar(.hidden, for: .navigationBar) }
                         .tabItem { Label("tab.apps", systemImage: "shield.lefthalf.filled") }
                         .tag(1)
+                    if onHelp != nil {
+                        // Help is a door, not a tab: the slot opens the help page and the tab stays where it was.
+                        Color.clear
+                            .tabItem { Label(helpLabel, systemImage: "exclamationmark.circle.fill") }
+                            .tag(Self.helpTag)
+                    }
                     NavigationStack { practice.toolbar(.hidden, for: .navigationBar) }
                         .tabItem { Label("tab.practice", systemImage: "wind") }
                         .tag(2)
@@ -64,6 +80,11 @@ struct MobileRootView: View {
                         .tag(3)
                 }
                 .tint(HnPalette.accent)
+                .onChange(of: selectedTab) { [previous = selectedTab] next in
+                    guard next == Self.helpTag else { return }
+                    selectedTab = previous == Self.helpTag ? 0 : previous
+                    onHelp?()
+                }
             }
         }
         .fullScreenCover(isPresented: $showingPause) {

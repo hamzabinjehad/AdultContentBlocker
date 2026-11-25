@@ -47,10 +47,16 @@ final class UnrotStore: ObservableObject {
     /// The words alone, newest first (Home and Breathe show the first).
     var notes: [String] { journal.map(\.text) }
     @Published private(set) var breaths: [String: Int]
+    /// When each finished pause happened (newest last, at most 400), for "when the pull comes".
+    @Published private(set) var pauseTimes: [TimeInterval]
     @Published private(set) var blockedTries: [String: Int]
     @Published private(set) var focusUntil: TimeInterval
     @Published private(set) var focusMinutes: Int
+    /// The running session's length, for the ring.
+    @Published private(set) var focusLength: Int
     @Published private(set) var tourSeen: Bool
+    /// The week key of the last recap the person opened or dismissed.
+    @Published private(set) var recapSeen: String?
 
     private let defaults: UserDefaults
 
@@ -73,7 +79,10 @@ final class UnrotStore: ObservableObject {
         static let tries = "unrot.tries"
         static let focusUntil = "unrot.focus.until"
         static let focusMinutes = "unrot.focus.minutes"
+        static let focusLength = "unrot.focus.length"
         static let tour = "unrot.tour"
+        static let recapSeen = "unrot.recap.seen"
+        static let pauseTimes = "unrot.pause.times"
         static let celebrated = "unrot.stage.celebrated"
     }
 
@@ -89,14 +98,15 @@ final class UnrotStore: ObservableObject {
     init(defaults: UserDefaults) {
         self.defaults = defaults
         onboarded = defaults.bool(forKey: Key.onboarded)
-        startedAt = defaults.object(forKey: Key.started) as? Date
+        let started = defaults.object(forKey: Key.started) as? Date
+        startedAt = started
         answers = Self.decode(Answers.self, defaults.data(forKey: Key.answers)) ?? Answers()
         crackedAt = defaults.double(forKey: Key.cracked)
         sealedAt = defaults.double(forKey: Key.sealed)
         sealedDay = defaults.string(forKey: Key.sealedDay)
         brokenAt = defaults.double(forKey: Key.broken)
         seams = defaults.integer(forKey: Key.seams)
-        feed = defaults.dictionary(forKey: Key.feed) as? [String: Int] ?? [:]
+        feed = UnrotFormat.since(started, defaults.dictionary(forKey: Key.feed) as? [String: Int] ?? [:])
         checkIns = Self.decode([String: CheckIn].self, defaults.data(forKey: Key.checkIns)) ?? [:]
         var saved = Self.decode([Note].self, defaults.data(forKey: Key.journal)) ?? []
         if let old = defaults.stringArray(forKey: Key.notes), !old.isEmpty {
@@ -107,16 +117,19 @@ final class UnrotStore: ObservableObject {
         }
         journal = saved
         breaths = defaults.dictionary(forKey: Key.breaths) as? [String: Int] ?? [:]
+        pauseTimes = defaults.array(forKey: Key.pauseTimes) as? [TimeInterval] ?? []
         blockedTries = defaults.dictionary(forKey: Key.tries) as? [String: Int] ?? [:]
         focusUntil = defaults.double(forKey: Key.focusUntil)
         focusMinutes = defaults.integer(forKey: Key.focusMinutes)
+        focusLength = defaults.integer(forKey: Key.focusLength)
         tourSeen = defaults.bool(forKey: Key.tour)
+        recapSeen = defaults.string(forKey: Key.recapSeen)
         applyLaunchArguments()
     }
 
     /// Re-reads what the monitor extension may have written while the app slept.
     func reload() {
-        feed = defaults.dictionary(forKey: Key.feed) as? [String: Int] ?? [:]
+        feed = UnrotFormat.since(startedAt, defaults.dictionary(forKey: Key.feed) as? [String: Int] ?? [:])
     }
 
     // MARK: - Derived
@@ -192,6 +205,8 @@ final class UnrotStore: ObservableObject {
         let key = today(now)
         breaths[key, default: 0] += 1
         defaults.set(breaths, forKey: Key.breaths)
+        pauseTimes = Array((pauseTimes + [now.timeIntervalSince1970]).suffix(400))
+        defaults.set(pauseTimes, forKey: Key.pauseTimes)
         PauseStore.record(now: now)
         let t = now.timeIntervalSince1970
         guard GlassState.breathSeals(now: t, crackedAt: crackedAt, sealedAt: sealedAt) else { return false }
@@ -244,6 +259,8 @@ final class UnrotStore: ObservableObject {
     func startedFocus(until: Date, minutes: Int) {
         focusUntil = until.timeIntervalSince1970
         focusMinutes += minutes
+        focusLength = minutes
+        defaults.set(focusLength, forKey: Key.focusLength)
         defaults.set(focusUntil, forKey: Key.focusUntil)
         defaults.set(focusMinutes, forKey: Key.focusMinutes)
     }
@@ -255,6 +272,22 @@ final class UnrotStore: ObservableObject {
         focusUntil = 0
         defaults.set(focusUntil, forKey: Key.focusUntil)
         defaults.set(focusMinutes, forKey: Key.focusMinutes)
+    }
+
+    /// Last week's recap, when there is something in it and it is not yet seen.
+    func pendingRecap(now: Date = Date()) -> WeeklyRecap? {
+        guard let recap = recap(now: now), recap.hasAnything, recap.weekKey != recapSeen else { return nil }
+        return recap
+    }
+
+    func recap(now: Date = Date()) -> WeeklyRecap? {
+        WeeklyRecap.make(now: now, feed: feed, gains: gains, before: answers.beforeMinutes,
+                         breaths: breaths, pulls: checkIns.mapValues(\.pull))
+    }
+
+    func markRecapSeen(_ weekKey: String) {
+        recapSeen = weekKey
+        defaults.set(weekKey, forKey: Key.recapSeen)
     }
 
     func markTourSeen() {
@@ -324,6 +357,12 @@ final class UnrotStore: ObservableObject {
         feed = demoFeed
         defaults.set(demoFeed, forKey: Key.feed)
         breaths = [today(now): 2]
+        // Pauses over two weeks, most in the early afternoon.
+        pauseTimes = (0..<14).flatMap { day -> [TimeInterval] in
+            let base = cal.startOfDay(for: cal.date(byAdding: .day, value: -day, to: now) ?? now)
+            let hours = day % 3 == 0 ? [14, 15, 21] : (day % 2 == 0 ? [14, 22] : [15])
+            return hours.map { base.addingTimeInterval(Double($0 * 3600 + 600)).timeIntervalSince1970 }
+        }
         blockedTries = [today(now): 1]
         checkIns = [:]
         let cal2 = Calendar.current
@@ -335,11 +374,14 @@ final class UnrotStore: ObservableObject {
         checkIns = [UnrotFormat.dayKey(cal2.date(byAdding: .day, value: -1, to: now) ?? now): CheckIn(mood: 3, pull: "tired"),
                     UnrotFormat.dayKey(cal2.date(byAdding: .day, value: -3, to: now) ?? now): CheckIn(mood: 1, pull: "bored")]
         crackedAt = 0; sealedAt = 0; brokenAt = 0; sealedDay = nil
+        recapSeen = recap(now: now)?.weekKey   // the recap shows only with -unrot-demo recap
         switch state {
         case "cracked": crackedAt = now.timeIntervalSince1970 - 191
         case "gold": crackedAt = now.timeIntervalSince1970 - 400; sealedAt = now.timeIntervalSince1970 - 100; sealedDay = today(now); seams = 1
         case "broken": brokenAt = now.timeIntervalSince1970 - 60
-        case "new": startedAt = now; feed = [:]; breaths = [:]; blockedTries = [:]; journal = []; checkIns = [:]
+        case "new": startedAt = now; pauseTimes = []; feed = [:]; defaults.removeObject(forKey: Key.feed); breaths = [:]; blockedTries = [:]; journal = []; checkIns = [:]
+        case "recap": recapSeen = nil
+        case "focus": focusUntil = now.timeIntervalSince1970 + 18 * 60 + 42; focusLength = 25
         case "onboarding": onboarded = false
         case "tour": tourSeen = false
         default: break

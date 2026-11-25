@@ -40,27 +40,97 @@ extension Font {
     }
 }
 
-/// The room: warm light over the glass, falling to near black.
+/// The room: light over the glass, falling to near black. Its colour is the
+/// colour of the moment (`UnrotMood`): green while the plant is rising, cool in
+/// Focus, ember while the glass is cracked, indigo at night, grey after a slip.
 struct UBackdrop: View {
     var mood: Mood = .day
-    enum Mood { case day, night, wilt, warn }
+    enum Mood: Equatable { case day, night, wilt, warn, growing, working, slip }
 
-    var body: some View {
-        ZStack {
-            UPalette.base
-            RadialGradient(colors: [top, UPalette.deep, UPalette.base],
-                           center: UnitPoint(x: 0.5, y: 0.14), startRadius: 0, endRadius: 520)
+    init(mood: Mood = .day) { self.mood = mood }
+    init(_ mood: UnrotMood) {
+        switch mood {
+        case .growing: self.mood = .growing
+        case .working: self.mood = .working
+        case .hard: self.mood = .warn
+        case .rest: self.mood = .day
+        case .night: self.mood = .night
+        case .slip: self.mood = .slip
         }
-        .ignoresSafeArea()
     }
 
-    private var top: Color {
+    /// The prototype paints one flat ground per moment; the glass brings its own light.
+    var body: some View {
+        UTones.of(moodForTones).cv
+            .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.9), value: mood)
+    }
+
+    private var moodForTones: UnrotMood {
         switch mood {
-        case .day: return UPalette.warm
-        case .night: return Color(red: 0.106, green: 0.129, blue: 0.282)
-        case .wilt: return Color(red: 0.173, green: 0.149, blue: 0.063)
-        case .warn: return Color(red: 0.416, green: 0.180, blue: 0.055)
+        case .day: return .rest
+        case .night: return .night
+        case .wilt, .slip: return .slip
+        case .warn: return .hard
+        case .growing: return .growing
+        case .working: return .working
         }
+    }
+
+    private static func rgb(_ hex: UInt32) -> Color {
+        Color(red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255)
+    }
+
+    /// The glow at the top, the mid tone and the ground, per mood.
+    private var tones: (top: Color, deep: Color, base: Color) {
+        switch mood {
+        case .day: return (UPalette.warm, UPalette.deep, UPalette.base)
+        case .night: return (Self.rgb(0x1B2148), Self.rgb(0x0D0F1C), Self.rgb(0x080912))
+        case .wilt: return (Self.rgb(0x2C2610), UPalette.deep, UPalette.base)
+        case .warn: return (Self.rgb(0x6A2E0E), Self.rgb(0x1A0F0A), Self.rgb(0x120A06))
+        case .growing: return (Self.rgb(0x25472B), Self.rgb(0x0E1710), Self.rgb(0x0A120C))
+        case .working: return (Self.rgb(0x1C3A48), Self.rgb(0x0A1318), Self.rgb(0x071014))
+        case .slip: return (Self.rgb(0x33322E), Self.rgb(0x131312), Self.rgb(0x0C0C0B))
+        }
+    }
+}
+
+/// The colours of the moment, as the phone prototype draws them
+/// (design/unrot-phone-prototype-2026-11-24): a ground, a card, a raised well, the
+/// bar, a track, ink, muted text and the gold of that moment. Same values as
+/// Android's `UnrotMood` (muted text a step brighter than the prototype, for contrast).
+struct UTones: Equatable {
+    let cv, card, raised, bar, track, ink, mut, gold, goldTop, goldBot, goldInk: Color
+
+    private static func c(_ hex: UInt32) -> Color {
+        Color(red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255)
+    }
+    private init(_ v: [UInt32]) {
+        cv = Self.c(v[0]); card = Self.c(v[1]); raised = Self.c(v[2]); bar = Self.c(v[3]); track = Self.c(v[4])
+        ink = Self.c(v[5]); mut = Self.c(v[6]); gold = Self.c(v[7]); goldTop = Self.c(v[8]); goldBot = Self.c(v[9]); goldInk = Self.c(v[10])
+    }
+
+    static func of(_ mood: UnrotMood) -> UTones {
+        switch mood {
+        case .growing: return UTones([0x0E1710, 0x172419, 0x203224, 0x121D14, 0x2D4432, 0xF3F7EA, 0xA9BBA8, 0xE6CF58, 0xF3E27C, 0xBFA52C, 0x1D2204])
+        case .working: return UTones([0x0A1318, 0x122027, 0x1A2D36, 0x0E191F, 0x27424E, 0xEAF5F8, 0x9DB4BC, 0xF3DC96, 0xFBEAB4, 0xCFB466, 0x1C2226])
+        case .hard: return UTones([0x1A0F0A, 0x2A1810, 0x382118, 0x20130C, 0x4C2F20, 0xFDEFE2, 0xC4AC9A, 0xFF9F5A, 0xFFBD7C, 0xE4742C, 0x2C1002])
+        case .night: return UTones([0x0D0F1C, 0x171A2E, 0x212540, 0x121526, 0x2C3154, 0xEEF0FF, 0xA7ACCE, 0xF2C96A, 0xF6D27C, 0xD9A63A, 0x2A1D00])
+        case .slip: return UTones([0x131312, 0x1D1D1B, 0x282826, 0x181817, 0x363633, 0xECEAE5, 0xA9A69E, 0xCBBB92, 0xDCCFA9, 0xA5946A, 0x1F1B10])
+        case .rest: return UTones([0x15110B, 0x221B12, 0x2E2518, 0x1C160E, 0x3A3020, 0xFBF3E2, 0xA99D86, 0xF2C14E, 0xFFD76A, 0xD99A1E, 0x2A1C02])
+        }
+    }
+
+    var goldFill: LinearGradient { LinearGradient(colors: [goldTop, goldBot], startPoint: .top, endPoint: .bottom) }
+}
+
+private struct UTonesKey: EnvironmentKey { static let defaultValue = UTones.of(.rest) }
+
+extension EnvironmentValues {
+    /// The colours of the moment for every Unrot screen; set once at the root.
+    var uTones: UTones {
+        get { self[UTonesKey.self] }
+        set { self[UTonesKey.self] = newValue }
     }
 }
 

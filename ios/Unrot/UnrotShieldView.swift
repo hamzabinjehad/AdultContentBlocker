@@ -67,33 +67,41 @@ struct UnrotShieldView: View {
     let lockDevice: LockConfirmationDevice
     let facts: UnrotShieldFacts
     let onAddRule: () -> Void
+    /// Fixed to one part when Shield and Rules are separate tabs: `.adult` on Shield, `.feeds` on Rules.
+    var part: Tab? = nil
 
     enum Tab: String, CaseIterable { case all, feeds, adult }
-    @State private var tab: Tab = .all
+    @State private var picked: Tab = .all
+    private var tab: Tab { part ?? picked }
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                UTitleBar(title: "u.tab.shield") {
-                    Button(action: onAddRule) {
+                UTitleBar(title: part == .feeds ? "u.tab.rules" : "u.tab.shield") {
+                    // Rules are added on the Rules tab; Shield has nothing to add.
+                    if part != .adult { Button(action: onAddRule) {
                         Label("u.shield.add", systemImage: "plus")
                             .font(.footnote.weight(.heavy))
                             .foregroundStyle(UPalette.leafBright)
                             .padding(.horizontal, 14).frame(minHeight: 34)
                             .background(UPalette.leaf.opacity(0.18), in: Capsule())
                     }
-                    .buttonStyle(UPressStyle())
+                    .buttonStyle(UPressStyle()) }
                 }
-                hero
-                tabs
+                if part != .feeds { hero }
+                if part == nil { tabs }
                 VStack(spacing: 10) {
-                    ForEach(UnrotShieldFacts.Pane.allCases.filter { tab == .all || $0.group == tab }) { pane in
+                    ForEach(UnrotShieldFacts.Pane.allCases.filter { pane in
+                        // Shield (adult) keeps every pane but feeds; Rules keeps only feeds.
+                        part == .adult ? pane != .feeds : (tab == .all || pane.group == tab)
+                    }) { pane in
                         NavigationLink { destination(pane) } label: { row(pane) }
                             .buttonStyle(UPressStyle())
                     }
                 }
-                numbers
+                // The counts are about the adult filter: they stay on Shield.
+                if part != .feeds { numbers }
                 Text("u.shield.scope").font(.caption).foregroundStyle(UPalette.dim)
                     .fixedSize(horizontal: false, vertical: true)
                 NavigationLink {
@@ -116,20 +124,43 @@ struct UnrotShieldView: View {
 
     private var open: Int { facts.checked ? facts.openPanes.count : 0 }
 
+    private var paneBars: some View {
+        let heights: [CGFloat] = [70, 104, 126, 104, 70]
+        return VStack(spacing: 6) {
+            HStack(alignment: .bottom, spacing: 8) {
+                ForEach(Array(UnrotShieldFacts.Pane.allCases.enumerated()), id: \.element) { index, pane in
+                    let shape = Capsule()
+                    if facts.on[pane] == true {
+                        shape.fill(UPalette.goldFill)
+                            .shadow(color: UPalette.gold.opacity(0.35), radius: 6)
+                            .frame(width: 24, height: heights[index])
+                    } else if pane == .lock {
+                        // Optional, so not a warning: a quiet outline until it is set.
+                        shape.fill(Color.white.opacity(0.05))
+                            .overlay { shape.strokeBorder(Color.white.opacity(0.22), lineWidth: 1.2) }
+                            .frame(width: 24, height: heights[index])
+                    } else {
+                        shape.fill(UPalette.warn.opacity(0.12))
+                            .overlay { shape.strokeBorder(UPalette.warn, style: StrokeStyle(lineWidth: 1.6, dash: [5, 5])) }
+                            .frame(width: 24, height: heights[index])
+                    }
+                }
+            }
+            Capsule().fill(Color.white.opacity(0.14)).frame(width: 190, height: 6)
+        }
+        .frame(height: 150, alignment: .bottom)
+        .accessibilityHidden(true)
+    }
+
     private var hero: some View {
         VStack(spacing: 6) {
-            ZStack {
-                if open > 0 {
-                    Circle()
-                        .strokeBorder(UPalette.warn.opacity(0.7), style: StrokeStyle(lineWidth: 3, dash: [8, 6]))
-                        .frame(width: 190, height: 190)
-                }
-                Image(open > 0 ? "glass_cracked" : "glass_sprout")
-                    .resizable().scaledToFit().frame(width: 230)
-                    .mask(RadialGradient(colors: [.black, .black, .clear], center: .center, startRadius: 0, endRadius: 115))
-                    .accessibilityHidden(true)
-            }
-            .frame(height: 200)
+            // The glass as its five panes (prototype: Shield): closed panes are gold,
+            // an open one is an amber dashed gap you can see before you read.
+            paneBars
+            // The lock is optional, so it is drawn but not counted: the number agrees with "n panes open".
+            Text(verbatim: "\(UnrotShieldFacts.Pane.allCases.filter { $0 != .lock && facts.on[$0] == true }.count) / \(UnrotShieldFacts.Pane.allCases.count - 1)")
+                .font(.uDisplay(38)).foregroundStyle(UPalette.gold)
+                .accessibilityHidden(true)
             Text(!facts.checked ? "u.shield.checking" : open == 0 ? "u.shield.allClosed" : "u.shield.open \(open)")
                 .font(.headline.weight(.heavy)).foregroundStyle(UPalette.ink)
                 .accessibilityAddTraits(.isHeader)
@@ -158,7 +189,7 @@ struct UnrotShieldView: View {
     private var tabs: some View {
         HStack(spacing: 4) {
             ForEach(Tab.allCases, id: \.self) { value in
-                Button { tab = value } label: {
+                Button { picked = value } label: {
                     Text(uKey("u.shield.tab.", value.rawValue))
                         .font(.footnote.weight(tab == value ? .bold : .regular))
                         .foregroundStyle(tab == value ? Color(red: 0.14, green: 0.09, blue: 0.03) : UPalette.dim)
@@ -214,10 +245,12 @@ struct UnrotShieldView: View {
             AppsView(protection: protection, usage: usage, onProtection: {}, onPause: {})
         case .safari, .everyApp:
             BlockingLayersSetupView(protection: protection)
+                .unrotRoom()
         case .screenTime:
             List { ScreenTimeSection(protection: protection) }
                 .listStyle(.insetGrouped)
                 .navigationTitle(Text("u.pane.screenTime"))
+                .unrotRoom()
         case .lock:
             UnrotLockView(protection: protection, vault: vault, lockDevice: lockDevice)
         }
@@ -245,5 +278,14 @@ struct UnrotShieldView: View {
                                    startPoint: .top, endPoint: .bottom),
                     in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .accessibilityElement(children: .combine)
+    }
+}
+
+extension View {
+    /// Shared Hisn list screens shown inside Unrot: the warm room behind them
+    /// instead of the system's grey grouped background.
+    func unrotRoom() -> some View {
+        scrollContentBackground(.hidden)
+            .background { UBackdrop().ignoresSafeArea() }
     }
 }
