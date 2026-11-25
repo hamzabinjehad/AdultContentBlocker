@@ -87,6 +87,61 @@
         "cd /private/tmp/claude-501/-Users-x-Desktop-GitHub-AdultContentBlocker/17111b11-749f-4e3e-819f-78f92ff89ca1/scratchpad/mac && exec /usr/bin/python3 -m http.server 8742 --bind 127.0.0.1"
       ],
       "port": 8742
+    },
+    {
+      "name": "hisn-proto",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /private/tmp/claude-501/-Users-x--claude-spares-spare-m2nXhb/1ac89c36-fc26-447e-8c22-7ae4f98a69b5/scratchpad/proto && exec /usr/bin/python3 -m http.server 8747 --bind 127.0.0.1"
+      ],
+      "port": 8747
+    },
+    {
+      "name": "unrot-ux-pass",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /private/tmp/claude-501/-Users-x--claude-spares-spare-bVVQu7/46aaabfe-d0e7-45a2-bfed-ea9d75e16ac8/scratchpad/serve && exec /usr/bin/python3 -m http.server 8748 --bind 127.0.0.1"
+      ],
+      "port": 8748
+    },
+    {
+      "name": "design-folder",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /private/tmp/claude-501/-Users-x--claude-spares-spare-gBTCdR/8e02ecac-f237-47f4-a067-ab4aa2640e4a/scratchpad/design && exec /usr/bin/python3 -m http.server 8749 --bind 127.0.0.1"
+      ],
+      "port": 8749
+    },
+    {
+      "name": "hisn-proto-repo",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /Users/x/Desktop/GitHub/AdultContentBlocker/design/hisn-unchaind-2026-11-23 && exec /usr/bin/python3 -m http.server 8750 --bind 127.0.0.1"
+      ],
+      "port": 8750
+    },
+    {
+      "name": "hisn-site-next",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /private/tmp/claude-501/-Users-x-Desktop-GitHub-AdultContentBlocker/5a27e69a-953a-4b53-bab6-777a4aabb33e/scratchpad/sitebuild && exec /usr/bin/python3 -m http.server 8751 --bind 127.0.0.1"
+      ],
+      "port": 8751
+    },
+    {
+      "name": "unrot-phone-proto",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /private/tmp/claude-501/-Users-x--claude-spares-spare-KYoHRA/ac7a14e0-de3b-4c85-ab64-460ebdc58537/scratchpad/proto && exec /usr/bin/python3 -m http.server 8752 --bind 127.0.0.1"
+      ],
+      "port": 8752,
+      "autoPort": false
     }
   ]
 }
